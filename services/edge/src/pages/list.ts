@@ -78,7 +78,7 @@ const CSS = `
   border-radius:var(--r-lg)}
 .note{font-size:12.5px;color:var(--fg-3);margin-top:28px;line-height:1.7;
   padding:14px 16px;border-radius:var(--r);border:1px solid var(--border);background:var(--card)}
-.note code{background:rgba(255,255,255,.06);padding:1px 6px;border-radius:var(--r-sm);
+.note code{background:var(--card-hi);padding:1px 6px;border-radius:var(--r-sm);
   font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;color:var(--fg)}
 .note a{color:var(--fg)}.note a:hover{color:var(--accent)}
 

@@ -1,14 +1,16 @@
-// Maintainer-only admin console. Self-contained — shares only the design
+// Maintainer-only admin console. Self-contained — shares only design
 // tokens with the public pages. base-ui inspired: monochrome canvas,
 // neutral borders, accent reserved for state, sharp corners.
 // Lives under /admin and authenticates with ADMIN_TOKEN (localStorage,
 // never ships in the consumer extension build).
+// Theme: dark + light, picks system pref by default, overridable via the
+// theme toggle in the bar (state persisted in localStorage as `mxga_theme`).
 import { BRAND } from "../brand";
 
 const GH_REPO = BRAND.repo;
 
 const CSS = `:root{
-  color-scheme:dark;
+  color-scheme:dark light;
   --bg:#0a0a0a; --bg-2:#111113;
   --fg:#fafafa; --fg-2:#a1a1aa; --fg-3:#71717a; --fg-4:#52525b;
   --border:rgba(255,255,255,.07); --border-strong:rgba(255,255,255,.14);
@@ -18,10 +20,44 @@ const CSS = `:root{
   --warn:#f59e0b; --ok:#10b981; --violet:#a855f7;
   --r-sm:4px; --r:6px; --r-lg:10px;
 }
+@media (prefers-color-scheme:light){
+  :root:not([data-theme="dark"]){
+    color-scheme:light;
+    --bg:#ffffff; --bg-2:#f9fafb;
+    --fg:#09090b; --fg-2:#3f3f46; --fg-3:#71717a; --fg-4:#a1a1aa;
+    --border:rgba(0,0,0,.08); --border-strong:rgba(0,0,0,.18);
+    --card:rgba(0,0,0,.025); --card-hi:rgba(0,0,0,.055);
+    --accent:#0284c7; --accent-soft:rgba(2,132,199,.1);
+    --danger:#dc2626; --danger-soft:rgba(220,38,38,.08);
+    --warn:#d97706; --ok:#15803d; --violet:#7e22ce;
+  }
+}
+:root[data-theme="light"]{
+  color-scheme:light;
+  --bg:#ffffff; --bg-2:#f9fafb;
+  --fg:#09090b; --fg-2:#3f3f46; --fg-3:#71717a; --fg-4:#a1a1aa;
+  --border:rgba(0,0,0,.08); --border-strong:rgba(0,0,0,.18);
+  --card:rgba(0,0,0,.025); --card-hi:rgba(0,0,0,.055);
+  --accent:#0284c7; --accent-soft:rgba(2,132,199,.1);
+  --danger:#dc2626; --danger-soft:rgba(220,38,38,.08);
+  --warn:#d97706; --ok:#15803d; --violet:#7e22ce;
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0a0a0a; --bg-2:#111113;
+  --fg:#fafafa; --fg-2:#a1a1aa; --fg-3:#71717a; --fg-4:#52525b;
+  --border:rgba(255,255,255,.07); --border-strong:rgba(255,255,255,.14);
+  --card:rgba(255,255,255,.025); --card-hi:rgba(255,255,255,.05);
+  --accent:#38bdf8; --accent-soft:rgba(56,189,248,.12);
+  --danger:#ef4444; --danger-soft:rgba(239,68,68,.08);
+  --warn:#f59e0b; --ok:#10b981; --violet:#a855f7;
+}
+
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{background:var(--bg);color:var(--fg);
   font:13.5px/1.5 ui-sans-serif,-apple-system,BlinkMacSystemFont,"Inter","SF Pro Text","PingFang SC","Microsoft YaHei","Segoe UI",system-ui,sans-serif;
-  -webkit-font-smoothing:antialiased}
+  -webkit-font-smoothing:antialiased;
+  transition:background-color .15s ease,color .15s ease}
 body{min-height:100vh}
 a{color:inherit;text-decoration:none}
 button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
@@ -38,24 +74,35 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
 .bar .sub{color:var(--fg-3);font-size:12.5px;margin-top:4px}
 .bar .sub a{color:var(--fg-2);text-decoration:underline;text-decoration-color:var(--fg-4)}
 .bar .sub a:hover{color:var(--fg);text-decoration-color:var(--fg-3)}
-.bar .auth{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--fg-3)}
-.bar .auth .ok{color:var(--ok);display:inline-flex;align-items:center;gap:6px}
-.bar .auth .ok::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ok);
-  box-shadow:0 0 0 0 rgba(16,185,129,.5);animation:pulse 2.4s ease-out infinite}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(16,185,129,.5)}100%{box-shadow:0 0 0 7px rgba(16,185,129,0)}}
+.bar .right{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--fg-3)}
+.bar .ok{color:var(--ok);display:inline-flex;align-items:center;gap:6px}
+.bar .ok::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--ok);
+  box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 50%,transparent);
+  animation:pulse 2.4s ease-out infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 50%,transparent)}100%{box-shadow:0 0 0 7px transparent}}
 
-/* Buttons — same tiers as Worker public pages */
+/* Theme toggle */
+.theme-btn{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:var(--r);color:var(--fg-3);transition:color .15s,background .15s,transform .12s}
+.theme-btn:hover{color:var(--fg);background:var(--card-hi)}
+.theme-btn:active{transform:translateY(.5px)}
+.theme-btn svg{width:14px;height:14px}
+.theme-btn .ic-a,.theme-btn .ic-l,.theme-btn .ic-d{display:none}
+:root[data-theme="light"] .theme-btn .ic-l{display:inline}
+:root[data-theme="dark"] .theme-btn .ic-d{display:inline}
+:root:not([data-theme]) .theme-btn .ic-a{display:inline}
+
+/* Buttons */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:7px 12px;
   border-radius:var(--r);font-size:12.5px;font-weight:500;line-height:1;
   border:1px solid var(--border-strong);background:transparent;color:var(--fg);
   transition:background .12s,border-color .12s,color .12s,transform .08s;white-space:nowrap}
-.btn:hover{background:var(--card-hi);border-color:rgba(255,255,255,.22)}
+.btn:hover{background:var(--card-hi)}
 .btn:active{transform:translateY(.5px)}
 .btn[disabled]{opacity:.4;cursor:not-allowed;transform:none}
 .btn.primary{background:var(--fg);color:var(--bg);border-color:var(--fg);font-weight:600}
-.btn.primary:hover{background:#fff;border-color:#fff}
-.btn.danger{color:#fca5a5;border-color:rgba(239,68,68,.32)}
-.btn.danger:hover{background:var(--danger-soft);border-color:rgba(239,68,68,.5);color:#fecaca}
+.btn.primary:hover{opacity:.9}
+.btn.danger{color:var(--danger);border-color:color-mix(in srgb,var(--danger) 36%,transparent)}
+.btn.danger:hover{background:var(--danger-soft)}
 .btn.sm{padding:5px 10px;font-size:12px;border-radius:var(--r-sm)}
 
 /* Inputs */
@@ -81,12 +128,12 @@ input::placeholder{color:var(--fg-4)}
   background:var(--card);border:1px solid var(--border)}
 .chips{display:flex;flex-wrap:wrap;gap:4px}
 .chip{padding:5px 11px;border-radius:999px;font-size:12px;color:var(--fg-3);
-  border:1px solid var(--border-strong);background:transparent;transition:all .12s}
+  border:1px solid var(--border-strong);background:transparent;transition:all .12s;cursor:pointer}
 .chip:hover{background:var(--card-hi);color:var(--fg)}
-.chip.on{color:var(--fg);background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.chip.on{color:var(--bg);background:var(--fg);border-color:var(--fg)}
 .chip .n{margin-left:5px;font-size:10.5px;color:var(--fg-3);font-variant-numeric:tabular-nums;opacity:.7}
 .chip.on .n{color:var(--bg);opacity:.6}
-.toolbar .right{display:flex;align-items:center;gap:8px}
+.toolbar .r{display:flex;align-items:center;gap:8px}
 .toolbar select{padding:6px 26px 6px 11px;font-size:12.5px;-webkit-appearance:none;appearance:none;
   background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='%2371717a'><path d='M6 8L2 4h8z'/></svg>");
   background-repeat:no-repeat;background-position:right 9px center}
@@ -101,12 +148,26 @@ input::placeholder{color:var(--fg-4)}
 .batch .actions{display:flex;gap:8px;flex-wrap:wrap}
 @keyframes slidein{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
 
-/* Queue rows */
+/* ──────────────────────────────────────────────────────────────────────
+   Queue rows — REDESIGNED for scannability:
+   - 4px left edge color-coded by verdict (replaces the repetitive verdict
+     tag column; one tap of color, not eight)
+   - Confidence: 4px tall bar + bold % above it, both verdict-colored
+   - Reporters: ≥3 = green chip "N 人 ✓"; <3 = small muted "N 人"
+   - Verdict label still appears inline next to handle as a small grey
+     marker so the row category is readable without the giant tag pill
+   ────────────────────────────────────────────────────────────────────── */
 .rows{display:flex;flex-direction:column;gap:1px;background:var(--border);
   border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
-.qrow{display:grid;grid-template-columns:24px 40px 1fr 160px 90px auto;gap:14px;
-  align-items:center;padding:11px 14px;background:var(--bg);
+.qrow{position:relative;display:grid;grid-template-columns:24px 40px 1fr 110px 80px auto;gap:14px;
+  align-items:center;padding:11px 16px 11px 18px;background:var(--bg);
   transition:background .15s,opacity .25s}
+.qrow::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--ec,transparent)}
+.qrow.spam,.qrow.likely_spam{--ec:var(--danger)}
+.qrow.porn_bot{--ec:var(--violet)}
+.qrow.uncertain{--ec:var(--fg-4)}
+.qrow.legit{--ec:var(--ok)}
 .qrow:hover{background:var(--card-hi)}
 .qrow.sel{background:var(--accent-soft)}
 .qrow.removing{opacity:.3;pointer-events:none}
@@ -118,27 +179,24 @@ input::placeholder{color:var(--fg-4)}
 .qrow .who{min-width:0}
 .qrow .who .name{font-weight:600;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;
   white-space:nowrap;color:var(--fg);letter-spacing:-.005em}
+.qrow .who .name .vlbl{margin-left:6px;font-size:10.5px;font-weight:500;color:var(--ec,var(--fg-3));
+  text-transform:uppercase;letter-spacing:.06em;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 .qrow .who .sub{font-size:11.5px;color:var(--fg-3);margin-top:3px;display:flex;
   align-items:center;gap:6px;flex-wrap:wrap}
 .qrow .who .sub a{color:var(--fg-2)}.qrow .who .sub a:hover{color:var(--accent)}
 .qrow .who .sub .sep{color:var(--fg-4);opacity:.5}
-.qrow .verdict{display:flex;flex-direction:column;gap:5px;align-items:flex-start}
-.qrow .verdict .tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;
-  padding:2.5px 8px;border-radius:999px;border:1px solid currentColor;letter-spacing:.02em}
-.qrow .verdict .tag.spam,.qrow .verdict .tag.likely_spam{color:var(--danger)}
-.qrow .verdict .tag.porn_bot{color:var(--violet)}
-.qrow .verdict .tag.uncertain{color:var(--fg-3)}
-.qrow .verdict .tag.legit{color:var(--ok)}
-.qrow .verdict .bar{width:80px;height:2px;background:var(--card-hi);border-radius:1px;overflow:hidden}
-.qrow .verdict .bar i{display:block;height:100%;background:currentColor;border-radius:1px}
-.qrow .verdict.spam,.qrow .verdict.likely_spam{color:var(--danger)}
-.qrow .verdict.porn_bot{color:var(--violet)}
-.qrow .verdict.uncertain{color:var(--fg-3)}
-.qrow .verdict.legit{color:var(--ok)}
-.qrow .verdict .pct{font-size:11.5px;color:var(--fg-2);font-variant-numeric:tabular-nums;
-  font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
-.qrow .rep{font-size:12.5px;color:var(--fg-2);font-variant-numeric:tabular-nums}
-.qrow .rep .gt3{color:var(--ok);font-weight:600}
+/* Confidence cell — number on top, fat bar below */
+.qrow .conf{display:flex;flex-direction:column;gap:5px;align-items:flex-start;min-width:90px}
+.qrow .conf .pct{font-size:14px;color:var(--fg);font-weight:600;font-variant-numeric:tabular-nums;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;line-height:1}
+.qrow .conf .pct .lbl{font-size:9.5px;color:var(--fg-3);margin-left:4px;font-weight:500;letter-spacing:.05em;text-transform:uppercase;font-family:inherit}
+.qrow .conf .bar{width:96px;height:4px;background:var(--card-hi);border-radius:2px;overflow:hidden;position:relative}
+.qrow .conf .bar i{display:block;height:100%;background:var(--ec,var(--fg-3));border-radius:2px;transition:width .3s ease}
+/* Reporters cell — chip when ≥3, muted text otherwise */
+.qrow .rep{font-size:12px;color:var(--fg-3);font-variant-numeric:tabular-nums;text-align:right}
+.qrow .rep .chip-ok{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;
+  border-radius:999px;color:var(--ok);border:1px solid color-mix(in srgb,var(--ok) 40%,transparent);
+  background:color-mix(in srgb,var(--ok) 8%,transparent);font-weight:600;font-size:11.5px;letter-spacing:.02em}
 .qrow .acts{display:flex;gap:6px;flex-shrink:0}
 
 /* Locked state */
@@ -177,17 +235,24 @@ input::placeholder{color:var(--fg-4)}
 
 @media (max-width:880px){
   .wrap{padding:18px 18px 48px}
-  .qrow{grid-template-columns:22px 36px 1fr 90px auto;gap:10px;padding:10px 12px}
-  .qrow .verdict{display:none}
-  .qrow .verdict.compact{display:flex;flex-direction:row;align-items:center;gap:6px}
-  .qrow .rep{font-size:11.5px}
+  .qrow{grid-template-columns:22px 36px 1fr 80px auto;gap:10px;padding:10px 12px 10px 14px}
+  .qrow .conf{min-width:70px}
+  .qrow .conf .bar{width:70px}
+  .qrow .rep{display:none}
   .lrow{grid-template-columns:1fr;gap:4px;padding:10px 12px}
   .lrow.head{display:none}
 }
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important}}
 `;
 
 const LOGO_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg>`;
 const LOCK_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`;
+const ICON_AUTO = `<svg class="ic-a" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M12 3a9 9 0 0 1 0 18" fill="currentColor"/></svg>`;
+const ICON_LIGHT = `<svg class="ic-l" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>`;
+const ICON_DARK = `<svg class="ic-d" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>`;
+
+const THEME_BOOT = `(function(){try{var t=localStorage.getItem('mxga_theme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`;
+const THEME_TOGGLE_JS = `window.__mxgaTheme=function(){var d=document.documentElement;var cur=d.getAttribute('data-theme');var next=cur===null||cur===''?'light':cur==='light'?'dark':null;try{if(next){d.setAttribute('data-theme',next);localStorage.setItem('mxga_theme',next)}else{d.removeAttribute('data-theme');localStorage.removeItem('mxga_theme')}}catch(e){}};`;
 
 const SCRIPT = String.raw`
 (function(){
@@ -207,13 +272,19 @@ const SCRIPT = String.raw`
   function key(a){return (a.x_user_id||'')+'|'+a.handle}
   function api(p,o){return fetch(p,Object.assign({},o||{},{headers:Object.assign({'x-admin-token':TOK},(o&&o.headers)||{})}))}
 
+  function themeBtnHtml(){
+    return '<button class="theme-btn" type="button" onclick="window.__mxgaTheme()" aria-label="切换亮/暗主题" title="auto → light → dark">'
+      + ${JSON.stringify(ICON_AUTO)} + ${JSON.stringify(ICON_LIGHT)} + ${JSON.stringify(ICON_DARK)}
+      + '</button>';
+  }
+
   function renderShell(){
     if(!TOK){renderLocked();return}
     $('app').innerHTML=
       '<div class="bar">'
       +'<div><h1>'+ ${JSON.stringify(LOGO_SVG)} +'<span>'+ ${JSON.stringify(BRAND.acronym)} +' · 审核台 · 守门员</span></h1>'
       +'<div class="sub">守门员才能进 · 通过 = 进公榜 · 驳回 / 移除 = 不公开 · 规则见 <a href="'+GH+'/blob/main/docs/GOVERNANCE.md" target="_blank">GOVERNANCE</a></div></div>'
-      +'<div class="auth"><span class="ok">已认证</span><button class="btn sm" onclick="window.__xss.logout()">退出</button></div>'
+      +'<div class="right"><span class="ok">已认证</span><button class="btn sm" onclick="window.__xss.logout()">退出</button>'+themeBtnHtml()+'</div>'
       +'</div>'
       +'<div class="tabs">'
       +'<button class="on" data-v="queue" onclick="window.__xss.tab(\'queue\')">待审队列 <span class="count" id="cQ">—</span></button>'
@@ -231,6 +302,7 @@ const SCRIPT = String.raw`
       +'<input id="t" type="password" autocomplete="off" placeholder="xss_…" />'
       +'<button class="btn primary" type="submit">解锁</button>'
       +'</form>'
+      +'<div style="margin-top:18px">'+themeBtnHtml()+'</div>'
       +'</div></div>';
     setTimeout(function(){var t=$('t');if(t)t.focus()},50);
   }
@@ -281,7 +353,7 @@ const SCRIPT = String.raw`
           +chip('uncertain','uncertain')
           +chip('legit','legit')
         +'</div>'
-        +'<div class="right"><label class="status">排序</label>'
+        +'<div class="r"><label class="status">排序</label>'
           +'<select id="sort">'
             +'<option value="severity"'+(sort==='severity'?' selected':'')+'>风险等级 ↓</option>'
             +'<option value="conf_desc"'+(sort==='conf_desc'?' selected':'')+'>AI 置信 ↓</option>'
@@ -316,22 +388,28 @@ const SCRIPT = String.raw`
       var fb=E((a.handle||'?').slice(0,1).toUpperCase());
       var reps=a.reporters||0;
       var lbl=a.verdict_label||'uncertain';
-      return '<div class="qrow'+(sel.has(k)?' sel':'')+'" data-k="'+E(k)+'">'
+      // Verdict inline label as a small uppercase marker right of name
+      var vlbl='<span class="vlbl">'+E(lbl)+'</span>';
+      // Reporters: chip when ≥3, muted otherwise
+      var repHtml=reps>=3
+        ? '<span class="chip-ok">'+reps+' 人 ✓</span>'
+        : '<span>'+reps+' 人</span>';
+      return '<div class="qrow '+E(lbl)+(sel.has(k)?' sel':'')+'" data-k="'+E(k)+'">'
         +'<input type="checkbox"'+(sel.has(k)?' checked':'')+' aria-label="选中 @'+E(a.handle)+'">'
         +'<div class="av"><img src="'+E(av)+'" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement(\'span\'),{textContent:\''+fb+'\'}))"></div>'
         +'<div class="who">'
-          +'<div class="name">'+E(a.display_name||('@'+a.handle))+'</div>'
+          +'<div class="name">'+E(a.display_name||('@'+a.handle))+vlbl+'</div>'
           +'<div class="sub">'
             +'<a href="https://x.com/'+E(a.handle)+'" target="_blank" rel="noopener">@'+E(a.handle)+' ↗</a>'
             +(a.x_user_id&&a.x_user_id!==a.handle?'<span class="sep">·</span><span>'+E(a.x_user_id)+'</span>':'')
             +'<span class="sep">·</span><span>'+ago(a.last_scored)+'</span>'
           +'</div>'
         +'</div>'
-        +'<div class="verdict '+E(lbl)+'">'
-          +'<span class="tag '+E(lbl)+'">'+E(lbl)+'</span>'
-          +'<div style="display:flex;align-items:center;gap:6px"><div class="bar"><i style="width:'+conf+'%"></i></div><span class="pct">'+conf+'%</span></div>'
+        +'<div class="conf">'
+          +'<div class="pct">'+conf+'%<span class="lbl">conf</span></div>'
+          +'<div class="bar"><i style="width:'+conf+'%"></i></div>'
         +'</div>'
-        +'<div class="rep">'+(reps>=3?'<span class="gt3">'+reps+' 人 ✓</span>':(reps+' 人'))+'</div>'
+        +'<div class="rep">'+repHtml+'</div>'
         +'<div class="acts">'
           +'<button class="btn sm primary" data-act="approve">通过</button>'
           +'<button class="btn sm" data-act="reject">驳回</button>'
@@ -438,13 +516,14 @@ export function adminHtml(): string {
   return `<!doctype html><html lang="zh"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="color-scheme" content="dark">
+<meta name="color-scheme" content="dark light">
 <meta name="robots" content="noindex,nofollow">
 <title>${BRAND.acronym} · 审核台</title>
+<script>${THEME_BOOT}</script>
 <style>${CSS}</style>
 </head><body>
 <div class="wrap"><div id="app" aria-live="polite"><div class="locked"><div class="card"><div class="lock"></div><h2>加载中…</h2></div></div></div></div>
 <div class="wrap" style="padding-top:0;color:var(--fg-4);font-size:11.5px;display:flex;justify-content:space-between"><span id="status"></span><span>v1 · /admin</span></div>
-<script>${SCRIPT}</script>
+<script>${THEME_TOGGLE_JS}${SCRIPT}</script>
 </body></html>`;
 }

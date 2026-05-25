@@ -1,6 +1,7 @@
 @import "tailwindcss";
 
-/* Design tokens — base-ui inspired, kept in sync with
+/* Design tokens — base-ui inspired, dark default, light via media query,
+   overridable by html[data-theme="light"|"dark"]. Kept in sync with
    services/edge/src/pages/_layout.ts and popup/style.css. */
 @theme {
   --color-bg: #0a0a0a;
@@ -25,17 +26,62 @@
   --radius-lg: 10px;
 }
 
-:root { color-scheme: dark; }
+:root { color-scheme: dark light; }
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --color-bg: #ffffff;
+    --color-bg-2: #f9fafb;
+    --color-fg: #09090b;
+    --color-fg-2: #3f3f46;
+    --color-fg-3: #71717a;
+    --color-fg-4: #a1a1aa;
+    --color-card: rgb(0 0 0 / 0.025);
+    --color-card-hi: rgb(0 0 0 / 0.055);
+    --color-border: rgb(0 0 0 / 0.08);
+    --color-border-2: rgb(0 0 0 / 0.18);
+    --color-accent: #0284c7;
+    --color-accent-soft: rgb(2 132 199 / 0.1);
+    --color-danger: #dc2626;
+    --color-danger-soft: rgb(220 38 38 / 0.08);
+    --color-warn: #d97706;
+    --color-ok: #15803d;
+    --color-violet: #7e22ce;
+  }
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --color-bg: #ffffff;
+  --color-bg-2: #f9fafb;
+  --color-fg: #09090b;
+  --color-fg-2: #3f3f46;
+  --color-fg-3: #71717a;
+  --color-fg-4: #a1a1aa;
+  --color-card: rgb(0 0 0 / 0.025);
+  --color-card-hi: rgb(0 0 0 / 0.055);
+  --color-border: rgb(0 0 0 / 0.08);
+  --color-border-2: rgb(0 0 0 / 0.18);
+  --color-accent: #0284c7;
+  --color-accent-soft: rgb(2 132 199 / 0.1);
+  --color-danger: #dc2626;
+  --color-danger-soft: rgb(220 38 38 / 0.08);
+  --color-warn: #d97706;
+  --color-ok: #15803d;
+  --color-violet: #7e22ce;
+}
 
 html, body { margin: 0; }
 body {
   color: var(--color-fg);
-  background: linear-gradient(180deg, rgb(56 189 248 / 0.04), transparent 360px), var(--color-bg);
+  background: var(--color-bg);
   font: 14px/1.55 ui-sans-serif, -apple-system, BlinkMacSystemFont, "Inter",
         "SF Pro Text", "PingFang SC", "Microsoft YaHei", "Segoe UI",
         system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   font-feature-settings: "cv11", "ss03";
+  transition: background-color .15s ease, color .15s ease;
 }
 
 :focus { outline: none; }

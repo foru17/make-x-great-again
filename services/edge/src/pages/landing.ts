@@ -67,7 +67,7 @@ section.block h2{font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;
 .stat .n{font-size:36px;font-weight:600;letter-spacing:-.025em;font-variant-numeric:tabular-nums;
   line-height:1.05;color:var(--fg);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 .stat .n.skel{display:inline-block;width:64px;height:38px;background:linear-gradient(90deg,
-  rgba(255,255,255,.04),rgba(255,255,255,.1),rgba(255,255,255,.04));
+  var(--card),var(--card-hi),var(--card));
   background-size:200% 100%;animation:shim 1.4s ease-in-out infinite;border-radius:var(--r-sm);vertical-align:middle}
 @keyframes shim{0%{background-position:200% 0}100%{background-position:-200% 0}}
 .stat .lbl{font-size:12px;color:var(--fg-3);margin-top:10px;letter-spacing:.01em}
@@ -86,7 +86,7 @@ section.block h2{font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;
 @keyframes slideIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
 .install-note ol{margin:8px 0 0 20px}
 .install-note li{margin:5px 0;color:var(--fg-2)}
-.install-note code{background:rgba(255,255,255,.06);padding:1px 6px;border-radius:var(--r-sm);
+.install-note code{background:var(--card-hi);padding:1px 6px;border-radius:var(--r-sm);
   font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--fg)}
 
 @media (max-width:760px){
