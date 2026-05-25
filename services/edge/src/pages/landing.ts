@@ -3,22 +3,32 @@
 // Shield) is shipped today; the rest are tagged Coming soon.
 // Visual: base-ui inspired — monochrome canvas, type-led hierarchy.
 import { BRAND } from "../brand";
-import { LINKS, layout } from "./_layout";
+import { ICONS, LINKS, layout } from "./_layout";
 
 const CSS = `
-/* Hero */
-.hero{padding:96px 0 72px;max-width:780px}
+/* Hero — Claude-inspired warm display: serif h1 for character, X glyph
+   in the eyebrow chip to anchor "this is for X" instantly */
+.hero{padding:80px 0 36px;max-width:820px}
 .hero .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:600;
-  letter-spacing:.14em;text-transform:uppercase;color:var(--fg-3);padding:5px 10px;
-  border:1px solid var(--border);border-radius:999px;margin-bottom:24px}
+  letter-spacing:.14em;text-transform:uppercase;color:var(--fg-2);padding:6px 12px;
+  border:1px solid var(--border-strong);border-radius:999px;margin-bottom:26px;
+  background:var(--card);box-shadow:var(--shadow-card)}
 .hero .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);
-  box-shadow:0 0 0 0 rgba(16,185,129,.45);animation:pulse 2.4s ease-out infinite}
-@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(16,185,129,.45)}100%{box-shadow:0 0 0 6px rgba(16,185,129,0)}}
-.hero h1{font-size:64px;line-height:1.02;letter-spacing:-.04em;font-weight:600;
-  margin:0 0 22px;color:var(--fg)}
-.hero h1 .sub{display:block;color:var(--fg-3);font-weight:500;letter-spacing:-.03em}
+  box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 50%,transparent);
+  animation:pulse 2.4s ease-out infinite}
+.hero .eyebrow .x{width:11px;height:11px;color:var(--fg)}
+.hero .eyebrow .sep{color:var(--fg-4);margin:0 1px}
+@keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 50%,transparent)}100%{box-shadow:0 0 0 6px transparent}}
+.hero h1{font-family:var(--font-serif);font-size:68px;line-height:1.04;
+  letter-spacing:-.025em;font-weight:500;margin:0 0 22px;color:var(--fg)}
+.hero h1 .sub{display:block;color:var(--fg-3);font-weight:400;letter-spacing:-.02em;
+  font-style:italic;font-size:.85em;margin-top:4px}
+.hero h1 .xmark{display:inline-flex;width:.78em;height:.78em;vertical-align:-0.06em;
+  margin:0 .04em;color:var(--fg)}
+.hero h1 .xmark svg{width:100%;height:100%}
+.hero .eyebrow .x svg{width:100%;height:100%}
 .hero .lede{font-size:17px;color:var(--fg-2);max-width:620px;margin-bottom:32px;
-  line-height:1.6;letter-spacing:-.005em}
+  line-height:1.65;letter-spacing:-.005em}
 .hero .ctas{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
 .hero .meta{font-size:12.5px;color:var(--fg-4);display:flex;flex-wrap:wrap;
   gap:6px 14px;align-items:center}
@@ -80,9 +90,24 @@ section.block h2{font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;
 .stats-foot .pip i{width:5px;height:5px;border-radius:50%;background:var(--ok);
   box-shadow:0 0 0 0 rgba(16,185,129,.55);animation:pulse 2.4s ease-out infinite}
 
-/* Live feed — most recent 10 confirmed spam, slides in from the top */
+/* FEED block — sits directly under hero, no big section header.
+   feed-head is a quiet eyebrow + "see all" link, then the feed itself. */
+.feed-block{padding:8px 0 32px;max-width:820px}
+.feed-head{display:flex;align-items:center;justify-content:space-between;gap:14px;
+  margin-bottom:12px;padding:0 2px}
+.feed-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--fg-3)}
+.feed-eyebrow .sep{color:var(--fg-4);margin:0 2px;opacity:.7}
+.feed-eyebrow .live-dot{width:6px;height:6px;border-radius:50%;background:var(--ok);
+  box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 50%,transparent);
+  animation:pulse 2.2s ease-out infinite}
+.feed-more{font-size:12.5px;color:var(--fg-2);transition:color .15s}
+.feed-more:hover{color:var(--accent)}
+
+/* Live feed — most recent 6 confirmed spam, slides in from the top */
 .feed{display:flex;flex-direction:column;gap:1px;background:var(--border);
-  border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+  border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;
+  box-shadow:var(--shadow-card)}
 .feed-row{position:relative;display:grid;grid-template-columns:28px 1fr auto auto auto;
   gap:12px;align-items:center;padding:10px 16px 10px 18px;background:var(--bg);
   transition:background .15s}
@@ -126,13 +151,7 @@ section.block h2{font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;
   100%{background-position:-200% 0;opacity:0}
 }
 .feed-foot{margin-top:14px;font-size:12px;color:var(--fg-3);display:flex;
-  align-items:center;gap:10px;flex-wrap:wrap}
-.feed-foot .live{display:inline-flex;align-items:center;gap:6px}
-.feed-foot .live i{width:6px;height:6px;border-radius:50%;background:var(--ok);
-  box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 50%,transparent);
-  animation:livePulse 2.2s ease-out infinite}
-@keyframes livePulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 50%,transparent)}
-  100%{box-shadow:0 0 0 6px transparent}}
+  align-items:center;gap:10px;flex-wrap:wrap;padding:0 2px}
 .feed-foot strong{color:var(--fg);font-weight:600;font-variant-numeric:tabular-nums}
 .feed-foot a{color:var(--fg)}.feed-foot a:hover{color:var(--accent)}
 .feed-skel{padding:60px 20px;text-align:center;color:var(--fg-3);font-size:12.5px}
@@ -180,8 +199,12 @@ const ICON_USER = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 
 const HERO = `
 <section class="hero">
-  <span class="eyebrow"><span class="dot" aria-hidden="true"></span>${BRAND.acronym}<span style="margin:0 8px;color:var(--fg-4)">·</span>开源 ${BRAND.license}</span>
-  <h1>${BRAND.name}<br><span class="sub">让 X 值得刷。</span></h1>
+  <span class="eyebrow">
+    <span class="dot" aria-hidden="true"></span>
+    <span class="x">${ICONS.X}</span>
+    ${BRAND.acronym}<span class="sep">·</span>专为 X 设计<span class="sep">·</span>开源 ${BRAND.license}
+  </span>
+  <h1>Make <span class="xmark">${ICONS.X}</span> Great Again<br><span class="sub">让 X 值得刷。</span></h1>
   <p class="lede">装上 Chrome 就能用。浏览 X 时 AI 替你拦垃圾、识水军、汇热推——无感运行，零数据上传，完全开源。</p>
   <div class="ctas">
     <a class="btn primary" href="${LINKS.RELEASE_URL}" id="installBtn" aria-label="免费装到 Chrome">${ICON_DOWNLOAD}<span>免费装到 Chrome</span></a>
@@ -266,7 +289,25 @@ const TRUST = `
 </section>
 `;
 
-const LIVE = `
+// FEED sits directly under the hero — for the "this thing is working
+// RIGHT NOW" social-proof beat. No section h2: just a quiet eyebrow that
+// chains the eye from the install CTA into the live data.
+const FEED = `
+<section class="feed-block">
+  <div class="feed-head">
+    <span class="feed-eyebrow"><i class="live-dot" aria-hidden="true"></i>实时拦下<span class="sep">·</span>20s 同步</span>
+    <a class="feed-more" href="/list">完整公榜 →</a>
+  </div>
+  <div class="feed" id="feed" role="list"><div class="feed-skel">连接中…</div></div>
+  <p class="feed-foot">
+    <span id="feedAgo">连接中…</span>
+    <span class="sep">·</span>
+    <span>本次访问看到 <strong id="feedAdded">0</strong> 条新增</span>
+  </p>
+</section>
+`;
+
+const STATS = `
 <section class="block">
   <h2>正在跑的数据，不是 PPT</h2>
   <div class="stats">
@@ -276,18 +317,6 @@ const LIVE = `
   </div>
   <p class="stats-foot">
     <span class="pip"><i aria-hidden="true"></i><span id="sAgo">60 秒同步一次</span></span>
-    <span class="sep">·</span>
-    <a href="/list">完整公榜 →</a>
-  </p>
-</section>
-
-<section class="block">
-  <h2>最近拦下的 10 个</h2>
-  <div class="feed" id="feed" role="list"><div class="feed-skel">连接中…</div></div>
-  <p class="feed-foot">
-    <span class="live"><i aria-hidden="true"></i><span id="feedAgo">实时同步</span></span>
-    <span class="sep">·</span>
-    <span>已确认 <strong id="feedAdded">0</strong> 条新增（本次会话）</span>
     <span class="sep">·</span>
     <a href="/list">完整公榜 →</a>
   </p>
@@ -375,8 +404,8 @@ const SCRIPT = `
   }
 
   function loadInitial(){
-    return fetch('/v1/list?limit=10').then(function(r){return r.json()}).then(function(j){
-      rows=(j.list||[]).slice(0,10);
+    return fetch('/v1/list?limit=6').then(function(r){return r.json()}).then(function(j){
+      rows=(j.list||[]).slice(0,6);
       latestAt=j.latestAt;
       lastPollAt=Date.now();
       renderInitial();
@@ -388,12 +417,12 @@ const SCRIPT = `
 
   function pollFeed(){
     if(!latestAt){return loadInitial()}
-    fetch('/v1/list?limit=10&since='+latestAt).then(function(r){return r.json()}).then(function(j){
+    fetch('/v1/list?limit=6&since='+latestAt).then(function(r){return r.json()}).then(function(j){
       lastPollAt=Date.now();
       var fresh=(j.list||[]).filter(function(r){return !rows.some(function(x){return key(x)===key(r)})});
       if(!fresh.length){feedAgo.textContent='无新增 · '+agoLong(lastPollAt);return}
       // Prepend new rows (newest first, animated). Cap at 10 total.
-      var added=fresh.slice(0,10);
+      var added=fresh.slice(0,6);
       latestAt=j.latestAt||latestAt;
       addedThisSession+=added.length;
       feedAddedEl.textContent=addedThisSession;
@@ -405,8 +434,8 @@ const SCRIPT = `
       });
       feedEl.insertBefore(frag,feedEl.firstChild);
       // Trim tail beyond 10
-      while(feedEl.childElementCount>10){feedEl.removeChild(feedEl.lastElementChild)}
-      rows=added.concat(rows).slice(0,10);
+      while(feedEl.childElementCount>6){feedEl.removeChild(feedEl.lastElementChild)}
+      rows=added.concat(rows).slice(0,6);
       feedAgo.innerHTML='<strong>+'+added.length+' 新</strong> · '+agoLong(lastPollAt);
     }).catch(function(){feedAgo.textContent='网络错误 · '+agoLong(lastPollAt)})
   }
@@ -427,7 +456,7 @@ export function landingHtml(): string {
     current: "home",
     css: CSS,
     head: `<meta name="description" content="${BRAND.name} — 一个被动的 X(Twitter) 旁路扩展：Spam 净化 + KOL 信号分 + 摘要 + 社交图谱。开源 ${BRAND.license}，不收集 PII。">`,
-    body: HERO + PILLARS + TRUST + LIVE,
+    body: HERO + FEED + PILLARS + TRUST + STATS,
     script: SCRIPT,
   });
 }

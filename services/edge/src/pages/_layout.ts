@@ -11,85 +11,93 @@ import { BRAND } from "../brand";
 const GH_REPO = BRAND.repo;
 const RELEASE_URL = BRAND.release;
 
-/** Design tokens — dark mode defaults, light mode under media query, both
- *  overridable via [data-theme="light"|"dark"] on <html>. */
+/** Design tokens — Claude-inspired warm palette:
+ *  dark mode = slightly warm near-black; light mode = cream/off-white
+ *  (#fafaf7) instead of pure white; soft shadow tokens on cards instead
+ *  of bare 1px borders. Overridable via [data-theme="light"|"dark"]. */
 const CSS = `:root{
   color-scheme:dark light;
-  /* Dark mode defaults */
-  --bg:#0a0a0a;
-  --bg-2:#111113;
-  --fg:#fafafa;
-  --fg-2:#a1a1aa;
-  --fg-3:#71717a;
-  --fg-4:#52525b;
-  --border:rgba(255,255,255,.07);
-  --border-strong:rgba(255,255,255,.14);
-  --card:rgba(255,255,255,.025);
-  --card-hi:rgba(255,255,255,.05);
+  /* Dark mode defaults — warmer than pure #0a0a0a */
+  --bg:#0b0a09;
+  --bg-2:#13110f;
+  --fg:#fafaf7;
+  --fg-2:#a8a59f;
+  --fg-3:#76736d;
+  --fg-4:#56534e;
+  --border:rgba(255,250,235,.07);
+  --border-strong:rgba(255,250,235,.14);
+  --card:rgba(255,250,235,.025);
+  --card-hi:rgba(255,250,235,.055);
   --accent:#38bdf8;
-  --accent-soft:rgba(56,189,248,.12);
+  --accent-soft:rgba(56,189,248,.13);
   --danger:#ef4444;
-  --danger-soft:rgba(239,68,68,.08);
+  --danger-soft:rgba(239,68,68,.09);
   --warn:#f59e0b;
   --ok:#10b981;
   --violet:#a855f7;
-  --shadow-up:0 1px 0 rgba(255,255,255,.04) inset;
-  --grad-top:linear-gradient(180deg,rgba(56,189,248,.04),transparent 360px);
-  --r-sm:4px; --r:6px; --r-lg:10px;
+  --shadow-card:0 1px 0 rgba(255,250,235,.04) inset, 0 1px 3px rgba(0,0,0,.25);
+  --shadow-elev:0 1px 3px rgba(0,0,0,.3), 0 8px 24px -6px rgba(0,0,0,.35);
+  --grad-top:linear-gradient(180deg,rgba(56,189,248,.04),transparent 420px);
+  --r-sm:4px; --r:6px; --r-lg:10px; --r-xl:14px;
+  --font-serif:'Copernicus','Source Serif Pro',ui-serif,Georgia,'Times New Roman',serif;
 }
 
-/* Light mode — only when system says light AND user hasn't forced dark */
+/* Light mode — Claude-style warm cream, only when system says light AND
+   user hasn't forced dark */
 @media (prefers-color-scheme:light){
   :root:not([data-theme="dark"]){
     color-scheme:light;
-    --bg:#ffffff;
-    --bg-2:#f9fafb;
-    --fg:#09090b;
-    --fg-2:#3f3f46;
-    --fg-3:#71717a;
-    --fg-4:#a1a1aa;
-    --border:rgba(0,0,0,.08);
-    --border-strong:rgba(0,0,0,.18);
-    --card:rgba(0,0,0,.025);
-    --card-hi:rgba(0,0,0,.055);
+    --bg:#fafaf7;
+    --bg-2:#f3f1ec;
+    --fg:#1a1813;
+    --fg-2:#4a4640;
+    --fg-3:#807a70;
+    --fg-4:#a8a39a;
+    --border:rgba(60,50,30,.09);
+    --border-strong:rgba(60,50,30,.18);
+    --card:rgba(255,255,255,.7);
+    --card-hi:rgba(255,255,255,.95);
     --accent:#0284c7;
     --accent-soft:rgba(2,132,199,.1);
-    --danger:#dc2626;
-    --danger-soft:rgba(220,38,38,.08);
-    --warn:#d97706;
+    --danger:#b91c1c;
+    --danger-soft:rgba(185,28,28,.06);
+    --warn:#a16207;
     --ok:#15803d;
     --violet:#7e22ce;
-    --shadow-up:0 1px 0 rgba(0,0,0,.04) inset;
-    --grad-top:linear-gradient(180deg,rgba(2,132,199,.025),transparent 360px);
+    --shadow-card:0 1px 2px rgba(60,40,10,.04), 0 4px 16px -6px rgba(60,40,10,.05);
+    --shadow-elev:0 1px 3px rgba(60,40,10,.06), 0 12px 32px -10px rgba(60,40,10,.1);
+    --grad-top:linear-gradient(180deg,rgba(180,140,60,.04),transparent 420px);
   }
 }
 
 /* User force-light (regardless of system) */
 :root[data-theme="light"]{
   color-scheme:light;
-  --bg:#ffffff; --bg-2:#f9fafb; --fg:#09090b;
-  --fg-2:#3f3f46; --fg-3:#71717a; --fg-4:#a1a1aa;
-  --border:rgba(0,0,0,.08); --border-strong:rgba(0,0,0,.18);
-  --card:rgba(0,0,0,.025); --card-hi:rgba(0,0,0,.055);
+  --bg:#fafaf7; --bg-2:#f3f1ec;
+  --fg:#1a1813; --fg-2:#4a4640; --fg-3:#807a70; --fg-4:#a8a39a;
+  --border:rgba(60,50,30,.09); --border-strong:rgba(60,50,30,.18);
+  --card:rgba(255,255,255,.7); --card-hi:rgba(255,255,255,.95);
   --accent:#0284c7; --accent-soft:rgba(2,132,199,.1);
-  --danger:#dc2626; --danger-soft:rgba(220,38,38,.08);
-  --warn:#d97706; --ok:#15803d; --violet:#7e22ce;
-  --shadow-up:0 1px 0 rgba(0,0,0,.04) inset;
-  --grad-top:linear-gradient(180deg,rgba(2,132,199,.025),transparent 360px);
+  --danger:#b91c1c; --danger-soft:rgba(185,28,28,.06);
+  --warn:#a16207; --ok:#15803d; --violet:#7e22ce;
+  --shadow-card:0 1px 2px rgba(60,40,10,.04), 0 4px 16px -6px rgba(60,40,10,.05);
+  --shadow-elev:0 1px 3px rgba(60,40,10,.06), 0 12px 32px -10px rgba(60,40,10,.1);
+  --grad-top:linear-gradient(180deg,rgba(180,140,60,.04),transparent 420px);
 }
 
-/* User force-dark (regardless of system) — keep :root defaults explicitly */
+/* User force-dark (regardless of system) — explicit dark restore */
 :root[data-theme="dark"]{
   color-scheme:dark;
-  --bg:#0a0a0a; --bg-2:#111113; --fg:#fafafa;
-  --fg-2:#a1a1aa; --fg-3:#71717a; --fg-4:#52525b;
-  --border:rgba(255,255,255,.07); --border-strong:rgba(255,255,255,.14);
-  --card:rgba(255,255,255,.025); --card-hi:rgba(255,255,255,.05);
-  --accent:#38bdf8; --accent-soft:rgba(56,189,248,.12);
-  --danger:#ef4444; --danger-soft:rgba(239,68,68,.08);
+  --bg:#0b0a09; --bg-2:#13110f;
+  --fg:#fafaf7; --fg-2:#a8a59f; --fg-3:#76736d; --fg-4:#56534e;
+  --border:rgba(255,250,235,.07); --border-strong:rgba(255,250,235,.14);
+  --card:rgba(255,250,235,.025); --card-hi:rgba(255,250,235,.055);
+  --accent:#38bdf8; --accent-soft:rgba(56,189,248,.13);
+  --danger:#ef4444; --danger-soft:rgba(239,68,68,.09);
   --warn:#f59e0b; --ok:#10b981; --violet:#a855f7;
-  --shadow-up:0 1px 0 rgba(255,255,255,.04) inset;
-  --grad-top:linear-gradient(180deg,rgba(56,189,248,.04),transparent 360px);
+  --shadow-card:0 1px 0 rgba(255,250,235,.04) inset, 0 1px 3px rgba(0,0,0,.25);
+  --shadow-elev:0 1px 3px rgba(0,0,0,.3), 0 8px 24px -6px rgba(0,0,0,.35);
+  --grad-top:linear-gradient(180deg,rgba(56,189,248,.04),transparent 420px);
 }
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -147,8 +155,8 @@ a:focus-visible,button:focus-visible{border-radius:var(--r)}
 .btn.sm{padding:6px 11px;font-size:12.5px;border-radius:var(--r-sm)}
 .btn svg{width:15px;height:15px;flex-shrink:0}
 
-/* Card */
-.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg)}
+/* Card — soft elevation, Claude-style */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-card)}
 
 /* Verdict tag */
 .tag{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;
@@ -176,7 +184,15 @@ a:focus-visible,button:focus-visible{border-radius:var(--r)}
 }
 `;
 
-const LOGO_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg>`;
+/** X logo (the X.com / Twitter wordmark glyph) — used in brand + hero
+ *  to anchor "this is for X". Official X mark is a flat black square with
+ *  a stylised crossed X; here we render just the X stroke at currentColor
+ *  so it tints with the foreground. */
+const X_SVG = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`;
+const SHIELD_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg>`;
+/** Brand mark: a shield with the X glyph nested inside — signals
+ *  "spam shield, for X". */
+const LOGO_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z"/><path d="M9.4 9 12 11.6 14.6 9M9.4 14.4 12 11.8 14.6 14.4" stroke-linecap="round"/></svg>`;
 const ICON_AUTO = `<svg class="icon-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v18M12 3a9 9 0 0 1 0 18" fill="currentColor"/></svg>`;
 const ICON_LIGHT = `<svg class="icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>`;
 const ICON_DARK = `<svg class="icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/></svg>`;
@@ -246,3 +262,4 @@ ${o.body}
 }
 
 export const LINKS = { GH_REPO, RELEASE_URL };
+export const ICONS = { X: X_SVG, SHIELD: SHIELD_SVG };
