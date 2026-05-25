@@ -218,13 +218,23 @@ app.post("/v1/classify", async (c) => {
   }
   const verdict = await classify(c.env, s);
   const now = Date.now();
+  // LUO-32 Wave 11 L2: high-confidence legit verdicts are cached but kept
+  // out of the maintainer queue. /admin/queue still only selects
+  // status='auto_pending_review', so auto_legit rows are invisible there
+  // but the next /v1/classify hit still gets a free cache return.
+  const writeStatus =
+    verdict.label === "legit" && verdict.confidence >= 0.85 ? "auto_legit" : "auto_pending_review";
   await c.env.DB.prepare(
     `INSERT INTO accounts (x_user_id,handle,display_name,avatar_url,verdict_label,confidence,reasons,model,status,source,signals_hash,first_seen,last_scored)
-     VALUES (?,?,?,?,?,?,?,?, 'auto_pending_review','auto_scan', ?, ?, ?)
+     VALUES (?,?,?,?,?,?,?,?, ?,'auto_scan', ?, ?, ?)
      ON CONFLICT(x_user_id,handle) DO UPDATE SET
        verdict_label=excluded.verdict_label, confidence=excluded.confidence, reasons=excluded.reasons,
        model=excluded.model, signals_hash=excluded.signals_hash, last_scored=excluded.last_scored,
-       avatar_url=COALESCE(excluded.avatar_url, accounts.avatar_url)`,
+       avatar_url=COALESCE(excluded.avatar_url, accounts.avatar_url),
+       status=CASE
+                WHEN accounts.status IN ('human_confirmed','rejected','removed') THEN accounts.status
+                ELSE excluded.status
+              END`,
   )
     .bind(
       uid,
@@ -235,12 +245,13 @@ app.post("/v1/classify", async (c) => {
       verdict.confidence,
       JSON.stringify(verdict.reasons),
       c.env.LLM_API_MODEL,
+      writeStatus,
       h,
       now,
       now,
     )
     .run();
-  return c.json({ cached: false, record: { verdict, status: "auto_pending_review" } });
+  return c.json({ cached: false, record: { verdict, status: writeStatus } });
 });
 
 /**

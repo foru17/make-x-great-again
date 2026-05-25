@@ -441,12 +441,28 @@ export default defineContentScript({
         }
       }
 
-      // 3 + 4. New account → LLM (reply section: every replier; elsewhere only
-      //        heuristic-positive). In-flight + budget guard cost.
+      // 3 + 4. New account → LLM. Reply section lowers the heuristic
+      //        threshold but never bypasses it — old established accounts
+      //        with no promo language are short-circuited as likely-legit
+      //        WITHOUT spending an LLM call. This is the core fix for the
+      //        admin queue being flooded with established accounts that
+      //        happened to appear in reply zones (LUO-32 / Wave 11).
       if (inflight.has(key)) return;
       const h = heuristic(sig);
-      const wantAuto =
-        h.score >= AUTO_THRESHOLD || (settings.replyAuto && isReplyContext());
+      // Implicit trust: account > 2y old AND heuristic finds nothing
+      // suspicious (score < 0.15 = no promo/link/random handle / no low
+      // followers). Skip the LLM entirely; treat as quietly-clean.
+      const ageDays = sig.accountAgeDays;
+      const isEstablished = typeof ageDays === "number" && ageDays > 730;
+      if (isEstablished && h.score < 0.15) {
+        badgeFor(anchor, key, sig, null); // looks legit, manual check still available
+        return;
+      }
+      // Reply context lowers the bar (catches subtle bots in replies) but
+      // still honors heuristic; main timeline keeps the stricter 0.5.
+      const threshold =
+        settings.replyAuto && isReplyContext() ? 0.25 : AUTO_THRESHOLD;
+      const wantAuto = h.score >= threshold;
       if (!wantAuto) {
         badgeFor(anchor, key, sig, null); // clean-looking → manual check
         return;
