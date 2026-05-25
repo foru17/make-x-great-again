@@ -117,13 +117,30 @@ section.block h2{font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;
 .feed-more{font-size:12.5px;color:var(--fg-2);transition:color .15s}
 .feed-more:hover{color:var(--accent)}
 
-/* Live feed — most recent 6 confirmed spam, slides in from the top */
-.feed{display:flex;flex-direction:column;gap:1px;background:var(--border);
+/* Live feed — scoreboard style. Row index + monospace numerals + a slow
+   vertical scan-beam crossing the panel to evoke a "board that's running". */
+.feed{position:relative;display:flex;flex-direction:column;gap:1px;background:var(--border);
   border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;
-  box-shadow:var(--shadow-card)}
-.feed-row{position:relative;display:grid;grid-template-columns:28px 1fr auto auto auto;
+  box-shadow:var(--shadow-card);font-feature-settings:"tnum","cv11"}
+.feed::after{content:"";position:absolute;left:0;right:0;height:80px;pointer-events:none;
+  background:linear-gradient(180deg,transparent 0%,
+    color-mix(in srgb,var(--accent) 12%,transparent) 45%,
+    color-mix(in srgb,var(--accent) 20%,transparent) 50%,
+    color-mix(in srgb,var(--accent) 12%,transparent) 55%,transparent 100%);
+  animation:scan 6s ease-in-out infinite}
+@keyframes scan{
+  0%{top:-80px;opacity:0}
+  10%{opacity:.55}
+  90%{opacity:.55}
+  100%{top:100%;opacity:0}
+}
+@media (prefers-reduced-motion:reduce){.feed::after{display:none}}
+.feed-row{position:relative;display:grid;grid-template-columns:30px 28px 1fr auto auto auto;
   gap:12px;align-items:center;padding:10px 16px 10px 18px;background:var(--bg);
-  transition:background .15s}
+  transition:background .15s;z-index:1}
+.feed-row .idx{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:10.5px;font-weight:600;color:var(--fg-4);letter-spacing:.04em;
+  text-align:right}
 .feed-row::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
   background:var(--ec,transparent)}
 .feed-row.spam,.feed-row.likely_spam{--ec:var(--danger)}
@@ -149,19 +166,31 @@ section.block h2{font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;
   transition:background .15s,color .15s}
 .feed-row .x-link:hover{background:var(--card-hi);color:var(--fg)}
 .feed-row .x-link svg{width:13px;height:13px}
-/* New-row entrance animation */
-.feed-row.new{animation:feedIn .45s cubic-bezier(.22,.96,.36,1) both}
+/* New-row entrance animation — scoreboard split-flap inspired vertical flip */
+.feed-row.new{animation:feedIn .55s cubic-bezier(.22,1.18,.36,1) both;
+  transform-origin:50% 0%}
 @keyframes feedIn{
-  0%{opacity:0;transform:translateY(-16px)}
+  0%{opacity:0;transform:translateY(-22px) rotateX(-50deg)}
   60%{opacity:1}
   100%{opacity:1;transform:none}
 }
 .feed-row.new::after{content:"";position:absolute;inset:0;border-radius:0;
-  background:linear-gradient(90deg,transparent,var(--accent-soft),transparent);
-  background-size:200% 100%;animation:feedFlash .9s ease-out;pointer-events:none}
+  background:linear-gradient(90deg,transparent,
+    color-mix(in srgb,var(--accent) 22%,transparent),transparent);
+  background-size:200% 100%;animation:feedFlash 1.1s ease-out;pointer-events:none}
 @keyframes feedFlash{
-  0%{background-position:200% 0;opacity:.8}
+  0%{background-position:200% 0;opacity:1}
   100%{background-position:-200% 0;opacity:0}
+}
+/* Staggered cascade — when many new rows arrive together, ripple them */
+.feed-row.new:nth-child(2){animation-delay:.06s}
+.feed-row.new:nth-child(3){animation-delay:.12s}
+.feed-row.new:nth-child(4){animation-delay:.18s}
+.feed-row.new:nth-child(5){animation-delay:.24s}
+.feed-row.new:nth-child(6){animation-delay:.30s}
+@media (prefers-reduced-motion:reduce){
+  .feed-row.new{animation:none}
+  .feed-row.new::after{display:none}
 }
 .feed-foot{margin-top:14px;font-size:12px;color:var(--fg-3);display:flex;
   align-items:center;gap:10px;flex-wrap:wrap;padding:0 2px}
@@ -171,6 +200,7 @@ section.block h2{font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;
 
 @media (max-width:560px){
   .feed-row{grid-template-columns:24px 1fr auto auto;gap:8px;padding:9px 14px 9px 16px}
+  .feed-row .idx{display:none}
   .feed-row .av{width:24px;height:24px;font-size:10.5px}
   .feed-row .vlbl{display:none}
   .feed-row .x-link{display:none}
@@ -218,7 +248,7 @@ const HERO = `
     <span class="x">${ICONS.X}</span>
     ${BRAND.acronym}<span class="sep">·</span>专为 X 设计<span class="sep">·</span>开源 ${BRAND.license}
   </span>
-  <h1>Make <span class="xmark">${ICONS.X}</span> Great Again<br><span class="sub">让 X 值得刷。</span></h1>
+  <h1>Make <span class="xmark">${ICONS.X}</span> Great Again<br><span class="sub">让 X 再次伟大。</span></h1>
   <p class="lede">装上 Chrome 就能用。浏览 X 时 AI 替你拦垃圾、识水军、汇热推——无感运行，零数据上传，完全开源。</p>
   <div class="ctas">
     <a class="btn primary" href="${LINKS.RELEASE_URL}" id="installBtn" aria-label="免费装到 Chrome">${ICON_DOWNLOAD}<span>免费装到 Chrome</span></a>
@@ -402,11 +432,13 @@ const SCRIPT = `
 
   var EXT_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>';
 
-  function rowHtml(r,fresh){
+  function rowHtml(r,fresh,idx){
     var lbl=r.verdict_label||'uncertain';
     var conf=typeof r.confidence==='number'?Math.round(r.confidence*100):0;
     var handleHref='https://x.com/'+encodeURIComponent(r.handle);
+    var idxStr='#'+String(typeof idx==='number'?idx:0).padStart(2,'0');
     return '<div class="feed-row '+esc(lbl)+(fresh?' new':'')+'" role="listitem">'
+      +'<span class="idx">'+idxStr+'</span>'
       +avatarHtml(r)
       +'<div class="h"><a href="'+handleHref+'" target="_blank" rel="noopener noreferrer">@'+esc(r.handle)+'</a><span class="vlbl">'+esc(lbl)+'</span></div>'
       +'<span class="pct">'+conf+'%</span>'
@@ -418,7 +450,7 @@ const SCRIPT = `
   function renderInitial(){
     if(!rows.length){feedEl.innerHTML='<div class="feed-skel">还没有已确认条目。它会随用户使用慢慢长出来。</div>';return}
     // initial render — no "new" flash, just appear
-    feedEl.innerHTML=rows.map(function(r){return rowHtml(r,false)}).join('');
+    feedEl.innerHTML=rows.map(function(r,i){return rowHtml(r,false,i+1)}).join('');
   }
 
   function loadInitial(){
@@ -445,15 +477,17 @@ const SCRIPT = `
       addedThisSession+=added.length;
       feedAddedEl.textContent=addedThisSession;
       var frag=document.createDocumentFragment();
-      added.forEach(function(r){
+      added.forEach(function(r,i){
         var div=document.createElement('div');
-        div.innerHTML=rowHtml(r,!reduced);
+        div.innerHTML=rowHtml(r,!reduced,i+1);
         frag.appendChild(div.firstElementChild);
       });
       feedEl.insertBefore(frag,feedEl.firstChild);
-      // Trim tail beyond 10
+      // Trim to 6 + re-number every visible row so #01 stays at the top
       while(feedEl.childElementCount>6){feedEl.removeChild(feedEl.lastElementChild)}
       rows=added.concat(rows).slice(0,6);
+      Array.prototype.forEach.call(feedEl.querySelectorAll('.feed-row .idx'),
+        function(el,i){el.textContent='#'+String(i+1).padStart(2,'0')});
       feedAgo.innerHTML='<strong>+'+added.length+' 新</strong> · '+agoLong(lastPollAt);
     }).catch(function(){feedAgo.textContent='网络错误 · '+agoLong(lastPollAt)})
   }

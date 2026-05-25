@@ -121,11 +121,15 @@ a:focus-visible,button:focus-visible{border-radius:var(--r)}
 .nav{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:22px 0 20px;border-bottom:1px solid var(--border)}
 .brand{display:flex;align-items:center;gap:10px;font-weight:600;letter-spacing:-.005em;font-size:15px}
 .brand svg{width:22px;height:22px;color:var(--fg)}
+.brand .mark{width:32px;height:32px;display:block;flex-shrink:0;
+  filter:drop-shadow(0 1px 2px rgba(29,161,242,.2))}
 .nav .right{display:flex;align-items:center;gap:2px}
 .nav .links{display:flex;gap:2px;font-size:13.5px;color:var(--fg-3)}
-.nav .links a{padding:7px 12px;border-radius:var(--r);transition:color .15s,background .15s}
+.nav .links a{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;
+  border-radius:var(--r);transition:color .15s,background .15s}
 .nav .links a:hover{color:var(--fg)}
 .nav .links a.on{color:var(--fg);background:var(--card-hi)}
+.nav .links a svg{width:14px;height:14px;opacity:.85}
 
 /* Theme toggle button */
 .theme-btn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:var(--r);color:var(--fg-3);transition:color .15s,background .15s,transform .12s;margin-left:6px}
@@ -189,6 +193,10 @@ a:focus-visible,button:focus-visible{border-radius:var(--r)}
  *  a stylised crossed X; here we render just the X stroke at currentColor
  *  so it tints with the foreground. */
 const X_SVG = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>`;
+/** Nav icons — Lucide-style 24-vb stroke icons, sized down to 14px in
+ *  the nav. `list` for the public board, `github` for the repo link. */
+const LIST_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>`;
+const GH_SVG = `<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.5-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.7.2 2.9.1 3.2.7.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.7-5.5 6 .4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3"/></svg>`;
 const SHIELD_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg>`;
 /** Brand mark: a shield with the X glyph nested inside — signals
  *  "spam shield, for X". */
@@ -247,11 +255,11 @@ ${o.head ?? ""}
 <style>${CSS}${o.css ?? ""}</style>
 </head><body>
 <header class="wrap nav" role="banner">
-  <a class="brand" href="/" aria-label="${BRAND.name} 首页">${LOGO_SVG}<span>${BRAND.acronym}</span></a>
+  <a class="brand" href="/" aria-label="${BRAND.name} 首页"><img class="mark" src="/mxga-mark.png" alt="" width="32" height="32"><span>${BRAND.acronym}</span></a>
   <div class="right">
     <nav class="links" aria-label="主导航">
-      ${navItem("list", "/list", "公榜")}
-      ${navItem("github", BRAND.repo, "GitHub")}
+      ${navItem("list", "/list", `${LIST_SVG}<span>公榜</span>`)}
+      ${navItem("github", BRAND.repo, `${GH_SVG}<span>GitHub</span>`)}
     </nav>
     <button class="theme-btn" type="button" onclick="window.__mxgaTheme()" aria-label="切换亮/暗主题（auto → light → dark）" title="切换主题">${ICON_AUTO}${ICON_LIGHT}${ICON_DARK}</button>
   </div>
