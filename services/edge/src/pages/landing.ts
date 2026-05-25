@@ -71,12 +71,78 @@ section.block h2{font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;
   background-size:200% 100%;animation:shim 1.4s ease-in-out infinite;border-radius:var(--r-sm);vertical-align:middle}
 @keyframes shim{0%{background-position:200% 0}100%{background-position:-200% 0}}
 .stat .lbl{font-size:12px;color:var(--fg-3);margin-top:10px;letter-spacing:.01em}
+.stat .n.bump{animation:bump .55s cubic-bezier(.34,1.56,.64,1)}
+@keyframes bump{0%{transform:scale(1)}38%{transform:scale(1.08)}100%{transform:scale(1)}}
 .stats-foot{margin-top:18px;font-size:12.5px;color:var(--fg-3);display:flex;
   align-items:center;gap:10px;flex-wrap:wrap}
 .stats-foot a{color:var(--fg)}.stats-foot a:hover{color:var(--accent)}
 .stats-foot .pip{display:inline-flex;align-items:center;gap:6px}
 .stats-foot .pip i{width:5px;height:5px;border-radius:50%;background:var(--ok);
   box-shadow:0 0 0 0 rgba(16,185,129,.55);animation:pulse 2.4s ease-out infinite}
+
+/* Live feed — most recent 10 confirmed spam, slides in from the top */
+.feed{display:flex;flex-direction:column;gap:1px;background:var(--border);
+  border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+.feed-row{position:relative;display:grid;grid-template-columns:28px 1fr auto auto auto;
+  gap:12px;align-items:center;padding:10px 16px 10px 18px;background:var(--bg);
+  transition:background .15s}
+.feed-row::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;
+  background:var(--ec,transparent)}
+.feed-row.spam,.feed-row.likely_spam{--ec:var(--danger)}
+.feed-row.porn_bot{--ec:var(--violet)}
+.feed-row.uncertain{--ec:var(--fg-4)}
+.feed-row.legit{--ec:var(--ok)}
+.feed-row:hover{background:var(--card)}
+.feed-row .av{width:28px;height:28px;border-radius:50%;overflow:hidden;background:var(--card-hi);
+  display:flex;align-items:center;justify-content:center;color:var(--fg-4);font-size:11.5px;
+  font-weight:600;flex-shrink:0}
+.feed-row .av img{width:100%;height:100%;object-fit:cover;display:block}
+.feed-row .h{font-size:13px;font-weight:500;color:var(--fg);overflow:hidden;
+  text-overflow:ellipsis;white-space:nowrap;letter-spacing:-.005em;min-width:0}
+.feed-row .h a{color:inherit}.feed-row .h a:hover{color:var(--accent)}
+.feed-row .vlbl{display:inline-block;font-size:10px;font-weight:600;color:var(--ec,var(--fg-3));
+  text-transform:uppercase;letter-spacing:.06em;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+  margin-left:6px}
+.feed-row .pct{font-size:11.5px;color:var(--fg-2);font-variant-numeric:tabular-nums;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;min-width:32px;text-align:right}
+.feed-row .t{font-size:11.5px;color:var(--fg-3);font-variant-numeric:tabular-nums;
+  min-width:58px;text-align:right}
+.feed-row .x-link{color:var(--fg-4);display:inline-flex;padding:5px;border-radius:var(--r-sm);
+  transition:background .15s,color .15s}
+.feed-row .x-link:hover{background:var(--card-hi);color:var(--fg)}
+.feed-row .x-link svg{width:13px;height:13px}
+/* New-row entrance animation */
+.feed-row.new{animation:feedIn .45s cubic-bezier(.22,.96,.36,1) both}
+@keyframes feedIn{
+  0%{opacity:0;transform:translateY(-16px)}
+  60%{opacity:1}
+  100%{opacity:1;transform:none}
+}
+.feed-row.new::after{content:"";position:absolute;inset:0;border-radius:0;
+  background:linear-gradient(90deg,transparent,var(--accent-soft),transparent);
+  background-size:200% 100%;animation:feedFlash .9s ease-out;pointer-events:none}
+@keyframes feedFlash{
+  0%{background-position:200% 0;opacity:.8}
+  100%{background-position:-200% 0;opacity:0}
+}
+.feed-foot{margin-top:14px;font-size:12px;color:var(--fg-3);display:flex;
+  align-items:center;gap:10px;flex-wrap:wrap}
+.feed-foot .live{display:inline-flex;align-items:center;gap:6px}
+.feed-foot .live i{width:6px;height:6px;border-radius:50%;background:var(--ok);
+  box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 50%,transparent);
+  animation:livePulse 2.2s ease-out infinite}
+@keyframes livePulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--ok) 50%,transparent)}
+  100%{box-shadow:0 0 0 6px transparent}}
+.feed-foot strong{color:var(--fg);font-weight:600;font-variant-numeric:tabular-nums}
+.feed-foot a{color:var(--fg)}.feed-foot a:hover{color:var(--accent)}
+.feed-skel{padding:60px 20px;text-align:center;color:var(--fg-3);font-size:12.5px}
+
+@media (max-width:560px){
+  .feed-row{grid-template-columns:24px 1fr auto auto;gap:8px;padding:9px 14px 9px 16px}
+  .feed-row .av{width:24px;height:24px;font-size:10.5px}
+  .feed-row .vlbl{display:none}
+  .feed-row .x-link{display:none}
+}
 
 /* Install helper popover */
 .install-note{margin-top:20px;font-size:13px;color:var(--fg-2);
@@ -204,12 +270,24 @@ const LIVE = `
 <section class="block">
   <h2>正在跑的数据，不是 PPT</h2>
   <div class="stats">
-    <div class="stat"><div class="n" id="sCount"><span class="skel"></span></div><div class="lbl">已确认的垃圾 / 色情号</div></div>
-    <div class="stat"><div class="n" id="sWeek"><span class="skel"></span></div><div class="lbl">本周新增</div></div>
-    <div class="stat"><div class="n" id="sPending"><span class="skel"></span></div><div class="lbl">排队等人工复核</div></div>
+    <div class="stat"><div class="n" id="sCount" data-v="0"><span class="skel"></span></div><div class="lbl">已确认的垃圾 / 色情号</div></div>
+    <div class="stat"><div class="n" id="sWeek" data-v="0"><span class="skel"></span></div><div class="lbl">本周新增</div></div>
+    <div class="stat"><div class="n" id="sPending" data-v="0"><span class="skel"></span></div><div class="lbl">排队等人工复核</div></div>
   </div>
   <p class="stats-foot">
     <span class="pip"><i aria-hidden="true"></i><span id="sAgo">60 秒同步一次</span></span>
+    <span class="sep">·</span>
+    <a href="/list">完整公榜 →</a>
+  </p>
+</section>
+
+<section class="block">
+  <h2>最近拦下的 10 个</h2>
+  <div class="feed" id="feed" role="list"><div class="feed-skel">连接中…</div></div>
+  <p class="feed-foot">
+    <span class="live"><i aria-hidden="true"></i><span id="feedAgo">实时同步</span></span>
+    <span class="sep">·</span>
+    <span>已确认 <strong id="feedAdded">0</strong> 条新增（本次会话）</span>
     <span class="sep">·</span>
     <a href="/list">完整公榜 →</a>
   </p>
@@ -218,22 +296,128 @@ const LIVE = `
 
 const SCRIPT = `
 (function(){
+  var reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
   var btn=document.getElementById('installBtn'),note=document.getElementById('installNote');
   if(btn&&note){btn.addEventListener('click',function(e){if(!note.classList.contains('open')){e.preventDefault();note.classList.add('open');setTimeout(function(){window.location=btn.href},900)}})}
-  var fmt=function(n){return typeof n==='number'?n.toLocaleString('zh-CN'):'—'};
-  var ago=function(ms){if(!ms)return'';var d=Date.now()-ms,s=Math.round(d/1000);if(s<60)return s+' 秒前';var m=Math.round(s/60);if(m<60)return m+' 分钟前';var h=Math.round(m/60);if(h<24)return h+' 小时前';return Math.round(h/24)+' 天前'};
-  var refresh=function(){
+
+  function esc(s){return (s==null?'':String(s)).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function fmt(n){return typeof n==='number'?n.toLocaleString('zh-CN'):'—'}
+  function ago(ms){if(!ms)return'';var d=Date.now()-ms,s=Math.round(d/1000);if(s<10)return'刚刚';if(s<60)return s+'s';var m=Math.round(s/60);if(m<60)return m+'m';var h=Math.round(m/60);if(h<24)return h+'h';return Math.round(h/24)+'d'}
+  function agoLong(ms){if(!ms)return'';var d=Date.now()-ms,s=Math.round(d/1000);if(s<60)return s+' 秒前';var m=Math.round(s/60);if(m<60)return m+' 分钟前';var h=Math.round(m/60);if(h<24)return h+' 小时前';return Math.round(h/24)+' 天前'}
+
+  // ---- Stat count-up animation ----
+  function countTo(el,target,ms){
+    if(!el)return;
+    var pos=String(target).indexOf('+')===0?'+':'';
+    var n=target.toString().replace(/[^0-9]/g,'');var nn=parseInt(n,10);if(isNaN(nn))nn=0;
+    var prev=parseInt(el.dataset.v||'0',10);
+    if(reduced){el.textContent=pos+fmt(nn);el.dataset.v=String(nn);return}
+    if(prev===nn){el.textContent=pos+fmt(nn);return}
+    var t0=performance.now();
+    function step(t){
+      var p=Math.min(1,(t-t0)/ms);
+      var v=Math.round(prev+(nn-prev)*(1-Math.pow(1-p,3)));
+      el.textContent=pos+fmt(v);
+      if(p<1)requestAnimationFrame(step);
+      else{el.dataset.v=String(nn);if(prev!==nn){el.classList.remove('bump');void el.offsetWidth;el.classList.add('bump')}}
+    }
+    requestAnimationFrame(step);
+  }
+
+  // ---- Stats (meta) refresh ----
+  function refreshMeta(){
     fetch('/v1/list/meta').then(function(r){return r.json()}).then(function(j){
-      document.getElementById('sCount').textContent=fmt(j.count);
-      document.getElementById('sWeek').textContent=(j.week>0?'+':'')+fmt(j.week);
-      document.getElementById('sPending').textContent=fmt(j.pending);
-      document.getElementById('sAgo').textContent=j.generatedAt?('刚刚同步 '+ago(j.generatedAt)):'60 秒同步一次'
+      countTo(document.getElementById('sCount'),j.count,650);
+      countTo(document.getElementById('sWeek'),(j.week>0?'+':'')+j.week,650);
+      countTo(document.getElementById('sPending'),j.pending,650);
+      document.getElementById('sAgo').textContent=j.generatedAt?('刚刚同步 '+agoLong(j.generatedAt)):'60 秒同步一次'
     }).catch(function(){
       ['sCount','sWeek','sPending'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent='—'})
     })
-  };
-  refresh();
-  setInterval(refresh,60000);
+  }
+
+  // ---- Live feed (most recent 10) ----
+  var feedEl=document.getElementById('feed');
+  var feedAgo=document.getElementById('feedAgo');
+  var feedAddedEl=document.getElementById('feedAdded');
+  var rows=[];          // displayed (max 10)
+  var latestAt=null;    // newest published_at we know of
+  var addedThisSession=0;
+  var lastPollAt=Date.now();
+
+  function key(r){return (r.x_user_id||'')+'|'+r.handle}
+
+  function avatarHtml(r){
+    var url=r.avatar_url||('https://unavatar.io/twitter/'+encodeURIComponent(r.handle));
+    var fb=esc((r.handle||'?').slice(0,1).toUpperCase());
+    return '<div class="av"><img src="'+esc(url)+'" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement(\\'span\\'),{textContent:\\''+fb+'\\'}))"/></div>';
+  }
+
+  var EXT_ICON='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg>';
+
+  function rowHtml(r,fresh){
+    var lbl=r.verdict_label||'uncertain';
+    var conf=typeof r.confidence==='number'?Math.round(r.confidence*100):0;
+    var handleHref='https://x.com/'+encodeURIComponent(r.handle);
+    return '<div class="feed-row '+esc(lbl)+(fresh?' new':'')+'" role="listitem">'
+      +avatarHtml(r)
+      +'<div class="h"><a href="'+handleHref+'" target="_blank" rel="noopener noreferrer">@'+esc(r.handle)+'</a><span class="vlbl">'+esc(lbl)+'</span></div>'
+      +'<span class="pct">'+conf+'%</span>'
+      +'<span class="t">'+ago(r.published_at)+'</span>'
+      +'<a class="x-link" href="'+handleHref+'" target="_blank" rel="noopener noreferrer" aria-label="去 X 主页">'+EXT_ICON+'</a>'
+      +'</div>';
+  }
+
+  function renderInitial(){
+    if(!rows.length){feedEl.innerHTML='<div class="feed-skel">还没有已确认条目。它会随用户使用慢慢长出来。</div>';return}
+    // initial render — no "new" flash, just appear
+    feedEl.innerHTML=rows.map(function(r){return rowHtml(r,false)}).join('');
+  }
+
+  function loadInitial(){
+    return fetch('/v1/list?limit=10').then(function(r){return r.json()}).then(function(j){
+      rows=(j.list||[]).slice(0,10);
+      latestAt=j.latestAt;
+      lastPollAt=Date.now();
+      renderInitial();
+      feedAgo.textContent='已同步 · 共 '+rows.length+' 条';
+    }).catch(function(){
+      feedEl.innerHTML='<div class="feed-skel">连接失败 · 30s 后重试</div>';
+    })
+  }
+
+  function pollFeed(){
+    if(!latestAt){return loadInitial()}
+    fetch('/v1/list?limit=10&since='+latestAt).then(function(r){return r.json()}).then(function(j){
+      lastPollAt=Date.now();
+      var fresh=(j.list||[]).filter(function(r){return !rows.some(function(x){return key(x)===key(r)})});
+      if(!fresh.length){feedAgo.textContent='无新增 · '+agoLong(lastPollAt);return}
+      // Prepend new rows (newest first, animated). Cap at 10 total.
+      var added=fresh.slice(0,10);
+      latestAt=j.latestAt||latestAt;
+      addedThisSession+=added.length;
+      feedAddedEl.textContent=addedThisSession;
+      var frag=document.createDocumentFragment();
+      added.forEach(function(r){
+        var div=document.createElement('div');
+        div.innerHTML=rowHtml(r,!reduced);
+        frag.appendChild(div.firstElementChild);
+      });
+      feedEl.insertBefore(frag,feedEl.firstChild);
+      // Trim tail beyond 10
+      while(feedEl.childElementCount>10){feedEl.removeChild(feedEl.lastElementChild)}
+      rows=added.concat(rows).slice(0,10);
+      feedAgo.innerHTML='<strong>+'+added.length+' 新</strong> · '+agoLong(lastPollAt);
+    }).catch(function(){feedAgo.textContent='网络错误 · '+agoLong(lastPollAt)})
+  }
+
+  // ---- Boot ----
+  refreshMeta();
+  loadInitial();
+  setInterval(refreshMeta,60000);
+  setInterval(pollFeed,20000);
+  // Keep relative timestamps fresh every 30s without hitting the API
+  setInterval(function(){if(rows.length){feedEl.querySelectorAll('.feed-row').forEach(function(el,i){var t=el.querySelector('.t');if(t&&rows[i])t.textContent=ago(rows[i].published_at)});feedAgo.textContent='上次 '+agoLong(lastPollAt)}},30000);
 })();
 `;
 
