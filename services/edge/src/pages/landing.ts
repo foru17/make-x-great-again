@@ -1,22 +1,23 @@
-// Product landing — public, zero-PII. base-ui inspired: monochrome canvas,
-// type-led hierarchy, accent reserved for state.
+// Product landing — public, zero-PII. Make X Great Again — passive
+// ambient extension that makes X usable: 5 pillars, only Pillar 1 (Spam
+// Shield) is shipped today; the rest are tagged Coming soon.
+// Visual: base-ui inspired — monochrome canvas, type-led hierarchy.
 import { BRAND } from "../brand";
 import { LINKS, layout } from "./_layout";
 
 const CSS = `
 /* Hero */
-.hero{padding:96px 0 72px;max-width:760px}
+.hero{padding:96px 0 72px;max-width:780px}
 .hero .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:600;
   letter-spacing:.14em;text-transform:uppercase;color:var(--fg-3);padding:5px 10px;
   border:1px solid var(--border);border-radius:999px;margin-bottom:24px}
 .hero .eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--ok);
   box-shadow:0 0 0 0 rgba(16,185,129,.45);animation:pulse 2.4s ease-out infinite}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(16,185,129,.45)}100%{box-shadow:0 0 0 6px rgba(16,185,129,0)}}
-.hero h1{font-size:60px;line-height:1.05;letter-spacing:-.035em;font-weight:600;
+.hero h1{font-size:64px;line-height:1.02;letter-spacing:-.04em;font-weight:600;
   margin:0 0 22px;color:var(--fg)}
-.hero h1 .em{color:var(--fg)}
-.hero h1 .sub{display:block;color:var(--fg-3);font-weight:500}
-.hero .lede{font-size:17px;color:var(--fg-2);max-width:600px;margin-bottom:32px;
+.hero h1 .sub{display:block;color:var(--fg-3);font-weight:500;letter-spacing:-.03em}
+.hero .lede{font-size:17px;color:var(--fg-2);max-width:620px;margin-bottom:32px;
   line-height:1.6;letter-spacing:-.005em}
 .hero .ctas{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px}
 .hero .meta{font-size:12.5px;color:var(--fg-4);display:flex;flex-wrap:wrap;
@@ -27,19 +28,25 @@ const CSS = `
 section.block{padding:64px 0;border-top:1px solid var(--border)}
 section.block h2{font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;
   color:var(--fg-3);font-weight:600;margin-bottom:32px}
-section.block h2 .num{margin-right:10px;color:var(--fg-4);font-variant-numeric:tabular-nums}
 
-/* How — 4 steps in a tight grid */
-.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);
+/* 5 Pillars — vertical stack of large cells, each labeled */
+.pillars{display:grid;grid-template-columns:1fr;gap:1px;background:var(--border);
   border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
-.step{padding:24px 22px;background:var(--bg);transition:background .15s}
-.step:hover{background:var(--card)}
-.step .n{font-size:11px;font-weight:600;color:var(--fg-4);font-variant-numeric:tabular-nums;
-  letter-spacing:.08em;display:block;margin-bottom:14px}
-.step h3{font-size:14.5px;font-weight:600;margin-bottom:8px;color:var(--fg);letter-spacing:-.005em}
-.step p{font-size:13px;line-height:1.6;color:var(--fg-3)}
+.pillar{display:grid;grid-template-columns:80px 1fr auto;gap:20px;padding:24px 28px;
+  background:var(--bg);align-items:center;transition:background .15s}
+.pillar:hover{background:var(--card)}
+.pillar .n{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;
+  font-weight:600;color:var(--fg-4);letter-spacing:.05em}
+.pillar .body h3{font-size:17px;font-weight:600;margin-bottom:6px;color:var(--fg);
+  letter-spacing:-.01em;display:flex;align-items:center;gap:10px}
+.pillar .body p{font-size:13.5px;line-height:1.6;color:var(--fg-3);max-width:640px}
+.pillar .status{font-size:11px;font-weight:600;padding:3px 10px;border-radius:999px;
+  border:1px solid currentColor;letter-spacing:.04em;text-transform:uppercase;white-space:nowrap}
+.pillar .status.live{color:var(--ok)}
+.pillar .status.next{color:var(--accent)}
+.pillar .status.soon{color:var(--fg-3)}
 
-/* Trust — 4 governance bullets, each with a themed glyph */
+/* Trust — 4 governance bullets, themed glyphs */
 .trust{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);
   border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
 .trust .row{display:flex;gap:14px;align-items:flex-start;padding:22px 24px;background:var(--bg);
@@ -53,12 +60,12 @@ section.block h2 .num{margin-right:10px;color:var(--fg-4);font-variant-numeric:t
 .trust .row h3{font-size:14px;font-weight:600;margin-bottom:5px;color:var(--fg);letter-spacing:-.005em}
 .trust .row p{font-size:13px;line-height:1.6;color:var(--fg-3)}
 
-/* Stats — uniform, type-led */
+/* Stats */
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);
   border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
 .stat{padding:24px 24px 22px;background:var(--bg)}
 .stat .n{font-size:36px;font-weight:600;letter-spacing:-.025em;font-variant-numeric:tabular-nums;
-  line-height:1.05;color:var(--fg)}
+  line-height:1.05;color:var(--fg);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 .stat .n.skel{display:inline-block;width:64px;height:38px;background:linear-gradient(90deg,
   rgba(255,255,255,.04),rgba(255,255,255,.1),rgba(255,255,255,.04));
   background-size:200% 100%;animation:shim 1.4s ease-in-out infinite;border-radius:var(--r-sm);vertical-align:middle}
@@ -85,18 +92,18 @@ section.block h2 .num{margin-right:10px;color:var(--fg-4);font-variant-numeric:t
 @media (max-width:760px){
   .hero{padding:64px 0 48px}
   .hero h1{font-size:40px;letter-spacing:-.03em}
-  .steps{grid-template-columns:1fr 1fr}
+  .pillar{grid-template-columns:1fr;gap:8px;padding:20px}
+  .pillar .n{font-size:11px}
+  .pillar .status{align-self:flex-start;margin-top:4px}
   .trust{grid-template-columns:1fr}
-  .stats{grid-template-columns:1fr;grid-template-rows:none}
+  .stats{grid-template-columns:1fr}
   section.block{padding:48px 0}
 }
 @media (max-width:440px){
   .hero h1{font-size:34px}
-  .steps{grid-template-columns:1fr}
 }
 `;
 
-// Icons — outline, currentColor
 const ICON_DOWNLOAD = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>`;
 const ICON_GH = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.5-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.7.2 2.9.1 3.2.7.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.7-5.5 6 .4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3"/></svg>`;
 const ICON_LIST = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>`;
@@ -107,9 +114,9 @@ const ICON_USER = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 
 const HERO = `
 <section class="hero">
-  <span class="eyebrow"><span class="dot" aria-hidden="true"></span>开源 · ${BRAND.license}</span>
-  <h1>X 上的垃圾与<br><span class="sub">色情机器人，到此为止。</span></h1>
-  <p class="lede">被动检测 · AI 判定 · 社区共识 · 真·拉黑。安装一次扩展，让 AI 在你浏览 X 时静默工作；只有当 3 个独立 GitHub 用户都标注同一账号时才会公开。</p>
+  <span class="eyebrow"><span class="dot" aria-hidden="true"></span>${BRAND.acronym}<span style="margin:0 8px;color:var(--fg-4)">·</span>开源 ${BRAND.license}</span>
+  <h1>${BRAND.name}<br><span class="sub">让 X 重新能用。</span></h1>
+  <p class="lede">一个被动的 X 旁路扩展。AI 在你浏览 X 时静默工作：拦下垃圾和色情机器人，给你看到的账号打信号分，总结 KOL 的历史推文。完全开源，不收集任何用户数据。</p>
   <div class="ctas">
     <a class="btn primary" href="${LINKS.RELEASE_URL}" id="installBtn" aria-label="安装到 Chrome（下载最新 Release）">${ICON_DOWNLOAD}<span>安装到 Chrome</span></a>
     <a class="btn" href="${BRAND.repo}" aria-label="在 GitHub 上查看源码">${ICON_GH}<span>GitHub</span></a>
@@ -133,14 +140,50 @@ const HERO = `
 </section>
 `;
 
-const HOW = `
+const PILLARS = `
 <section class="block">
-  <h2>它怎么工作</h2>
-  <div class="steps">
-    <div class="step"><span class="n">01</span><h3>安装扩展</h3><p>Chrome 即用，Edge 兼容。无需注册，无需配置。</p></div>
-    <div class="step"><span class="n">02</span><h3>被动检测</h3><p>仅在你刷到的账号上分析。从不主动爬取，从不代你操作。</p></div>
-    <div class="step"><span class="n">03</span><h3>社区共识</h3><p>AI 高置信判定 + 3 个独立 GitHub 用户佐证，才进公榜。</p></div>
-    <div class="step"><span class="n">04</span><h3>真·拉黑</h3><p>驱动 X 自身屏蔽接口，多端同步生效，不是本地隐藏。</p></div>
+  <h2>它做什么 · 5 件事</h2>
+  <div class="pillars">
+    <div class="pillar">
+      <div class="n">01</div>
+      <div class="body">
+        <h3>Spam 净化</h3>
+        <p>评论区的色情/广告 bot 被动检测、内联标注、一键拉黑（驱动 X 自身屏蔽接口）。AI 高置信 + ≥3 个独立 GitHub 用户共识 → 入公榜，所有人共享。</p>
+      </div>
+      <span class="status live">● Live</span>
+    </div>
+    <div class="pillar">
+      <div class="n">02</div>
+      <div class="body">
+        <h3>KOL 信号分</h3>
+        <p>鼠标停在 @handle 上 → 浮卡：账号年龄、原创比、主题集中度、互动质量、综合分。让你一眼分辨「真号 vs 营销号 vs 蹭流量」。</p>
+      </div>
+      <span class="status next">Next</span>
+    </div>
+    <div class="pillar">
+      <div class="n">03</div>
+      <div class="body">
+        <h3>KOL 历史摘要</h3>
+        <p>进入任何 X profile 页 → 自动侧栏：「这个人主要谈 A / B / C 三个话题」「本月最热的 5 条」「最佳互动时段」。给关注决策提供 30 秒判断材料。</p>
+      </div>
+      <span class="status soon">Soon</span>
+    </div>
+    <div class="pillar">
+      <div class="n">04</div>
+      <div class="body">
+        <h3>社交图谱提示</h3>
+        <p>看推文时显示「被你关注的 3 个 KOL 转过 / 评论过」「这条的真实回声范围」。让信号穿过算法噪声直达你。</p>
+      </div>
+      <span class="status soon">Soon</span>
+    </div>
+    <div class="pillar">
+      <div class="n">05</div>
+      <div class="body">
+        <h3>个人数据导出</h3>
+        <p>一键导出你自己的关注 / 收藏 / 推文为 JSON / Markdown，备份或迁出。所有数据在你浏览器内处理，不上服务端。</p>
+      </div>
+      <span class="status soon">Soon</span>
+    </div>
   </div>
 </section>
 `;
@@ -152,14 +195,14 @@ const TRUST = `
     <div class="row" style="--ic:#10b981"><span class="ic">${ICON_SHIELD}</span><div><h3>AI 单独不能自动公开</h3><p>必须人工审核 或 ≥3 个独立 GitHub 上报人共识才入公榜，红线写进 D1 状态机。</p></div></div>
     <div class="row" style="--ic:#38bdf8"><span class="ic">${ICON_LOCK}</span><div><h3>不收集 PII</h3><p>服务端只存 X 公开数字 ID 与举报人 GitHub 数字 ID；扩展端默认不上传任何浏览数据。</p></div></div>
     <div class="row" style="--ic:#f59e0b"><span class="ic">${ICON_DB}</span><div><h3>状态机锁红线</h3><p>auto_pending_review → human_confirmed 的状态转换只接受人工或社区共识，AI 触发会被路由层拒绝。</p></div></div>
-    <div class="row" style="--ic:#a855f7"><span class="ic">${ICON_USER}</span><div><h3>GitHub 登录可写</h3><p>举报与拉黑确认需 GitHub Device Flow 登录，反滥用、可追溯；不强制注册账号。</p></div></div>
+    <div class="row" style="--ic:#a855f7"><span class="ic">${ICON_USER}</span><div><h3>GitHub 登录可写</h3><p>举报、确认、上报需 GitHub Device Flow 登录，反滥用、可追溯；不强制注册账号。</p></div></div>
   </div>
 </section>
 `;
 
 const LIVE = `
 <section class="block">
-  <h2>实时透明</h2>
+  <h2>实时透明 · Pillar 1 公榜</h2>
   <div class="stats">
     <div class="stat"><div class="n" id="sCount"><span class="skel"></span></div><div class="lbl">已确认的 spam / bot 账号</div></div>
     <div class="stat"><div class="n" id="sWeek"><span class="skel"></span></div><div class="lbl">本周新增</div></div>
@@ -196,11 +239,11 @@ const SCRIPT = `
 
 export function landingHtml(): string {
   return layout({
-    title: "x-spam-sentinel · 让 AI 拦下 X 上的垃圾与色情机器人",
+    title: `${BRAND.name} · ${BRAND.tagline}`,
     current: "home",
     css: CSS,
-    head: `<meta name="description" content="开源、半公开的 X(Twitter) 反垃圾扩展。AI 判定 + 社区共识，不收集 PII，AGPL-3.0。">`,
-    body: HERO + HOW + TRUST + LIVE,
+    head: `<meta name="description" content="${BRAND.name} — 一个被动的 X(Twitter) 旁路扩展：Spam 净化 + KOL 信号分 + 摘要 + 社交图谱。开源 ${BRAND.license}，不收集 PII。">`,
+    body: HERO + PILLARS + TRUST + LIVE,
     script: SCRIPT,
   });
 }

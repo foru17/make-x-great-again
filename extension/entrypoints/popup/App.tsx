@@ -45,7 +45,8 @@ export function App() {
         <span className="text-fg">
           <Shield />
         </span>
-        <b className="text-[14px] font-semibold tracking-[-.005em]">x-spam-sentinel</b>
+        <b className="text-[14px] font-semibold tracking-[-.005em]">{BRAND.acronym}</b>
+        <span className="text-[10.5px] font-medium uppercase tracking-[0.08em] text-fg-4">{BRAND.name}</span>
         <span
           aria-label={status === null ? "检查中" : status.ok ? "服务在线" : "服务不可达"}
           className={`ml-auto inline-flex h-2 w-2 rounded-full ${

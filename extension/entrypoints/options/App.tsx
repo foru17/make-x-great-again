@@ -495,7 +495,7 @@ function Settings() {
 }
 
 const About = () => (
-  <Page title="关于" sub="x-spam-sentinel · 公益、开源">
+  <Page title="关于" sub={`${BRAND.name} · 公益、开源`}>
     <div className="max-w-[680px] space-y-4 text-[13px] leading-7 text-fg-2">
       <p>
         基于 AI 的 X(Twitter) 反垃圾 / 色情机器人扩展。被动检测、本地优先、中心服务（Cloudflare）协同；用户一键拉黑即视为人工确认信号之一。
@@ -513,7 +513,7 @@ const About = () => (
             rel="noopener"
             className="mt-1 inline-block text-[13px] text-fg hover:text-accent"
           >
-            github.com/{BRAND.owner}/x-spam-sentinel ↗
+            github.com/{BRAND.owner}/make-x-great-again ↗
           </a>
         </div>
         <div className="bg-bg p-4">
@@ -581,7 +581,10 @@ export function App() {
           <span className="text-fg">
             <Shield />
           </span>
-          x-spam-sentinel
+          <span className="flex flex-col gap-px leading-tight">
+            <span>{BRAND.acronym}</span>
+            <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-fg-4">{BRAND.name}</span>
+          </span>
         </div>
         <nav className="flex flex-col gap-0.5" aria-label="管理面板导航">
           {TABS.map(([id, label]) => (

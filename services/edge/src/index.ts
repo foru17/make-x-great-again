@@ -38,7 +38,7 @@ async function ghIdentity(req: Request): Promise<string | null> {
     const r = await fetch("https://api.github.com/user", {
       headers: {
         authorization: `Bearer ${tok}`,
-        "user-agent": "x-spam-sentinel",
+        "user-agent": "mxga",
         accept: "application/vnd.github+json",
       },
     });

@@ -102,6 +102,7 @@ const ICON_EXT = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" str
 const SHELL = `
 <section class="head">
   <h1>公开 spam 榜单</h1>
+  <p class="lede" style="font-size:12.5px;color:var(--fg-3);margin-bottom:14px;text-transform:uppercase;letter-spacing:.12em">Pillar 01 · ${BRAND.acronym} Spam Shield</p>
   <p class="lede">最近 100 个被 AI 高置信判定 <strong>且</strong> 至少 3 个独立 GitHub 用户共识的 X 账号。除公开数字 ID 外不存任何信息。</p>
   <p class="lede">如发现误判，请提 <a href="${BRAND.appealNewIssue}" style="color:var(--accent)">申诉 issue</a>，48h 内复核移除。</p>
   <div class="pulse"><span class="dot" aria-hidden="true"></span><span id="pulseLabel">连接中…</span></div>
@@ -222,7 +223,7 @@ const SCRIPT = `
 
 export function listHtml(): string {
   return layout({
-    title: "公开 spam 榜单 · x-spam-sentinel",
+    title: `公开 spam 榜单 · ${BRAND.acronym}`,
     current: "list",
     css: CSS,
     head: `<meta name="robots" content="noindex,follow">`,

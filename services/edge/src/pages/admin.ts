@@ -211,7 +211,7 @@ const SCRIPT = String.raw`
     if(!TOK){renderLocked();return}
     $('app').innerHTML=
       '<div class="bar">'
-      +'<div><h1>'+ ${JSON.stringify(LOGO_SVG)} +'<span>审核台 · 守门员</span></h1>'
+      +'<div><h1>'+ ${JSON.stringify(LOGO_SVG)} +'<span>'+ ${JSON.stringify(BRAND.acronym)} +' · 审核台 · 守门员</span></h1>'
       +'<div class="sub">仅维护者使用 · 通过 = 入公榜 · 驳回 / 移除 = 不公开 · 治理见 <a href="'+GH+'/blob/main/docs/GOVERNANCE.md" target="_blank">GOVERNANCE</a></div></div>'
       +'<div class="auth"><span class="ok">已认证</span><button class="btn sm" onclick="window.__xss.logout()">退出</button></div>'
       +'</div>'
@@ -440,7 +440,7 @@ export function adminHtml(): string {
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="dark">
 <meta name="robots" content="noindex,nofollow">
-<title>x-spam-sentinel · 审核台</title>
+<title>${BRAND.acronym} · 审核台</title>
 <style>${CSS}</style>
 </head><body>
 <div class="wrap"><div id="app" aria-live="polite"><div class="locked"><div class="card"><div class="lock"></div><h2>加载中…</h2></div></div></div></div>

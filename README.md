@@ -1,111 +1,111 @@
 <div align="center">
 
-# x-spam-sentinel 🛡️
+# Make X Great Again 🛡️
 
-**AI 驱动的公益、半公开、开源 X(Twitter) 反垃圾/色情机器人系统**
-
-Browse X normally — get passively warned about spam & porn-ad bots,
-with one-click block and one-click report. Community-curated, transparent,
-forkable blocklist.
+### 让 X 重新能用 · 一个被动的 X 旁路扩展
 
 [![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue.svg)](./LICENSE)
-[![Status: alpha](https://img.shields.io/badge/status-alpha-orange.svg)](#项目状态)
+[![Status: alpha](https://img.shields.io/badge/status-alpha-orange.svg)](#状态--路线图)
 [![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
 [![Live](https://img.shields.io/badge/live-x.zuoluo.tv-38bdf8.svg)](https://x.zuoluo.tv)
 
-🌐 **Live**：[x.zuoluo.tv](https://x.zuoluo.tv) · 📋 [公开 spam 榜单](https://x.zuoluo.tv/list) · 📦 [安装扩展](https://github.com/foru17/x-spam-sentinel/releases/latest)
+🌐 **Live**：[x.zuoluo.tv](https://x.zuoluo.tv) · 📋 [公开 spam 榜单](https://x.zuoluo.tv/list) · 📦 [安装扩展](https://github.com/foru17/make-x-great-again/releases/latest)
 
-[什么是这个](#是什么) · [怎么工作](#怎么工作) · [快速开始](#快速开始) · [架构](./docs/ARCHITECTURE.md) · [治理](./GOVERNANCE.md) · [贡献](./CONTRIBUTING.md)
+[做什么](#做什么) · [5 个支柱](#5-个支柱) · [怎么用](#怎么用) · [状态--路线图](#状态--路线图) · [架构](./docs/ARCHITECTURE.md) · [治理](./docs/GOVERNANCE.md) · [贡献](./CONTRIBUTING.md)
 
 </div>
 
 ---
 
-## 是什么
+## 做什么
 
-X 上大量新注册的垃圾广告 / 色情广告机器人刷评论和留言，严重影响正常交流。
-官方 API 太贵。本项目用 **浏览器扩展 + 本地/服务端 AI 分析 + 社区共享黑名单**
-提供一个不依赖官方 API 的解法：
+X(Twitter) 现在的问题不止于"色情/广告机器人刷评论"——它整体在变得不好用：
 
-- 🧩 **浏览器扩展**：被动检测你正在浏览页面上的可疑账号，弹窗提醒"本页发现 N 个 spam"
-- 🛑 **一键拉黑**（用户手动触发，绝不静默自动）/ 🚩 **一键上报**
-- 🧠 **AI 分类**：综合账号年龄、头像、社交图谱、内容/导流话术；新注册账号尤其严格
-- 🌐 **半公开黑名单**：中心服务库为性能真源，确认后的条目**同步到 GitHub**，
-  公开、可 fork、可审计
-- ⚖️ **治理优先**：AI 判定永不自动公开，必经人工复核；有申诉/移除通道
+- 评论区被 bot 淹没；正常讨论很难被看到
+- 想关注一个新 KOL，搞不清是真号还是营销号
+- 想知道某个账号历史上谈过什么、最热的几条是什么——只能手动翻
+- 算法决定了你看到谁，而不是反过来
 
-> 公益、开源（AGPL-3.0）。范围**严格限定** spam / 色情广告机器人，**不碰观点立场**。
+**Make X Great Again (MXGA)** 是一个**被动的、嵌进 X 浏览体验里的旁路扩展**。AI 在你正常刷 X 时静默工作，做下面 5 件事（部分已上线，其它在路上）。
 
-## 怎么工作
+完全开源（AGPL-3.0），不收集任何用户数据；公开公榜数据仅含 X 公开数字 ID。
 
-```
-你浏览 X → 扩展被动读取可见账号 → 本地启发式预筛
-   → 黑名单查询（本地 bloom / 中心 API） → 弹窗：本页 N 个可疑
-   → 你点：一键拉黑(手动手势) / 一键上报
-        → 中心服务：去重 → LLM 分类 → 人工复核闸门
-        → 同步到 GitHub 公开分片名单（版本化、CDN、可 fork）
-        → 各扩展拉取更新
-```
+## 5 个支柱
 
-完整机制见 **[docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)**。
+| # | 支柱 | 状态 | 一句话 |
+|---|---|---|---|
+| **01** | **Spam 净化** | ✅ Live | 评论区色情/广告 bot 被动检测 + 一键真·拉黑（驱动 X 自身屏蔽接口） + 公开共建黑名单 |
+| **02** | **KOL 信号分** | 🚧 Next | 鼠标停 @handle → 浮卡：账号年龄、原创比、主题集中度、互动质量 |
+| **03** | **KOL 历史摘要** | 🚧 Soon | 进 profile 页 → 自动侧栏：「主要谈 A/B/C」「本月最热 5 条」「最佳互动时段」 |
+| **04** | **社交图谱提示** | 🚧 Soon | 看推文时显示「被你关注的 3 个 KOL 转过 / 评论过」，让信号穿过算法噪声 |
+| **05** | **个人数据导出** | 🚧 Soon | 一键导出你的关注 / 收藏 / 推文为 JSON / Markdown，备份或迁出 |
 
-## 快速开始
+## 怎么用
 
-### 普通用户（即将提供）
-
-安装上架后的 Chrome 扩展即可，无需配置。当前为 alpha，请见下方开发者方式。
-
-### 开发者 / 本地 MVP
-
-本地即可跑通"扩展 + 本地服务"闭环：
+### 普通用户（Chrome）
 
 ```bash
-cp .env.example .env      # 填 LLM_BASE_URL / LLM_API_KEY / LLM_MODEL
-pnpm install
-pnpm serve                # 本地服务 http://127.0.0.1:8787
+# 即将上 Chrome Web Store；当前需要开发者模式手动加载：
+1. 从 https://github.com/foru17/make-x-great-again/releases/latest 下载 .zip
+2. 打开 chrome://extensions，开启「开发者模式」
+3. 「加载已解压的扩展程序」→ 选解压后的目录
+4. 访问 x.com 即可（扩展被动工作）
 ```
 
-然后 `chrome://extensions` → 开发者模式 → 加载已解压 → 选 `extension/` →
-刷新 x.com。详见 **[docs/MVP.md](./docs/MVP.md)**。
+完整门户：[https://x.zuoluo.tv](https://x.zuoluo.tv)（含治理铁律、实时公榜数据）
 
-校验：`pnpm typecheck && pnpm test && pnpm lint`
+### 开发者 / 本地
 
-## 项目状态
+```bash
+cp .env.example .env       # OpenAI-compatible LLM endpoint
+pnpm install
+pnpm typecheck && pnpm test && pnpm lint
 
-🟠 **Alpha** — 本地 MVP 已在真实 X 上验证（被动数字 ID 提取、自动启发式预筛、
-账号特征入模、真实色情广告 bot 命中无误杀）。中心服务 + GitHub 同步 + 公开
-扩展为规划/进行中（见 [架构](./docs/ARCHITECTURE.md) 与下方路线）。
+# 扩展
+cd extension && npx wxt build
+# → 加载 extension/.output/chrome-mv3
 
-| 模块 | 状态 |
-|---|---|
-| 本地 AI 分类器 + 私有策展库 | ✅ 已验证 |
-| MV3 扩展（被动 + 自动预筛 + 一键隐藏） | ✅ 本地可用 |
-| Cloudflare 服务 (Workers + D1 + R2 + Cron) | 🚧 规划 |
-| 报告/申诉 + 人工复核闸门 | 🚧 规划 |
-| GitHub 公开名单同步 + CDN | 🚧 规划 |
+# 边缘服务
+cd services/edge && npx wrangler dev
+# 部署：见 services/edge/DEPLOY.md
+```
+
+## 状态 / 路线图
+
+- ✅ **Wave 1-6**：MVP → WXT 重建 → Cloudflare 部署 → /admin 审核台 → 公开 landing + /list → base-ui 视觉
+- ✅ **Wave 7**：迁出公司 GitHub，启用个人域名 `x.zuoluo.tv`
+- ✅ **Wave 8**（本次）：rebrand 为 Make X Great Again，重新定位为 X 社交辅助平台
+- 🚧 **Wave 9**：Pillar 02 KOL 信号分 mini badge
+- 🚧 **Wave 10**：Pillar 03 KOL profile 摘要侧栏
+- 🚧 **Wave 11**：Pillar 04 社交图谱碎片
+- 🚧 **Wave 12**：Pillar 05 用户数据导出
 
 ## 仓库结构
 
 ```
-src/            本地/服务端分类器、策展库、本地服务
-extension/      MV3 浏览器扩展（被动 content-script）
-docs/           ARCHITECTURE.md（机制设计）· MVP.md（本地跑法）
-GOVERNANCE.md   治理红线、范围、申诉与移除
-CONTRIBUTING.md 如何参与 · SECURITY.md 安全报告
+src/                  本地 LLM 分类器 + 私有策展库（T3 spike）
+extension/            MV3 浏览器扩展（WXT + React 19 + Tailwind v4）
+services/edge/        Cloudflare Worker + D1 + SSR pages (/、/list、/admin)
+docs/
+  ARCHITECTURE.md     系统设计
+  GOVERNANCE.md       治理红线
+  PRIVACY.md          隐私承诺
+  STATUS.md           as-built audit
 ```
-
-公开**名单数据**将放在**独立仓库**，与代码解耦（数据 feed 独立版本/CI）。
 
 ## 治理与隐私（重要）
 
-这是一份对真实账号的公开指控列表。请先读 **[GOVERNANCE.md](./GOVERNANCE.md)**：
-置信度阈值 + 公开前人工复核、申诉/可审计移除、除公开数字 ID 外不存 PII、
-范围严格限定、透明版本化变更。误判申诉见
-[问题模板](./.github/ISSUE_TEMPLATE/)。
+这是一份对真实账号的公开指控列表。请先读 [docs/GOVERNANCE.md](./docs/GOVERNANCE.md)：
+
+- 置信度阈值 + 公开前人工/社区双重审核
+- 申诉/移除通道（GitHub issue + 48h 内复核）
+- 除公开数字 ID 外不存任何 PII
+- 范围严格限定 spam / 色情广告 bot，**不碰观点立场**
+- 透明版本化变更，所有决策写入 review_log
 
 ## 贡献
 
-欢迎 PR。请先读 [CONTRIBUTING.md](./CONTRIBUTING.md) 与 [GOVERNANCE.md](./GOVERNANCE.md)。
+欢迎 PR。请先读 [CONTRIBUTING.md](./CONTRIBUTING.md) 与 [docs/GOVERNANCE.md](./docs/GOVERNANCE.md)。
 安全问题请走 [SECURITY.md](./SECURITY.md)，不要开公开 issue。
 
 ## License

@@ -1,8 +1,8 @@
 {
-  "name": "x-spam-sentinel-extension",
+  "name": "mxga-extension",
   "version": "0.1.0",
   "private": true,
-  "description": "x-spam-sentinel browser extension (WXT, MV3, passive).",
+  "description": "Make X Great Again (MXGA) — passive ambient X browser extension (WXT, MV3).",
   "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {

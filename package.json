@@ -1,8 +1,8 @@
 {
-  "name": "x-spam-sentinel",
+  "name": "make-x-great-again",
   "version": "0.0.1",
   "private": true,
-  "description": "Local AI classifier + curation store for the x-spam-sentinel project (T3 spike).",
+  "description": "Make X Great Again (MXGA) — passive ambient X extension. Local classifier + curation store + shared Worker/D1.",
   "license": "AGPL-3.0-only",
   "type": "module",
   "engines": {

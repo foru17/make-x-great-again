@@ -63,7 +63,7 @@ async function ghPoll(deviceCode: string) {
   const j = (await r.json()) as { access_token?: string; error?: string };
   if (!j.access_token) return { pending: j.error ?? "pending" };
   const u = await fetch("https://api.github.com/user", {
-    headers: { authorization: `Bearer ${j.access_token}`, "user-agent": "x-spam-sentinel" },
+    headers: { authorization: `Bearer ${j.access_token}`, "user-agent": "mxga" },
   });
   const user = (await u.json()) as { login?: string };
   await setGh(j.access_token, user.login ?? "github");

@@ -147,7 +147,7 @@ ${o.head ?? ""}
 <style>${CSS}${o.css ?? ""}</style>
 </head><body>
 <header class="wrap nav" role="banner">
-  <a class="brand" href="/" aria-label="x-spam-sentinel 首页">${LOGO_SVG}<span>x-spam-sentinel</span></a>
+  <a class="brand" href="/" aria-label="${BRAND.name} 首页">${LOGO_SVG}<span>${BRAND.acronym}</span></a>
   <nav class="links" aria-label="主导航">
     ${navItem("list", "/list", "公榜")}
     ${navItem("github", BRAND.repo, "GitHub")}

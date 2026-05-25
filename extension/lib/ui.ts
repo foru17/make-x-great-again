@@ -184,7 +184,7 @@ export function createBubble(h: BubbleHandlers, pos: "tr" | "br" = "tr") {
 
   const pill = document.createElement("button");
   pill.className = "pill";
-  pill.setAttribute("aria-label", "x-spam-sentinel 本页可疑账号");
+  pill.setAttribute("aria-label", `${BRAND.acronym} 本页可疑账号`);
 
   const card = document.createElement("div");
   card.className = "card";
@@ -219,7 +219,7 @@ export function createBubble(h: BubbleHandlers, pos: "tr" | "br" = "tr") {
     if (!findings.length) {
       card.innerHTML = `
         <div class="hd">${icon("shield-check", "var(--brand)", 16)}
-          <span>x-spam-sentinel 已启用</span>
+          <span>${BRAND.acronym} 已启用</span>
           <span class="x" data-x>${icon("x", "currentColor", 14)}</span></div>
         <div class="sub" style="display:block;line-height:1.6">
           正在被动检查本页账号。发现可疑的垃圾/色情机器人时，会在这里提示并提供一键处理。</div>
