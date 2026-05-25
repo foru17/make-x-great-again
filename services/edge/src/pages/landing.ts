@@ -115,26 +115,26 @@ const ICON_USER = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 const HERO = `
 <section class="hero">
   <span class="eyebrow"><span class="dot" aria-hidden="true"></span>${BRAND.acronym}<span style="margin:0 8px;color:var(--fg-4)">·</span>开源 ${BRAND.license}</span>
-  <h1>${BRAND.name}<br><span class="sub">让 X 重新能用。</span></h1>
-  <p class="lede">一个被动的 X 旁路扩展。AI 在你浏览 X 时静默工作：拦下垃圾和色情机器人，给你看到的账号打信号分，总结 KOL 的历史推文。完全开源，不收集任何用户数据。</p>
+  <h1>${BRAND.name}<br><span class="sub">让 X 值得刷。</span></h1>
+  <p class="lede">装上 Chrome 就能用。浏览 X 时 AI 替你拦垃圾、识水军、汇热推——无感运行，零数据上传，完全开源。</p>
   <div class="ctas">
-    <a class="btn primary" href="${LINKS.RELEASE_URL}" id="installBtn" aria-label="安装到 Chrome（下载最新 Release）">${ICON_DOWNLOAD}<span>安装到 Chrome</span></a>
-    <a class="btn" href="${BRAND.repo}" aria-label="在 GitHub 上查看源码">${ICON_GH}<span>GitHub</span></a>
-    <a class="btn" href="/list" aria-label="查看公开 spam 榜单">${ICON_LIST}<span>看公榜</span></a>
+    <a class="btn primary" href="${LINKS.RELEASE_URL}" id="installBtn" aria-label="免费装到 Chrome">${ICON_DOWNLOAD}<span>免费装到 Chrome</span></a>
+    <a class="btn" href="${BRAND.repo}" aria-label="在 GitHub 上查看源码">${ICON_GH}<span>查看源码</span></a>
+    <a class="btn" href="/list" aria-label="看公榜">${ICON_LIST}<span>看公榜</span></a>
   </div>
   <p class="meta">
-    <span>不收集 PII</span><span class="dot" aria-hidden="true"></span>
-    <span>不追踪</span><span class="dot" aria-hidden="true"></span>
-    <span>不需要注册</span><span class="dot" aria-hidden="true"></span>
-    <span>开源可审计</span>
+    <span>不存身份信息</span><span class="dot" aria-hidden="true"></span>
+    <span>不发追踪请求</span><span class="dot" aria-hidden="true"></span>
+    <span>不用注册账号</span><span class="dot" aria-hidden="true"></span>
+    <span>每行代码都可查</span>
   </p>
   <div class="install-note" id="installNote" role="status">
-    <strong>开发者模式安装</strong>（Chrome Web Store 上架前的临时入口）：
+    <strong>开发者模式手装</strong>（商店审核中，先这样用）：
     <ol>
-      <li>下载并解压 GitHub Releases 的最新 <code>.zip</code></li>
-      <li>打开 <code>chrome://extensions</code>，右上角开启「开发者模式」</li>
-      <li>点击「加载已解压的扩展程序」，选择解压后的目录</li>
-      <li>访问 x.com 即开始被动检测</li>
+      <li>下载并解压最新 <code>.zip</code></li>
+      <li>浏览器地址栏输 <code>chrome://extensions</code>，右上角打开「开发者模式」</li>
+      <li>点「加载已解压的扩展程序」，选刚解压的目录</li>
+      <li>打开 x.com，扩展自动开始干活</li>
     </ol>
   </div>
 </section>
@@ -142,47 +142,47 @@ const HERO = `
 
 const PILLARS = `
 <section class="block">
-  <h2>它做什么 · 5 件事</h2>
+  <h2>装上之后，它在你刷 X 时悄悄做这 5 件事</h2>
   <div class="pillars">
     <div class="pillar">
       <div class="n">01</div>
       <div class="body">
-        <h3>Spam 净化</h3>
-        <p>评论区的色情/广告 bot 被动检测、内联标注、一键拉黑（驱动 X 自身屏蔽接口）。AI 高置信 + ≥3 个独立 GitHub 用户共识 → 入公榜，所有人共享。</p>
+        <h3>自动拦垃圾</h3>
+        <p>评论区的色情号、广告号被自动识别，内联打标，一键真·拉黑（直接点 X 自带的屏蔽按钮，多端同步）。3 个独立 GitHub 用户都标过的会进公榜，所有人共享。</p>
       </div>
-      <span class="status live">● Live</span>
+      <span class="status live">● 已上线</span>
     </div>
     <div class="pillar">
       <div class="n">02</div>
       <div class="body">
-        <h3>KOL 信号分</h3>
-        <p>鼠标停在 @handle 上 → 浮卡：账号年龄、原创比、主题集中度、互动质量、综合分。让你一眼分辨「真号 vs 营销号 vs 蹭流量」。</p>
+        <h3>一秒识水军</h3>
+        <p>鼠标移到任何 @handle 上，弹小卡片：注册多久、原创多少、聊什么、谁在和他互动。一眼看清是真号、营销号还是蹭流量的。</p>
       </div>
-      <span class="status next">Next</span>
+      <span class="status next">下一站</span>
     </div>
     <div class="pillar">
       <div class="n">03</div>
       <div class="body">
-        <h3>KOL 历史摘要</h3>
-        <p>进入任何 X profile 页 → 自动侧栏：「这个人主要谈 A / B / C 三个话题」「本月最热的 5 条」「最佳互动时段」。给关注决策提供 30 秒判断材料。</p>
+        <h3>历史一键看</h3>
+        <p>打开任何人的主页，侧栏自动展开：他平时主要在聊什么、本月最热的几条、什么时段最活跃。关不关注，30 秒看完决定。</p>
       </div>
-      <span class="status soon">Soon</span>
+      <span class="status soon">规划中</span>
     </div>
     <div class="pillar">
       <div class="n">04</div>
       <div class="body">
-        <h3>社交图谱提示</h3>
-        <p>看推文时显示「被你关注的 3 个 KOL 转过 / 评论过」「这条的真实回声范围」。让信号穿过算法噪声直达你。</p>
+        <h3>看清谁在带节奏</h3>
+        <p>刷推时如果有「你关注的 3 个人转过」「真实传播范围」会自动提示。让重要的内容能穿过算法直达你眼前。</p>
       </div>
-      <span class="status soon">Soon</span>
+      <span class="status soon">规划中</span>
     </div>
     <div class="pillar">
       <div class="n">05</div>
       <div class="body">
-        <h3>个人数据导出</h3>
-        <p>一键导出你自己的关注 / 收藏 / 推文为 JSON / Markdown，备份或迁出。所有数据在你浏览器内处理，不上服务端。</p>
+        <h3>数据随时带走</h3>
+        <p>你自己的关注、收藏、推文，一键存成 JSON 或 Markdown。整个过程在浏览器里完成，一字节不上传。</p>
       </div>
-      <span class="status soon">Soon</span>
+      <span class="status soon">规划中</span>
     </div>
   </div>
 </section>
@@ -190,28 +190,28 @@ const PILLARS = `
 
 const TRUST = `
 <section class="block">
-  <h2>四条治理铁律</h2>
+  <h2>开源透明，四项保证</h2>
   <div class="trust">
-    <div class="row" style="--ic:#10b981"><span class="ic">${ICON_SHIELD}</span><div><h3>AI 单独不能自动公开</h3><p>必须人工审核 或 ≥3 个独立 GitHub 上报人共识才入公榜，红线写进 D1 状态机。</p></div></div>
-    <div class="row" style="--ic:#38bdf8"><span class="ic">${ICON_LOCK}</span><div><h3>不收集 PII</h3><p>服务端只存 X 公开数字 ID 与举报人 GitHub 数字 ID；扩展端默认不上传任何浏览数据。</p></div></div>
-    <div class="row" style="--ic:#f59e0b"><span class="ic">${ICON_DB}</span><div><h3>状态机锁红线</h3><p>auto_pending_review → human_confirmed 的状态转换只接受人工或社区共识，AI 触发会被路由层拒绝。</p></div></div>
-    <div class="row" style="--ic:#a855f7"><span class="ic">${ICON_USER}</span><div><h3>GitHub 登录可写</h3><p>举报、确认、上报需 GitHub Device Flow 登录，反滥用、可追溯；不强制注册账号。</p></div></div>
+    <div class="row" style="--ic:#10b981"><span class="ic">${ICON_SHIELD}</span><div><h3>AI 不能单独「定罪」</h3><p>任何账号进公榜，必须有人工审核 或 至少 3 个独立 GitHub 用户都标过。这条规则直接写在数据库里，改不了，不靠承诺。</p></div></div>
+    <div class="row" style="--ic:#38bdf8"><span class="ic">${ICON_LOCK}</span><div><h3>不存任何身份信息</h3><p>服务端只存 X 的公开数字 ID + 举报人的 GitHub 数字 ID。你的浏览历史、关注列表、Cookie，一字节都不上传。</p></div></div>
+    <div class="row" style="--ic:#f59e0b"><span class="ic">${ICON_DB}</span><div><h3>每一条决策可查</h3><p>谁、什么时候、对哪个账号做了什么操作，全在 review_log 里。改主意了？删除有完整轨迹，不偷偷消失。</p></div></div>
+    <div class="row" style="--ic:#a855f7"><span class="ic">${ICON_USER}</span><div><h3>上报需 GitHub 登录</h3><p>用 GitHub Device Flow，扫码即可。反刷分、反恶意举报。不强迫你单独注册账号。</p></div></div>
   </div>
 </section>
 `;
 
 const LIVE = `
 <section class="block">
-  <h2>实时透明 · Pillar 1 公榜</h2>
+  <h2>正在跑的数据，不是 PPT</h2>
   <div class="stats">
-    <div class="stat"><div class="n" id="sCount"><span class="skel"></span></div><div class="lbl">已确认的 spam / bot 账号</div></div>
+    <div class="stat"><div class="n" id="sCount"><span class="skel"></span></div><div class="lbl">已确认的垃圾 / 色情号</div></div>
     <div class="stat"><div class="n" id="sWeek"><span class="skel"></span></div><div class="lbl">本周新增</div></div>
-    <div class="stat"><div class="n" id="sPending"><span class="skel"></span></div><div class="lbl">待人工审核</div></div>
+    <div class="stat"><div class="n" id="sPending"><span class="skel"></span></div><div class="lbl">排队等人工复核</div></div>
   </div>
   <p class="stats-foot">
-    <span class="pip"><i aria-hidden="true"></i><span id="sAgo">每 60 秒更新</span></span>
+    <span class="pip"><i aria-hidden="true"></i><span id="sAgo">60 秒同步一次</span></span>
     <span class="sep">·</span>
-    <a href="/list">查看完整公榜 →</a>
+    <a href="/list">完整公榜 →</a>
   </p>
 </section>
 `;
@@ -227,7 +227,7 @@ const SCRIPT = `
       document.getElementById('sCount').textContent=fmt(j.count);
       document.getElementById('sWeek').textContent=(j.week>0?'+':'')+fmt(j.week);
       document.getElementById('sPending').textContent=fmt(j.pending);
-      document.getElementById('sAgo').textContent=j.generatedAt?('更新于 '+ago(j.generatedAt)):'每 60 秒更新'
+      document.getElementById('sAgo').textContent=j.generatedAt?('刚刚同步 '+ago(j.generatedAt)):'60 秒同步一次'
     }).catch(function(){
       ['sCount','sWeek','sPending'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent='—'})
     })
