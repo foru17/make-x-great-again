@@ -231,6 +231,17 @@ export function layout(o: LayoutOpts): string {
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="color-scheme" content="dark light">
 <title>${esc(o.title)}</title>
+<link rel="icon" type="image/png" sizes="32x32" href="/icon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/icon-16.png">
+<link rel="apple-touch-icon" sizes="180x180" href="/icon-180.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
+<link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png">
+<meta property="og:title" content="${esc(o.title)}">
+<meta property="og:image" content="${BRAND.edgeBase}/og.png">
+<meta property="og:type" content="website">
+<meta property="og:url" content="${BRAND.edgeBase}/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="${BRAND.edgeBase}/og.png">
 <script>${THEME_BOOT}</script>
 ${o.head ?? ""}
 <style>${CSS}${o.css ?? ""}</style>

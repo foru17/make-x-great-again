@@ -17,6 +17,17 @@ routes = [
 # Can be flipped to `false` once the extension has rolled out widely.
 workers_dev = true
 
+# Static assets — favicon set, mascot artwork, og:image. Cloudflare Workers
+# Assets serves files from this directory first; unmatched paths fall through
+# to the Hono router (so /, /list, /admin, /v1/* still work as routes).
+[assets]
+directory = "./static"
+# `none` = static assets only for matching files; anything else hits Worker.
+not_found_handling = "none"
+# Don't auto-redirect /foo → /foo/ on directory-like requests; we serve
+# images, not browseable subdirs.
+html_handling = "none"
+
 # D1 — curation source of truth. Create with:
 #   npx wrangler d1 create xss-db
 # then paste the returned database_id below.

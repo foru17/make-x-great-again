@@ -14,6 +14,15 @@ export default defineConfig({
     name: "Make X Great Again",
     description:
       "Make X usable again. Passive AI: spam shield + KOL signal score + profile digest + social graph hints. Public-good, open source.",
+    // Mascot 「小蓝」 — chubby blue bird with red MXGA cap, raised fist pose.
+    // Generated PNGs live in extension/public/icon/<size>.png (WXT auto-picks
+    // them up from `public/` so no extra config needed).
+    icons: {
+      "16": "icon/16.png",
+      "32": "icon/32.png",
+      "48": "icon/48.png",
+      "128": "icon/128.png",
+    },
     permissions: ["storage"],
     host_permissions: [
       // Public Worker entry point (custom domain).

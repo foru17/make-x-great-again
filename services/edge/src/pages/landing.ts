@@ -7,8 +7,21 @@ import { ICONS, LINKS, layout } from "./_layout";
 
 const CSS = `
 /* Hero — Claude-inspired warm display: serif h1 for character, X glyph
-   in the eyebrow chip to anchor "this is for X" instantly */
-.hero{padding:80px 0 36px;max-width:820px}
+   in the eyebrow chip to anchor "this is for X" instantly.
+   .hero-row is the outer flex container with the mascot on the right;
+   .hero is the text column (text/eyebrow/h1/lede/CTAs/meta/install-note). */
+.hero-row{display:flex;align-items:center;gap:36px;padding:64px 0 28px;max-width:none}
+.hero{flex:1;min-width:0;padding:0;max-width:620px}
+.hero-mascot{flex-shrink:0;width:340px;display:flex;align-items:center;justify-content:center;
+  animation:bird-bob 4s ease-in-out infinite;transform-origin:50% 100%}
+.hero-mascot img{width:100%;height:auto;display:block;
+  filter:drop-shadow(0 18px 32px rgba(29,161,242,.18)) drop-shadow(0 4px 10px rgba(0,0,0,.08))}
+@keyframes bird-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@media (max-width:920px){
+  .hero-row{flex-direction:column;align-items:flex-start;gap:8px;padding:48px 0 24px}
+  .hero-mascot{width:240px;align-self:center;order:-1;margin-bottom:-12px}
+}
+@media (prefers-reduced-motion:reduce){.hero-mascot{animation:none}}
 .hero .eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11.5px;font-weight:600;
   letter-spacing:.14em;text-transform:uppercase;color:var(--fg-2);padding:6px 12px;
   border:1px solid var(--border-strong);border-radius:999px;margin-bottom:26px;
@@ -198,7 +211,8 @@ const ICON_DB = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 const ICON_USER = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>`;
 
 const HERO = `
-<section class="hero">
+<section class="hero-row">
+<div class="hero">
   <span class="eyebrow">
     <span class="dot" aria-hidden="true"></span>
     <span class="x">${ICONS.X}</span>
@@ -226,6 +240,10 @@ const HERO = `
       <li>打开 x.com，扩展自动开始干活</li>
     </ol>
   </div>
+</div>
+<div class="hero-mascot" aria-hidden="true">
+  <img src="/mxga-hero.png" alt="" width="340" height="340" />
+</div>
 </section>
 `;
 
