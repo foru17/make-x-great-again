@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { clearAllLocal, getGhLogin } from "../../lib/auth";
 import { BRAND } from "../../lib/brand";
+import { categorizeReason, categorizeReasons } from "../../lib/reason-category";
 import { type Settings, getSettings, setSetting } from "../../lib/settings";
 import {
   type BlockRecord,
@@ -57,6 +58,66 @@ const Avatar = ({ url, name }: { url?: string; name?: string }) => {
   ) : (
     <span className="flex h-7 w-7 flex-none items-center justify-center rounded-full bg-card-hi text-xs font-bold text-fg-3">
       {mono}
+    </span>
+  );
+};
+
+/** Avatar wrapped in an X profile link — supports manual review by click. */
+const AvatarLink = ({ handle, url, name }: { handle: string; url?: string; name?: string }) => (
+  <a
+    href={`https://x.com/${encodeURIComponent(handle)}`}
+    target="_blank"
+    rel="noopener"
+    className="flex-none rounded-full ring-offset-1 transition hover:ring-2 hover:ring-accent/50"
+    title={`去 @${handle} 的 X 主页`}
+  >
+    <Avatar url={url} name={name} />
+  </a>
+);
+
+/** Plain @handle link with hover-to-accent. */
+const HandleLink = ({ handle, className = "" }: { handle: string; className?: string }) => (
+  <a
+    href={`https://x.com/${encodeURIComponent(handle)}`}
+    target="_blank"
+    rel="noopener"
+    className={`transition hover:text-accent ${className}`}
+    title={`去 @${handle} 的 X 主页`}
+  >
+    @{handle}
+  </a>
+);
+
+/** Display chip for a verdict reason — categorizes the raw English LLM
+ *  output into a small Chinese class. The full reason is in title= for hover. */
+const ReasonChip = ({
+  raw,
+  reasons,
+}: {
+  raw?: string | null;
+  reasons?: readonly (string | null | undefined)[];
+}) => {
+  const cat = reasons ? categorizeReasons(reasons) : categorizeReason(raw);
+  const display = (reasons?.filter(Boolean) as string[] | undefined)?.join("\n") || raw || "";
+  // Tone → explicit classes (Tailwind v4 needs literal strings to detect)
+  const tone =
+    cat.tone === "violet"
+      ? "text-violet border-violet/40 bg-violet/[0.08]"
+      : cat.tone === "warn"
+        ? "text-warn border-warn/40 bg-warn/[0.08]"
+        : cat.tone === "danger"
+          ? "text-danger border-danger/40 bg-danger/[0.08]"
+          : cat.tone === "amber"
+            ? "text-warn border-warn/30 bg-warn/[0.06]"
+            : cat.tone === "neutral"
+              ? "text-fg-2 border-border-2 bg-card-hi"
+              : "text-fg-3 border-border bg-card";
+  return (
+    <span
+      title={display || "无原因记录"}
+      className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold tracking-[0.02em] ${tone}`}
+    >
+      {cat.zh}
     </span>
   );
 };
@@ -224,13 +285,29 @@ function Blocklist() {
               <tr key={r.id} className={trHover}>
                 <td className={td}>
                   <div className="flex min-w-0 items-center gap-2.5">
-                    <Avatar url={r.avatarUrl} name={r.displayName || r.handle} />
+                    <AvatarLink
+                      handle={r.handle}
+                      url={r.avatarUrl}
+                      name={r.displayName || r.handle}
+                    />
                     <div className="min-w-0">
                       <div className="max-w-[220px] truncate font-semibold tracking-[-0.005em]">
-                        {r.displayName || `@${r.handle}`}
+                        {r.displayName ? (
+                          <a
+                            href={`https://x.com/${encodeURIComponent(r.handle)}`}
+                            target="_blank"
+                            rel="noopener"
+                            className="text-fg transition hover:text-accent"
+                            title={`去 @${r.handle} 的 X 主页`}
+                          >
+                            {r.displayName}
+                          </a>
+                        ) : (
+                          <HandleLink handle={r.handle} className="text-fg" />
+                        )}
                       </div>
                       <div className="max-w-[220px] truncate text-[12px] text-fg-3">
-                        @{r.handle}
+                        <HandleLink handle={r.handle} className="text-fg-3" />
                         {idTail(r.id, r.handle)}
                       </div>
                     </div>
@@ -239,8 +316,8 @@ function Blocklist() {
                 <td className={td}>
                   {r.verdict ? <Tag label={r.verdict.label} conf={r.verdict.confidence} /> : "—"}
                 </td>
-                <td className={`${td} max-w-[360px] whitespace-normal text-fg-3`}>
-                  {r.reason || ""}
+                <td className={td}>
+                  <ReasonChip raw={r.reason} />
                 </td>
                 <td className={`${td} text-fg-3`}>{src[r.source]}</td>
                 <td className={`${td} font-mono text-[12px] text-fg-3`}>{when(r.ts)}</td>
@@ -289,20 +366,38 @@ function Cache() {
               <tr key={c.id} className={trHover}>
                 <td className={td}>
                   <div className="flex items-center gap-2.5">
-                    <Avatar url={c.avatarUrl} name={c.displayName || c.handle} />
+                    <AvatarLink
+                      handle={c.handle}
+                      url={c.avatarUrl}
+                      name={c.displayName || c.handle}
+                    />
                     <div className="min-w-0">
                       <div className="max-w-[220px] truncate font-semibold tracking-[-0.005em]">
-                        {c.displayName || `@${c.handle}`}
+                        {c.displayName ? (
+                          <a
+                            href={`https://x.com/${encodeURIComponent(c.handle)}`}
+                            target="_blank"
+                            rel="noopener"
+                            className="text-fg transition hover:text-accent"
+                            title={`去 @${c.handle} 的 X 主页`}
+                          >
+                            {c.displayName}
+                          </a>
+                        ) : (
+                          <HandleLink handle={c.handle} className="text-fg" />
+                        )}
                       </div>
-                      <div className="text-[12px] text-fg-3">@{c.handle}</div>
+                      <div className="text-[12px] text-fg-3">
+                        <HandleLink handle={c.handle} className="text-fg-3" />
+                      </div>
                     </div>
                   </div>
                 </td>
                 <td className={td}>
                   <Tag label={c.verdict.label} conf={c.verdict.confidence} />
                 </td>
-                <td className={`${td} max-w-[360px] whitespace-normal text-fg-3`}>
-                  {c.verdict.reasons[0] ?? ""}
+                <td className={td}>
+                  <ReasonChip reasons={c.verdict.reasons} />
                 </td>
                 <td className={`${td} font-mono text-[12px] text-fg-3`}>{c.model}</td>
                 <td className={`${td} font-mono text-[12px] text-fg-3`}>{when(c.ts)}</td>

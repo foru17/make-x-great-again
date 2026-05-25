@@ -6,6 +6,12 @@ export interface Settings {
   bubblePos: "tr" | "br"; // top-right / bottom-right
   replyAuto: boolean; // auto-check every replier in a tweet's reply section
   edgeBase: string; // advanced: override the edge service base URL
+  /** When true, the corner bubble auto-expands the card view whenever a
+   *  newly-discovered spam account appears (with a confirm-to-block prompt).
+   *  When false, only the pill flashes and the count goes up — the user has
+   *  to click the pill to act. Toggle is also surfaced inline inside the
+   *  card itself ("下次自动弹出"). */
+  autoExpandOnFinding: boolean;
 }
 
 export const DEFAULTS: Settings = {
@@ -14,6 +20,7 @@ export const DEFAULTS: Settings = {
   bubblePos: "tr",
   replyAuto: true,
   edgeBase: "",
+  autoExpandOnFinding: true,
 };
 
 const KEY = "xss:settings";
