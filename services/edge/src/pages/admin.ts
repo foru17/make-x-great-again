@@ -147,15 +147,22 @@ input::placeholder{color:var(--fg-4)}
   background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12' fill='%2371717a'><path d='M6 8L2 4h8z'/></svg>");
   background-repeat:no-repeat;background-position:right 9px center}
 
-/* Batch action bar */
-.batch{display:none;align-items:center;justify-content:space-between;gap:10px;
+/* Batch action bar — always present so the master "全选" checkbox is
+   discoverable; bulk action buttons hide until at least one row is selected. */
+.batch{display:flex;align-items:center;justify-content:space-between;gap:10px;
   padding:10px 14px;margin-bottom:12px;border-radius:var(--r-lg);
-  background:var(--card-hi);border:1px solid var(--border-strong);animation:slidein .25s ease-out}
-.batch.on{display:flex}
-.batch .meta{font-size:13px;color:var(--fg)}
+  background:var(--card-hi);border:1px solid var(--border-strong)}
+.batch .meta{font-size:13px;color:var(--fg);display:inline-flex;align-items:center;gap:10px;
+  cursor:pointer;user-select:none}
+.batch .meta input[type=checkbox]{width:16px;height:16px;accent-color:var(--accent);cursor:pointer;margin:0}
 .batch .meta b{color:var(--fg);font-variant-numeric:tabular-nums}
-.batch .actions{display:flex;gap:8px;flex-wrap:wrap}
+.batch .meta .hint{color:var(--fg-3);font-size:11.5px;margin-left:6px}
+.batch .actions{display:none;gap:8px;flex-wrap:wrap}
+.batch.on .actions{display:flex;animation:slidein .25s ease-out}
 @keyframes slidein{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+/* Load-more footer under paginated row lists */
+.more-foot{text-align:center;padding:16px 0 4px;color:var(--fg-3);font-size:12.5px}
+.more-foot .btn{margin-right:8px}
 
 /* ──────────────────────────────────────────────────────────────────────
    Queue rows — REDESIGNED for scannability:
@@ -361,6 +368,7 @@ const SCRIPT = String.raw`
   var TOK=localStorage.getItem('xss_admin')||'';
   var VIEW='queue';
   var queue=[];
+  var queueCursor=null;
   var whitelist=[];
   var wlCursor=null;
   var blacklist=[];
@@ -372,6 +380,12 @@ const SCRIPT = String.raw`
   var blSel=new Set();        // blacklist tab selection
   var logCursor=null;
   var GH='${GH_REPO}';
+  // True per-table totals (vs in-memory loaded count), fetched eagerly from
+  // /v1/admin/stats. Null until first refresh; chips show "—" while pending.
+  var stats={queue:null,blacklist:null,whitelist:null,reports:null};
+  // Last-clicked row index per tab, for shift-click range selection.
+  var lastSelIdxQ=-1,lastSelIdxW=-1,lastSelIdxB=-1;
+  function fmtN(n){return typeof n==='number'?n.toLocaleString('zh-CN'):'—'}
 
   function E(s){return (s==null?'':String(s)).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
   function xUrl(handle){return 'https://x.com/'+encodeURIComponent(handle||'')}
@@ -478,7 +492,8 @@ const SCRIPT = String.raw`
       +'<button data-v="log" onclick="window.__xss.tab(\'log\')">审计日志</button>'
       +'</div>'
       +'<div id="view"></div>';
-    loadQueue();
+    loadQueue(false);
+    refreshStats();
   }
   function renderLocked(){
     $('app').innerHTML='<div class="locked"><div class="card">'
@@ -494,17 +509,36 @@ const SCRIPT = String.raw`
     setTimeout(function(){var t=$('t');if(t)t.focus()},50);
   }
 
-  function loadQueue(){
-    setStatus('加载中…');
-    api('/v1/admin/queue').then(function(r){
+  // Source-of-truth chip totals. Cheap COUNT(*) on the server; we refresh
+  // after every mutating action so the chips stay honest as the queue drains.
+  function refreshStats(){
+    api('/v1/admin/stats').then(function(r){
       if(r.status===403){TOK='';localStorage.removeItem('xss_admin');renderLocked();return null}
       return r.json();
     }).then(function(j){
       if(!j)return;
-      queue=j.queue||[];
-      var c=$('cQ');if(c)c.textContent=queue.length;
+      stats=j;
+      var cQ=$('cQ');if(cQ)cQ.textContent=fmtN(j.queue);
+      var cB=$('cB');if(cB)cB.textContent=fmtN(j.blacklist);
+      var cW=$('cW');if(cW)cW.textContent=fmtN(j.whitelist);
+    }).catch(function(){});
+  }
+  function loadQueue(more){
+    if(!more){queue=[];queueCursor=null;sel.clear();lastSelIdxQ=-1}
+    setStatus('加载中…');
+    api('/v1/admin/queue?limit=100'+(queueCursor?'&before='+queueCursor:'')).then(function(r){
+      if(r.status===403){TOK='';localStorage.removeItem('xss_admin');renderLocked();return null}
+      return r.json();
+    }).then(function(j){
+      if(!j)return;
+      queue=queue.concat(j.queue||[]);
+      queueCursor=j.nextBefore;
+      // Fallback: if the stats fetch hasn't returned yet, show the loaded
+      // count with a "+" hint so the chip is never blank for long.
+      var cQ=$('cQ');
+      if(cQ&&stats.queue==null)cQ.textContent=queue.length+(queueCursor?'+':'');
       setStatus('');
-      renderQueue();
+      if(more)renderRows();else renderQueue();
     });
   }
   function filteredQueue(){
@@ -550,7 +584,10 @@ const SCRIPT = String.raw`
         +'</div>'
       +'</div>'
       +'<div class="batch" id="batch">'
-        +'<div class="meta">已选 <b id="selN">0</b> 条 · 仅当前过滤范围</div>'
+        +'<label class="meta" title="全选当前过滤范围。Shift+点 可在两次勾选间一次性勾选范围">'
+          +'<input type="checkbox" id="selAllQ" aria-label="全选当前过滤范围">'
+          +'<span>已选 <b id="selN">0</b> · 当前 <b id="visN">0</b><span class="hint">（Shift+点可范围多选）</span></span>'
+        +'</label>'
         +'<div class="actions">'
           +'<button class="btn sm blacklist" onclick="window.__xss.batch(\'approve\')">批量拉黑</button>'
           +'<button class="btn sm" onclick="window.__xss.batch(\'reject\')">批量驳回</button>'
@@ -558,18 +595,25 @@ const SCRIPT = String.raw`
           +'<button class="btn sm" onclick="window.__xss.clearSel()">清空选择</button>'
         +'</div>'
       +'</div>'
-      +'<div class="rows" id="rows"></div>';
+      +'<div class="rows" id="rows"></div>'
+      +'<div class="more-foot" id="qmoreFoot"></div>';
     Array.prototype.forEach.call(v.querySelectorAll('.chip'),function(b){
-      b.addEventListener('click',function(){filter=b.dataset.f;sel.clear();renderQueue()})
+      b.addEventListener('click',function(){filter=b.dataset.f;lastSelIdxQ=-1;renderRows()})
     });
-    $('sort').addEventListener('change',function(e){sort=e.target.value;renderQueue()});
+    $('sort').addEventListener('change',function(e){sort=e.target.value;lastSelIdxQ=-1;renderRows()});
+    $('selAllQ').addEventListener('change',function(){
+      var rows=filteredQueue();
+      if(this.checked)rows.forEach(function(a){sel.add(key(a))})
+      else rows.forEach(function(a){sel.delete(key(a))});
+      lastSelIdxQ=-1;renderRows();
+    });
     renderRows();
   }
   function renderRows(){
     var rows=filteredQueue();
     var box=$('rows');
-    if(!rows.length){box.innerHTML='<div class="empty">'+(filter==='all'?'队列为空':'当前过滤无匹配')+'</div>';refreshBatch();return}
-    box.innerHTML=rows.map(function(a){
+    if(!rows.length){box.innerHTML='<div class="empty">'+(filter==='all'?'队列为空':'当前过滤无匹配')+'</div>';renderQueueMoreFoot();refreshBatch();return}
+    box.innerHTML=rows.map(function(a,i){
       var k=key(a),conf=Math.round((a.confidence||0)*100);
       var av=a.avatar_url||('https://unavatar.io/twitter/'+encodeURIComponent(a.handle));
       var fb=E((a.handle||'?').slice(0,1).toUpperCase());
@@ -587,7 +631,7 @@ const SCRIPT = String.raw`
       // have to click into x.com on every queue item.
       var evid=(a.evidence_text||'').replace(/\s+/g,' ').trim();
       var evidHtml=evid?'<div class="ev" title="'+E(evid)+'">『'+E(evid.slice(0,90))+(evid.length>90?'…':'')+'』</div>':'';
-      return '<div class="qrow '+E(lbl)+(sel.has(k)?' sel':'')+'" data-k="'+E(k)+'">'
+      return '<div class="qrow '+E(lbl)+(sel.has(k)?' sel':'')+'" data-k="'+E(k)+'" data-idx="'+i+'">'
         +'<input type="checkbox"'+(sel.has(k)?' checked':'')+' aria-label="选中 @'+E(a.handle)+'">'
         +'<div class="av"><img src="'+E(av)+'" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement(\'span\'),{textContent:\''+fb+'\'}))"></div>'
         +'<div class="who">'
@@ -613,7 +657,29 @@ const SCRIPT = String.raw`
     }).join('');
     Array.prototype.forEach.call(box.querySelectorAll('.qrow'),function(r){
       var k=r.dataset.k;
+      var idx=parseInt(r.dataset.idx,10);
       var cb=r.querySelector('input[type=checkbox]');
+      // Range-select on shift+click: extend the previous click's intent
+      // (the current cb.checked state, already toggled by the browser)
+      // across [lastSelIdxQ, idx]. The native click fires before change,
+      // so we handle range here and let change handle the singleton case.
+      cb.addEventListener('click',function(e){
+        if(e.shiftKey&&lastSelIdxQ>=0&&lastSelIdxQ!==idx){
+          var rowEls=box.querySelectorAll('.qrow');
+          var lo=Math.min(lastSelIdxQ,idx),hi=Math.max(lastSelIdxQ,idx);
+          var target=cb.checked;
+          for(var i=lo;i<=hi;i++){
+            var rr=rowEls[i];if(!rr)continue;
+            var cc=rr.querySelector('input[type=checkbox]');
+            if(!cc||cc.checked===target)continue;
+            cc.checked=target;
+            var kk=rr.dataset.k;
+            if(target){sel.add(kk);rr.classList.add('sel')}
+            else{sel.delete(kk);rr.classList.remove('sel')}
+          }
+        }
+        lastSelIdxQ=idx;
+      });
       cb.addEventListener('change',function(){if(cb.checked){sel.add(k);r.classList.add('sel')}else{sel.delete(k);r.classList.remove('sel')}refreshBatch()});
       Array.prototype.forEach.call(r.querySelectorAll('.acts button'),function(b){
         b.addEventListener('click',function(){
@@ -622,21 +688,51 @@ const SCRIPT = String.raw`
         })
       })
     });
+    renderQueueMoreFoot();
     refreshBatch();
   }
-  function refreshBatch(){var b=$('batch'),s=$('selN');if(!b)return;if(sel.size){b.classList.add('on');s.textContent=sel.size}else b.classList.remove('on')}
+  // Footer below the queue rows. "加载更多 N 条" when more pending exists;
+  // a quiet "已加载全部 N 条" otherwise so the maintainer knows they're done.
+  function renderQueueMoreFoot(){
+    var f=$('qmoreFoot');if(!f)return;
+    var total=(stats&&stats.queue!=null)?stats.queue:null;
+    var loaded=queue.length;
+    var remaining=total!=null?Math.max(0,total-loaded):null;
+    if(queueCursor){
+      f.innerHTML='<button class="btn sm" id="qmore">加载更多</button>'
+        +(remaining!=null?'<span>还有 '+fmtN(remaining)+' 条</span>':'<span>继续加载</span>');
+      $('qmore').addEventListener('click',function(){loadQueue(true)});
+    } else {
+      f.innerHTML=loaded>0?'<span>已加载全部 '+fmtN(loaded)+' 条</span>':'';
+    }
+  }
+  // Master checkbox state reflects "every visible row is selected".
+  // selN = global selection size, visN = current filter size.
+  function refreshBatch(){
+    var b=$('batch'),s=$('selN'),v=$('visN'),m=$('selAllQ');
+    if(!b)return;
+    var rows=filteredQueue();
+    var inFilter=0;for(var i=0;i<rows.length;i++)if(sel.has(key(rows[i])))inFilter++;
+    if(s)s.textContent=sel.size;
+    if(v)v.textContent=rows.length;
+    if(m){m.checked=rows.length>0&&inFilter===rows.length;m.indeterminate=inFilter>0&&inFilter<rows.length}
+    b.classList.toggle('on',sel.size>0);
+  }
   function decideOne(rowEl,k,action){
     var parts=k.split('|'),xUserId=parts[0]||undefined,handle=parts[1];
     rowEl.classList.add('removing');
     api('/v1/admin/decide',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({handle:handle,xUserId:xUserId,action:action})})
       .then(function(){
         queue=queue.filter(function(a){return key(a)!==k});sel.delete(k);
-        var c=$('cQ');if(c)c.textContent=queue.length;
+        // Optimistic chip decrement so the count drops immediately; the next
+        // refreshStats() reconciles against the server.
+        if(stats.queue!=null){stats.queue=Math.max(0,stats.queue-1);var c=$('cQ');if(c)c.textContent=fmtN(stats.queue)}
         renderRows();
         Array.prototype.forEach.call(document.querySelectorAll('.chip'),function(b){
           var k2=b.dataset.f,n=k2==='all'?queue.length:queue.filter(function(a){return a.verdict_label===k2}).length;
           var nEl=b.querySelector('.n');if(nEl)nEl.textContent=n;
         });
+        refreshStats();
       });
   }
   function batch(action){
@@ -654,16 +750,21 @@ const SCRIPT = String.raw`
       setStatus('批量'+label+'…');
       var done=0;
       function next(){
-        if(done>=ks.length){sel.clear();renderQueue();setStatus('完成 · '+done+' 条');setTimeout(function(){setStatus('')},2500);return}
+        if(done>=ks.length){sel.clear();lastSelIdxQ=-1;renderQueue();refreshStats();setStatus('完成 · '+done+' 条');setTimeout(function(){setStatus('')},2500);return}
         var k=ks[done++],parts=k.split('|');
         api('/v1/admin/decide',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({handle:parts[1],xUserId:parts[0]||undefined,action:action})})
-          .then(function(){queue=queue.filter(function(a){return key(a)!==k});var c=$('cQ');if(c)c.textContent=queue.length;setStatus('批量'+label+' '+done+'/'+ks.length);next()})
+          .then(function(){
+            queue=queue.filter(function(a){return key(a)!==k});
+            if(stats.queue!=null){stats.queue=Math.max(0,stats.queue-1);var c=$('cQ');if(c)c.textContent=fmtN(stats.queue)}
+            setStatus('批量'+label+' '+done+'/'+ks.length);
+            next();
+          })
           .catch(function(){next()})
       }
       next();
     });
   }
-  function clearSel(){sel.clear();renderRows()}
+  function clearSel(){sel.clear();lastSelIdxQ=-1;renderRows()}
 
   function loadLog(more){
     var v=$('view');
@@ -708,37 +809,45 @@ const SCRIPT = String.raw`
       whitelist=whitelist.concat(j.list||[]);
       wlCursor=j.nextBefore;
       setStatus('');
-      var c=$('cW');if(c)c.textContent=whitelist.length+(wlCursor?'+':'');
+      // Truth lives in stats; this is just a quick fallback before /v1/admin/stats arrives.
+      var c=$('cW');if(c&&stats.whitelist==null)c.textContent=whitelist.length+(wlCursor?'+':'');
       renderWhitelist();
     });
   }
   function renderWhitelist(){
     var v=$('view');
+    var totalLbl=(stats&&stats.whitelist!=null)?fmtN(stats.whitelist):(whitelist.length+(wlCursor?'+':''));
     v.innerHTML=
       '<div class="toolbar">'
-        +'<div class="status">共 <b style="color:var(--fg)">'+whitelist.length+'</b> 个白名单账号 · 它们不会再被 AI 扫描，也不接受举报</div>'
+        +'<div class="status">共 <b style="color:var(--fg)">'+totalLbl+'</b> 个白名单账号 · 它们不会再被 AI 扫描，也不接受举报</div>'
         +'<div class="r">'
           +'<button class="btn sm primary" onclick="window.__xss.wlAdd()">+ 加入白名单</button>'
         +'</div>'
       +'</div>'
       +'<div class="batch" id="wlbatch">'
-        +'<div class="meta">已选 <b id="wlselN">0</b> 条</div>'
+        +'<label class="meta" title="全选已加载范围。Shift+点 可在两次勾选间一次性勾选范围">'
+          +'<input type="checkbox" id="selAllW" aria-label="全选已加载范围">'
+          +'<span>已选 <b id="wlselN">0</b> · 当前 <b id="wlvisN">0</b><span class="hint">（Shift+点可范围多选）</span></span>'
+        +'</label>'
         +'<div class="actions">'
           +'<button class="btn sm danger" onclick="window.__xss.wlBatch(\'remove\')">批量移出白名单</button>'
           +'<button class="btn sm" onclick="window.__xss.wlClearSel()">清空选择</button>'
         +'</div>'
       +'</div>'
       +'<div class="rows" id="wlrows"></div>'
-      +(wlCursor?'<div style="text-align:center;padding:18px"><button class="btn sm" id="wlmore">加载更多</button></div>':'');
+      +'<div class="more-foot" id="wmoreFoot">'
+        +(wlCursor?'<button class="btn sm" id="wlmore">加载更多</button>':'')
+        +(stats.whitelist!=null?'<span>'+(wlCursor?'已加载 '+fmtN(whitelist.length)+' / 共 '+fmtN(stats.whitelist):'已加载全部 '+fmtN(whitelist.length))+' 条</span>':'')
+      +'</div>';
     var box=$('wlrows');
     if(!whitelist.length){box.innerHTML='<div class="empty">还没有白名单账号。<br><br>点击右上角 <b>+ 加入白名单</b>，或在「待审队列」对某行点 <b>白名单</b> 按钮把它直接挪过来。</div>';wlRefreshBatch();return}
-    box.innerHTML=whitelist.map(function(a){
+    box.innerHTML=whitelist.map(function(a,i){
       var k=(a.x_user_id||'')+'|'+a.handle;
       var av=a.avatar_url||('https://unavatar.io/twitter/'+encodeURIComponent(a.handle));
       var fb=E((a.handle||'?').slice(0,1).toUpperCase());
       var note='';
       try{var rs=JSON.parse(a.reasons||'[]');note=Array.isArray(rs)?rs.filter(function(x){return x&&x!=='whitelisted by admin'}).join(' · '):''}catch(e){}
-      return '<div class="qrow legit'+(wlSel.has(k)?' sel':'')+'" data-k="'+E(k)+'" data-h="'+E(a.handle)+'" data-u="'+E(a.x_user_id||'')+'">'
+      return '<div class="qrow legit'+(wlSel.has(k)?' sel':'')+'" data-k="'+E(k)+'" data-idx="'+i+'" data-h="'+E(a.handle)+'" data-u="'+E(a.x_user_id||'')+'">'
         +'<input type="checkbox"'+(wlSel.has(k)?' checked':'')+' aria-label="选中 @'+E(a.handle)+'">'
         +'<div class="av"><img src="'+E(av)+'" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement(\'span\'),{textContent:\''+fb+'\'}))"></div>'
         +'<div class="who">'
@@ -758,16 +867,47 @@ const SCRIPT = String.raw`
     }).join('');
     Array.prototype.forEach.call(box.querySelectorAll('.qrow'),function(r){
       var k=r.dataset.k;
+      var idx=parseInt(r.dataset.idx,10);
       var cb=r.querySelector('input[type=checkbox]');
+      cb.addEventListener('click',function(e){
+        if(e.shiftKey&&lastSelIdxW>=0&&lastSelIdxW!==idx){
+          var rowEls=box.querySelectorAll('.qrow');
+          var lo=Math.min(lastSelIdxW,idx),hi=Math.max(lastSelIdxW,idx);
+          var target=cb.checked;
+          for(var i=lo;i<=hi;i++){
+            var rr=rowEls[i];if(!rr)continue;
+            var cc=rr.querySelector('input[type=checkbox]');
+            if(!cc||cc.checked===target)continue;
+            cc.checked=target;
+            var kk=rr.dataset.k;
+            if(target){wlSel.add(kk);rr.classList.add('sel')}
+            else{wlSel.delete(kk);rr.classList.remove('sel')}
+          }
+        }
+        lastSelIdxW=idx;
+      });
       cb.addEventListener('change',function(){if(cb.checked){wlSel.add(k);r.classList.add('sel')}else{wlSel.delete(k);r.classList.remove('sel')}wlRefreshBatch()});
       var btn=r.querySelector('[data-wl-rm]');
       if(btn)btn.addEventListener('click',function(){wlRemove(r.dataset.h,r.dataset.u||null,r)});
     });
     var lm=$('wlmore');if(lm)lm.addEventListener('click',function(){loadWhitelist(true)});
+    var sa=$('selAllW');if(sa)sa.addEventListener('change',function(){
+      if(this.checked)whitelist.forEach(function(a){wlSel.add((a.x_user_id||'')+'|'+a.handle)});
+      else whitelist.forEach(function(a){wlSel.delete((a.x_user_id||'')+'|'+a.handle)});
+      lastSelIdxW=-1;renderWhitelist();
+    });
     wlRefreshBatch();
   }
-  function wlRefreshBatch(){var b=$('wlbatch'),s=$('wlselN');if(!b)return;if(wlSel.size){b.classList.add('on');s.textContent=wlSel.size}else b.classList.remove('on')}
-  function wlClearSel(){wlSel.clear();renderWhitelist()}
+  function wlRefreshBatch(){
+    var b=$('wlbatch'),s=$('wlselN'),v=$('wlvisN'),m=$('selAllW');
+    if(!b)return;
+    var inView=0;for(var i=0;i<whitelist.length;i++){if(wlSel.has((whitelist[i].x_user_id||'')+'|'+whitelist[i].handle))inView++}
+    if(s)s.textContent=wlSel.size;
+    if(v)v.textContent=whitelist.length;
+    if(m){m.checked=whitelist.length>0&&inView===whitelist.length;m.indeterminate=inView>0&&inView<whitelist.length}
+    b.classList.toggle('on',wlSel.size>0);
+  }
+  function wlClearSel(){wlSel.clear();lastSelIdxW=-1;renderWhitelist()}
   function wlBatch(action){
     if(!wlSel.size)return;
     mxModal.confirm({
@@ -781,7 +921,7 @@ const SCRIPT = String.raw`
       setStatus('批量移出…');
       var done=0;
       function next(){
-        if(done>=ks.length){wlSel.clear();loadWhitelist(false);setStatus('完成 · '+done+' 条');setTimeout(function(){setStatus('')},2500);return}
+        if(done>=ks.length){wlSel.clear();lastSelIdxW=-1;loadWhitelist(false);refreshStats();setStatus('完成 · '+done+' 条');setTimeout(function(){setStatus('')},2500);return}
         var k=ks[done++],parts=k.split('|'),handle=parts[1],xUserId=parts[0]||null;
         var q='?handle='+encodeURIComponent(handle)+(xUserId?'&xUserId='+encodeURIComponent(xUserId):'');
         api('/v1/admin/whitelist'+q,{method:'DELETE'}).then(function(){setStatus('批量移出 '+done+'/'+ks.length);next()}).catch(function(){next()})
@@ -801,18 +941,23 @@ const SCRIPT = String.raw`
       blacklist=blacklist.concat(j.list||[]);
       blCursor=j.nextBefore;
       setStatus('');
-      var c=$('cB');if(c)c.textContent=blacklist.length+(blCursor?'+':'');
+      // Truth lives in stats; this is just a quick fallback before /v1/admin/stats arrives.
+      var c=$('cB');if(c&&stats.blacklist==null)c.textContent=blacklist.length+(blCursor?'+':'');
       renderBlacklist();
     });
   }
   function renderBlacklist(){
     var v=$('view');
+    var totalLbl=(stats&&stats.blacklist!=null)?fmtN(stats.blacklist):(blacklist.length+(blCursor?'+':''));
     v.innerHTML=
       '<div class="toolbar">'
-        +'<div class="status">共 <b style="color:var(--fg)">'+blacklist.length+'</b> 个已公榜账号 · 在 <a href="/list" target="_blank">/list</a> 公开可见 · 误判直接 → 白名单 / 驳回</div>'
+        +'<div class="status">共 <b style="color:var(--fg)">'+totalLbl+'</b> 个已公榜账号 · 在 <a href="/list" target="_blank">/list</a> 公开可见 · 误判直接 → 白名单 / 驳回</div>'
       +'</div>'
       +'<div class="batch" id="blbatch">'
-        +'<div class="meta">已选 <b id="blselN">0</b> 条</div>'
+        +'<label class="meta" title="全选已加载范围。Shift+点 可在两次勾选间一次性勾选范围">'
+          +'<input type="checkbox" id="selAllB" aria-label="全选已加载范围">'
+          +'<span>已选 <b id="blselN">0</b> · 当前 <b id="blvisN">0</b><span class="hint">（Shift+点可范围多选）</span></span>'
+        +'</label>'
         +'<div class="actions">'
           +'<button class="btn sm ok" onclick="window.__xss.blBatch(\'whitelist\')">批量白名单</button>'
           +'<button class="btn sm" onclick="window.__xss.blBatch(\'reject\')">批量驳回（不公开）</button>'
@@ -821,10 +966,13 @@ const SCRIPT = String.raw`
         +'</div>'
       +'</div>'
       +'<div class="rows" id="blrows"></div>'
-      +(blCursor?'<div style="text-align:center;padding:18px"><button class="btn sm" id="blmore">加载更多</button></div>':'');
+      +'<div class="more-foot" id="bmoreFoot">'
+        +(blCursor?'<button class="btn sm" id="blmore">加载更多</button>':'')
+        +(stats.blacklist!=null?'<span>'+(blCursor?'已加载 '+fmtN(blacklist.length)+' / 共 '+fmtN(stats.blacklist):'已加载全部 '+fmtN(blacklist.length))+' 条</span>':'')
+      +'</div>';
     var box=$('blrows');
     if(!blacklist.length){box.innerHTML='<div class="empty">公榜还没有账号。<br><br>在「待审队列」点 <b style="color:var(--danger)">拉黑</b> 把判定结果送进公榜。</div>';blRefreshBatch();return}
-    box.innerHTML=blacklist.map(function(a){
+    box.innerHTML=blacklist.map(function(a,i){
       var k=(a.x_user_id||'')+'|'+a.handle;
       var av=a.avatar_url||('https://unavatar.io/twitter/'+encodeURIComponent(a.handle));
       var fb=E((a.handle||'?').slice(0,1).toUpperCase());
@@ -832,7 +980,7 @@ const SCRIPT = String.raw`
       var lbl=a.verdict_label||'spam';
       var lblZh={spam:'垃圾营销',porn_bot:'色情广告',likely_spam:'疑似垃圾',uncertain:'不确定',legit:'正常'}[lbl]||lbl;
       var reps=a.reporters||0;
-      return '<div class="qrow '+E(lbl)+(blSel.has(k)?' sel':'')+'" data-k="'+E(k)+'" data-h="'+E(a.handle)+'" data-u="'+E(a.x_user_id||'')+'">'
+      return '<div class="qrow '+E(lbl)+(blSel.has(k)?' sel':'')+'" data-k="'+E(k)+'" data-idx="'+i+'" data-h="'+E(a.handle)+'" data-u="'+E(a.x_user_id||'')+'">'
         +'<input type="checkbox"'+(blSel.has(k)?' checked':'')+' aria-label="选中 @'+E(a.handle)+'">'
         +'<div class="av"><img src="'+E(av)+'" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.replaceWith(Object.assign(document.createElement(\'span\'),{textContent:\''+fb+'\'}))"></div>'
         +'<div class="who">'
@@ -854,17 +1002,48 @@ const SCRIPT = String.raw`
     }).join('');
     Array.prototype.forEach.call(box.querySelectorAll('.qrow'),function(r){
       var k=r.dataset.k;
+      var idx=parseInt(r.dataset.idx,10);
       var cb=r.querySelector('input[type=checkbox]');
+      cb.addEventListener('click',function(e){
+        if(e.shiftKey&&lastSelIdxB>=0&&lastSelIdxB!==idx){
+          var rowEls=box.querySelectorAll('.qrow');
+          var lo=Math.min(lastSelIdxB,idx),hi=Math.max(lastSelIdxB,idx);
+          var target=cb.checked;
+          for(var i=lo;i<=hi;i++){
+            var rr=rowEls[i];if(!rr)continue;
+            var cc=rr.querySelector('input[type=checkbox]');
+            if(!cc||cc.checked===target)continue;
+            cc.checked=target;
+            var kk=rr.dataset.k;
+            if(target){blSel.add(kk);rr.classList.add('sel')}
+            else{blSel.delete(kk);rr.classList.remove('sel')}
+          }
+        }
+        lastSelIdxB=idx;
+      });
       cb.addEventListener('change',function(){if(cb.checked){blSel.add(k);r.classList.add('sel')}else{blSel.delete(k);r.classList.remove('sel')}blRefreshBatch()});
       Array.prototype.forEach.call(r.querySelectorAll('.acts button'),function(b){
         b.addEventListener('click',function(){blDecideOne(r,k,b.dataset.blAct)})
       })
     });
     var lm=$('blmore');if(lm)lm.addEventListener('click',function(){loadBlacklist(true)});
+    var sa=$('selAllB');if(sa)sa.addEventListener('change',function(){
+      if(this.checked)blacklist.forEach(function(a){blSel.add((a.x_user_id||'')+'|'+a.handle)});
+      else blacklist.forEach(function(a){blSel.delete((a.x_user_id||'')+'|'+a.handle)});
+      lastSelIdxB=-1;renderBlacklist();
+    });
     blRefreshBatch();
   }
-  function blRefreshBatch(){var b=$('blbatch'),s=$('blselN');if(!b)return;if(blSel.size){b.classList.add('on');s.textContent=blSel.size}else b.classList.remove('on')}
-  function blClearSel(){blSel.clear();renderBlacklist()}
+  function blRefreshBatch(){
+    var b=$('blbatch'),s=$('blselN'),v=$('blvisN'),m=$('selAllB');
+    if(!b)return;
+    var inView=0;for(var i=0;i<blacklist.length;i++){if(blSel.has((blacklist[i].x_user_id||'')+'|'+blacklist[i].handle))inView++}
+    if(s)s.textContent=blSel.size;
+    if(v)v.textContent=blacklist.length;
+    if(m){m.checked=blacklist.length>0&&inView===blacklist.length;m.indeterminate=inView>0&&inView<blacklist.length}
+    b.classList.toggle('on',blSel.size>0);
+  }
+  function blClearSel(){blSel.clear();lastSelIdxB=-1;renderBlacklist()}
   function blDecideOne(rowEl,k,action){
     var parts=k.split('|'),xUserId=parts[0]||undefined,handle=parts[1];
     var label={whitelist:'移到白名单',reject:'驳回',remove:'移除'}[action]||action;
@@ -878,7 +1057,13 @@ const SCRIPT = String.raw`
       if(!ok)return;
       rowEl.classList.add('removing');
       api('/v1/admin/decide',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({handle:handle,xUserId:xUserId,action:action})})
-        .then(function(){blacklist=blacklist.filter(function(a){return ((a.x_user_id||'')+'|'+a.handle)!==k});blSel.delete(k);var c=$('cB');if(c)c.textContent=blacklist.length+(blCursor?'+':'');renderBlacklist()});
+        .then(function(){
+          blacklist=blacklist.filter(function(a){return ((a.x_user_id||'')+'|'+a.handle)!==k});
+          blSel.delete(k);
+          if(stats.blacklist!=null){stats.blacklist=Math.max(0,stats.blacklist-1);var c=$('cB');if(c)c.textContent=fmtN(stats.blacklist)}
+          renderBlacklist();
+          refreshStats();
+        });
     });
   }
   function blBatch(action){
@@ -896,7 +1081,7 @@ const SCRIPT = String.raw`
       setStatus('批量'+label+'…');
       var done=0;
       function next(){
-        if(done>=ks.length){blSel.clear();loadBlacklist(false);setStatus('完成 · '+done+' 条');setTimeout(function(){setStatus('')},2500);return}
+        if(done>=ks.length){blSel.clear();lastSelIdxB=-1;loadBlacklist(false);refreshStats();setStatus('完成 · '+done+' 条');setTimeout(function(){setStatus('')},2500);return}
         var k=ks[done++],parts=k.split('|');
         api('/v1/admin/decide',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({handle:parts[1],xUserId:parts[0]||undefined,action:action})})
           .then(function(){setStatus('批量'+label+' '+done+'/'+ks.length);next()}).catch(function(){next()})
@@ -925,7 +1110,7 @@ const SCRIPT = String.raw`
         headers:{'content-type':'application/json'},
         body:JSON.stringify({handle:h,xUserId:vals.xUserId||undefined,note:vals.note||''})
       }).then(function(r){return r.json()}).then(function(j){
-        if(j&&j.ok){setStatus('已加入');setTimeout(function(){setStatus('')},2000);loadWhitelist(false)}
+        if(j&&j.ok){setStatus('已加入');setTimeout(function(){setStatus('')},2000);loadWhitelist(false);refreshStats()}
         else{setStatus('失败：'+(j&&j.error||'unknown'));setTimeout(function(){setStatus('')},3000)}
       });
     });
@@ -940,7 +1125,7 @@ const SCRIPT = String.raw`
       if(!ok)return;
       rowEl&&rowEl.classList.add('removing');
       var q='?handle='+encodeURIComponent(handle)+(xUserId?'&xUserId='+encodeURIComponent(xUserId):'');
-      api('/v1/admin/whitelist'+q,{method:'DELETE'}).then(function(){loadWhitelist(false)});
+      api('/v1/admin/whitelist'+q,{method:'DELETE'}).then(function(){loadWhitelist(false);refreshStats()});
     });
   }
   /** Called from queue rows — promotes a queue item to whitelist via /admin/decide. */
@@ -957,12 +1142,9 @@ const SCRIPT = String.raw`
       api('/v1/admin/decide',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({handle:handle,xUserId:xUserId,action:'whitelist'})})
         .then(function(){
           queue=queue.filter(function(a){return key(a)!==k});sel.delete(k);
-          var c=$('cQ');if(c)c.textContent=queue.length;
+          if(stats.queue!=null){stats.queue=Math.max(0,stats.queue-1);var c=$('cQ');if(c)c.textContent=fmtN(stats.queue)}
           renderRows();
-          api('/v1/admin/whitelist?limit=1').then(function(r){return r.json()}).then(function(j){
-            if(!j||!j.list)return;
-            var c2=$('cW');if(c2&&c2.textContent==='—')c2.textContent='1+';
-          });
+          refreshStats();
         });
     });
   }
@@ -970,10 +1152,13 @@ const SCRIPT = String.raw`
   function tab(v){
     if(VIEW===v)return;VIEW=v;
     Array.prototype.forEach.call(document.querySelectorAll('.tabs button'),function(b){b.classList.toggle('on',b.dataset.v===v)});
-    if(v==='queue')loadQueue();
+    if(v==='queue')loadQueue(false);
     else if(v==='whitelist')loadWhitelist(false);
     else if(v==='blacklist')loadBlacklist(false);
     else loadLog(false);
+    // Refresh chips on every tab switch — chips show counts for tabs the user
+    // isn't currently looking at, and those counts change as the queue drains.
+    refreshStats();
   }
   function save(){
     var t=$('t');if(!t)return;

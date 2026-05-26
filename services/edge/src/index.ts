@@ -577,6 +577,13 @@ function admin(c: Ctx): boolean {
 }
 app.get("/v1/admin/queue", async (c) => {
   if (!admin(c)) return c.json({ error: "forbidden" }, 403);
+  // Keyset pagination on last_scored DESC. Same dedup-by-handle CTE as before;
+  // the cursor is the last_scored of the last row in the previous page, so the
+  // next page strictly less-than. Total queue size is exposed via /v1/admin/stats
+  // (computed against the same deduped set) so the UI can show "N more" hints
+  // without re-counting client-side.
+  const before = Number(c.req.query("before")) || null;
+  const limit = Math.min(200, Math.max(1, Number(c.req.query("limit")) || 100));
   const rows = await c.env.DB.prepare(
     `WITH ranked AS (
        SELECT a.*,
@@ -596,9 +603,50 @@ app.get("/v1/admin/queue", async (c) => {
             ) reporters
        FROM ranked a
       WHERE a.rn=1
-      ORDER BY a.last_scored DESC LIMIT 200`,
-  ).all();
-  return c.json({ queue: rows.results ?? [] });
+        AND (?1 IS NULL OR a.last_scored < ?1)
+      ORDER BY a.last_scored DESC LIMIT ?2`,
+  )
+    .bind(before, limit)
+    .all<{ last_scored: number }>();
+  const list = rows.results ?? [];
+  return c.json({
+    queue: list,
+    nextBefore: list.length === limit ? list[list.length - 1].last_scored : null,
+  });
+});
+
+// True per-table counts. Cheap GROUP BY across the accounts table + the dedup
+// view that backs /v1/admin/queue. Lets the admin panel tab chips show the
+// real total instead of "however many we've loaded into memory".
+app.get("/v1/admin/stats", async (c) => {
+  if (!admin(c)) return c.json({ error: "forbidden" }, 403);
+  const statusRows = await c.env.DB.prepare(
+    "SELECT status, count(*) AS n FROM accounts GROUP BY status",
+  ).all<{ status: string; n: number }>();
+  // Queue total mirrors the dedup-by-handle rule used in /v1/admin/queue so
+  // "待审 N 条" matches what the maintainer can actually see + act on.
+  const queueRow = await c.env.DB.prepare(
+    `SELECT count(*) AS n FROM (
+       SELECT 1 FROM accounts
+        WHERE status='auto_pending_review'
+        GROUP BY lower(handle)
+     )`,
+  ).first<{ n: number }>();
+  const reportsRow = await c.env.DB.prepare("SELECT count(*) AS n FROM reports").first<{
+    n: number;
+  }>();
+  const byStatus: Record<string, number> = {};
+  for (const r of statusRows.results ?? []) byStatus[r.status] = r.n;
+  return c.json({
+    queue: queueRow?.n ?? 0,
+    blacklist: byStatus.human_confirmed ?? 0,
+    whitelist: byStatus.whitelisted ?? 0,
+    rejected: byStatus.rejected ?? 0,
+    removed: byStatus.removed ?? 0,
+    auto_legit: byStatus.auto_legit ?? 0,
+    pending_raw: byStatus.auto_pending_review ?? 0,
+    reports: reportsRow?.n ?? 0,
+  });
 });
 app.post("/v1/admin/decide", async (c) => {
   if (!admin(c)) return c.json({ error: "forbidden" }, 403);
