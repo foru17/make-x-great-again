@@ -481,6 +481,92 @@ async function insertReportIfNew(
   return (res.meta.changes ?? 0) > 0;
 }
 
+// ----------------------------------------------------------------------------
+// Keyword rules — fast path that short-circuits the LLM for obvious patterns.
+// ----------------------------------------------------------------------------
+//
+// A maintainer-curated keyword (or substring) match against the incoming
+// Signals payload. If any enabled rule matches, the LLM call is skipped
+// entirely and the account is routed straight to the rule's action
+// (default: human_confirmed → public list). The audit trail (review_log)
+// records actor='rule:<id>' so any false-positive is traceable back to
+// the specific rule.
+//
+// Rules are cached in module-level memory with a short TTL — saves a D1
+// hit per /v1/classify call while still picking up edits within 30s.
+
+interface KeywordRule {
+  id: number;
+  pattern: string;
+  field: string; // 'handle'|'display_name'|'bio'|'tweet'|'any'
+  action: string; // 'blacklist'|'whitelist'|'reject'
+  verdict_label: string; // 'spam'|'porn_bot'|'likely_spam'|'uncertain'|'legit'
+  enabled: number; // SQLite stores as INTEGER
+  note: string | null;
+  created_at: number;
+  hit_count: number;
+  last_hit_at: number | null;
+}
+
+const RULE_CACHE_TTL_MS = 30_000;
+let ruleCache: { at: number; rules: KeywordRule[] } | null = null;
+
+async function getKeywordRules(env: Env): Promise<KeywordRule[]> {
+  const now = Date.now();
+  if (ruleCache && now - ruleCache.at < RULE_CACHE_TTL_MS) return ruleCache.rules;
+  const rows = await env.DB.prepare(
+    "SELECT * FROM keyword_rules WHERE enabled=1 ORDER BY id",
+  ).all<KeywordRule>();
+  ruleCache = { at: now, rules: rows.results ?? [] };
+  return ruleCache.rules;
+}
+
+// Manual invalidation — call after any CRUD on keyword_rules so the next
+// /v1/classify picks up the change before the TTL would expire naturally.
+function invalidateRuleCache() {
+  ruleCache = null;
+}
+
+function ruleMatchesText(rule: KeywordRule, s: Signals): boolean {
+  const p = rule.pattern.toLowerCase();
+  if (!p) return false;
+  const has = (v: string | undefined | null) => !!v && v.toLowerCase().includes(p);
+  switch (rule.field) {
+    case "handle":
+      return has(s.handle);
+    case "display_name":
+      return has(s.displayName);
+    case "bio":
+      return has(s.bio);
+    case "tweet":
+      return s.recentTweets.some((t) => has(t)) || has(s.triggeringComment);
+    default:
+      // 'any' (and any unknown field falls back to 'any' for safety)
+      return (
+        has(s.handle) ||
+        has(s.displayName) ||
+        has(s.bio) ||
+        s.recentTweets.some((t) => has(t)) ||
+        has(s.triggeringComment)
+      );
+  }
+}
+
+async function matchKeywordRules(env: Env, s: Signals): Promise<KeywordRule | null> {
+  const rules = await getKeywordRules(env);
+  for (const rule of rules) {
+    if (ruleMatchesText(rule, s)) return rule;
+  }
+  return null;
+}
+
+// Map a rule's `action` to the accounts table `status` the row should land in.
+function statusForRuleAction(action: string): "human_confirmed" | "whitelisted" | "rejected" {
+  if (action === "whitelist") return "whitelisted";
+  if (action === "reject") return "rejected";
+  return "human_confirmed"; // 'blacklist' default
+}
+
 const app = new Hono<{ Bindings: Env }>();
 app.use("*", cors());
 
@@ -543,6 +629,57 @@ app.post("/v1/classify", async (c) => {
         },
         status: prev.status,
       },
+    });
+  }
+  // Fast-path: keyword rules. Match before spending an LLM call. A hit
+  // routes the account straight to the rule's destination status (default
+  // 'blacklist' → 'human_confirmed' on the public list). The audit log
+  // records actor='rule:<id>' so any false positive is traceable.
+  const ruleHit = await matchKeywordRules(c.env, s);
+  if (ruleHit) {
+    const now = Date.now();
+    const status = statusForRuleAction(ruleHit.action);
+    const reasons = [`matched keyword rule "${ruleHit.pattern}" on ${ruleHit.field}`];
+    const verdict = {
+      label: ruleHit.verdict_label,
+      confidence: 1.0,
+      reasons,
+    };
+    await writeAccount(c.env, {
+      uid,
+      handle: s.handle,
+      displayName: s.displayName,
+      avatarUrl: s.avatarUrl,
+      verdictLabel: ruleHit.verdict_label,
+      confidence: 1.0,
+      reasons: JSON.stringify(reasons),
+      model: null,
+      status,
+      source: "auto_keyword",
+      signalsHash: h,
+      evidenceText: evidenceText(s),
+      now,
+      publishedAt: status === "human_confirmed" ? now : null,
+    });
+    await c.env.DB.batch([
+      c.env.DB.prepare(
+        "UPDATE keyword_rules SET hit_count=hit_count+1, last_hit_at=? WHERE id=?",
+      ).bind(now, ruleHit.id),
+      c.env.DB.prepare(
+        "INSERT INTO review_log (x_user_id, handle, action, actor, note, at) VALUES (?,?,?,?,?,?)",
+      ).bind(
+        uid ?? null,
+        s.handle,
+        `keyword_${ruleHit.action}`,
+        `rule:${ruleHit.id}`,
+        `matched "${ruleHit.pattern}" on ${ruleHit.field}`,
+        now,
+      ),
+    ]);
+    return c.json({
+      cached: false,
+      record: { verdict, status },
+      matchedRule: { id: ruleHit.id, pattern: ruleHit.pattern, field: ruleHit.field },
     });
   }
   const verdict = await classify(c.env, s);
@@ -1023,6 +1160,269 @@ app.get("/v1/admin/log", async (c) => {
   return c.json({
     log: list,
     nextCursor: list.length === limit ? (list[list.length - 1] as { id: number }).id : null,
+  });
+});
+
+// ---- Keyword rules (Wave G) ---------------------------------------------
+// Maintainer-curated rules that short-circuit the LLM in /v1/classify.
+// CRUD + preview + apply-to-queue. Every mutation invalidates the in-memory
+// rule cache so the next /v1/classify call sees the new state ≤30s later.
+
+const KeywordRuleField = z.enum(["handle", "display_name", "bio", "tweet", "any"]);
+const KeywordRuleAction = z.enum(["blacklist", "whitelist", "reject"]);
+const KeywordVerdictLabel = z.enum(["spam", "porn_bot", "likely_spam", "uncertain", "legit"]);
+
+const KeywordRuleCreate = z.object({
+  pattern: z.string().min(1).max(200),
+  field: KeywordRuleField,
+  action: KeywordRuleAction.default("blacklist"),
+  verdict_label: KeywordVerdictLabel.default("spam"),
+  note: z.string().max(400).optional(),
+});
+
+const KeywordRulePatch = z.object({
+  pattern: z.string().min(1).max(200).optional(),
+  field: KeywordRuleField.optional(),
+  action: KeywordRuleAction.optional(),
+  verdict_label: KeywordVerdictLabel.optional(),
+  enabled: z.boolean().optional(),
+  note: z.string().max(400).optional(),
+});
+
+app.get("/v1/admin/keyword-rules", async (c) => {
+  if (!admin(c)) return c.json({ error: "forbidden" }, 403);
+  const rows = await c.env.DB.prepare(
+    "SELECT * FROM keyword_rules ORDER BY enabled DESC, hit_count DESC, id DESC",
+  ).all<KeywordRule>();
+  return c.json({ rules: rows.results ?? [] });
+});
+
+app.post("/v1/admin/keyword-rules", async (c) => {
+  if (!admin(c)) return c.json({ error: "forbidden" }, 403);
+  let body: z.infer<typeof KeywordRuleCreate>;
+  try {
+    body = KeywordRuleCreate.parse(await c.req.json());
+  } catch (err) {
+    return c.json({ error: "bad_request", detail: (err as Error).message }, 400);
+  }
+  const now = Date.now();
+  const r = await c.env.DB.prepare(
+    `INSERT INTO keyword_rules
+       (pattern, field, action, verdict_label, enabled, note, created_at, hit_count)
+     VALUES (?, ?, ?, ?, 1, ?, ?, 0)`,
+  )
+    .bind(body.pattern, body.field, body.action, body.verdict_label, body.note ?? null, now)
+    .run();
+  invalidateRuleCache();
+  const id = r.meta.last_row_id;
+  return c.json({ ok: true, id });
+});
+
+app.patch("/v1/admin/keyword-rules/:id", async (c) => {
+  if (!admin(c)) return c.json({ error: "forbidden" }, 403);
+  const id = Number(c.req.param("id"));
+  if (!Number.isFinite(id)) return c.json({ error: "bad_id" }, 400);
+  let body: z.infer<typeof KeywordRulePatch>;
+  try {
+    body = KeywordRulePatch.parse(await c.req.json());
+  } catch (err) {
+    return c.json({ error: "bad_request", detail: (err as Error).message }, 400);
+  }
+  // Build the SET clause dynamically from provided keys; bind values in order.
+  const setParts: string[] = [];
+  const binds: unknown[] = [];
+  for (const [k, v] of Object.entries(body)) {
+    if (v === undefined) continue;
+    setParts.push(`${k}=?`);
+    binds.push(k === "enabled" ? (v ? 1 : 0) : v);
+  }
+  if (!setParts.length) return c.json({ error: "empty_patch" }, 400);
+  binds.push(id);
+  await c.env.DB.prepare(`UPDATE keyword_rules SET ${setParts.join(", ")} WHERE id=?`)
+    .bind(...binds)
+    .run();
+  invalidateRuleCache();
+  return c.json({ ok: true });
+});
+
+app.delete("/v1/admin/keyword-rules/:id", async (c) => {
+  if (!admin(c)) return c.json({ error: "forbidden" }, 403);
+  const id = Number(c.req.param("id"));
+  if (!Number.isFinite(id)) return c.json({ error: "bad_id" }, 400);
+  await c.env.DB.prepare("DELETE FROM keyword_rules WHERE id=?").bind(id).run();
+  invalidateRuleCache();
+  return c.json({ ok: true });
+});
+
+// Preview: how many *currently pending* queue rows would this rule catch?
+// Doesn't write anything; doesn't bump hit_count. Used by the admin UI's
+// "试一下" button before commit. Returns count + up-to-5 sample handles.
+app.post("/v1/admin/keyword-rules/preview", async (c) => {
+  if (!admin(c)) return c.json({ error: "forbidden" }, 403);
+  const body = (await c.req.json()) as {
+    pattern: string;
+    field: "handle" | "display_name" | "bio" | "tweet" | "any";
+  };
+  const p = String(body.pattern || "").trim();
+  if (!p) return c.json({ count: 0, samples: [] });
+  // We match against fields stored on accounts: handle, display_name,
+  // evidence_text (the closest proxy for "tweet" we persist), and reasons
+  // (a JSON blob — not really bio, but useful catch-all). 'bio' isn't
+  // stored on accounts directly so we approximate by including reasons.
+  const fp = `%${p.toLowerCase()}%`;
+  const where =
+    body.field === "handle"
+      ? "lower(handle) LIKE ?"
+      : body.field === "display_name"
+        ? "lower(coalesce(display_name,'')) LIKE ?"
+        : body.field === "bio" || body.field === "tweet"
+          ? "lower(coalesce(evidence_text,'')) LIKE ?"
+          : // 'any'
+            "(lower(handle) LIKE ?1 OR lower(coalesce(display_name,'')) LIKE ?1 OR lower(coalesce(evidence_text,'')) LIKE ?1 OR lower(coalesce(reasons,'')) LIKE ?1)";
+  const sqlCount = `SELECT count(*) AS n FROM accounts WHERE status='auto_pending_review' AND ${where}`;
+  const sqlSamples = `SELECT handle, display_name, evidence_text FROM accounts WHERE status='auto_pending_review' AND ${where} ORDER BY last_scored DESC LIMIT 5`;
+  const [countRow, samplesRows] = await c.env.DB.batch([
+    c.env.DB.prepare(sqlCount).bind(fp),
+    c.env.DB.prepare(sqlSamples).bind(fp),
+  ]);
+  return c.json({
+    count: (countRow.results?.[0] as { n: number } | undefined)?.n ?? 0,
+    samples: samplesRows.results ?? [],
+  });
+});
+
+// Apply all enabled rules to the existing pending queue. Sweeps
+// status='auto_pending_review' only. For each row that matches any rule,
+// moves it to that rule's destination status, records a review_log audit,
+// and bumps the rule's hit_count. Returns a summary so the maintainer
+// can see how much the new rule cleaned up.
+app.post("/v1/admin/keyword-rules/apply-to-queue", async (c) => {
+  if (!admin(c)) return c.json({ error: "forbidden" }, 403);
+  const rules = await getKeywordRules(c.env);
+  if (!rules.length) return c.json({ ok: true, matched: 0, perRule: [] });
+
+  // Pull the entire queue in one go. At current scale (~600 rows) this is
+  // ~50KB; well within Worker memory. Re-evaluate when queue grows >5K.
+  const rows = await c.env.DB.prepare(
+    `SELECT rowid, x_user_id, handle, display_name, evidence_text, reasons, status
+       FROM accounts WHERE status='auto_pending_review'`,
+  ).all<{
+    rowid: number;
+    x_user_id: string | null;
+    handle: string;
+    display_name: string | null;
+    evidence_text: string | null;
+    reasons: string | null;
+    status: string;
+  }>();
+  const candidates = rows.results ?? [];
+  const now = Date.now();
+
+  // Per-rule hit count, returned to the UI so the maintainer can see which
+  // rule did the heavy lifting.
+  const perRule: Record<number, number> = {};
+  for (const r of rules) perRule[r.id] = 0;
+
+  // We can't reuse ruleMatchesText here because the row layout differs from
+  // the Signals payload. Build a row-shaped matcher:
+  function rowMatches(row: (typeof candidates)[number], rule: KeywordRule): boolean {
+    const p = rule.pattern.toLowerCase();
+    if (!p) return false;
+    const has = (v: string | null) => !!v && v.toLowerCase().includes(p);
+    switch (rule.field) {
+      case "handle":
+        return has(row.handle);
+      case "display_name":
+        return has(row.display_name);
+      case "bio":
+      case "tweet":
+        return has(row.evidence_text);
+      default:
+        return (
+          has(row.handle) || has(row.display_name) || has(row.evidence_text) || has(row.reasons)
+        );
+    }
+  }
+
+  const stmts: D1PreparedStatement[] = [];
+  let totalHit = 0;
+  for (const row of candidates) {
+    const hit = rules.find((r) => rowMatches(row, r));
+    if (!hit) continue;
+    totalHit++;
+    perRule[hit.id] = (perRule[hit.id] ?? 0) + 1;
+    const status = statusForRuleAction(hit.action);
+    if (hit.action === "whitelist") {
+      stmts.push(
+        c.env.DB.prepare(
+          `UPDATE accounts
+              SET status='whitelisted', source='auto_keyword',
+                  verdict_label='legit', confidence=1.0,
+                  reasons=?, signals_hash=NULL, last_scored=?, published_at=NULL
+            WHERE rowid=?`,
+        ).bind(
+          JSON.stringify([`matched keyword rule "${hit.pattern}" on ${hit.field}`]),
+          now,
+          row.rowid,
+        ),
+      );
+    } else {
+      stmts.push(
+        c.env.DB.prepare(
+          `UPDATE accounts
+              SET status=?, source='auto_keyword',
+                  verdict_label=?, confidence=1.0, reasons=?,
+                  last_scored=?, published_at=?
+            WHERE rowid=?`,
+        ).bind(
+          status,
+          hit.verdict_label,
+          JSON.stringify([`matched keyword rule "${hit.pattern}" on ${hit.field}`]),
+          now,
+          status === "human_confirmed" ? now : null,
+          row.rowid,
+        ),
+      );
+    }
+    stmts.push(
+      c.env.DB.prepare(
+        "INSERT INTO review_log (x_user_id, handle, action, actor, note, at) VALUES (?,?,?,?,?,?)",
+      ).bind(
+        row.x_user_id,
+        row.handle,
+        `keyword_${hit.action}`,
+        `rule:${hit.id}`,
+        `apply-to-queue matched "${hit.pattern}" on ${hit.field}`,
+        now,
+      ),
+    );
+  }
+  // Per-rule hit_count bump (batched alongside the row updates).
+  for (const [ridStr, n] of Object.entries(perRule)) {
+    if (!n) continue;
+    stmts.push(
+      c.env.DB.prepare(
+        "UPDATE keyword_rules SET hit_count=hit_count+?, last_hit_at=? WHERE id=?",
+      ).bind(n, now, Number(ridStr)),
+    );
+  }
+
+  // D1 batch size cap — chunk if we collected a lot of statements. Each row
+  // contributes 2 statements; cap each batch at ~100 statements to stay
+  // comfortably within D1 limits.
+  if (stmts.length) {
+    const CHUNK = 100;
+    for (let i = 0; i < stmts.length; i += CHUNK) {
+      await c.env.DB.batch(stmts.slice(i, i + CHUNK));
+    }
+  }
+  invalidateRuleCache();
+  return c.json({
+    ok: true,
+    matched: totalHit,
+    perRule: Object.entries(perRule)
+      .map(([id, n]) => ({ id: Number(id), hits: n }))
+      .filter((x) => x.hits > 0),
   });
 });
 

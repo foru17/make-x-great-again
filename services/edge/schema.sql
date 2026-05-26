@@ -66,7 +66,27 @@ CREATE TABLE IF NOT EXISTS review_log (
   x_user_id  TEXT,
   handle     TEXT,
   action     TEXT NOT NULL,
-  actor      TEXT NOT NULL,                 -- system|user|human
+  actor      TEXT NOT NULL,                 -- system|user|human|rule:<id>
   note       TEXT,
   at         INTEGER NOT NULL
 );
+
+-- Maintainer-curated keyword rules. Matched against incoming Signals at
+-- /v1/classify time BEFORE the LLM call: a hit short-circuits the verdict,
+-- skips the LLM, and routes the account straight to the rule's action
+-- (default: human_confirmed → public list). The fast path for obvious
+-- patterns (porn-bot template phrases, ad keywords) — keeps the LLM budget
+-- focused on the ambiguous cases.
+CREATE TABLE IF NOT EXISTS keyword_rules (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  pattern       TEXT NOT NULL,                 -- literal substring, case-insensitive
+  field         TEXT NOT NULL,                 -- handle|display_name|bio|tweet|any
+  action        TEXT NOT NULL DEFAULT 'blacklist', -- blacklist|whitelist|reject
+  verdict_label TEXT NOT NULL DEFAULT 'spam',  -- the label written into accounts on hit
+  enabled       INTEGER NOT NULL DEFAULT 1,
+  note          TEXT,                          -- maintainer free-text reminder
+  created_at    INTEGER NOT NULL,
+  hit_count     INTEGER NOT NULL DEFAULT 0,    -- bumped on every match
+  last_hit_at   INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_keyword_rules_enabled ON keyword_rules(enabled);

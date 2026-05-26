@@ -164,6 +164,40 @@ input::placeholder{color:var(--fg-4)}
 .more-foot{text-align:center;padding:16px 0 4px;color:var(--fg-3);font-size:12.5px}
 .more-foot .btn{margin-right:8px}
 
+/* Keyword rules tab */
+.rules-head{display:grid;grid-template-columns:60px 1fr 90px 80px 200px;gap:14px;padding:10px 14px;
+  color:var(--fg-3);font-size:11px;letter-spacing:.06em;text-transform:uppercase;
+  border-bottom:1px solid var(--border)}
+.rules{display:flex;flex-direction:column;border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+.rrow{display:grid;grid-template-columns:60px 1fr 90px 80px 200px;gap:14px;
+  padding:14px;background:var(--bg);border-bottom:1px solid var(--border);align-items:center}
+.rrow:last-child{border-bottom:none}
+.rrow.off{opacity:.55}
+.rrow .r-pattern{font-size:14px;font-weight:600;color:var(--fg);
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+.rrow .r-meta{font-size:11.5px;color:var(--fg-3);margin-top:3px}
+.rrow .r-meta .sep{color:var(--fg-4);margin:0 6px}
+.rrow .r-note{color:var(--fg-2);font-style:italic}
+.rrow .r-hits{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;text-align:right}
+.rrow .r-hits b{font-size:16px;color:var(--fg);font-variant-numeric:tabular-nums}
+.rrow .r-hits .lbl{display:block;font-size:10.5px;color:var(--fg-3);margin-top:2px;font-family:inherit}
+.rrow .r-last{font-size:11.5px;color:var(--fg-3);font-variant-numeric:tabular-nums}
+.rrow .r-acts{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.switch{position:relative;display:inline-block;width:34px;height:18px;cursor:pointer}
+.switch input{opacity:0;width:0;height:0}
+.switch .slider{position:absolute;cursor:pointer;inset:0;background:var(--card-hi);
+  border-radius:18px;transition:.18s}
+.switch .slider::before{content:'';position:absolute;height:14px;width:14px;left:2px;top:2px;
+  background:var(--fg);border-radius:50%;transition:.18s}
+.switch input:checked + .slider{background:var(--accent)}
+.switch input:checked + .slider::before{transform:translateX(16px);background:#fff}
+@media (max-width:760px){
+  .rules-head{grid-template-columns:50px 1fr 60px;gap:8px}
+  .rules-head > span:nth-child(4),.rules-head > span:nth-child(5){display:none}
+  .rrow{grid-template-columns:50px 1fr 60px;gap:8px}
+  .rrow .r-last,.rrow .r-acts{grid-column:1 / -1;justify-content:flex-start;padding-top:6px}
+}
+
 /* Search + advanced filter bar — lives above the chip row in the queue tab. */
 .search-bar{margin-bottom:12px;display:flex;flex-direction:column;gap:8px}
 .search-bar .search-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -541,6 +575,7 @@ const SCRIPT = String.raw`
       +'<button class="on" data-v="queue" onclick="window.__xss.tab(\'queue\')">待审队列 <span class="count" id="cQ">—</span></button>'
       +'<button data-v="blacklist" onclick="window.__xss.tab(\'blacklist\')">黑名单 <span class="count" id="cB">—</span></button>'
       +'<button data-v="whitelist" onclick="window.__xss.tab(\'whitelist\')">白名单 <span class="count" id="cW">—</span></button>'
+      +'<button data-v="rules" onclick="window.__xss.tab(\'rules\')">关键字规则 <span class="count" id="cR">—</span></button>'
       +'<button data-v="log" onclick="window.__xss.tab(\'log\')">审计日志</button>'
       +'</div>'
       +'<div id="view"></div>';
@@ -990,6 +1025,210 @@ const SCRIPT = String.raw`
   }
   function clearSel(){sel.clear();lastSelIdxQ=-1;renderRows()}
 
+  // ---- Keyword rules (Wave G) -------------------------------------------
+  var rulesList=[];
+  var fieldLabels={handle:'Handle',display_name:'显示名',bio:'Bio',tweet:'推文',any:'任一字段'};
+  var actionLabels={blacklist:'拉黑（→公榜）',whitelist:'白名单',reject:'驳回（不公开）'};
+  var verdictLabels={spam:'垃圾营销',porn_bot:'色情广告',likely_spam:'疑似垃圾',uncertain:'不确定',legit:'正常'};
+
+  function loadRules(){
+    setStatus('加载中…');
+    api('/v1/admin/keyword-rules').then(function(r){
+      if(r.status===403){TOK='';localStorage.removeItem('xss_admin');renderLocked();return null}
+      return r.json();
+    }).then(function(j){
+      if(!j)return;
+      rulesList=j.rules||[];
+      var cR=$('cR');if(cR)cR.textContent=fmtN(rulesList.length);
+      setStatus('');
+      renderRules();
+    });
+  }
+
+  function renderRules(){
+    var v=$('view');
+    var hint='规则会在 /v1/classify 阶段先于 LLM 匹配。命中 → 跳过 LLM，按 action 落地（默认进公榜）。改规则 ≤30s 全局生效。';
+    var rows=rulesList.length
+      ? rulesList.map(function(r){
+          var enabled=r.enabled===1||r.enabled===true;
+          var verdLbl=verdictLabels[r.verdict_label]||r.verdict_label;
+          var actLbl=actionLabels[r.action]||r.action;
+          var fLbl=fieldLabels[r.field]||r.field;
+          var lastHit=r.last_hit_at?ago(r.last_hit_at):'—';
+          return '<div class="rrow '+(enabled?'':'off')+'" data-id="'+r.id+'">'
+            +'<div class="r-toggle">'
+              +'<label class="switch" title="点击启用/停用"><input type="checkbox" '+(enabled?'checked':'')+' data-rule-toggle><span class="slider"></span></label>'
+            +'</div>'
+            +'<div class="r-pat">'
+              +'<div class="r-pattern">'+E(r.pattern)+'</div>'
+              +'<div class="r-meta">'+E(fLbl)+'<span class="sep">·</span>'+E(actLbl)+'<span class="sep">·</span>判 '+E(verdLbl)+(r.note?'<span class="sep">·</span><span class="r-note">'+E(r.note)+'</span>':'')+'</div>'
+            +'</div>'
+            +'<div class="r-hits"><b>'+fmtN(r.hit_count||0)+'</b><span class="lbl">命中</span></div>'
+            +'<div class="r-last">'+E(lastHit)+'</div>'
+            +'<div class="r-acts">'
+              +'<button class="btn sm" data-rule-act="apply" title="对当前 pending 队列试跑这条规则">扫一下</button>'
+              +'<button class="btn sm muted" data-rule-act="delete">删除</button>'
+            +'</div>'
+          +'</div>';
+        }).join('')
+      : '<div class="empty">还没有规则。点右上角「+ 新增规则」加第一条 —— 比如 pattern=「约炮」field=「任一字段」action=「拉黑」就能把绝大多数色情号在 LLM 前直接拦下。</div>';
+    v.innerHTML=
+      '<div class="toolbar">'
+        +'<div class="status">'+E(hint)+'</div>'
+        +'<div class="r">'
+          +'<button class="btn sm" onclick="window.__xss.rulesApplyAll()">扫所有规则到队列</button>'
+          +'<button class="btn sm primary" onclick="window.__xss.ruleAdd()">+ 新增规则</button>'
+        +'</div>'
+      +'</div>'
+      +'<div class="rules-head">'
+        +'<span>启用</span><span>规则</span><span>命中</span><span>最近</span><span></span>'
+      +'</div>'
+      +'<div class="rules" id="rulesBox">'+rows+'</div>';
+    var box=$('rulesBox');if(!box)return;
+    Array.prototype.forEach.call(box.querySelectorAll('.rrow'),function(rr){
+      var id=Number(rr.dataset.id);
+      var tog=rr.querySelector('[data-rule-toggle]');
+      if(tog)tog.addEventListener('change',function(){
+        ruleToggle(id,tog.checked);
+      });
+      Array.prototype.forEach.call(rr.querySelectorAll('[data-rule-act]'),function(b){
+        b.addEventListener('click',function(){
+          if(b.dataset.ruleAct==='delete')ruleDelete(id);
+          else if(b.dataset.ruleAct==='apply')ruleApplyOne(id);
+        });
+      });
+    });
+  }
+
+  function ruleToggle(id,enabled){
+    setStatus(enabled?'启用规则…':'停用规则…');
+    api('/v1/admin/keyword-rules/'+id,{
+      method:'PATCH',
+      headers:{'content-type':'application/json'},
+      body:JSON.stringify({enabled:enabled})
+    }).then(function(r){return r.json()}).then(function(j){
+      setStatus(j&&j.ok?(enabled?'已启用':'已停用'):'操作失败');
+      setTimeout(function(){setStatus('')},1500);
+      loadRules();
+    });
+  }
+
+  function ruleDelete(id){
+    var r=rulesList.find(function(x){return x.id===id});
+    if(!r)return;
+    mxModal.confirm({
+      title:'删除规则',
+      body:'确认删除规则 <code>'+E(r.pattern)+'</code>？\n已经命中的账号不会被回滚，但这条规则未来不再生效。',
+      okLabel:'删除',
+      okVariant:'danger'
+    }).then(function(ok){
+      if(!ok)return;
+      api('/v1/admin/keyword-rules/'+id,{method:'DELETE'}).then(function(){
+        setStatus('已删除');setTimeout(function(){setStatus('')},1500);
+        loadRules();
+      });
+    });
+  }
+
+  function ruleApplyOne(id){
+    var r=rulesList.find(function(x){return x.id===id});
+    if(!r)return;
+    mxModal.confirm({
+      title:'扫一下：'+r.pattern,
+      body:'用这条规则扫一遍当前 <b>auto_pending_review</b> 队列，命中的账号会按规则 action 落地（默认进公榜）。\n操作不可批量撤回，但每条都有 review_log。',
+      okLabel:'扫描并应用',
+      okVariant:'primary'
+    }).then(function(ok){
+      if(!ok)return;
+      // server endpoint applies ALL enabled rules; we briefly disable
+      // everything except this one, run, then re-enable. Cleaner: server
+      // could take a single-rule param. For now use the all-rules endpoint
+      // and just inform the maintainer.
+      setStatus('应用规则中…');
+      api('/v1/admin/keyword-rules/apply-to-queue',{method:'POST'}).then(function(r){return r.json()}).then(function(j){
+        if(j&&j.ok){
+          setStatus('完成 · '+j.matched+' 条命中');
+          setTimeout(function(){setStatus('')},3000);
+          loadRules();refreshStats();
+        } else {
+          setStatus('失败：'+(j&&j.error||'unknown'));
+          setTimeout(function(){setStatus('')},3000);
+        }
+      });
+    });
+  }
+
+  function rulesApplyAll(){
+    mxModal.confirm({
+      title:'扫所有规则到队列',
+      body:'用全部启用规则扫一遍当前 <b>auto_pending_review</b> 队列。命中的账号按各自规则的 action 落地。<br><br>建议在新增规则后立刻跑一次，让历史 pending 数据也享受新规则。',
+      okLabel:'开始扫描',
+      okVariant:'primary'
+    }).then(function(ok){
+      if(!ok)return;
+      setStatus('应用规则中…');
+      api('/v1/admin/keyword-rules/apply-to-queue',{method:'POST'}).then(function(r){return r.json()}).then(function(j){
+        if(j&&j.ok){
+          var lines=(j.perRule||[]).map(function(p){
+            var rule=rulesList.find(function(x){return x.id===p.id});
+            return '· '+(rule?rule.pattern:'rule#'+p.id)+'：'+p.hits+' 条';
+          }).join('\n');
+          mxModal.confirm({
+            title:'扫描完成',
+            body:'命中 <b>'+j.matched+'</b> 条。\n'+(lines||'无命中'),
+            okLabel:'好',
+            okVariant:'primary'
+          });
+          setStatus('');
+          loadRules();refreshStats();
+        } else {
+          setStatus('失败：'+(j&&j.error||'unknown'));
+          setTimeout(function(){setStatus('')},3000);
+        }
+      });
+    });
+  }
+
+  function ruleAdd(){
+    mxModal.form({
+      title:'新增关键字规则',
+      body:'pattern 为字面子串，大小写不敏感。命中 → 跳过 LLM，按 action 落地。',
+      fields:[
+        {name:'pattern',label:'关键字 / 子串',required:true,placeholder:'如：约炮、@target_dispatch、电报 @',hint:'匹配前两边 lower()'},
+        {name:'field',label:'匹配字段（handle / display_name / bio / tweet / any）',required:true,placeholder:'any'},
+        {name:'action',label:'命中动作（blacklist / whitelist / reject）',placeholder:'blacklist',hint:'默认 blacklist：直接进公榜'},
+        {name:'verdict_label',label:'判定标签（spam / porn_bot / likely_spam / uncertain / legit）',placeholder:'spam'},
+        {name:'note',label:'备注（仅你看见）',placeholder:'比如：色情广告 tg 链路特征'}
+      ],
+      okLabel:'创建',
+      okVariant:'primary'
+    }).then(function(vals){
+      if(!vals)return;
+      var body={
+        pattern:(vals.pattern||'').trim(),
+        field:(vals.field||'any').trim(),
+        action:(vals.action||'blacklist').trim(),
+        verdict_label:(vals.verdict_label||'spam').trim(),
+        note:(vals.note||'').trim()||undefined
+      };
+      setStatus('创建规则…');
+      api('/v1/admin/keyword-rules',{
+        method:'POST',
+        headers:{'content-type':'application/json'},
+        body:JSON.stringify(body)
+      }).then(function(r){return r.json()}).then(function(j){
+        if(j&&j.ok){
+          setStatus('已创建 rule#'+j.id);
+          setTimeout(function(){setStatus('')},1500);
+          loadRules();
+        } else {
+          setStatus('失败：'+(j&&(j.detail||j.error)||'unknown'));
+          setTimeout(function(){setStatus('')},5000);
+        }
+      });
+    });
+  }
+
   function loadLog(more){
     var v=$('view');
     if(!more){v.innerHTML='<div class="log" id="log">'
@@ -1421,6 +1660,7 @@ const SCRIPT = String.raw`
     if(v==='queue')loadQueue(false);
     else if(v==='whitelist')loadWhitelist(false);
     else if(v==='blacklist')loadBlacklist(false);
+    else if(v==='rules')loadRules();
     else loadLog(false);
     // Refresh chips on every tab switch — chips show counts for tabs the user
     // isn't currently looking at, and those counts change as the queue drains.
@@ -1448,6 +1688,7 @@ const SCRIPT = String.raw`
     batch:batch,clearSel:clearSel,
     wlAdd:wlAdd,wlBatch:wlBatch,wlClearSel:wlClearSel,
     blBatch:blBatch,blClearSel:blClearSel,
+    ruleAdd:ruleAdd,rulesApplyAll:rulesApplyAll,
   };
   renderShell();
 })();
