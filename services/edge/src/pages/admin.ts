@@ -164,6 +164,25 @@ input::placeholder{color:var(--fg-4)}
 .more-foot{text-align:center;padding:16px 0 4px;color:var(--fg-3);font-size:12.5px}
 .more-foot .btn{margin-right:8px}
 
+/* Search + advanced filter bar — lives above the chip row in the queue tab. */
+.search-bar{margin-bottom:12px;display:flex;flex-direction:column;gap:8px}
+.search-bar .search-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.search-bar .search-input{flex:1;min-width:240px;padding:8px 12px;border-radius:var(--r);
+  border:1px solid var(--border-strong);background:var(--bg-2);color:var(--fg);
+  font-size:13px;font-family:inherit}
+.search-bar .search-input:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
+.search-bar .search-input::placeholder{color:var(--fg-4)}
+.adv-panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r);
+  padding:12px 14px;font-size:12.5px}
+.adv-panel summary{cursor:pointer}
+.adv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px 14px}
+.adv-grid label{display:flex;flex-direction:column;gap:4px}
+.adv-grid label > span{color:var(--fg-3);font-size:11.5px;letter-spacing:.02em}
+.adv-grid .adv-input{padding:6px 9px;border-radius:var(--r-sm);border:1px solid var(--border-strong);
+  background:var(--bg-2);color:var(--fg);font-size:12.5px;font-family:inherit}
+.adv-grid .adv-input:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
+.adv-hint{margin-top:8px;color:var(--fg-4);font-size:11px}
+
 /* ──────────────────────────────────────────────────────────────────────
    Queue rows — REDESIGNED for scannability:
    - 4px left edge color-coded by verdict (replaces the repetitive verdict
@@ -385,7 +404,35 @@ const SCRIPT = String.raw`
   var stats={queue:null,blacklist:null,whitelist:null,reports:null};
   // Last-clicked row index per tab, for shift-click range selection.
   var lastSelIdxQ=-1,lastSelIdxW=-1,lastSelIdxB=-1;
+  // Queue filter state. Backend accepts these as query params; UI keeps a
+  // single copy here and rebuilds the URL on every loadQueue. q is the
+  // fuzzy multi-field input; the rest are explicit per-field substring /
+  // prefix filters (uid is prefix, others substring).
+  var qFilters={q:'',uid:'',handle:'',evidence:'',display_name:'',reasons:''};
   function fmtN(n){return typeof n==='number'?n.toLocaleString('zh-CN'):'—'}
+  // Build the query string for /v1/admin/queue from the current filter state.
+  // Empty values are omitted entirely so the URL stays compact and the backend
+  // treats them as "no filter on this dimension".
+  function queueQs(){
+    var parts=['limit=100'];
+    if(queueCursor)parts.push('before='+encodeURIComponent(queueCursor));
+    Object.keys(qFilters).forEach(function(k){
+      var v=qFilters[k];
+      if(v)parts.push(k+'='+encodeURIComponent(v));
+    });
+    return '?'+parts.join('&');
+  }
+  function activeFilterCount(){
+    var n=0;Object.keys(qFilters).forEach(function(k){if(qFilters[k])n++});return n;
+  }
+  function clearFilters(){
+    Object.keys(qFilters).forEach(function(k){qFilters[k]=''});
+  }
+  function setFilter(key,val){
+    if(!(key in qFilters))return;
+    qFilters[key]=String(val||'').trim();
+    loadQueue(false);
+  }
 
   function E(s){return (s==null?'':String(s)).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
   function xUrl(handle){return 'https://x.com/'+encodeURIComponent(handle||'')}
@@ -526,15 +573,22 @@ const SCRIPT = String.raw`
   function loadQueue(more){
     if(!more){queue=[];queueCursor=null;sel.clear();lastSelIdxQ=-1}
     setStatus('加载中…');
-    api('/v1/admin/queue?limit=100'+(queueCursor?'&before='+queueCursor:'')).then(function(r){
+    api('/v1/admin/queue'+queueQs()).then(function(r){
       if(r.status===403){TOK='';localStorage.removeItem('xss_admin');renderLocked();return null}
       return r.json();
     }).then(function(j){
       if(!j)return;
       queue=queue.concat(j.queue||[]);
       queueCursor=j.nextBefore;
-      // Fallback: if the stats fetch hasn't returned yet, show the loaded
-      // count with a "+" hint so the chip is never blank for long.
+      // Sync filter inputs back from the server-echoed appliedFilters — this
+      // catches the "user typed a numeric q, server rewrote it to uid" case.
+      if(j.appliedFilters){
+        Object.keys(qFilters).forEach(function(k){
+          if(k in j.appliedFilters)qFilters[k]=j.appliedFilters[k]||'';
+        });
+      }
+      // chip total reflects unfiltered queue size from /v1/admin/stats; only
+      // fall back to the loaded-count placeholder when stats hasn't arrived.
       var cQ=$('cQ');
       if(cQ&&stats.queue==null)cQ.textContent=queue.length+(queueCursor?'+':'');
       setStatus('');
@@ -564,8 +618,35 @@ const SCRIPT = String.raw`
     var v=$('view');
     var c=counts();
     var chip=function(k,lbl){return '<button class="chip'+(filter===k?' on':'')+'" data-f="'+k+'">'+lbl+'<span class="n">'+c[k]+'</span></button>'};
+    // Advanced filter panel is collapsed by default; show it open if any of
+    // the explicit per-field filters are already populated (e.g. from a
+    // "find similar" click that targeted a specific field).
+    var anyExplicit=qFilters.uid||qFilters.handle||qFilters.evidence||qFilters.display_name||qFilters.reasons;
+    var advOpen=!!anyExplicit;
+    var nActive=activeFilterCount();
     v.innerHTML=
-      '<div class="toolbar">'
+      '<div class="search-bar">'
+        +'<div class="search-row">'
+          +'<input id="qSearch" class="search-input" type="search" autocomplete="off" placeholder="搜 handle / uid / 推文内容 / 理由 …（回车搜索）" value="'+E(qFilters.q||'')+'">'
+          +'<button class="btn sm" id="qSearchBtn" type="button">搜索</button>'
+          +'<button class="btn sm muted" id="qAdvToggle" type="button" aria-expanded="'+(advOpen?'true':'false')+'">'
+            +'更多筛选'+(nActive?' · <b>'+nActive+'</b>':'')
+          +'</button>'
+          +(nActive?'<button class="btn sm" id="qClearAll" type="button">清空全部</button>':'')
+        +'</div>'
+        +'<details class="adv-panel" id="qAdv"'+(advOpen?' open':'')+'>'
+          +'<summary style="display:none"></summary>'
+          +'<div class="adv-grid">'
+            +'<label><span>Handle 包含</span><input class="adv-input" data-fk="handle" value="'+E(qFilters.handle||'')+'" placeholder="如 spam_"></label>'
+            +'<label><span>UID 前缀</span><input class="adv-input" data-fk="uid" value="'+E(qFilters.uid||'')+'" placeholder="如 2056413"></label>'
+            +'<label><span>推文内容包含</span><input class="adv-input" data-fk="evidence" value="'+E(qFilters.evidence||'')+'" placeholder="如 比她好看"></label>'
+            +'<label><span>显示名包含</span><input class="adv-input" data-fk="display_name" value="'+E(qFilters.display_name||'')+'" placeholder="如 Mary"></label>'
+            +'<label><span>Reasons 包含</span><input class="adv-input" data-fk="reasons" value="'+E(qFilters.reasons||'')+'" placeholder="如 导流模板"></label>'
+          +'</div>'
+          +'<div class="adv-hint">每个字段是「包含」匹配（uid 是「前缀」）；多字段为 AND。回车应用。</div>'
+        +'</details>'
+      +'</div>'
+      +'<div class="toolbar">'
         +'<div class="chips">'
           +chip('all','全部')
           +chip('spam','垃圾营销')
@@ -606,6 +687,29 @@ const SCRIPT = String.raw`
       if(this.checked)rows.forEach(function(a){sel.add(key(a))})
       else rows.forEach(function(a){sel.delete(key(a))});
       lastSelIdxQ=-1;renderRows();
+    });
+    // Search wiring — Enter or button click commits the fuzzy q filter.
+    var qInput=$('qSearch');
+    function commitQ(){qFilters.q=qInput.value.trim();loadQueue(false)}
+    qInput.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();commitQ()}});
+    $('qSearchBtn').addEventListener('click',commitQ);
+    // Advanced field inputs — Enter commits the value of that single field.
+    Array.prototype.forEach.call(v.querySelectorAll('.adv-input'),function(inp){
+      inp.addEventListener('keydown',function(e){
+        if(e.key==='Enter'){e.preventDefault();setFilter(inp.dataset.fk,inp.value)}
+      });
+      inp.addEventListener('blur',function(){
+        // commit on blur so tabbing through fields applies each
+        if((qFilters[inp.dataset.fk]||'')!==inp.value.trim())setFilter(inp.dataset.fk,inp.value);
+      });
+    });
+    var clearBtn=$('qClearAll');
+    if(clearBtn)clearBtn.addEventListener('click',function(){clearFilters();loadQueue(false)});
+    var advToggle=$('qAdvToggle');
+    if(advToggle)advToggle.addEventListener('click',function(){
+      var adv=$('qAdv');if(!adv)return;
+      adv.open=!adv.open;
+      this.setAttribute('aria-expanded',adv.open?'true':'false');
     });
     renderRows();
   }
@@ -652,6 +756,7 @@ const SCRIPT = String.raw`
           +'<button class="btn sm ok" data-act="whitelist" title="加入白名单：永不再扫，举报也忽略">白名单</button>'
           +'<button class="btn sm" data-act="reject" title="不公开，但保留判定记录">驳回</button>'
           +'<button class="btn sm muted" data-act="remove" title="从数据集移除（误判账号）">移除</button>'
+          +'<button class="btn sm" data-act="similar" title="按这一行的某个字段过滤出同类账号">找同类 ▾</button>'
         +'</div>'
       +'</div>';
     }).join('');
@@ -684,12 +789,88 @@ const SCRIPT = String.raw`
       Array.prototype.forEach.call(r.querySelectorAll('.acts button'),function(b){
         b.addEventListener('click',function(){
           if(b.dataset.act==='whitelist')whitelistFromQueue(r,k);
+          else if(b.dataset.act==='similar')openSimilarMenu(r,rows[idx]);
           else decideOne(r,k,b.dataset.act);
         })
       })
     });
     renderQueueMoreFoot();
     refreshBatch();
+  }
+  // "找同类" menu — derive cluster-fingerprint candidates from this row and
+  // let the maintainer pick which dimension to filter by. Each option, when
+  // chosen, sets the matching qFilter and triggers a re-fetch so the queue
+  // collapses to just that cluster.
+  function openSimilarMenu(rowEl,a){
+    if(!a)return;
+    var options=[];
+    // uid prefix (first 8 digits) — most useful for batch-created clusters
+    // like the 2026-05-26 2056413xxx spam ring. Falls back to full uid if
+    // shorter than 8.
+    if(a.x_user_id){
+      var uidPref=String(a.x_user_id).slice(0,8);
+      options.push({label:'同 UID 前 '+uidPref.length+' 位「'+uidPref+'」',field:'uid',value:uidPref});
+    }
+    // handle prefix — first 6 chars (usually the human-meaningful part
+    // before any auto-generated number suffix)
+    if(a.handle){
+      var hPref=String(a.handle).replace(/\d+$/,'').slice(0,8) || String(a.handle).slice(0,6);
+      if(hPref.length>=3){
+        options.push({label:'同 handle 前缀「'+hPref+'」',field:'handle',value:hPref});
+      }
+    }
+    // display_name — exact-text-as-substring; spammers often share verbatim names
+    var dn=(a.display_name||'').trim();
+    if(dn&&dn.length>=2){
+      options.push({label:'同显示名「'+dn+'」',field:'display_name',value:dn});
+    }
+    // evidence snippet — strongest cluster signal. Take a meaningful slice
+    // that survives across the cluster (skip leading mentions / urls).
+    var ev=(a.evidence_text||'').replace(/\s+/g,' ').trim();
+    if(ev){
+      // Pick a 12-char window that's likely shared across the template
+      // (after any leading @ chunks). Heuristic, not perfect.
+      var evCore=ev.replace(/^(@\S+\s*)+/,'').slice(0,16).trim();
+      if(evCore.length>=4){
+        options.push({label:'同推文模板「'+evCore+'…」',field:'evidence',value:evCore});
+      }
+    }
+    // reasons — first meaningful keyword
+    try{
+      var rs=JSON.parse(a.reasons||'[]');
+      if(Array.isArray(rs)&&rs.length){
+        var firstReason=String(rs[0]).split(/[：:。,，]/)[0].trim().slice(0,12);
+        if(firstReason.length>=2){
+          options.push({label:'同 reasons 关键词「'+firstReason+'」',field:'reasons',value:firstReason});
+        }
+      }
+    }catch(e){}
+    if(!options.length){setStatus('这行没有可用于聚类的特征字段');setTimeout(function(){setStatus('')},2000);return}
+    // Render as a small modal-style popover anchored to the action button.
+    var btnHtml=options.map(function(o,i){
+      return '<button type="button" class="btn sm" data-sim-idx="'+i+'" style="justify-content:flex-start;text-align:left;width:100%">'+E(o.label)+'</button>';
+    }).join('');
+    var html='<div class="mx-card" role="dialog" aria-modal="true" aria-labelledby="simtitle" style="max-width:480px">'
+      +'<h3 id="simtitle">找同类</h3>'
+      +'<div class="body"><p>挑一个特征，队列会过滤出共享该特征的所有账号。</p></div>'
+      +'<div class="fields" style="display:flex;flex-direction:column;gap:8px;padding:0 22px 12px">'+btnHtml+'</div>'
+      +'<div class="foot"><button type="button" class="btn sm" data-r="0">取消</button></div>'
+      +'</div>';
+    var bg=document.createElement('div');bg.className='mx-bg';bg.tabIndex=-1;bg.innerHTML=html;
+    function dismiss(){if(bg.parentNode)bg.remove()}
+    bg.addEventListener('click',function(e){if(e.target===bg)dismiss()});
+    bg.querySelector('[data-r="0"]').addEventListener('click',dismiss);
+    Array.prototype.forEach.call(bg.querySelectorAll('[data-sim-idx]'),function(b){
+      b.addEventListener('click',function(){
+        var o=options[parseInt(b.dataset.simIdx,10)];
+        clearFilters();             // discard previous filters — clean slate per cluster pivot
+        qFilters[o.field]=o.value;
+        dismiss();
+        loadQueue(false);
+      });
+    });
+    document.body.appendChild(bg);
+    setTimeout(function(){var f=bg.querySelector('button.btn');if(f)f.focus()},40);
   }
   // Footer below the queue rows. "加载更多 N 条" when more pending exists;
   // a quiet "已加载全部 N 条" otherwise so the maintainer knows they're done.

@@ -689,8 +689,42 @@ app.get("/v1/admin/queue", async (c) => {
   // next page strictly less-than. Total queue size is exposed via /v1/admin/stats
   // (computed against the same deduped set) so the UI can show "N more" hints
   // without re-counting client-side.
+  //
+  // Filters (all optional, all AND-combined, all applied INSIDE the dedup CTE
+  // so search returns one canonical row per handle, not all variants):
+  //   q             — multi-field fuzzy. Auto-routed: if it matches /^\d+$/
+  //                   and `uid` is not set, treated as a uid prefix; otherwise
+  //                   matched as a case-insensitive substring across handle /
+  //                   display_name / evidence_text / reasons.
+  //   uid           — x_user_id prefix match (so '2056413' surfaces the whole
+  //                   batch-created cluster).
+  //   handle        — case-insensitive substring of handle.
+  //   evidence      — case-insensitive substring of evidence_text (the
+  //                   triggering tweet); the strongest cluster signal.
+  //   display_name  — substring of display_name.
+  //   reasons       — substring of the raw JSON reasons text.
+  //
+  // SQLite LIKE is ASCII-case-insensitive by default; we explicitly lower()
+  // both sides to keep the behavior consistent for handles, which may have
+  // mixed case at write-time but live under idx_accounts_handle_norm.
   const before = Number(c.req.query("before")) || null;
   const limit = Math.min(200, Math.max(1, Number(c.req.query("limit")) || 100));
+  const rawQ = (c.req.query("q") || "").trim() || null;
+  let q: string | null = rawQ;
+  let uid: string | null = (c.req.query("uid") || "").trim() || null;
+  // Smart routing: a numeric `q` with no explicit uid filter is almost
+  // certainly the user pasting in an X numeric id; treat it as a uid prefix
+  // so the indexed lookup wins and we don't waste the search across text
+  // fields where digit substrings would mostly be noise.
+  if (q && /^\d+$/.test(q) && !uid) {
+    uid = q;
+    q = null;
+  }
+  const handle = (c.req.query("handle") || "").trim() || null;
+  const evidence = (c.req.query("evidence") || "").trim() || null;
+  const displayName = (c.req.query("display_name") || "").trim() || null;
+  const reasons = (c.req.query("reasons") || "").trim() || null;
+
   const rows = await c.env.DB.prepare(
     `WITH ranked AS (
        SELECT a.*,
@@ -701,6 +735,17 @@ app.get("/v1/admin/queue", async (c) => {
               ) AS rn
          FROM accounts a
         WHERE a.status='auto_pending_review'
+          AND (?3 IS NULL OR (
+                 lower(a.handle) LIKE '%' || lower(?3) || '%'
+              OR lower(coalesce(a.display_name,'')) LIKE '%' || lower(?3) || '%'
+              OR lower(coalesce(a.evidence_text,'')) LIKE '%' || lower(?3) || '%'
+              OR lower(coalesce(a.reasons,'')) LIKE '%' || lower(?3) || '%'
+          ))
+          AND (?4 IS NULL OR a.x_user_id LIKE ?4 || '%')
+          AND (?5 IS NULL OR lower(a.handle) LIKE '%' || lower(?5) || '%')
+          AND (?6 IS NULL OR lower(coalesce(a.evidence_text,'')) LIKE '%' || lower(?6) || '%')
+          AND (?7 IS NULL OR lower(coalesce(a.display_name,'')) LIKE '%' || lower(?7) || '%')
+          AND (?8 IS NULL OR lower(coalesce(a.reasons,'')) LIKE '%' || lower(?8) || '%')
      )
      SELECT a.x_user_id, a.handle, a.display_name, a.avatar_url, a.verdict_label, a.confidence,
             a.reasons, a.evidence_text, a.last_scored,
@@ -713,12 +758,15 @@ app.get("/v1/admin/queue", async (c) => {
         AND (?1 IS NULL OR a.last_scored < ?1)
       ORDER BY a.last_scored DESC LIMIT ?2`,
   )
-    .bind(before, limit)
+    .bind(before, limit, q, uid, handle, evidence, displayName, reasons)
     .all<{ last_scored: number }>();
   const list = rows.results ?? [];
   return c.json({
     queue: list,
     nextBefore: list.length === limit ? list[list.length - 1].last_scored : null,
+    // Echo back the effective filter set so the UI can keep the inputs in
+    // sync (especially after the smart `q` → `uid` rewrite above).
+    appliedFilters: { q, uid, handle, evidence, display_name: displayName, reasons },
   });
 });
 
