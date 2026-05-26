@@ -12,6 +12,7 @@
 </p>
 
 <p align="center">
+  <a href="https://chromewebstore.google.com/detail/make-x-great-again/aeoldnecphbkkckeedfgfcdcekkljdea"><img src="https://img.shields.io/chrome-web-store/v/aeoldnecphbkkckeedfgfcdcekkljdea?style=flat-square&color=4285F4&label=chrome%20web%20store&logo=googlechrome&logoColor=white" alt="Chrome Web Store"></a>
   <a href="https://github.com/foru17/make-x-great-again/blob/main/LICENSE"><img src="https://img.shields.io/github/license/foru17/make-x-great-again?style=flat-square&color=green" alt="License: AGPL-3.0"></a>
   <a href="https://github.com/foru17/make-x-great-again/releases/latest"><img src="https://img.shields.io/github/v/release/foru17/make-x-great-again?style=flat-square&color=blue&include_prereleases&label=release" alt="Release"></a>
   <a href="https://github.com/foru17/make-x-great-again/stargazers"><img src="https://img.shields.io/github/stars/foru17/make-x-great-again?style=flat-square&color=yellow" alt="Stars"></a>
@@ -20,9 +21,10 @@
 </p>
 
 <p align="center">
+  <a href="https://chromewebstore.google.com/detail/make-x-great-again/aeoldnecphbkkckeedfgfcdcekkljdea">🟦 从 Chrome 商店安装</a> ·
   <a href="https://x.zuoluo.tv">🌐 官网门户</a> ·
   <a href="https://x.zuoluo.tv/list">📋 公共名单</a> ·
-  <a href="https://github.com/foru17/make-x-great-again/releases/latest">📦 安装扩展</a>
+  <a href="https://github.com/foru17/make-x-great-again/releases/latest">📦 GitHub Release</a>
 </p>
 
 ---
@@ -69,13 +71,23 @@ X 现在的问题，大家都知道：
 
 ### 普通用户
 
+**推荐**：直接从 Chrome Web Store 安装。
+
+👉 [chromewebstore.google.com/detail/make-x-great-again/aeoldnecphbkkckeedfgfcdcekkljdea](https://chromewebstore.google.com/detail/make-x-great-again/aeoldnecphbkkckeedfgfcdcekkljdea)
+
+装好后，访问 x.com 扩展会自动开始工作。
+
+<details>
+<summary>用 Edge / Brave / Arc，或想跑开发版？</summary>
+
 ```bash
-# Chrome Web Store 还在审核，当前需要开发者模式手动加载：
-# 1. 从 https://github.com/foru17/make-x-great-again/releases/latest 下载 .zip
+# 1. 从 https://github.com/foru17/make-x-great-again/releases/latest 下载最新 .zip 并解压
 # 2. chrome://extensions → 开启「开发者模式」
 # 3. 「加载已解压的扩展程序」→ 选择解压目录
 # 4. 访问 x.com，扩展自动开始工作
 ```
+
+</details>
 
 ### 开发者
 

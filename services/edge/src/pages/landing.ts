@@ -218,16 +218,26 @@ section.block h2{font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;
   .feed-row .x-link{display:none}
 }
 
-/* Install helper popover */
-.install-note{margin-top:20px;font-size:13px;color:var(--fg-2);
-  background:var(--card);border:1px solid var(--border);border-radius:var(--r);
-  padding:14px 18px;max-width:560px;display:none;line-height:1.65}
-.install-note.open{display:block;animation:slideIn .2s ease-out}
-@keyframes slideIn{from{opacity:0;transform:translateY(-3px)}to{opacity:1;transform:none}}
-.install-note ol{margin:8px 0 0 20px}
-.install-note li{margin:5px 0;color:var(--fg-2)}
-.install-note code{background:var(--card-hi);padding:1px 6px;border-radius:var(--r-sm);
+/* Install helper — disclosure for non-Chrome browsers / dev builds.
+   Lives below the hero meta as a quiet, collapsed-by-default <details>. */
+.install-alt{margin-top:18px;max-width:560px;font-size:12.5px;color:var(--fg-3);
+  border:1px solid var(--border);border-radius:var(--r);background:var(--card);
+  padding:0 14px}
+.install-alt summary{cursor:pointer;padding:11px 0;list-style:none;color:var(--fg-2);
+  display:flex;align-items:center;gap:8px;font-weight:500}
+.install-alt summary::-webkit-details-marker{display:none}
+.install-alt summary::before{content:"›";display:inline-block;color:var(--fg-4);
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;
+  transition:transform .15s;width:10px;text-align:center}
+.install-alt[open] summary::before{transform:rotate(90deg)}
+.install-alt[open] summary{border-bottom:1px solid var(--border);margin-bottom:10px}
+.install-alt ol{margin:6px 0 12px 22px;line-height:1.7}
+.install-alt li{color:var(--fg-2);margin:3px 0}
+.install-alt code{background:var(--card-hi);padding:1px 6px;border-radius:var(--r-sm);
   font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;color:var(--fg)}
+.install-alt a{color:var(--fg);text-decoration:underline;text-decoration-color:var(--border-strong);
+  text-underline-offset:2px}
+.install-alt a:hover{color:var(--accent)}
 
 @media (max-width:760px){
   .hero{padding:0}
@@ -261,7 +271,11 @@ section.block h2{font-size:11.5px;letter-spacing:.18em;text-transform:uppercase;
 }
 `;
 
-const ICON_DOWNLOAD = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>`;
+// Lucide-style Chrome glyph: outer circle + inner circle + three spokes.
+// Monochrome stroke to match the rest of the design system; we don't use the
+// brand multi-color disc on this surface because it'd clash with our type-led
+// hierarchy. The official CWS page is the user's visual confirmation of brand.
+const ICON_CHROME = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="4"/><line x1="21.17" y1="8" x2="12" y2="8"/><line x1="3.95" y1="6.06" x2="8.54" y2="14"/><line x1="10.88" y1="21.94" x2="15.46" y2="14"/></svg>`;
 const ICON_GH = `<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .3a12 12 0 0 0-3.8 23.4c.6.1.8-.3.8-.6v-2.2c-3.3.7-4-1.4-4-1.4-.5-1.4-1.3-1.8-1.3-1.8-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1.1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.8-1.6-2.7-.3-5.5-1.3-5.5-6 0-1.3.5-2.4 1.2-3.2-.1-.3-.5-1.5.1-3.2 0 0 1-.3 3.3 1.2a11.5 11.5 0 0 1 6 0c2.3-1.5 3.3-1.2 3.3-1.2.6 1.7.2 2.9.1 3.2.7.8 1.2 1.9 1.2 3.2 0 4.6-2.8 5.7-5.5 6 .4.4.8 1.1.8 2.2v3.3c0 .3.2.7.8.6A12 12 0 0 0 12 .3"/></svg>`;
 const ICON_LIST = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>`;
 const ICON_SHIELD = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/></svg>`;
@@ -293,24 +307,25 @@ const HERO = `
   <h1>Make <span class="xmark">${ICONS.X}</span> Great Again<br><span class="sub">少看垃圾，多看人话。</span></h1>
   <p class="lede">广告号、色情引流先标出；拉黑由你确认。</p>
   <div class="ctas">
-    <a class="btn primary" href="${LINKS.RELEASE_URL}" id="installBtn" aria-label="下载扩展">${ICON_DOWNLOAD}<span>下载扩展</span></a>
-    <a class="btn" href="${BRAND.repo}" aria-label="在 GitHub 上查看源码">${ICON_GH}<span>看源码</span></a>
+    <a class="btn primary" href="${BRAND.chromeWebStore}" target="_blank" rel="noopener" aria-label="从 Chrome Web Store 安装扩展">${ICON_CHROME}<span>从 Chrome 商店安装</span></a>
     <a class="btn" href="/list" aria-label="看公开名单">${ICON_LIST}<span>看公开名单</span></a>
+    <a class="btn" href="${BRAND.repo}" aria-label="在 GitHub 上查看源码">${ICON_GH}<span>看源码</span></a>
   </div>
   <p class="meta">
+    <span>已上架 Chrome Web Store</span><span class="dot" aria-hidden="true"></span>
     <span>手动拉黑</span><span class="dot" aria-hidden="true"></span>
     <span>不存身份</span><span class="dot" aria-hidden="true"></span>
     <span>开源</span>
   </p>
-  <div class="install-note" id="installNote" role="status">
-    <strong>商店审核中，先手动安装</strong>：
+  <details class="install-alt">
+    <summary>用 Edge / Brave / Arc，或想跑开发版？</summary>
     <ol>
-      <li>下载解压最新 <code>.zip</code></li>
+      <li>从 <a href="${LINKS.RELEASE_URL}" target="_blank" rel="noopener">GitHub Release</a> 下载最新 <code>.zip</code> 并解压</li>
       <li>打开 <code>chrome://extensions</code>，开启「开发者模式」</li>
       <li>点「加载已解压的扩展程序」</li>
       <li>打开 x.com 就能用</li>
     </ol>
-  </div>
+  </details>
 </div>
 <div class="hero-side">
   <div class="hero-mascot" aria-hidden="true">
@@ -402,8 +417,6 @@ const FEED = `
 const SCRIPT = `
 (function(){
   var reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var btn=document.getElementById('installBtn'),note=document.getElementById('installNote');
-  if(btn&&note){btn.addEventListener('click',function(e){if(!note.classList.contains('open')){e.preventDefault();note.classList.add('open');setTimeout(function(){window.location=btn.href},900)}})}
 
   function esc(s){return (s==null?'':String(s)).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
   function fmt(n){return typeof n==='number'?n.toLocaleString('zh-CN'):'—'}

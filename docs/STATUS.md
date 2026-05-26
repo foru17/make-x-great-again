@@ -76,7 +76,7 @@ Wrangler 4 · @cloudflare/workers-types · @types/chrome。
   Secrets：`LLM_API_BASE` / `LLM_API_MODEL` / `LLM_API_KEY` / `ADMIN_TOKEN`。
 - GitHub 登录用于上报和防滥用计数；上线前后需要持续确认鉴权和限流配置。
 - 审核台：`/admin`（ADMIN_TOKEN 进入）。
-- 扩展通过 release zip 或 Chrome Web Store 版本分发。
+- 扩展主分发渠道：[Chrome Web Store](https://chromewebstore.google.com/detail/make-x-great-again/aeoldnecphbkkckeedfgfcdcekkljdea)；GitHub Release zip 作为非-Chrome 浏览器和开发版的备用通道。
 
 ## 7. 安全/治理姿态
 

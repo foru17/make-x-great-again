@@ -3,6 +3,10 @@
 > **目的**：上架 MXGA 浏览器扩展。本文档把上架需要填的所有字段集中放好，
 > 复制粘贴即可。涉及合规风险点也明确标出。
 
+> ✅ **已上架** —— [`chromewebstore.google.com/detail/make-x-great-again/aeoldnecphbkkckeedfgfcdcekkljdea`](https://chromewebstore.google.com/detail/make-x-great-again/aeoldnecphbkkckeedfgfcdcekkljdea)。
+> 本文档保留作为后续更新（新版本提交、字段调整、被驳回重提）的参考底稿。
+> 任何字段改动以 Chrome Web Store Developer Dashboard 的实际状态为准。
+
 ---
 
 ## 1. 基本信息
@@ -122,15 +126,25 @@ https://github.com/foru17/make-x-great-again/blob/main/docs/PRIVACY.md
 | auto-publish 路径已关 — 没有"3 人举报自动公榜"的滥用入口 | — | 这是 alpha 阶段加固，给审核员讲故事时正面提及 |
 | 服务端 LLM 供应商不在仓库 | — | 写明在 `services/edge/src/index.ts` Env interface 注释里；隐私声明也说明了 |
 
-## 8. 上架前 checklist
+## 8. 上架前 checklist（已完成 ✅）
 
-- [ ] 用 `pnpm zip` 出 production .zip（在 `.output/chrome-mv3-0.2.0.zip`）
-- [ ] 在干净 Chrome profile 加载该 zip 解压目录，跑一遍：
-  - [ ] popup 打开正常、登录引导显示
-  - [ ] 进 x.com → 看到气泡 pill「守护中」/「已扫 N」
-  - [ ] 进 https://x.com/imwsl90/status/2058805164749050313（有 spam 的 thread） → 看到 badge + 气泡列表
-  - [ ] 点单条「拉黑」 → 真的调起 X 屏蔽确认 → 完成
-  - [ ] options 页 → GitHub 登录 → Device Flow 跑通
-- [ ] 截图 5 张
-- [ ] 准备好商店付款（一次性 $5 注册费，如果还没付）
-- [ ] 提交后等审核：通常 1-3 天，敏感品类（X / Twitter 相关）可能 7-14 天
+- [x] 用 `pnpm zip` 出 production .zip（在 `.output/chrome-mv3-0.2.0.zip`）
+- [x] 在干净 Chrome profile 加载该 zip 解压目录，跑一遍：
+  - [x] popup 打开正常、登录引导显示
+  - [x] 进 x.com → 看到气泡 pill「守护中」/「已扫 N」
+  - [x] 进 https://x.com/imwsl90/status/2058805164749050313（有 spam 的 thread） → 看到 badge + 气泡列表
+  - [x] 点单条「拉黑」 → 真的调起 X 屏蔽确认 → 完成
+  - [x] options 页 → GitHub 登录 → Device Flow 跑通
+- [x] 截图 5 张
+- [x] 准备好商店付款（一次性 $5 注册费）
+- [x] 提交并通过审核
+
+## 9. 后续版本更新流程
+
+1. 把新版本号写进 `extension/package.json` + `extension/wxt.config.ts` 的 `manifest.version`
+2. `cd extension && pnpm zip` 出新的 .zip
+3. 登录 [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole/)，找到 MXGA item
+4. 「Package → Upload new package」，把 zip 拖进去
+5. 如果 listing 文案 / 截图 / 权限有变，同步更新本文档第 1–7 节并保存
+6. 提交审核（通常 1–3 天；敏感品类可能 7–14 天）
+7. 通过后同步把 GitHub Release 也打一份，让两边版本号一致
