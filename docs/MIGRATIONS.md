@@ -38,6 +38,7 @@ Every migration must:
 | Date | File | Status | Affected | Notes |
 |---|---|---|---|---|
 | 2026-05-26 | `2026-05-26-identity-cleanup.sql` | ✅ applied 2026-05-26 03:16 UTC | accounts: 78 (Class A) + 19 (Class B) → `status='removed'`; reports: 7 deleted; 2 uid'd rows promoted to whitelisted (A0a); 99 review_log audit rows; 1.86s; D1 `changes=206` | Collapses handle-only "ghost" rows that have a uid-bearing twin; deduplicates pure-orphan handles by `last_scored`; deletes report duplicates that snuck past the UNIQUE INDEX via NULL uids. Pre-apply D1 export saved to `/tmp/xss-db-pre-2026-05-26-identity-cleanup.sql` (3.4 MB, SHA256 `ae01e0db…dffdfdca`) for catastrophic rollback. |
+| 2026-05-26 | `2026-05-26-uid-unique-index.sql` | ⏳ pending | adds `idx_accounts_uid_uq UNIQUE (x_user_id) WHERE x_user_id IS NOT NULL` | Locks in the post-cleanup state: same X numeric uid can never split across two rows again. **Must be applied AFTER the matching worker code (Wave B, `findAccount` by-uid-first) is deployed**, otherwise handle-rename events would raise UNIQUE violations on /v1/classify. |
 
 Rollback: `2026-05-26-identity-cleanup.rollback.sql` (restores the
 `accounts` rows; `reports` deletes are not recoverable from migration data).

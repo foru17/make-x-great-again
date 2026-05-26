@@ -1,0 +1,31 @@
+-- ============================================================================
+-- 2026-05-26 — UNIQUE INDEX on accounts(x_user_id)  (Wave C)
+-- ============================================================================
+-- Adds the partial UNIQUE INDEX that physically prevents the same X numeric
+-- user id from ever splitting across two `accounts` rows. NULL is excluded
+-- so handle-only rows still coexist (we accept those when the fiber walk
+-- fails to extract the uid).
+--
+-- Apply ORDER matters:
+--   1. Deploy the worker code from Wave B (this commit) — findAccount now
+--      does the by-uid lookup first, so writeAccount UPDATEs the canonical
+--      row instead of trying to INSERT a duplicate on a handle rename.
+--   2. THEN run this migration. Reversing the order would make any handle-
+--      rename event (currently 0/day in prod, but non-zero in the future)
+--      raise UNIQUE constraint violations from the still-handle-first old
+--      worker.
+--
+-- Pre-flight: confirm there are 0 duplicate uids before applying. The
+-- 2026-05-26-identity-cleanup migration collapsed every observed duplicate;
+-- if anything snuck in since then, this CREATE will FAIL (which is the
+-- correct behavior — investigate the duplicate before adding the index).
+--
+--   SELECT x_user_id, count(*) FROM accounts
+--    WHERE x_user_id IS NOT NULL
+--    GROUP BY x_user_id HAVING count(*) > 1;
+--
+-- Rollback: `DROP INDEX IF EXISTS idx_accounts_uid_uq;`
+-- ============================================================================
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_uid_uq
+  ON accounts(x_user_id) WHERE x_user_id IS NOT NULL;

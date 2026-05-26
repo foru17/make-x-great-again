@@ -82,7 +82,13 @@ async function requireReporter(c: Ctx): Promise<Reporter | null> {
 }
 
 const Signals = z.object({
-  userId: z.string().optional(),
+  // X numeric user id — immutable, the canonical identity key. Optional
+  // because the fiber-walk that extracts it from X's React state fails on
+  // some feed/reply contexts; we still accept handle-only payloads but the
+  // worker logs and cleans those up at write-time (see writeAccount). When
+  // present, must be the digit-only id — matches the Node-side schema in
+  // `src/schema.ts` and tightens what was previously z.string().optional().
+  userId: z.string().regex(/^\d+$/, "userId must be the X numeric id").optional(),
   handle: z.string().min(1),
   displayName: z.string().default(""),
   bio: z.string().default(""),
@@ -193,6 +199,10 @@ interface AccountRow {
   model: string | null;
   signals_hash: string | null;
   status: string;
+  // Included so the write path can tell the caller "I matched by uid even
+  // though your handle is new" (used by the rename-detection log line).
+  handle: string;
+  x_user_id: string | null;
 }
 
 async function findAccount(
@@ -200,9 +210,36 @@ async function findAccount(
   handle: string,
   uid: string | null,
 ): Promise<AccountRow | null> {
+  // Pass 1 — by-uid (the immutable key). When the caller knows the X
+  // numeric uid, this returns the canonical row even if the handle is now
+  // different ("user renamed @foo → @bar"). Critical for forward-compat
+  // once the accounts(x_user_id) UNIQUE INDEX is in place: without finding
+  // the existing row by uid, writeAccount would try to INSERT a fresh row
+  // with the same uid and hit a constraint violation.
+  if (uid) {
+    const byUid =
+      (await env.DB.prepare(
+        `SELECT rowid, verdict_label, confidence, reasons, model, signals_hash, status, handle, x_user_id
+           FROM accounts
+          WHERE x_user_id=?
+          ORDER BY CASE WHEN status='whitelisted' THEN 0 ELSE 1 END,
+                   last_scored DESC
+          LIMIT 1`,
+      )
+        .bind(uid)
+        .first<AccountRow>()) ?? null;
+    if (byUid) return byUid;
+  }
+
+  // Pass 2 — by-handle. Covers two cases:
+  //   - Caller has no uid (fiber-walk failure): plain handle-only lookup.
+  //   - Caller has a uid but no row exists for it yet: maybe there's a
+  //     handle-only row to fill in. The (x_user_id IS NULL) branch picks
+  //     that up so the UPDATE path COALESCEs the uid in.
+  // Whitelisted wins; among the rest, matching uid wins over handle-only.
   return (
     (await env.DB.prepare(
-      `SELECT rowid, verdict_label, confidence, reasons, model, signals_hash, status
+      `SELECT rowid, verdict_label, confidence, reasons, model, signals_hash, status, handle, x_user_id
          FROM accounts
         WHERE lower(handle)=?
           AND (? IS NULL OR x_user_id IS NULL OR x_user_id=?)
@@ -291,7 +328,14 @@ async function writeAccount(env: Env, w: AccountWrite): Promise<AccountRow | nul
         prev.rowid,
       )
       .run();
-    await cleanupHandleOnlyAccountDuplicates(env, w.handle, prev.rowid);
+    // Cleanup is meaningful only when the kept row has a uid (so null-uid
+    // siblings collapse INTO a canonical identity). w.uid takes precedence
+    // because we just COALESCEd it onto the row; otherwise fall back to
+    // prev's pre-existing uid. The cleanup also runs the status promotion
+    // (whitelisted / human_confirmed sibling intent → canonical row).
+    if (w.uid ?? prev.x_user_id) {
+      await cleanupHandleOnlyAccountDuplicates(env, w.handle, prev.rowid);
+    }
     return findAccount(env, w.handle, w.uid);
   }
 
@@ -319,20 +363,83 @@ async function writeAccount(env: Env, w: AccountWrite): Promise<AccountRow | nul
       w.publishedAt ?? null,
     )
     .run();
-  return findAccount(env, w.handle, w.uid);
+  // Fresh INSERT — only call cleanup when we just created a uid-bearing row.
+  // (Race protection: if another writer added a handle-only sibling between
+  // findAccount and INSERT, this collapses it.) For pure null-uid INSERTs
+  // there's no canonical to merge into, so skip.
+  const fresh = await findAccount(env, w.handle, w.uid);
+  if (fresh && w.uid) {
+    await cleanupHandleOnlyAccountDuplicates(env, w.handle, fresh.rowid);
+    return findAccount(env, w.handle, w.uid);
+  }
+  return fresh;
 }
 
+// Called from writeAccount after a uid-bearing row is inserted or updated.
+// Two jobs, run in order so the maintainer's manual signal survives:
+//
+//   1. STATUS PROMOTION — if any null-uid sibling for the same handle holds
+//      a stronger maintainer signal (whitelisted > human_confirmed) than the
+//      canonical uid'd row, propagate it. Mirrors what the one-shot
+//      2026-05-26 identity-cleanup migration did across the backlog.
+//   2. COLLAPSE — mark every null-uid sibling with the same handle as
+//      status='removed', source='auto_dedup_to_uid_twin'. We DON'T delete
+//      so the audit trail (verdict, reasons, evidence_text) survives.
+//
+// Idempotent: re-running on already-cleaned state writes nothing.
 async function cleanupHandleOnlyAccountDuplicates(
   env: Env,
   handle: string,
   keepRowid: number,
 ): Promise<void> {
+  // 1a. Promote uid'd row → whitelisted if a null-uid sibling is whitelisted.
   await env.DB.prepare(
-    `DELETE FROM accounts
+    `UPDATE accounts
+        SET status='whitelisted',
+            source='admin_whitelist',
+            verdict_label='legit',
+            confidence=1.0,
+            reasons='["whitelisted by admin"]',
+            signals_hash=NULL,
+            published_at=NULL
+      WHERE rowid=?
+        AND status<>'whitelisted'
+        AND EXISTS (SELECT 1 FROM accounts s
+                     WHERE s.x_user_id IS NULL
+                       AND s.status='whitelisted'
+                       AND lower(s.handle)=?)`,
+  )
+    .bind(keepRowid, handle)
+    .run();
+
+  // 1b. Promote uid'd row → human_confirmed if a null-uid sibling is
+  //     human_confirmed and the canonical row is still in an auto_* state.
+  //     (Don't downgrade rejected/whitelisted; don't re-promote.)
+  await env.DB.prepare(
+    `UPDATE accounts
+        SET status='human_confirmed',
+            published_at=?
+      WHERE rowid=?
+        AND status IN ('auto_pending_review','auto_legit')
+        AND EXISTS (SELECT 1 FROM accounts s
+                     WHERE s.x_user_id IS NULL
+                       AND s.status='human_confirmed'
+                       AND lower(s.handle)=?)`,
+  )
+    .bind(Date.now(), keepRowid, handle)
+    .run();
+
+  // 2. Collapse: mark all null-uid siblings as removed, preserve payload.
+  //    Skip rows already marked removed so this stays idempotent.
+  await env.DB.prepare(
+    `UPDATE accounts
+        SET status='removed',
+            source='auto_dedup_to_uid_twin',
+            published_at=NULL
       WHERE rowid<>?
         AND lower(handle)=?
         AND x_user_id IS NULL
-        AND status IN ('auto_pending_review','auto_legit')`,
+        AND status<>'removed'`,
   )
     .bind(keepRowid, handle)
     .run();

@@ -30,6 +30,13 @@ CREATE TABLE IF NOT EXISTS accounts (
 CREATE INDEX IF NOT EXISTS idx_accounts_status ON accounts(status);
 CREATE INDEX IF NOT EXISTS idx_accounts_uid ON accounts(x_user_id);
 CREATE INDEX IF NOT EXISTS idx_accounts_handle_norm ON accounts(lower(handle));
+-- Partial UNIQUE: prevent the same X numeric uid from ever splitting across
+-- two rows. NULL is excluded so handle-only rows still coexist while we
+-- wait for the fiber walk to land a uid. Paired with findAccount's by-uid
+-- pass — writeAccount UPDATEs the canonical row instead of INSERTing a
+-- duplicate when the user renames their handle.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_uid_uq
+  ON accounts(x_user_id) WHERE x_user_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS reports (
   id                  TEXT PRIMARY KEY,     -- uuid
