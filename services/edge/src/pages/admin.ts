@@ -174,6 +174,11 @@ input::placeholder{color:var(--fg-4)}
 .search-bar .search-input::placeholder{color:var(--fg-4)}
 .adv-panel{background:var(--card);border:1px solid var(--border);border-radius:var(--r);
   padding:12px 14px;font-size:12.5px}
+/* When collapsed (no 'open' attribute), hide the entire panel — otherwise
+   its bg + border + padding render as a stray gray box between the search
+   input and the verdict chips. The toggle button '更多筛选' sets 'open' via
+   JS so the panel reappears as a normal block. */
+.adv-panel:not([open]){display:none}
 .adv-panel summary{cursor:pointer}
 .adv-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px 14px}
 .adv-grid label{display:flex;flex-direction:column;gap:4px}
