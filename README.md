@@ -217,3 +217,13 @@ CONTRIBUTING.md       贡献指南
 ## License
 
 [AGPL-3.0](./LICENSE)。
+
+## Star History
+
+<a href="https://www.star-history.com/?repos=foru17%2Fmake-x-great-again&type=date&legend=top-left">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=foru17/make-x-great-again&type=date&theme=dark&legend=top-left" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=foru17/make-x-great-again&type=date&legend=top-left" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=foru17/make-x-great-again&type=date&legend=top-left" />
+ </picture>
+</a>
