@@ -803,84 +803,206 @@ app.get("/v1/admin/stats", async (c) => {
     reports: reportsRow?.n ?? 0,
   });
 });
+type DecideAction = "approve" | "reject" | "remove" | "whitelist";
+
+function statusForAction(action: DecideAction): string {
+  return action === "approve"
+    ? "human_confirmed"
+    : action === "remove"
+      ? "removed"
+      : action === "whitelist"
+        ? "whitelisted"
+        : "rejected";
+}
+
+// Build the prepared-statement array for a single decide on one (handle, uid?)
+// pair. Shared between /v1/admin/decide (single) and /v1/admin/decide-batch
+// (D1 batch transaction) so the SQL stays in one place — no risk of the
+// batch path drifting from the single path's behavior.
+//
+// Returns 2 statements when xUserId is given (target row + sibling-handle
+// cleanup), 1 when handle-only. The last statement appended by the caller
+// is always the review_log INSERT.
+function buildDecideStatements(
+  env: Env,
+  handle: string,
+  xUserId: string | undefined,
+  action: DecideAction,
+  now: number,
+): D1PreparedStatement[] {
+  const status = statusForAction(action);
+  const stmts: D1PreparedStatement[] = [];
+  if (xUserId) {
+    if (action === "whitelist") {
+      stmts.push(
+        env.DB.prepare(
+          `UPDATE accounts
+              SET status='whitelisted',
+                  source='admin_whitelist',
+                  verdict_label='legit',
+                  confidence=1.0,
+                  reasons='["whitelisted by admin"]',
+                  signals_hash=NULL,
+                  last_scored=?,
+                  published_at=NULL
+            WHERE lower(handle)=? AND x_user_id=?`,
+        ).bind(now, handle, xUserId),
+      );
+    } else {
+      stmts.push(
+        env.DB.prepare(
+          "UPDATE accounts SET status=?, published_at=? WHERE lower(handle)=? AND x_user_id=?",
+        ).bind(status, action === "approve" ? now : null, handle, xUserId),
+      );
+    }
+    // Sibling cleanup: when a uid-bearing row was just promoted/demoted, also
+    // sweep any handle-only auto_pending_review siblings (they're stale).
+    stmts.push(
+      env.DB.prepare(
+        `UPDATE accounts SET status=?, published_at=NULL
+          WHERE lower(handle)=? AND x_user_id IS NULL AND status='auto_pending_review'`,
+      ).bind(action === "approve" || action === "whitelist" ? "removed" : status, handle),
+    );
+  } else {
+    if (action === "whitelist") {
+      stmts.push(
+        env.DB.prepare(
+          `UPDATE accounts
+              SET status='whitelisted',
+                  source='admin_whitelist',
+                  verdict_label='legit',
+                  confidence=1.0,
+                  reasons='["whitelisted by admin"]',
+                  signals_hash=NULL,
+                  last_scored=?,
+                  published_at=NULL
+            WHERE lower(handle)=? AND x_user_id IS NULL`,
+        ).bind(now, handle),
+      );
+    } else {
+      stmts.push(
+        env.DB.prepare(
+          "UPDATE accounts SET status=?, published_at=? WHERE lower(handle)=? AND x_user_id IS NULL",
+        ).bind(status, action === "approve" ? now : null, handle),
+      );
+    }
+  }
+  return stmts;
+}
+
+function reviewLogStmt(
+  env: Env,
+  xUserId: string | null,
+  handle: string,
+  action: string,
+  note: string,
+  now: number,
+): D1PreparedStatement {
+  return env.DB.prepare(
+    "INSERT INTO review_log (x_user_id,handle,action,actor,note,at) VALUES (?,?,?,?,?,?)",
+  ).bind(xUserId, handle, action, "admin", note, now);
+}
+
 app.post("/v1/admin/decide", async (c) => {
   if (!admin(c)) return c.json({ error: "forbidden" }, 403);
   const body = (await c.req.json()) as {
     handle: string;
     xUserId?: string;
-    action: "approve" | "reject" | "remove" | "whitelist";
+    action: DecideAction;
   };
   const handle = normalizeHandle(body.handle);
   const xUserId = body.xUserId;
   const action = body.action;
-  const status =
-    action === "approve"
-      ? "human_confirmed"
-      : action === "remove"
-        ? "removed"
-        : action === "whitelist"
-          ? "whitelisted"
-          : "rejected";
   const now = Date.now();
-  if (xUserId) {
-    if (action === "whitelist") {
-      await c.env.DB.prepare(
-        `UPDATE accounts
-            SET status='whitelisted',
-                source='admin_whitelist',
-                verdict_label='legit',
-                confidence=1.0,
-                reasons='["whitelisted by admin"]',
-                signals_hash=NULL,
-                last_scored=?,
-                published_at=NULL
-          WHERE lower(handle)=? AND x_user_id=?`,
-      )
-        .bind(now, handle, xUserId)
-        .run();
-    } else {
-      await c.env.DB.prepare(
-        "UPDATE accounts SET status=?, published_at=? WHERE lower(handle)=? AND x_user_id=?",
-      )
-        .bind(status, action === "approve" ? now : null, handle, xUserId)
-        .run();
-    }
-    await c.env.DB.prepare(
-      `UPDATE accounts SET status=?, published_at=NULL
-        WHERE lower(handle)=? AND x_user_id IS NULL AND status='auto_pending_review'`,
+  const stmts = buildDecideStatements(c.env, handle, xUserId, action, now);
+  stmts.push(reviewLogStmt(c.env, xUserId ?? null, handle, action, "panel", now));
+  await c.env.DB.batch(stmts);
+  return c.json({ ok: true, status: statusForAction(action) });
+});
+
+// Batch decide — accepts up to 100 items, single homogeneous action, runs as
+// one D1 transaction. Either all rows commit or none do (D1 batch is atomic).
+// Speeds up "拉黑这 80 条" from ~10s of sequential network round-trips to
+// ~300ms in one shot, and removes the half-applied state risk on network
+// hiccups mid-batch.
+//
+// Body: { action: "approve"|"reject"|"remove"|"whitelist",
+//         items: [{ handle: string, xUserId?: string }, ...] }
+const DecideBatchBody = z.object({
+  action: z.enum(["approve", "reject", "remove", "whitelist"]),
+  items: z
+    .array(
+      z.object({
+        handle: z.string().min(1),
+        xUserId: z.string().regex(/^\d+$/).optional(),
+      }),
     )
-      .bind(action === "approve" || action === "whitelist" ? "removed" : status, handle)
-      .run();
-  } else {
-    if (action === "whitelist") {
-      await c.env.DB.prepare(
-        `UPDATE accounts
-            SET status='whitelisted',
-                source='admin_whitelist',
-                verdict_label='legit',
-                confidence=1.0,
-                reasons='["whitelisted by admin"]',
-                signals_hash=NULL,
-                last_scored=?,
-                published_at=NULL
-          WHERE lower(handle)=? AND x_user_id IS NULL`,
-      )
-        .bind(now, handle)
-        .run();
-    } else {
-      await c.env.DB.prepare(
-        "UPDATE accounts SET status=?, published_at=? WHERE lower(handle)=? AND x_user_id IS NULL",
-      )
-        .bind(status, action === "approve" ? now : null, handle)
-        .run();
-    }
+    .min(1)
+    .max(100),
+});
+
+app.post("/v1/admin/decide-batch", async (c) => {
+  if (!admin(c)) return c.json({ error: "forbidden" }, 403);
+  let body: z.infer<typeof DecideBatchBody>;
+  try {
+    body = DecideBatchBody.parse(await c.req.json());
+  } catch (err) {
+    return c.json({ error: "bad_request", detail: (err as Error).message }, 400);
   }
-  await c.env.DB.prepare(
-    "INSERT INTO review_log (x_user_id,handle,action,actor,note,at) VALUES (?,?,?,?,?,?)",
-  )
-    .bind(xUserId ?? null, handle, action, "admin", "panel", now)
-    .run();
-  return c.json({ ok: true, status });
+  const now = Date.now();
+  const stmts: D1PreparedStatement[] = [];
+  for (const it of body.items) {
+    const h = normalizeHandle(it.handle);
+    stmts.push(...buildDecideStatements(c.env, h, it.xUserId, body.action, now));
+    stmts.push(reviewLogStmt(c.env, it.xUserId ?? null, h, body.action, "panel_batch", now));
+  }
+  await c.env.DB.batch(stmts);
+  return c.json({
+    ok: true,
+    status: statusForAction(body.action),
+    processed: body.items.length,
+  });
+});
+
+// Batch whitelist-remove — drops a list of accounts from the whitelist back
+// to 'rejected'. Same atomic-batch contract as decide-batch.
+const WhitelistBatchBody = z.object({
+  items: z
+    .array(
+      z.object({
+        handle: z.string().min(1),
+        xUserId: z.string().regex(/^\d+$/).optional(),
+      }),
+    )
+    .min(1)
+    .max(100),
+});
+
+app.delete("/v1/admin/whitelist-batch", async (c) => {
+  if (!admin(c)) return c.json({ error: "forbidden" }, 403);
+  let body: z.infer<typeof WhitelistBatchBody>;
+  try {
+    body = WhitelistBatchBody.parse(await c.req.json());
+  } catch (err) {
+    return c.json({ error: "bad_request", detail: (err as Error).message }, 400);
+  }
+  const now = Date.now();
+  const stmts: D1PreparedStatement[] = [];
+  for (const it of body.items) {
+    const h = normalizeHandle(it.handle);
+    const uid = it.xUserId ?? null;
+    // Mirror the single DELETE endpoint: drop to 'rejected' (preserve audit),
+    // keep the row, log the removal.
+    stmts.push(
+      c.env.DB.prepare(
+        `UPDATE accounts SET status='rejected', source='admin_whitelist', last_scored=?
+          WHERE lower(handle)=? AND (x_user_id IS ? OR x_user_id=?) AND status='whitelisted'`,
+      ).bind(now, h, uid, uid),
+    );
+    stmts.push(reviewLogStmt(c.env, uid, h, "whitelist_remove", "panel_batch", now));
+  }
+  await c.env.DB.batch(stmts);
+  return c.json({ ok: true, processed: body.items.length });
 });
 
 // Paginated AI/decision audit trail. Keyset pagination on the id PK

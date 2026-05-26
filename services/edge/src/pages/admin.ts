@@ -921,6 +921,22 @@ const SCRIPT = String.raw`
         refreshStats();
       });
   }
+  // Translate the local sel/wlSel/blSel key strings (which encode as
+  // "uid|handle") into the {handle, xUserId} item shape the batch endpoints
+  // expect. Server caps each batch at 100; we chunk locally so the
+  // maintainer can still "select all 200 spammers" without manual splits.
+  var BATCH_CHUNK=100;
+  function selToItems(keys){
+    return keys.map(function(k){
+      var parts=k.split('|');
+      var uid=parts[0]||'';
+      var h=parts[1]||'';
+      return uid?{handle:h,xUserId:uid}:{handle:h};
+    });
+  }
+  function chunked(arr,n){
+    var out=[];for(var i=0;i<arr.length;i+=n)out.push(arr.slice(i,i+n));return out;
+  }
   function batch(action){
     if(!sel.size)return;
     var label={approve:'拉黑',reject:'驳回',remove:'移除'}[action]||action;
@@ -933,21 +949,43 @@ const SCRIPT = String.raw`
     }).then(function(ok){
       if(!ok)return;
       var ks=Array.from(sel);
-      setStatus('批量'+label+'…');
-      var done=0;
-      function next(){
-        if(done>=ks.length){sel.clear();lastSelIdxQ=-1;renderQueue();refreshStats();setStatus('完成 · '+done+' 条');setTimeout(function(){setStatus('')},2500);return}
-        var k=ks[done++],parts=k.split('|');
-        api('/v1/admin/decide',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({handle:parts[1],xUserId:parts[0]||undefined,action:action})})
-          .then(function(){
-            queue=queue.filter(function(a){return key(a)!==k});
-            if(stats.queue!=null){stats.queue=Math.max(0,stats.queue-1);var c=$('cQ');if(c)c.textContent=fmtN(stats.queue)}
+      var chunks=chunked(ks,BATCH_CHUNK);
+      setStatus('批量'+label+' 0/'+ks.length);
+      var done=0,idx=0;
+      function nextChunk(){
+        if(idx>=chunks.length){
+          sel.clear();lastSelIdxQ=-1;renderQueue();refreshStats();
+          setStatus('完成 · '+done+' 条');setTimeout(function(){setStatus('')},2500);
+          return;
+        }
+        var slice=chunks[idx++];
+        var items=selToItems(slice);
+        api('/v1/admin/decide-batch',{
+          method:'POST',
+          headers:{'content-type':'application/json'},
+          body:JSON.stringify({action:action,items:items})
+        }).then(function(r){return r.json()}).then(function(j){
+          if(j&&j.ok){
+            done+=slice.length;
+            // optimistic local prune so the UI reflects success immediately
+            var sliceSet={};slice.forEach(function(k){sliceSet[k]=true});
+            queue=queue.filter(function(a){return !sliceSet[key(a)]});
+            if(stats.queue!=null){
+              stats.queue=Math.max(0,stats.queue-slice.length);
+              var c=$('cQ');if(c)c.textContent=fmtN(stats.queue);
+            }
             setStatus('批量'+label+' '+done+'/'+ks.length);
-            next();
-          })
-          .catch(function(){next()})
+            nextChunk();
+          } else {
+            setStatus('批量'+label+' 失败：'+(j&&j.error||'unknown'));
+            setTimeout(function(){setStatus('')},3500);
+          }
+        }).catch(function(e){
+          setStatus('批量'+label+' 网络错误');
+          setTimeout(function(){setStatus('')},3500);
+        });
       }
-      next();
+      nextChunk();
     });
   }
   function clearSel(){sel.clear();lastSelIdxQ=-1;renderRows()}
@@ -1104,15 +1142,36 @@ const SCRIPT = String.raw`
     }).then(function(ok){
       if(!ok)return;
       var ks=Array.from(wlSel);
-      setStatus('批量移出…');
-      var done=0;
-      function next(){
-        if(done>=ks.length){wlSel.clear();lastSelIdxW=-1;loadWhitelist(false);refreshStats();setStatus('完成 · '+done+' 条');setTimeout(function(){setStatus('')},2500);return}
-        var k=ks[done++],parts=k.split('|'),handle=parts[1],xUserId=parts[0]||null;
-        var q='?handle='+encodeURIComponent(handle)+(xUserId?'&xUserId='+encodeURIComponent(xUserId):'');
-        api('/v1/admin/whitelist'+q,{method:'DELETE'}).then(function(){setStatus('批量移出 '+done+'/'+ks.length);next()}).catch(function(){next()})
+      var chunks=chunked(ks,BATCH_CHUNK);
+      setStatus('批量移出 0/'+ks.length);
+      var done=0,idx=0;
+      function nextChunk(){
+        if(idx>=chunks.length){
+          wlSel.clear();lastSelIdxW=-1;loadWhitelist(false);refreshStats();
+          setStatus('完成 · '+done+' 条');setTimeout(function(){setStatus('')},2500);
+          return;
+        }
+        var slice=chunks[idx++];
+        var items=selToItems(slice);
+        api('/v1/admin/whitelist-batch',{
+          method:'DELETE',
+          headers:{'content-type':'application/json'},
+          body:JSON.stringify({items:items})
+        }).then(function(r){return r.json()}).then(function(j){
+          if(j&&j.ok){
+            done+=slice.length;
+            setStatus('批量移出 '+done+'/'+ks.length);
+            nextChunk();
+          } else {
+            setStatus('批量移出失败：'+(j&&j.error||'unknown'));
+            setTimeout(function(){setStatus('')},3500);
+          }
+        }).catch(function(){
+          setStatus('批量移出 网络错误');
+          setTimeout(function(){setStatus('')},3500);
+        });
       }
-      next();
+      nextChunk();
     });
   }
 
@@ -1264,15 +1323,36 @@ const SCRIPT = String.raw`
     }).then(function(ok){
       if(!ok)return;
       var ks=Array.from(blSel);
-      setStatus('批量'+label+'…');
-      var done=0;
-      function next(){
-        if(done>=ks.length){blSel.clear();lastSelIdxB=-1;loadBlacklist(false);refreshStats();setStatus('完成 · '+done+' 条');setTimeout(function(){setStatus('')},2500);return}
-        var k=ks[done++],parts=k.split('|');
-        api('/v1/admin/decide',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({handle:parts[1],xUserId:parts[0]||undefined,action:action})})
-          .then(function(){setStatus('批量'+label+' '+done+'/'+ks.length);next()}).catch(function(){next()})
+      var chunks=chunked(ks,BATCH_CHUNK);
+      setStatus('批量'+label+' 0/'+ks.length);
+      var done=0,idx=0;
+      function nextChunk(){
+        if(idx>=chunks.length){
+          blSel.clear();lastSelIdxB=-1;loadBlacklist(false);refreshStats();
+          setStatus('完成 · '+done+' 条');setTimeout(function(){setStatus('')},2500);
+          return;
+        }
+        var slice=chunks[idx++];
+        var items=selToItems(slice);
+        api('/v1/admin/decide-batch',{
+          method:'POST',
+          headers:{'content-type':'application/json'},
+          body:JSON.stringify({action:action,items:items})
+        }).then(function(r){return r.json()}).then(function(j){
+          if(j&&j.ok){
+            done+=slice.length;
+            setStatus('批量'+label+' '+done+'/'+ks.length);
+            nextChunk();
+          } else {
+            setStatus('批量'+label+' 失败：'+(j&&j.error||'unknown'));
+            setTimeout(function(){setStatus('')},3500);
+          }
+        }).catch(function(){
+          setStatus('批量'+label+' 网络错误');
+          setTimeout(function(){setStatus('')},3500);
+        });
       }
-      next();
+      nextChunk();
     });
   }
   function wlAdd(){
