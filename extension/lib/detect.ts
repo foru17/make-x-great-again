@@ -2,6 +2,9 @@
 // content script. Reads only what X already rendered — no scraping, no
 // navigation, no extra requests to X.
 import type { Signals } from "./types";
+import { type KnownUser, ingestGraphqlUsers, readGraphqlUser } from "./graphql-users";
+
+export { ingestGraphqlUsers } from "./graphql-users";
 
 // Conservative Chinese porn-bot vocabulary. Kept SMALL on purpose — we
 // don't want to play whack-a-mole with bot copy variants. The LLM is what
@@ -31,6 +34,8 @@ const NON_PROFILE = new Set([
   "compose", "hashtag", "bookmarks", "lists", "communities", "jobs", "tos",
   "privacy", "login", "signup",
 ]);
+const TWITTER_SNOWFLAKE_EPOCH_MS = 1_288_834_974_657n;
+const UID_CREATED_AT_TOLERANCE_MS = 2 * 86_400_000;
 
 export function parseJoinDate(text: string | null | undefined): number | undefined {
   if (!text) return undefined;
@@ -68,11 +73,66 @@ function numericId(v: unknown): string | undefined {
   return typeof v === "string" && /^\d+$/.test(v) ? v : undefined;
 }
 
+function numericString(v: unknown): string | undefined {
+  if (typeof v === "number" && Number.isSafeInteger(v)) return String(v);
+  return numericId(v);
+}
+
+function trueFlag(v: unknown): true | undefined {
+  return v === true ? true : undefined;
+}
+
 function bannerUserId(scope: Element | Document): string | undefined {
   const el = scope.querySelector<HTMLElement>('[src*="profile_banners/"], [style*="profile_banners/"]');
   const raw =
     el instanceof HTMLImageElement ? el.src : (el?.getAttribute("style") ?? "");
   return numericId(raw.match(/profile_banners\/(\d+)\//)?.[1]);
+}
+
+function snowflakeTimeMs(id: string): number | undefined {
+  if (id.length < 16) return undefined;
+  try {
+    return Number((BigInt(id) >> 22n) + TWITTER_SNOWFLAKE_EPOCH_MS);
+  } catch {
+    return undefined;
+  }
+}
+
+// X exposes the canonical profile user id as JSON-LD on profile pages. Prefer
+// it there: unlike profile_images/<n>, mainEntity.identifier is the account id.
+function profileJsonLdUserId(expectedHandle?: string): string | undefined {
+  for (const script of document.querySelectorAll<HTMLScriptElement>(
+    'script[type="application/ld+json"]',
+  )) {
+    try {
+      const data = JSON.parse(script.textContent ?? "") as unknown;
+      const pages = Array.isArray(data) ? data : [data];
+      for (const page of pages) {
+        if (!page || typeof page !== "object") continue;
+        const p = page as Record<string, unknown>;
+        if (p["@type"] !== "ProfilePage") continue;
+        const entity = p.mainEntity;
+        if (!entity || typeof entity !== "object") continue;
+        const e = entity as Record<string, unknown>;
+        if (e["@type"] !== "Person") continue;
+
+        const handle =
+          normalizeHandle(typeof e.additionalName === "string" ? e.additionalName : undefined) ??
+          normalizeHandle(
+            typeof e.url === "string"
+              ? e.url.match(/\/([^/?#]+)(?:[?#].*)?$/)?.[1]
+              : undefined,
+          );
+        if (expectedHandle && handle !== expectedHandle) continue;
+
+        const id = numericString(e.identifier);
+        if (id) return id;
+      }
+    } catch {
+      /* malformed / unrelated JSON-LD — skip */
+    }
+  }
+  return undefined;
 }
 
 export interface FiberUser {
@@ -81,6 +141,64 @@ export interface FiberUser {
   followersCount?: number;
   followingCount?: number;
   accountAgeDays?: number;
+  viewerFollowing?: true;
+  viewerBlocking?: true;
+  viewerMuting?: true;
+  viewerFollowRequestSent?: true;
+  viewerIsSelf?: true;
+}
+
+function viewerHandle(): string | undefined {
+  const profileHref = document
+    .querySelector<HTMLAnchorElement>('[data-testid="AppTabBar_Profile_Link"]')
+    ?.getAttribute("href");
+  const fromHref = normalizeHandle(profileHref?.match(/^\/([^/?#]+)/)?.[1]);
+  if (fromHref && !NON_PROFILE.has(fromHref)) return fromHref;
+
+  const switcherText =
+    document.querySelector<HTMLElement>('[data-testid="SideNav_AccountSwitcher_Button"]')
+      ?.innerText ?? "";
+  return normalizeHandle(switcherText.match(/@([A-Za-z0-9_]{1,15})/)?.[1]);
+}
+
+function isViewerHandle(handle: string | undefined): true | undefined {
+  const viewer = viewerHandle();
+  const target = normalizeHandle(handle);
+  return viewer && target && viewer === target ? true : undefined;
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function actionUserInfo(scope: Element | Document, handle?: string): Pick<
+  FiberUser,
+  "userId" | "viewerFollowing"
+> {
+  const expected = normalizeHandle(handle);
+  const mention = expected ? new RegExp(`@${escapeRegExp(expected)}\\b`, "i") : undefined;
+  for (const el of scope.querySelectorAll<HTMLElement>(
+    '[data-testid$="-follow"], [data-testid$="-unfollow"], [data-testid$="-subscribe"]',
+  )) {
+    const testid = el.getAttribute("data-testid") ?? "";
+    const match = testid.match(/^(\d+)-(follow|unfollow|subscribe)$/);
+    if (!match) continue;
+    const label = `${el.getAttribute("aria-label") ?? ""}\n${el.innerText ?? ""}`;
+    if (mention && !mention.test(label)) continue;
+    return {
+      userId: match[1],
+      ...(match[2] === "unfollow" ? { viewerFollowing: true as const } : {}),
+    };
+  }
+  if (mention) {
+    for (const el of scope.querySelectorAll<HTMLElement>('button, [role="button"]')) {
+      const label = `${el.getAttribute("aria-label") ?? ""}\n${el.innerText ?? ""}`;
+      if (mention.test(label) && /(取消关注|正在关注|Following|Unfollow)/i.test(label)) {
+        return { viewerFollowing: true as const };
+      }
+    }
+  }
+  return {};
 }
 
 /**
@@ -121,14 +239,22 @@ function readFiberUserUncached(el: Element, expectedHandle?: string): FiberUser 
           const created = legacy.created_at
             ? Date.parse(legacy.created_at)
             : NaN;
+          const userId = fiberUserId(u, legacy);
+          const accountAgeDays = Number.isNaN(created)
+            ? undefined
+            : Math.max(0, Math.round((Date.now() - created) / 86_400_000));
           return {
             bio: typeof legacy.description === "string" ? legacy.description : "",
-            userId: numericId(u.rest_id) ?? numericId(legacy.id_str),
+            ...(userId ? { userId } : {}),
             followersCount: legacy.followers_count,
             followingCount: legacy.friends_count,
-            accountAgeDays: Number.isNaN(created)
-              ? undefined
-              : Math.max(0, Math.round((Date.now() - created) / 86_400_000)),
+            ...(accountAgeDays !== undefined ? { accountAgeDays } : {}),
+            ...(trueFlag(legacy.following) ? { viewerFollowing: true as const } : {}),
+            ...(trueFlag(legacy.blocking) ? { viewerBlocking: true as const } : {}),
+            ...(trueFlag(legacy.muting) ? { viewerMuting: true as const } : {}),
+            ...(trueFlag(legacy.follow_request_sent)
+              ? { viewerFollowRequestSent: true as const }
+              : {}),
           };
         }
       }
@@ -138,6 +264,42 @@ function readFiberUserUncached(el: Element, expectedHandle?: string): FiberUser 
     /* X internals changed → graceful empty */
   }
   return {};
+}
+
+// biome-ignore lint/suspicious/noExplicitAny: React internals are untyped
+function fiberUserId(u: any, legacy: any): string | undefined {
+  const fromLegacy = numericId(legacy?.id_str);
+  const fromRest = numericId(u?.rest_id);
+  if (fromLegacy && fromRest && fromLegacy !== fromRest) {
+    console.warn("[MXGA] conflicting X user ids in fiber; dropping uid", {
+      legacyId: fromLegacy,
+      restId: fromRest,
+      screenName: legacy?.screen_name,
+    });
+    return undefined;
+  }
+  const candidate = fromLegacy ?? fromRest;
+  const avatarId = numericId(
+    String(legacy?.profile_image_url_https ?? "").match(/profile_images\/(\d+)\//)?.[1],
+  );
+  const candidateTime = candidate ? snowflakeTimeMs(candidate) : undefined;
+  const created = typeof legacy?.created_at === "string" ? Date.parse(legacy.created_at) : NaN;
+  if (
+    candidate &&
+    avatarId === candidate &&
+    candidateTime !== undefined &&
+    !Number.isNaN(created) &&
+    Math.abs(candidateTime - created) > UID_CREATED_AT_TOLERANCE_MS
+  ) {
+    console.warn("[MXGA] fiber uid looks like avatar media id; dropping uid", {
+      candidate,
+      screenName: legacy?.screen_name,
+      createdAt: legacy.created_at,
+      avatarUrl: legacy.profile_image_url_https,
+    });
+    return undefined;
+  }
+  return candidate;
 }
 
 // biome-ignore lint/suspicious/noExplicitAny: deep search over React internals
@@ -155,6 +317,7 @@ function findUser(
   try {
     const legacy = o.legacy ?? o;
     if (
+      o.__typename === "User" &&
       legacy &&
       typeof legacy === "object" &&
       typeof legacy.description === "string" &&
@@ -199,8 +362,26 @@ export function extractProfile(): Signals | null {
     document.querySelector('[data-testid="primaryColumn"]') ?? document;
   const { hasDefaultAvatar, avatarUrl } = avatarInfo(scope);
   const profileScope = scope instanceof Element ? scope : nameEl;
-  const fu = readFiberUser(profileScope, handle);
-  const userId = fu.userId ?? bannerUserId(scope);
+  const networkUser = readGraphqlUser(handle);
+  const actionUser = actionUserInfo(profileScope, handle);
+  const fu: KnownUser = {
+    ...readFiberUser(profileScope, handle),
+    ...networkUser,
+    ...(actionUser.userId ? { userId: actionUser.userId } : {}),
+    ...(actionUser.viewerFollowing ? { viewerFollowing: true as const } : {}),
+    ...(isViewerHandle(handle) || profileScope.querySelector('[data-testid="editProfileButton"]')
+      ? { viewerIsSelf: true as const }
+      : {}),
+  };
+  const jsonLdUserId = profileJsonLdUserId(handle);
+  if (jsonLdUserId && fu.userId && jsonLdUserId !== fu.userId) {
+    console.warn("[MXGA] profile JSON-LD user id differs from observed user id; using JSON-LD", {
+      handle,
+      jsonLdUserId,
+      observedUserId: fu.userId,
+    });
+  }
+  const userId = jsonLdUserId ?? fu.userId ?? bannerUserId(scope);
 
   return {
     isProfile: true,
@@ -211,6 +392,11 @@ export function extractProfile(): Signals | null {
     recentTweets: [],
     ...(avatarUrl ? { avatarUrl } : {}),
     ...(userId ? { userId } : {}),
+    ...(fu.viewerFollowing ? { viewerFollowing: true as const } : {}),
+    ...(fu.viewerBlocking ? { viewerBlocking: true as const } : {}),
+    ...(fu.viewerMuting ? { viewerMuting: true as const } : {}),
+    ...(fu.viewerFollowRequestSent ? { viewerFollowRequestSent: true as const } : {}),
+    ...(fu.viewerIsSelf ? { viewerIsSelf: true as const } : {}),
     ...(parseJoinDate(joinEl?.innerText) !== undefined
       ? { accountAgeDays: parseJoinDate(joinEl?.innerText) }
       : {}),
@@ -252,22 +438,38 @@ export function extractFromArticle(article: HTMLElement): Signals | null {
   if (!handle) return null;
   const tweetEl = article.querySelector<HTMLElement>('[data-testid="tweetText"]');
   const tweetText = tweetEl ? tweetEl.innerText.trim() : "";
-  // Pull the author's already-loaded profile (bio/counts/age) from X's React
-  // data — automatic, no hover, zero extra requests.
-  const fu = readFiberUser(article, handle);
+  // Prefer identities from X's own GraphQL responses; fall back to React
+  // fiber when the network cache has not seen this author yet.
+  const networkUser = readGraphqlUser(handle);
+  const fiberUser = readFiberUser(article, handle);
+  const actionUser = actionUserInfo(article, handle);
+  const fu: KnownUser = {
+    ...fiberUser,
+    ...networkUser,
+    ...(!fiberUser.userId && !networkUser.userId && actionUser.userId
+      ? { userId: actionUser.userId }
+      : {}),
+    ...(actionUser.viewerFollowing ? { viewerFollowing: true as const } : {}),
+    ...(isViewerHandle(handle) ? { viewerIsSelf: true as const } : {}),
+  };
   return {
     isProfile: false,
     handle,
-    displayName,
+    displayName: networkUser.displayName ?? displayName,
     bio: fu.bio ?? "",
     hasDefaultAvatar,
     recentTweets: tweetText ? [tweetText] : [],
-    ...(avatarUrl ? { avatarUrl } : {}),
+    ...(networkUser.avatarUrl ?? avatarUrl ? { avatarUrl: networkUser.avatarUrl ?? avatarUrl } : {}),
     ...(fu.userId ? { userId: fu.userId } : {}),
     ...(tweetText ? { triggeringComment: tweetText } : {}),
     ...(fu.accountAgeDays !== undefined ? { accountAgeDays: fu.accountAgeDays } : {}),
     ...(fu.followersCount !== undefined ? { followersCount: fu.followersCount } : {}),
     ...(fu.followingCount !== undefined ? { followingCount: fu.followingCount } : {}),
+    ...(fu.viewerFollowing ? { viewerFollowing: true as const } : {}),
+    ...(fu.viewerBlocking ? { viewerBlocking: true as const } : {}),
+    ...(fu.viewerMuting ? { viewerMuting: true as const } : {}),
+    ...(fu.viewerFollowRequestSent ? { viewerFollowRequestSent: true as const } : {}),
+    ...(fu.viewerIsSelf ? { viewerIsSelf: true as const } : {}),
   };
 }
 

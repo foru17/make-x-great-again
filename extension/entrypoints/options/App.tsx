@@ -350,7 +350,12 @@ function Blocklist() {
       ),
     [list, q],
   );
-  const src: Record<string, string> = { manual: "手动", block_all: "一键全部", list_hit: "名单命中" };
+  const src: Record<string, string> = {
+    manual: "手动",
+    block_all: "一键全部",
+    list_hit: "公榜命中",
+    cache_hit: "缓存命中",
+  };
   return (
     <Page
       title="拉黑记录"
@@ -652,6 +657,12 @@ function Settings() {
               label="回复区逐个自动检查"
               hint="关闭可显著降低 LLM 调用 / 更克制"
             />
+            <Toggle
+              on={st.autoBlockListHits}
+              onChange={(v) => save("autoBlockListHits", v)}
+              label="对已确认的垃圾号自动拉黑"
+              hint="开启后：扫到的色情/垃圾账号会被静默后台拉黑（包括公榜命中 + 本机此前判过 spam 的缓存号），不弹卡片、不需要点确认。默认关闭。"
+            />
           </section>
         )}
 
@@ -769,21 +780,19 @@ const About = () => (
   </Page>
 );
 
-const Shield = () => (
-  <svg
-    width="22"
-    height="22"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.75"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden
-  >
-    <path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z" />
-    <path d="m9 12 2 2 4-4" />
-  </svg>
+// 小蓝 mascot — same PNG as the toolbar icon + the popup header. We use the
+// runtime URL helper instead of bundling a duplicate asset, and render at
+// 28px (retina-safe — the source is 128×128) for a chunkier sidebar mark
+// than the popup's 32px version.
+const MASCOT_URL = chrome.runtime.getURL("icon/128.png");
+const Mascot = () => (
+  <img
+    src={MASCOT_URL}
+    alt={BRAND.name}
+    width={28}
+    height={28}
+    className="flex-none rounded-md"
+  />
 );
 
 const TABS = [
@@ -801,9 +810,7 @@ export function App() {
     <div className="flex min-h-screen">
       <aside className="sticky top-0 flex h-screen w-[220px] flex-none flex-col gap-6 border-r border-border px-4 py-6">
         <div className="flex items-center gap-2.5 px-1 text-[15px] font-semibold tracking-[-0.005em]">
-          <span className="text-fg">
-            <Shield />
-          </span>
+          <Mascot />
           <span className="flex flex-col gap-px leading-tight">
             <span>{BRAND.acronym}</span>
             <span className="text-[10px] font-medium uppercase tracking-[0.08em] text-fg-4">{BRAND.name}</span>

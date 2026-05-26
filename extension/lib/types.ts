@@ -29,6 +29,11 @@ export interface Signals {
   accountAgeDays?: number;
   followersCount?: number;
   followingCount?: number;
+  viewerFollowing?: boolean;
+  viewerBlocking?: boolean;
+  viewerMuting?: boolean;
+  viewerFollowRequestSent?: boolean;
+  viewerIsSelf?: boolean;
 }
 
 export type BgRequest =

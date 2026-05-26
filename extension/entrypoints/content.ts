@@ -10,6 +10,7 @@ import {
   extractProfile,
   extractThreadTopic,
   heuristic,
+  ingestGraphqlUsers,
 } from "../lib/detect";
 import type { BgResponse, CurationRecord, Signals, Verdict } from "../lib/types";
 import {
@@ -164,6 +165,11 @@ function mountBadge(anchor: HTMLElement, build: () => HTMLElement) {
   const host = document.createElement("span");
   host.className = "xss-mount";
   host.style.display = "inline-flex";
+  host.style.alignItems = "center";
+  host.style.verticalAlign = "middle";
+  host.style.flex = "0 0 auto";
+  host.style.maxWidth = "none";
+  host.style.lineHeight = "1";
   const sr = host.attachShadow({ mode: "open" });
   const st = document.createElement("style");
   st.textContent = STYLE;
@@ -185,6 +191,11 @@ function mountStatus(anchor: HTMLElement, kind: "analyzing" | "pending") {
   const host = document.createElement("span");
   host.className = cls; // pending = NOT final, scan() will revisit
   host.style.display = "inline-flex";
+  host.style.alignItems = "center";
+  host.style.verticalAlign = "middle";
+  host.style.flex = "0 0 auto";
+  host.style.maxWidth = "none";
+  host.style.lineHeight = "1";
   const sr = host.attachShadow({ mode: "open" });
   const st = document.createElement("style");
   st.textContent = STYLE;
@@ -199,6 +210,7 @@ export default defineContentScript({
   async main(ctx) {
     let bubbleApi: ReturnType<typeof createBubble> | null = null;
     let dismissed = false;
+    let canReport = false;
     const inflight = new Map<string, Promise<void>>(); // L0 in-flight de-dup
     const anchorByKey = new Map<string, HTMLElement>();
     const nodeKey = new WeakMap<HTMLElement, string>(); // virtualization-safe
@@ -224,8 +236,28 @@ export default defineContentScript({
     // L0a — pull the maintainer whitelist mirror into memory so the gate
     // check in classify() is synchronous. Cheap (one chrome.storage read).
     await loadWhitelistOnce();
+    void send<{ login?: string }>({ type: "gh_status" }).then((r) => {
+      const nextCanReport = !!r.ok && !!r.data?.login;
+      if (nextCanReport !== canReport) {
+        canReport = nextCanReport;
+        document
+          .querySelectorAll<HTMLElement>('[data-testid="User-Name"]')
+          .forEach(clearMounts);
+        setTimeout(scan, 0);
+      }
+    });
     const isReplyContext = () => /^\/[^/]+\/status\/\d+/.test(location.pathname);
     const keyOf = (s: Signals) => s.userId || `h:${s.handle}`;
+
+    window.addEventListener("mxga:x-users", (ev) => {
+      if (!(ev instanceof CustomEvent) || typeof ev.detail !== "string") return;
+      try {
+        const payload = JSON.parse(ev.detail) as { users?: Parameters<typeof ingestGraphqlUsers>[0] };
+        if (payload.users && ingestGraphqlUsers(payload.users)) setTimeout(scan, 0);
+      } catch {
+        /* ignore malformed page events */
+      }
+    });
 
     function pushFinding(sig: Signals, v: Verdict) {
       if (!["spam", "porn_bot", "likely_spam"].includes(v.label)) return;
@@ -271,14 +303,18 @@ export default defineContentScript({
       return apiBlock(sig.userId, sig.handle);
     }
 
-    async function finalizeBlocked(key: string, sig: Signals) {
+    async function finalizeBlocked(
+      key: string,
+      sig: Signals,
+      source: "manual" | "list_hit" | "cache_hit" = "manual",
+    ) {
       await addBlocked(key);
       if (sig.userId) await addBlocked(sig.userId);
       const f = findings.find((x) => (x.userId || x.handle) === (sig.userId || sig.handle));
       await addBlockRecord({
         id: key,
         handle: sig.handle,
-        source: "manual",
+        source,
         ts: Date.now(),
         ...(sig.displayName ? { displayName: sig.displayName } : {}),
         ...(sig.avatarUrl ? { avatarUrl: sig.avatarUrl } : {}),
@@ -286,7 +322,19 @@ export default defineContentScript({
       });
       await bumpStats({ blocks: 1 });
       hideTweet(anchorByKey.get(key) ?? null);
-      void send({ type: "confirm_spam", signals: sig }); // human-confirm signal
+      // Skip the confirm_spam re-report on auto-block paths:
+      //  - "list_hit"  : account is already publicly confirmed (that's how
+      //    we got here); another confirm adds no evidence.
+      //  - "cache_hit" : the user did not just take an explicit per-account
+      //    action — they enabled a blanket setting. We treat the block as a
+      //    private hygiene action, not a human-confirm signal to the public
+      //    DB (otherwise toggling auto-block would inflate reporter counts
+      //    based on stale local cache).
+      // Manual blocks DO send confirm_spam — that's the user's explicit
+      // per-account "yes, this is spam" signal.
+      if (source === "manual") {
+        void send({ type: "confirm_spam", signals: sig });
+      }
       const i = findings.findIndex((x) => (x.userId || x.handle) === (sig.userId || sig.handle));
       if (i >= 0) findings.splice(i, 1);
       if (!dismissed) bubbleApi?.update(findings);
@@ -304,12 +352,18 @@ export default defineContentScript({
     }
 
     // ---- Durable, non-blocking, rate-limit-aware bulk block queue ----
-    type QItem = { key: string; sig: Signals; tries: number };
+    // "manual"    → user clicked block / bulk-block button
+    // "list_hit"  → autoBlockListHits + public-blacklist match (step 2)
+    // "cache_hit" → autoBlockListHits + local cache says spam (step 1)
+    type QSource = "manual" | "list_hit" | "cache_hit";
+    type QItem = { key: string; sig: Signals; tries: number; source: QSource };
     let queue: QItem[] = [];
     let draining = false;
     const QK = "xss:blockQueue";
     const persistQ = () =>
-      chrome.storage.local.set({ [QK]: queue.map((q) => ({ key: q.key, sig: q.sig, tries: q.tries })) });
+      chrome.storage.local.set({
+        [QK]: queue.map((q) => ({ key: q.key, sig: q.sig, tries: q.tries, source: q.source })),
+      });
 
     async function drain() {
       if (draining) return;
@@ -320,7 +374,7 @@ export default defineContentScript({
         bubbleApi?.setScanning(queue.length); // progress: 拉黑中 N
         const ok = await tryRealBlock(it.sig).catch(() => false);
         if (ok) {
-          await finalizeBlocked(it.key, it.sig);
+          await finalizeBlocked(it.key, it.sig, it.source);
           // Mark the finding as done so the next card render strikes it out
           // (gives the user feedback that progress is happening — otherwise
           // the "处理中…" button reads as stuck on profile pages where each
@@ -356,19 +410,31 @@ export default defineContentScript({
       if (!dismissed) bubbleApi?.update(findings);
     }
 
-    function enqueueBlocks(items: { key: string; sig: Signals }[]) {
+    function enqueueBlocks(
+      items: { key: string; sig: Signals }[],
+      source: QSource = "manual",
+    ) {
       for (const x of items) {
-        if (!queue.some((q) => q.key === x.key)) queue.push({ ...x, tries: 0 });
+        if (!queue.some((q) => q.key === x.key)) queue.push({ ...x, tries: 0, source });
       }
       void persistQ();
       void drain(); // non-blocking; returns immediately
     }
 
-    // Resume a queue interrupted by reload/navigation.
+    // Resume a queue interrupted by reload/navigation. Older persisted items
+    // may lack `source` (pre-autoBlockListHits builds) — default them to
+    // "manual" so the drain loop keeps the same behavior it had before.
     void chrome.storage.local.get(QK).then((g) => {
-      const saved = g[QK] as QItem[] | undefined;
+      const saved = g[QK] as Partial<QItem>[] | undefined;
       if (saved?.length) {
-        queue = saved;
+        queue = saved
+          .filter((q): q is QItem & { source?: QSource } => !!q.key && !!q.sig)
+          .map((q) => ({
+            key: q.key,
+            sig: q.sig,
+            tries: q.tries ?? 0,
+            source: q.source ?? "manual",
+          }));
         void drain();
       }
     });
@@ -376,10 +442,87 @@ export default defineContentScript({
     // De-dup the "已扫"counter — a single account may render a badge
     // multiple times (recycled DOM node) and we don't want a double-count.
     const scannedKeys = new Set<string>();
+    const ignoredKeys = new Set<string>();
+    // Keys for which we've already enqueued a list_hit auto-block. Without
+    // this, scan() would re-fire the public /v1/check lookup on every tick
+    // (every ~600ms via MutationObserver) until the paced block queue
+    // actually drains and addBlocked() makes step 0b short-circuit. Cheap
+    // local guard, no persistence — restored block queue items can no-op
+    // re-enqueue safely anyway.
+    const autoBlockingKeys = new Set<string>();
     function tallyScan(key: string) {
       if (scannedKeys.has(key)) return;
       scannedKeys.add(key);
       bubbleApi?.bumpScanned();
+    }
+    function isViewerKnownIgnored(sig: Signals) {
+      return (
+        sig.viewerIsSelf ||
+        sig.viewerFollowing ||
+        sig.viewerBlocking ||
+        sig.viewerMuting ||
+        sig.viewerFollowRequestSent
+      );
+    }
+    function dropFinding(sig: Signals) {
+      const id = sig.userId || sig.handle;
+      const i = findings.findIndex((f) => (f.userId || f.handle) === id);
+      if (i >= 0) {
+        findings.splice(i, 1);
+        if (!dismissed) bubbleApi?.update(findings);
+      }
+    }
+    async function reportAccount(sig: Signals) {
+      const resp = await send({ type: "report_spam", signals: sig });
+      if (!resp.ok) throw new Error(resp.error || "上报失败");
+    }
+    /**
+     * Silent auto-block routing — shared by step 1 (cache) and step 2 (list).
+     *
+     * Two source-dependent rules:
+     *   list_hit  → `/v1/check` server-side filters to status='human_confirmed'
+     *               rows only. Being returned IS the confirmation; the verdict
+     *               label is metadata about what the AI originally thought.
+     *               An admin can blacklist an "uncertain 35%" account, and
+     *               when they do, auto-block MUST still fire — otherwise the
+     *               whole feature looks broken on admin-curated entries. So
+     *               for list_hit we IGNORE verdict.label entirely.
+     *   cache_hit → the local cache reflects this device's prior LLM judgment,
+     *               which is NOT a human-confirmed signal. Auto-block only on
+     *               spammy labels (spam / porn_bot / likely_spam) — never on
+     *               an "uncertain" or "legit" cache row the user themselves
+     *               would have been free to ignore.
+     *
+     * Bug history (v0.3):
+     *   - First cut filtered by verdict.label in both branches. That meant
+     *     admin-blacklisted "uncertain"-labeled accounts (a real case in
+     *     prod: see Mary @Mary1463962 / Mark @Mark76056378472) were never
+     *     auto-blocked even though the public list contained them.
+     *   - Earlier cut only checked the list at step 2 — but step 1 cache
+     *     short-circuits first, so anyone with prior LLM cache for the
+     *     account never reached step 2 at all.
+     *
+     * Returns true if this account is now owned by the auto-block queue —
+     * the caller MUST return immediately without rendering badges, pushing
+     * findings, or doing any further work for this key.
+     */
+    function tryAutoBlock(
+      key: string,
+      sig: Signals,
+      verdict: Verdict,
+      anchor: HTMLElement,
+      source: "list_hit" | "cache_hit",
+    ): boolean {
+      if (!settings.autoBlockListHits) return false;
+      if (source === "cache_hit") {
+        const spammy = ["spam", "porn_bot", "likely_spam"].includes(verdict.label);
+        if (!spammy) return false;
+      }
+      autoBlockingKeys.add(key);
+      tallyScan(key); // count it in the bubble's "已扫" total
+      enqueueBlocks([{ key, sig }], source);
+      clearMounts(anchor); // the cell collapses once the queue's finalizeBlocked runs
+      return true;
     }
     function badgeFor(
       anchor: HTMLElement,
@@ -397,9 +540,10 @@ export default defineContentScript({
           {
             onBlock: () => void blockAccount(key, sig),
             onHide: () => hideTweet(anchor),
-            onReport: () => void send({ type: "report_spam", signals: sig }),
+            onReport: () => reportAccount(sig),
             onAppeal: () => window.open(APPEAL_URL, "_blank", "noopener"),
             onCheck: () => void classify(anchor, key, sig),
+            canReport,
           },
           note,
           source,
@@ -449,9 +593,28 @@ export default defineContentScript({
       const key = keyOf(sig);
       anchorByKey.set(key, anchor);
 
-      // 0. Already blocked → hide, never render/analyze/request again.
+      // 0. Viewer-owned / viewer-followed / viewer-muted accounts are out
+      // of scope for MXGA: do not lookup, classify, report, or show badges.
+      if (isViewerKnownIgnored(sig)) {
+        ignoredKeys.add(key);
+        clearMounts(anchor);
+        dropFinding(sig);
+        return;
+      }
+
+      // 0b. Already blocked → hide, never render/analyze/request again.
       if (isBlockedSync(key) || (sig.userId && isBlockedSync(sig.userId))) {
         hideTweet(anchor);
+        return;
+      }
+
+      // 0c. Already enqueued for silent auto-block on an earlier tick — the
+      //     paced drain queue owns it; skip cache / list / LLM work so we
+      //     don't repeat lookups or stack up badges while finalizeBlocked
+      //     is still pending. Once drain succeeds, addBlocked() makes 0b
+      //     short-circuit instead.
+      if (autoBlockingKeys.has(key)) {
+        clearMounts(anchor);
         return;
       }
 
@@ -469,6 +632,12 @@ export default defineContentScript({
       //    unchanged so new evidence can still re-trigger).
       const cached = await cacheGet(key);
       if (cached) {
+        // 1a. autoBlockListHits power-user opt-in: a cached-spammy verdict
+        //     is the system's own prior judgment that this account is spam.
+        //     Without this branch, anyone who had ever LLM-classified spam
+        //     before enabling the toggle would see auto-block do nothing on
+        //     those accounts — they'd short-circuit at renderCached below.
+        if (tryAutoBlock(key, sig, cached.verdict, anchor, "cache_hit")) return;
         const spammy = ["spam", "porn_bot", "likely_spam"].includes(cached.verdict.label);
         if (spammy || cached.signalsHash === signalsHash(sig)) {
           renderCached(anchor, key, sig, cached);
@@ -484,8 +653,13 @@ export default defineContentScript({
           userId: sig.userId,
         });
         if (r.ok && r.data?.hit) {
-          badgeFor(anchor, key, sig, r.data.hit.verdict, undefined, "list");
-          pushFinding(sig, r.data.hit.verdict);
+          const hitVerdict = r.data.hit.verdict;
+          // 2a. autoBlockListHits power-user opt-in: public-blacklist hits
+          //     are community-confirmed spam, so block silently on every
+          //     page the user visits, no card / badge / click required.
+          if (tryAutoBlock(key, sig, hitVerdict, anchor, "list_hit")) return;
+          badgeFor(anchor, key, sig, hitVerdict, undefined, "list");
+          pushFinding(sig, hitVerdict);
           return;
         }
       }
@@ -551,7 +725,10 @@ export default defineContentScript({
         if (topic && !info.threadTopic) info.threadTopic = topic;
         const key = keyOf(info);
         const hasMount = !!nameBlock.querySelector(":scope > .xss-mount");
-        if (nodeKey.get(art) === key && hasMount) continue;
+        if (nodeKey.get(art) === key) {
+          if (ignoredKeys.has(key)) continue;
+          if (hasMount && !isViewerKnownIgnored(info)) continue;
+        }
         if (nodeKey.get(art) !== key) clearMounts(nameBlock); // recycled node
         nodeKey.set(art, key);
         void process(info, nameBlock);

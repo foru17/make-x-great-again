@@ -100,6 +100,11 @@ const Signals = z.object({
   followingCount: z.number().optional(),
   hasDefaultAvatar: z.boolean().optional(),
   avatarUrl: z.string().optional(),
+  viewerFollowing: z.boolean().optional(),
+  viewerBlocking: z.boolean().optional(),
+  viewerMuting: z.boolean().optional(),
+  viewerFollowRequestSent: z.boolean().optional(),
+  viewerIsSelf: z.boolean().optional(),
 });
 type Signals = z.infer<typeof Signals>;
 
@@ -189,6 +194,16 @@ function normalizeHandle(handle: string): string {
 
 function evidenceText(s: Signals): string | null {
   return (s.triggeringComment ?? s.recentTweets[0] ?? s.bio ?? "").trim().slice(0, 240) || null;
+}
+
+function viewerScopedIgnore(s: Signals): boolean {
+  return !!(
+    s.viewerIsSelf ||
+    s.viewerFollowing ||
+    s.viewerBlocking ||
+    s.viewerMuting ||
+    s.viewerFollowRequestSent
+  );
 }
 
 interface AccountRow {
@@ -604,6 +619,16 @@ app.post("/v1/classify", async (c) => {
   if (!who) return c.json({ error: "github_login_required" }, 401);
   const parsed = Signals.parse(await c.req.json());
   const s: Signals = { ...parsed, handle: normalizeHandle(parsed.handle) };
+  if (viewerScopedIgnore(s)) {
+    return c.json({
+      cached: true,
+      ignored: true,
+      record: {
+        verdict: { label: "legit", confidence: 1, reasons: ["viewer-scoped ignored"] },
+        status: "viewer_ignored",
+      },
+    });
+  }
   const h = sigHash(s);
   const uid = s.userId ?? null;
   const prev = await findAccount(c.env, s.handle, uid);
@@ -721,6 +746,9 @@ async function submitReport(c: Ctx, source: string) {
   if (!who) return c.json({ error: "github_login_required" }, 401);
   const parsed = Signals.parse(await c.req.json());
   const s: Signals = { ...parsed, handle: normalizeHandle(parsed.handle) };
+  if (viewerScopedIgnore(s)) {
+    return c.json({ ok: true, status: "viewer_ignored", reporters: 0, auto: false, ignored: true });
+  }
   const uid = s.userId ?? null;
   const now = Date.now();
 

@@ -161,7 +161,14 @@ CONTRIBUTING.md       贡献指南
 
 ## 当前进度
 
-**v0.2.0**（已上线）
+**v0.3.0**（最新，2026-05-26）
+- **身份解析硬化**：拦截 X 自家 `/i/api/graphql/*` 拿真 `rest_id`；JSON-LD / follow-button `data-testid` / React fiber 多源交叉校验；`rest_id ≠ id_str` 或 avatar-id 撞 uid 直接丢弃
+- **viewer-scoped 过滤**：自己 / 已关注 / 已 mute / 已拉黑的号一律绕过，扩展端 + 服务端双层短路
+- **公榜命中自动拉黑**（默认关）：开启后扫到已确认的垃圾号自动拉黑，无需点击；同时覆盖本地缓存确认过的号
+- **UI 重写**：浅色主题、每行可勾选的批量拉黑、异步上报状态机；防 prompt-injection 的 `escHtml` 加固
+- 管理面板左上角换成小蓝吉祥物
+
+**v0.2.0**（首发，2026-05-25）
 - 浏览器扩展（Chrome MV3）— 被动 AI 识别 + 一键真拉黑
 - 公开服务端 — `x.zuoluo.tv` / `/list` 公榜 / `/admin` 审核台
 - 维护者白名单 + 黑名单的 6h 自动同步到仓库 [`data/`](./data) 目录

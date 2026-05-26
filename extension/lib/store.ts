@@ -3,7 +3,10 @@
 // PII beyond the public numeric id (governance unchanged).
 import type { Verdict } from "./types";
 
-export type BlockSource = "manual" | "block_all" | "list_hit";
+// "list_hit"  → public-blacklist match (step 2 of content.ts)
+// "cache_hit" → local cache says this account is spam (step 1 of content.ts)
+// Both are auto-block sources that fire when settings.autoBlockListHits is on.
+export type BlockSource = "manual" | "block_all" | "list_hit" | "cache_hit";
 
 export interface BlockRecord {
   id: string; // userId, or h:<handle> fallback
