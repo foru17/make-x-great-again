@@ -21,7 +21,7 @@ export const BRAND = {
   edgeBase: "https://x.zuoluo.tv",
   /** Governance doc inside the repo. */
   governance:
-    "https://github.com/foru17/make-x-great-again/blob/main/docs/GOVERNANCE.md",
+    "https://github.com/foru17/make-x-great-again/blob/main/GOVERNANCE.md",
   /** Privacy doc inside the repo. */
   privacy:
     "https://github.com/foru17/make-x-great-again/blob/main/docs/PRIVACY.md",
