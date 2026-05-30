@@ -108,12 +108,20 @@ pnpm typecheck && pnpm test && pnpm lint
 # 2. 扩展（WXT + React 19 + Tailwind v4）
 cd extension
 pnpm dev         # 监听 + 自动重载，把 .output/chrome-mv3 加进 Chrome 即可
+cd ..
 
-# 3. 边缘服务（Cloudflare Worker + D1 + Hono）
+# 3. 生成 Safari Xcode 工程（不复制前端代码）
+pnpm safari:xcode
+
+# 4. macOS / iOS 可直接打开 safari-xcode 目录，用 Xcode 构建
+# 默认不带 --copy-resources，工程会引用仓库中的 extension 产物，避免重复拷贝代码
+open safari-xcode
+
+# 5. 边缘服务（Cloudflare Worker + D1 + Hono）
 cd services/edge
 pnpm dev         # 本地 8787
 
-# 4. 部署（需 Cloudflare 账号 + wrangler 登录）
+# 6. 部署（需 Cloudflare 账号 + wrangler 登录）
 pnpm deploy
 ```
 

@@ -5,6 +5,7 @@ dist/
 *.log
 .DS_Store
 .curation-db/
+safari-xcode/
 
 # keep the example committed despite .env.* rule
 !.env.example
