@@ -28,6 +28,22 @@
   <a href="./CHANGELOG.md">📝 Changelog</a>
 </p>
 
+## 目录
+
+1. [这个项目要解决什么](#这个项目要解决什么)
+2. [五件事，分阶段做](#五件事分阶段做)
+3. [Pillar 01 当前能做什么](#pillar-01-当前能做什么)
+4. [怎么用](#怎么用)
+   1. [普通用户](#普通用户)
+   2. [开发者](#开发者)
+5. [Safari 版本](#safari-版本)
+6. [LLM 配置](#llm-配置)
+7. [仓库结构](#仓库结构)
+8. [公开数据集（审计入口）](#公开数据集审计入口)
+9. [当前进度](#当前进度)
+10. [治理与隐私](#治理与隐私)
+11. [技术 stack](#技术-stack)
+
 ---
 
 ## 这个项目要解决什么
@@ -109,21 +125,37 @@ pnpm typecheck && pnpm test && pnpm lint
 cd extension
 pnpm dev         # 监听 + 自动重载，把 .output/chrome-mv3 加进 Chrome 即可
 cd ..
-
-# 3. 生成 Safari Xcode 工程（不复制前端代码）
-pnpm safari:xcode
-
-# 4. macOS / iOS 可直接打开 safari-xcode 目录，用 Xcode 构建
-# 默认不带 --copy-resources，工程会引用仓库中的 extension 产物，避免重复拷贝代码
-open safari-xcode
-
-# 5. 边缘服务（Cloudflare Worker + D1 + Hono）
+# 3. 边缘服务（Cloudflare Worker + D1 + Hono）
 cd services/edge
 pnpm dev         # 本地 8787
 
-# 6. 部署（需 Cloudflare 账号 + wrangler 登录）
+# 4. 部署（需 Cloudflare 账号 + wrangler 登录）
 pnpm deploy
 ```
+
+## Safari 版本
+
+Safari 版构建独立为一节，避免和 Chrome 开发路径混在一起。
+
+### 1) 生成 Safari Xcode 工程
+
+```bash
+pnpm safari:xcode
+```
+
+默认不带 `--copy-resources`，会直接引用仓库现有 `extension` 产物，不会重复拷贝前端代码。
+
+### 2) 打开 Xcode 工程
+
+```bash
+open safari-xcode
+```
+
+### 3) macOS / iOS 构建与运行
+
+- 在 Xcode 里选择目标平台（`macOS` 或 `iOS`）直接编译运行
+- 工程默认引用仓库里的前端构建产物，保持单一代码源
+- 首次打开可在 `Build Settings` 或 `General` 中确认签名和目标设备配置
 
 ### LLM 配置
 
