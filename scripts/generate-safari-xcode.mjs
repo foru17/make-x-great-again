@@ -1,7 +1,7 @@
 #!/usr/bin/env node
+import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
-import { spawnSync } from "node:child_process";
 
 const rootDir = process.cwd();
 const extDir = path.join(rootDir, "extension");
@@ -41,7 +41,8 @@ const opts = {
 if (process.argv.includes("--help") || process.argv.includes("-h")) usage();
 
 const includeCopyResources = process.argv.includes("--copy-resources");
-const skipInstall = process.argv.includes("--skip-install") || process.env.MXGA_XCODE_SKIP_INSTALL === "1";
+const skipInstall =
+  process.argv.includes("--skip-install") || process.env.MXGA_XCODE_SKIP_INSTALL === "1";
 const skipBuild = process.argv.includes("--skip-build");
 
 function run(cmd, args, cwd = rootDir) {
@@ -64,9 +65,7 @@ function commandExists(cmd) {
 function findSafariOutput() {
   const outDir = path.join(extDir, ".output");
   if (!existsSync(outDir)) {
-    throw new Error(
-      `未找到 ${outDir}，请先执行 npm/pnpm build:safari 生成 Safari 产物。`
-    );
+    throw new Error(`未找到 ${outDir}，请先执行 npm/pnpm build:safari 生成 Safari 产物。`);
   }
 
   const candidates = readdirSync(outDir, { withFileTypes: true })
@@ -98,7 +97,9 @@ function resolvePackager() {
   if (commandExists("safari-web-extension-packager")) {
     return { cmd: "safari-web-extension-packager", args: [] };
   }
-  throw new Error("未找到 safari-web-extension-packager，建议安装 Xcode Command Line Tools 并确保命令可用。");
+  throw new Error(
+    "未找到 safari-web-extension-packager，建议安装 Xcode Command Line Tools 并确保命令可用。",
+  );
 }
 
 function readExtensionDisplayName(webextDir) {
@@ -147,11 +148,10 @@ function normalizeBundleDisplayNames(displayName) {
   const pbxprojPath = path.join(projectDir, `${opts.appName}.xcodeproj`, "project.pbxproj");
   if (existsSync(pbxprojPath)) {
     const quotedDisplayName = displayName.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
-    const pbxproj = readFileSync(pbxprojPath, "utf8")
-      .replaceAll(
-        /INFOPLIST_KEY_CFBundleDisplayName = ".*?";/g,
-        `INFOPLIST_KEY_CFBundleDisplayName = "${quotedDisplayName}";`
-      );
+    const pbxproj = readFileSync(pbxprojPath, "utf8").replaceAll(
+      /INFOPLIST_KEY_CFBundleDisplayName = ".*?";/g,
+      `INFOPLIST_KEY_CFBundleDisplayName = "${quotedDisplayName}";`,
+    );
     writeFileSync(pbxprojPath, pbxproj);
   }
 }
@@ -159,7 +159,9 @@ function normalizeBundleDisplayNames(displayName) {
 async function main() {
   if (!existsSync(path.join(extDir, "node_modules"))) {
     if (skipInstall) {
-      console.warn("未检测到 extension/node_modules，且 --skip-install 已开启；将直接尝试使用现有环境。");
+      console.warn(
+        "未检测到 extension/node_modules，且 --skip-install 已开启；将直接尝试使用现有环境。",
+      );
     } else {
       run("pnpm", ["install", "--ignore-scripts"], extDir);
     }
