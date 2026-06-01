@@ -106,13 +106,15 @@ pnpm install
 pnpm typecheck && pnpm test && pnpm lint
 
 # 2. 扩展（WXT + React 19 + Tailwind v4）
-pnpm --dir extension dev         # 监听 + 自动重载，把 .output/chrome-mv3 加进 Chrome 即可
+cd extension
+pnpm dev         # 监听 + 自动重载，把 .output/chrome-mv3 加进 Chrome 即可
 
 # 3. 边缘服务（Cloudflare Worker + D1 + Hono）
-pnpm --dir services/edge dev      # 本地 8787
+cd services/edge
+pnpm dev         # 本地 8787
 
 # 4. 部署（需 Cloudflare 账号 + wrangler 登录）
-pnpm --dir services/edge deploy
+pnpm deploy
 ```
 
 ## Safari 版本
