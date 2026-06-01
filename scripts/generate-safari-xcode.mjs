@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { existsSync, readdirSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
 
@@ -101,6 +101,61 @@ function resolvePackager() {
   throw new Error("未找到 safari-web-extension-packager，建议安装 Xcode Command Line Tools 并确保命令可用。");
 }
 
+function readExtensionDisplayName(webextDir) {
+  const manifestPath = path.join(webextDir, "manifest.json");
+  try {
+    const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
+    if (typeof manifest.name === "string" && manifest.name.trim()) {
+      return manifest.name.trim();
+    }
+  } catch {
+    // Keep the generated project usable even if the manifest cannot be parsed.
+  }
+  return opts.appName;
+}
+
+function setPlistValue(plistPath, key, value) {
+  if (!existsSync(plistPath)) return;
+
+  const print = spawnSync("/usr/libexec/PlistBuddy", ["-c", `Print :${key}`, plistPath], {
+    stdio: "ignore",
+  });
+  const command = print.status === 0 ? `Set :${key} ${value}` : `Add :${key} string ${value}`;
+  const result = spawnSync("/usr/libexec/PlistBuddy", ["-c", command, plistPath], {
+    stdio: "inherit",
+  });
+  if (result.error) throw result.error;
+  if (result.status !== 0) {
+    throw new Error(`更新 ${plistPath} 的 ${key} 失败`);
+  }
+}
+
+function normalizeBundleDisplayNames(displayName) {
+  const projectDir = path.join(opts.projectLocation, opts.appName);
+  const plistPaths = [
+    path.join(projectDir, "iOS (App)", "Info.plist"),
+    path.join(projectDir, "macOS (App)", "Info.plist"),
+    path.join(projectDir, "iOS (Extension)", "Info.plist"),
+    path.join(projectDir, "macOS (Extension)", "Info.plist"),
+  ];
+
+  for (const plistPath of plistPaths) {
+    setPlistValue(plistPath, "CFBundleDisplayName", displayName);
+    setPlistValue(plistPath, "CFBundleName", displayName);
+  }
+
+  const pbxprojPath = path.join(projectDir, `${opts.appName}.xcodeproj`, "project.pbxproj");
+  if (existsSync(pbxprojPath)) {
+    const quotedDisplayName = displayName.replaceAll("\\", "\\\\").replaceAll('"', '\\"');
+    const pbxproj = readFileSync(pbxprojPath, "utf8")
+      .replaceAll(
+        /INFOPLIST_KEY_CFBundleDisplayName = ".*?";/g,
+        `INFOPLIST_KEY_CFBundleDisplayName = "${quotedDisplayName}";`
+      );
+    writeFileSync(pbxprojPath, pbxproj);
+  }
+}
+
 async function main() {
   if (!existsSync(path.join(extDir, "node_modules"))) {
     if (skipInstall) {
@@ -133,6 +188,7 @@ async function main() {
   if (includeCopyResources) args.push("--copy-resources");
 
   run(packager.cmd, args);
+  normalizeBundleDisplayNames(readExtensionDisplayName(webextDir));
 
   console.log("Safari 工程已生成（未复制资源）");
   console.log(`项目路径: ${opts.projectLocation}`);
