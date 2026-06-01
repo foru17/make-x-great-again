@@ -21,7 +21,7 @@ export default defineConfig({
     // Single-purpose description — what's shipped today, plus the framing
     // that anchors the brand: AI-driven, ambient, privacy-first.
     description:
-      "AI 驱动的 X 旁路扩展 · 你刷 X 时它在后台静默识别色情/广告 spam 机器人，给你一键真拉黑。完全开源，零数据收集。",
+      "AI 驱动的 X 旁路扩展 · 你刷 X 时它在后台静默识别色情/广告 spam 机器人，默认一键静音。完全开源，零数据收集。",
     // Optional but recommended — author + homepage_url improve listing trust.
     author: { email: "foru17@foxmail.com" },
     homepage_url: "https://x.zuoluo.tv",

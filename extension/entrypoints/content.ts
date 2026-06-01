@@ -1,5 +1,6 @@
 import { isBlockedSync, warm as warmBlocklist, addBlocked } from "../lib/blocklist";
 import { BRAND } from "../lib/brand";
+import { actionApiPath, type ModerationAction } from "../lib/moderation-action";
 import { onSettingsChange, getSettings } from "../lib/settings";
 import { addBlockRecord, bumpStats } from "../lib/store";
 import { type Cached, cacheGet, cacheSet, signalsHash } from "../lib/cache";
@@ -45,8 +46,8 @@ const FALLBACK_X_BEARER =
   "Bearer AAAAAAAAAAAAAAAAAAAAANRILgAAAAAAnNwIzUejRCOuH5E6I8xnZz4puTs%3D1Zv7ttfk8LF81IUq16cHjhLTvJu4FA33AGWWjCpTnA";
 const ct0 = () => (document.cookie.match(/ct0=([^;]+)/)?.[1] ?? "");
 
-const BLOCK_DELAY_MS = 1200;
-const BLOCK_JITTER_MS = 700;
+const ACCOUNT_ACTION_DELAY_MS = 1200;
+const ACCOUNT_ACTION_JITTER_MS = 700;
 const BLOCK_SUCCESS_SETTLE_MS = 180;
 const BLOCK_SHORT_COOLDOWN_EVERY = 45;
 const BLOCK_SHORT_COOLDOWN_MS = 8_000;
@@ -63,7 +64,7 @@ interface BlockRound {
   cooldownUntil: number;
 }
 
-interface BlockAttempt {
+interface AccountActionAttempt {
   ok: boolean;
   status?: number;
   retryable?: boolean;
@@ -149,7 +150,7 @@ function recordBlockBackoff(ms: number) {
   });
 }
 
-function recordBlockFailure(attempt: BlockAttempt) {
+function recordBlockFailure(attempt: AccountActionAttempt) {
   if (attempt.status === 429) {
     recordBlockBackoff(attempt.retryAfterMs ?? BLOCK_RATE_LIMIT_COOLDOWN_MS);
   } else if (attempt.retryable) {
@@ -157,7 +158,7 @@ function recordBlockFailure(attempt: BlockAttempt) {
   }
 }
 
-function retryDelayForAttempt(attempt: BlockAttempt, tries: number) {
+function retryDelayForAttempt(attempt: AccountActionAttempt, tries: number) {
   if (!attempt.retryable) return 0;
   if (attempt.status === 429) {
     return Math.min(60_000, attempt.retryAfterMs ?? BLOCK_RATE_LIMIT_COOLDOWN_MS);
@@ -175,8 +176,8 @@ async function waitForBlockSlot() {
     }
 
     const lastAt = storageNumber(LS_LAST_BLOCK);
-    const jitter = Math.floor(Math.random() * BLOCK_JITTER_MS);
-    const remaining = lastAt + BLOCK_DELAY_MS + jitter - Date.now();
+    const jitter = Math.floor(Math.random() * ACCOUNT_ACTION_JITTER_MS);
+    const remaining = lastAt + ACCOUNT_ACTION_DELAY_MS + jitter - Date.now();
     if (remaining <= 0) break;
     await sleep(Math.min(1000, remaining));
   }
@@ -198,8 +199,12 @@ async function withBlockLock<T>(fn: () => Promise<T>): Promise<T> {
   return locks ? locks.request(BLOCK_LOCK_NAME, fn) : fn();
 }
 
-/** Silent X block via the first-party blocks/create endpoint. */
-async function apiBlock(userId?: string, handle?: string): Promise<BlockAttempt> {
+/** Silent X account action via the first-party mute/block endpoints. */
+async function apiAccountAction(
+  action: ModerationAction,
+  userId?: string,
+  handle?: string,
+): Promise<AccountActionAttempt> {
   try {
     const csrf = ct0();
     if (!csrf) return { ok: false, retryable: false };
@@ -210,7 +215,7 @@ async function apiBlock(userId?: string, handle?: string): Promise<BlockAttempt>
     else return { ok: false, retryable: false };
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 15_000);
-    const res = await fetch(`${blockApiOrigin()}/i/api/1.1/blocks/create.json`, {
+    const res = await fetch(`${blockApiOrigin()}${actionApiPath(action)}`, {
       method: "POST",
       credentials: "include",
       signal: controller.signal,
@@ -235,10 +240,14 @@ async function apiBlock(userId?: string, handle?: string): Promise<BlockAttempt>
   }
 }
 
-async function coordinatedApiBlock(userId?: string, handle?: string): Promise<BlockAttempt> {
+async function coordinatedAccountAction(
+  action: ModerationAction,
+  userId?: string,
+  handle?: string,
+): Promise<AccountActionAttempt> {
   return withBlockLock(async () => {
     await waitForBlockSlot();
-    const attempt = await apiBlock(userId, handle);
+    const attempt = await apiAccountAction(action, userId, handle);
     if (attempt.ok) recordBlockSuccess();
     else recordBlockFailure(attempt);
     return attempt;
@@ -292,9 +301,9 @@ function mountStatus(
   anchor.appendChild(host);
 }
 const mountPending = (a: HTMLElement) => mountStatus(a, "pending");
-function mountBlocking(anchor: HTMLElement) {
+function mountBlocking(anchor: HTMLElement, actions?: Parameters<typeof createStatusBadge>[1]) {
   clearMounts(anchor);
-  mountStatus(anchor, "blocking");
+  mountStatus(anchor, "blocking", actions);
 }
 
 export default defineContentScript({
@@ -460,16 +469,16 @@ export default defineContentScript({
       return finding;
     }
 
-    /** Returns true only if the account was really blocked on X. */
-    // Keep this path silent: call X's own blocks/create endpoint with the
-    // user's first-party session and the page's csrf/auth headers, then pace
-    // requests globally so bulk cleanup does not stack native confirmation
-    // sheets or hammer the endpoint from multiple X tabs.
-    async function tryRealBlock(sig: Signals): Promise<BlockAttempt> {
-      return coordinatedApiBlock(sig.userId, sig.handle);
+    /** Returns true only if the account action really completed on X. */
+    // Keep this path silent: call X's own account mute/block endpoint with
+    // the user's first-party session and the page's csrf/auth headers, then
+    // pace requests globally so bulk cleanup does not hammer X from multiple
+    // tabs. "Mute" here is X account mute: hide this user's posts.
+    async function tryAccountAction(sig: Signals): Promise<AccountActionAttempt> {
+      return coordinatedAccountAction(settings.moderationAction, sig.userId, sig.handle);
     }
 
-    async function finalizeBlocked(
+    async function finalizeAccountAction(
       key: string,
       sig: Signals,
       source: QSource = "manual",
@@ -488,7 +497,7 @@ export default defineContentScript({
       });
       await bumpStats({ blocks: 1 });
       hideTweet(anchorByKey.get(key) ?? null);
-      // Skip the confirm_spam re-report on auto-block paths:
+      // Skip the confirm_spam re-report on auto paths:
       //  - "list_hit"  : account is already publicly confirmed (that's how
       //    we got here); another confirm adds no evidence.
       //  - "cache_hit" : the user did not just take an explicit per-account
@@ -497,8 +506,9 @@ export default defineContentScript({
       //    DB (otherwise toggling auto-block would inflate reporter counts
       //    based on stale local cache).
       // Manual blocks DO send confirm_spam — that's the user's explicit
-      // per-account "yes, this is spam" signal.
-      if (source === "manual") {
+      // per-account "yes, this is spam" signal. Manual mutes stay local-only:
+      // account mute is a softer private hide action, not public curation.
+      if (source === "manual" && settings.moderationAction === "block") {
         void send({ type: "confirm_spam", signals: sig });
       }
       if (f) {
@@ -511,7 +521,7 @@ export default defineContentScript({
       if (!dismissed) bubbleApi?.update(findings);
     }
 
-    async function blockAccount(key: string, sig: Signals): Promise<boolean> {
+    async function runAccountAction(key: string, sig: Signals): Promise<boolean> {
       cancelClassify(key);
       const active = findFinding(sig);
       if (active) {
@@ -521,9 +531,9 @@ export default defineContentScript({
         active.blockSource = "manual";
         if (!dismissed) bubbleApi?.update(findings);
       }
-      const attempt = await tryRealBlock(sig);
+      const attempt = await tryAccountAction(sig);
       if (attempt.ok) {
-        await finalizeBlocked(key, sig);
+        await finalizeAccountAction(key, sig);
         return true;
       }
       const f0 = findFinding(sig);
@@ -567,11 +577,11 @@ export default defineContentScript({
           activeFinding.blockFailed = false;
           if (!dismissed) bubbleApi?.update(findings);
         }
-        const attempt = await tryRealBlock(it.sig).catch(
-          (): BlockAttempt => ({ ok: false, retryable: true }),
+        const attempt = await tryAccountAction(it.sig).catch(
+          (): AccountActionAttempt => ({ ok: false, retryable: true }),
         );
         if (attempt.ok) {
-          await finalizeBlocked(it.key, it.sig, it.source);
+          await finalizeAccountAction(it.key, it.sig, it.source);
           queue.shift();
           await persistQ();
           if (!dismissed) bubbleApi?.update(findings);
@@ -748,17 +758,18 @@ export default defineContentScript({
       autoBlockingKeys.add(key);
       tallyScan(key); // count it in the bubble's "已扫" total
       enqueueBlocks([{ key, sig, verdict }], source);
-      mountBlocking(anchor); // the cell collapses once finalizeBlocked runs
+      mountBlocking(anchor, badgeActions(anchor, key, sig)); // the cell collapses once finalizeAccountAction runs
       return true;
     }
     function badgeActions(anchor: HTMLElement, key: string, sig: Signals) {
       return {
-        onBlock: () => void blockAccount(key, sig),
+        onBlock: () => void runAccountAction(key, sig),
         onHide: () => hideTweet(anchor),
         onReport: () => reportAccount(key, sig),
         onAppeal: () => window.open(APPEAL_URL, "_blank", "noopener"),
         onCheck: () => void classify(anchor, key, sig),
         canReport,
+        action: settings.moderationAction,
       };
     }
 
@@ -849,7 +860,7 @@ export default defineContentScript({
       //     is still pending. Once drain succeeds, addBlocked() makes 0b
       //     short-circuit instead.
       if (autoBlockingKeys.has(key)) {
-        mountBlocking(anchor);
+        mountBlocking(anchor, badgeActions(anchor, key, sig));
         return;
       }
 
@@ -975,7 +986,7 @@ export default defineContentScript({
         const st = document.createElement("style");
         st.textContent = STYLE;
         container.appendChild(st);
-        const bubble = createBubble({
+      const bubble = createBubble({
           onBlockAll(fs: Finding[]) {
             // Non-blocking: enqueue all; a durable paced queue drains in the
             // background (survives reload, backs off on X's rate limit).
@@ -997,7 +1008,7 @@ export default defineContentScript({
             );
           },
           onBlockOne(f: Finding) {
-            void blockAccount(f.userId || `h:${f.handle}`, {
+            void runAccountAction(f.userId || `h:${f.handle}`, {
               isProfile: false,
               handle: f.handle,
               displayName: "",
@@ -1018,7 +1029,7 @@ export default defineContentScript({
           onDismiss() {
             dismissed = true;
           },
-        }, settings.bubblePos);
+        }, settings.bubblePos, settings.moderationAction);
         container.appendChild(bubble.el);
         if (!settings.bubble) bubble.el.style.display = "none";
         bubbleApi = bubble;

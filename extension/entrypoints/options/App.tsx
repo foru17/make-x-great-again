@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { clearAllLocal, getGhLogin } from "../../lib/auth";
 import { BRAND } from "../../lib/brand";
+import { type ModerationAction, actionLabels } from "../../lib/moderation-action";
 import { categorizeReason, categorizeReasons } from "../../lib/reason-category";
 import { type Settings, getSettings, setSetting } from "../../lib/settings";
 import {
@@ -301,7 +302,7 @@ function Overview() {
       <div className="mb-8 grid grid-cols-4 gap-px overflow-hidden rounded-lg border border-border bg-border">
         <Card n={s.detections} l="AI 检测总数" />
         <Card n={s.cacheHits} l="缓存命中 · 省下的 LLM 调用" />
-        <Card n={bl} l="已拉黑账号" />
+        <Card n={bl} l="已处理账号" />
         <Card n={(d.spam ?? 0) + (d.porn_bot ?? 0)} l="判定为垃圾/色情bot" />
       </div>
       <SectionH>检测类别分布</SectionH>
@@ -358,8 +359,8 @@ function Blocklist() {
   };
   return (
     <Page
-      title="拉黑记录"
-      sub={`共 ${list.length} 条 · 取消拉黑用于纠正误判（账号会重新可见）`}
+      title="处理记录"
+      sub={`共 ${list.length} 条 · 取消处理记录用于纠正误判（账号会重新可见）`}
     >
       <input
         value={q}
@@ -428,7 +429,7 @@ function Blocklist() {
                       load();
                     }}
                   >
-                    取消拉黑
+                    取消记录
                   </Btn>
                 </td>
               </tr>
@@ -436,7 +437,7 @@ function Blocklist() {
           </tbody>
         </table>
       </div>
-      {!list.length && <div className="py-10 text-center text-fg-3">还没有拉黑记录</div>}
+      {!list.length && <div className="py-10 text-center text-fg-3">还没有处理记录</div>}
     </Page>
   );
 }
@@ -540,6 +541,40 @@ function Toggle({
         {hint && <span className="block text-[12px] text-fg-3">{hint}</span>}
       </span>
     </label>
+  );
+}
+
+function ActionChoice({
+  value,
+  onChange,
+}: { value: ModerationAction; onChange: (v: ModerationAction) => void }) {
+  const choices: ModerationAction[] = ["mute", "block"];
+  return (
+    <div className="py-2">
+      <div className="mb-1 text-[13px] font-medium text-fg">默认账号处理动作</div>
+      <div className="inline-flex rounded-md border border-border-2 bg-card p-1">
+        {choices.map((choice) => {
+          const labels = actionLabels(choice);
+          const active = value === choice;
+          return (
+            <button
+              key={choice}
+              type="button"
+              onClick={() => onChange(choice)}
+              className={`rounded-sm px-3 py-1.5 text-[12px] font-semibold transition ${
+                active ? "bg-fg text-bg" : "text-fg-2 hover:bg-card-hi hover:text-fg"
+              }`}
+              title={labels.risk}
+            >
+              {choice === "mute" ? "静音用户" : "拉黑用户"}
+            </button>
+          );
+        })}
+      </div>
+      <div className="mt-1.5 text-[12px] leading-relaxed text-fg-3">
+        {actionLabels(value).description}。{actionLabels(value).risk}
+      </div>
+    </div>
   );
 }
 
@@ -711,11 +746,15 @@ function Settings() {
               label="回复区逐个自动检查"
               hint="关闭可显著降低 LLM 调用 / 更克制"
             />
+            <ActionChoice
+              value={st.moderationAction}
+              onChange={(v) => save("moderationAction", v)}
+            />
             <Toggle
               on={st.autoBlockListHits}
               onChange={(v) => save("autoBlockListHits", v)}
-              label="对已确认的垃圾号自动拉黑"
-              hint="开启后：扫到的色情/垃圾账号会被静默后台拉黑（包括公榜命中 + 本机此前判过 spam 的缓存号），不弹卡片、不需要点确认。默认关闭。"
+              label={`对已确认的垃圾号${actionLabels(st.moderationAction).automatic}`}
+              hint={`开启后：扫到的色情/垃圾账号会被静默${actionLabels(st.moderationAction).background}（包括公榜命中 + 本机此前判过 spam 的缓存号），不弹卡片、不需要点确认。默认关闭。`}
             />
           </section>
         )}
@@ -743,7 +782,7 @@ function Settings() {
         <section>
           <SectionH>数据与隐私</SectionH>
           <p className="mb-3 text-[13px] text-fg-2">
-            检测缓存、拉黑记录、统计、登录态均仅存于本机；除公开 X 数字 ID 外不存 PII。
+            检测缓存、处理记录、统计、登录态均仅存于本机；除公开 X 数字 ID 外不存 PII。
           </p>
           <div className="flex items-center gap-3">
             <Btn tier="danger" onClick={() => setClearOpen(true)}>
@@ -761,7 +800,7 @@ function Settings() {
               这会清空本机上的：
               <ul className="my-2 list-inside list-disc text-fg-3">
                 <li>AI 检测缓存（下次扫描会再调 LLM）</li>
-                <li>你的拉黑历史 + 本地处理统计</li>
+                <li>你的账号处理历史 + 本地处理统计</li>
                 <li>GitHub 登录态（仅本机，不撤 GH token）</li>
               </ul>
               <b className="text-fg">不可恢复。</b>
@@ -786,7 +825,7 @@ const About = () => (
   <Page title="关于" sub={`${BRAND.name} · 公益、开源`}>
     <div className="max-w-[680px] space-y-4 text-[13px] leading-7 text-fg-2">
       <p>
-        基于 AI 的 X(Twitter) 反垃圾 / 色情机器人扩展。被动检测、本地优先、中心服务（Cloudflare）协同；用户一键拉黑即视为人工确认信号之一。
+        基于 AI 的 X(Twitter) 反垃圾 / 色情机器人扩展。被动检测、本地优先、中心服务（Cloudflare）协同；默认一键静音用户以隐藏该用户的帖子，拉黑只作为显式高风险选项保留。
       </p>
       <div className="grid grid-cols-1 gap-px overflow-hidden rounded-lg border border-border bg-border sm:grid-cols-2">
         <div className="bg-bg p-4">
@@ -851,7 +890,7 @@ const Mascot = () => (
 
 const TABS = [
   ["overview", "概览", Overview],
-  ["blocklist", "拉黑记录", Blocklist],
+  ["blocklist", "处理记录", Blocklist],
   ["cache", "检测缓存", Cache],
   ["settings", "设置", Settings],
   ["about", "关于", About],

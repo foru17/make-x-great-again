@@ -228,8 +228,8 @@ export function App() {
       {/* Per-stat breakdown */}
       <div className="mt-2 grid grid-cols-3 gap-1.5">
         <Stat label="AI 扫描" value={stats?.scanned ?? 0} hint="新账号 LLM 判定次数" />
-        <Stat label="命中公榜" value={stats?.hitPublic ?? 0} hint="直接拉黑，零成本" accent />
-        <Stat label="亲手拉黑" value={stats?.blocked ?? 0} hint="你按的拉黑按钮" />
+        <Stat label="命中公榜" value={stats?.hitPublic ?? 0} hint="直接处理，零成本" accent />
+        <Stat label="亲手处理" value={stats?.blocked ?? 0} hint="你按的账号处理按钮" />
       </div>
 
       {whitelist && whitelist.count > 0 ? (

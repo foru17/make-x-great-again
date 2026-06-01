@@ -2,6 +2,7 @@
 // cannot bleed in and ours cannot leak out. Vanilla DOM — no framework
 // weight injected into the page. Tokens per docs/UX.md.
 import { BRAND } from "./brand";
+import { type ModerationAction, actionLabels } from "./moderation-action";
 import type { Label, Verdict } from "./types";
 
 export const STYLE = `
@@ -545,8 +546,8 @@ export interface Finding {
   blockQueued?: boolean;
   blockActive?: boolean;
   blockFailed?: boolean;
-  /** Set by drain() after a successful block — used by the card to strike
-   *  the row through and replace the per-row button with "已拉黑". */
+  /** Set by drain() after a successful account action — used by the card to
+   *  strike the row through and replace the per-row button with done text. */
   blocked?: boolean;
   /** Selection state for the bulk-block action. Undefined → treated as
    *  selected (the default for a fresh finding). User uncheck → false →
@@ -570,7 +571,12 @@ export interface BubbleHandlers {
 }
 
 /** Collapsed pill ⇄ expanded card. Default resting state = pill. */
-export function createBubble(h: BubbleHandlers, pos: "tr" | "br" = "tr") {
+export function createBubble(
+  h: BubbleHandlers,
+  pos: "tr" | "br" = "tr",
+  action: ModerationAction = "mute",
+) {
+  const actionText = actionLabels(action);
   const root = document.createElement("div");
   root.className = `xss xss-bubble${pos === "br" ? " br" : ""}`;
   root.setAttribute("role", "status");
@@ -689,7 +695,7 @@ export function createBubble(h: BubbleHandlers, pos: "tr" | "br" = "tr") {
     const total = Math.max(1, blocks.found);
     const donePct = Math.round((blocks.done / total) * 100);
     const pending = blocks.active + blocks.queued + idle;
-    return `<div class="block-progress" aria-label="拉黑进度 ${donePct}%">
+    return `<div class="block-progress" aria-label="${actionText.verb}进度 ${donePct}%">
       <div class="progress-head">
         <span>${pending > 0 ? `剩余 ${pending}` : "处理完成"}</span>
         <b>${donePct}%</b>
@@ -739,7 +745,7 @@ export function createBubble(h: BubbleHandlers, pos: "tr" | "br" = "tr") {
         pill.innerHTML = progressMarkup({
           iconName: "shield-x",
           iconColor: "var(--danger)",
-          title: "拉黑中",
+          title: actionText.gerund,
           count: `${blocks.done}/${blocks.found}`,
           percent: Math.max(8, Math.round((blocks.done / Math.max(1, blocks.found)) * 100)),
           busy: true,
@@ -751,7 +757,7 @@ export function createBubble(h: BubbleHandlers, pos: "tr" | "br" = "tr") {
         pill.innerHTML = progressMarkup({
           iconName: "shield-check",
           iconColor: "var(--safe)",
-          title: "已拉黑",
+          title: actionText.done,
           count: String(blocks.done),
           percent: 100,
         });
@@ -797,7 +803,7 @@ export function createBubble(h: BubbleHandlers, pos: "tr" | "br" = "tr") {
           <span>${BRAND.acronym} 已启用</span>
           <span class="x" data-x>${icon("x", "currentColor", 14)}</span></div>
         <div class="sub" style="display:block;line-height:1.6">
-          正在被动检查本页账号。发现可疑的垃圾/色情机器人时，会在这里提示并提供一键处理。</div>
+          正在被动检查本页账号。发现可疑的垃圾/色情机器人时，会在这里提示并提供一键${actionText.verb}。</div>
         <div class="row"><span class="lnk" data-gov>为什么 / 治理</span></div>`;
       card.querySelector("[data-x]")?.addEventListener("click", () => collapse());
       card.querySelector("[data-gov]")?.addEventListener("click", () =>
@@ -833,20 +839,20 @@ export function createBubble(h: BubbleHandlers, pos: "tr" | "br" = "tr") {
     ];
     card.innerHTML = `
 	      <div class="hd">${icon("shield-alert", "var(--brand)", 16)}
-	        <span>${actionableCount || activeCount || queuedCount ? `本页命中 ${findings.length} 个账号` : `本页已拉黑 ${doneCount} 个账号`}</span>
+	        <span>${actionableCount || activeCount || queuedCount ? `本页命中 ${findings.length} 个账号` : `本页${actionText.done} ${doneCount} 个账号`}</span>
 	        <span class="x" data-x>${icon("x", "currentColor", 14)}</span></div>
 	      <div class="sub">
 	        <span class="metric" title="色情/垃圾 ${danger}，疑似 ${warn}">
 	          <i style="background:var(--danger)"></i><b>${findings.length}</b><em>命中</em>
 	        </span>
-	        <span class="metric" title="正在后台拉黑">
+	        <span class="metric" title="正在${actionText.background}">
 	          <i style="background:var(--danger)"></i><b>${activeCount}</b><em>正在</em>
 	        </span>
-	        <span class="metric" title="等待后台拉黑">
-	          <i style="background:var(--brand)"></i><b>${queuedCount}</b><em>待拉</em>
+	        <span class="metric" title="等待${actionText.background}">
+	          <i style="background:var(--brand)"></i><b>${queuedCount}</b><em>${action === "block" ? "待拉" : "待静"}</em>
 	        </span>
-	        <span class="metric" title="${failedCount ? `失败 ${failedCount}，` : ""}已成功拉黑">
-	          <i style="background:${failedCount ? "var(--warn)" : "var(--safe)"}"></i><b>${doneCount}</b><em>已拉</em>
+	        <span class="metric" title="${failedCount ? `失败 ${failedCount}，` : ""}已成功${actionText.verb}">
+	          <i style="background:${failedCount ? "var(--warn)" : "var(--safe)"}"></i><b>${doneCount}</b><em>${action === "block" ? "已拉" : "已静"}</em>
 	        </span>
 	      </div>
       ${renderBlockProgress(blocks, idleCount)}
@@ -889,14 +895,14 @@ export function createBubble(h: BubbleHandlers, pos: "tr" | "br" = "tr") {
                     ? "xss-act retry"
                   : "xss-act";
             const actText = f.blocked
-              ? "已拉黑"
+              ? actionText.done
               : f.blockActive
-                ? "拉黑中"
+                ? actionText.active
                 : f.blockQueued
-                  ? "待拉黑"
+                  ? actionText.queued
                   : f.blockFailed
                     ? "重试"
-                    : "拉黑";
+                    : actionText.verb;
             const source = f.blockSource ? ` · ${BLOCK_SOURCE_TEXT[f.blockSource]}` : "";
             return `<div class="${rowClass}">
               <input type="checkbox" class="xss-row-cb" data-sel="${id}"
@@ -907,10 +913,10 @@ export function createBubble(h: BubbleHandlers, pos: "tr" | "br" = "tr") {
                 <div class="qname">${name}</div>
                 <div class="qmeta" style="color:${col}">@${escHtml(f.handle)} · ${m.zh} ${(f.verdict.confidence * 100).toFixed(0)}%</div>
                 ${snip ? `<div class="qsnip">${snip}</div>` : ""}
-                ${f.blockFailed ? `<div class="qnote" style="color:var(--warn)">自动屏蔽失败 · <a href="https://x.com/${escHtml(f.handle)}" target="_blank" rel="noopener" style="color:var(--warn)">手动屏蔽</a></div>` : ""}
-                ${f.blockActive && !f.blocked ? `<div class="qnote" style="color:var(--danger)">正在后台拉黑${source}</div>` : ""}
-                ${f.blockQueued && !f.blockActive && !f.blocked ? `<div class="qnote" style="color:var(--brand)">待后台拉黑${source}</div>` : ""}
-                ${f.blocked ? `<div class="qnote" style="color:var(--safe)">✓ 已拉黑${source}</div>` : ""}
+                ${f.blockFailed ? `<div class="qnote" style="color:var(--warn)">${actionText.automatic}失败 · <a href="https://x.com/${escHtml(f.handle)}" target="_blank" rel="noopener" style="color:var(--warn)">手动${actionText.verb}</a></div>` : ""}
+                ${f.blockActive && !f.blocked ? `<div class="qnote" style="color:var(--danger)">正在${actionText.background}${source}</div>` : ""}
+                ${f.blockQueued && !f.blockActive && !f.blocked ? `<div class="qnote" style="color:var(--brand)">待${actionText.background}${source}</div>` : ""}
+                ${f.blocked ? `<div class="qnote" style="color:var(--safe)">✓ ${actionText.done}${source}</div>` : ""}
               </div>
               <button class="${actClass}" data-one="${id}"${f.blocked || f.blockQueued || f.blockActive ? " disabled" : ""}>${actText}</button>
             </div>`;
@@ -921,10 +927,10 @@ export function createBubble(h: BubbleHandlers, pos: "tr" | "br" = "tr") {
         actionableCount === 0 && activeCount === 0 && queuedCount === 0
           ? `<button class="btn" disabled style="background:var(--safe)">✓ 已全部处理 (${doneCount})</button>`
           : activeCount || queuedCount
-            ? `<button class="btn" disabled style="background:var(--brand)">后台拉黑中 · 正在 ${activeCount} · 待 ${queuedCount}</button>`
+            ? `<button class="btn" disabled style="background:var(--brand)">${actionText.background}中 · 正在 ${activeCount} · 待 ${queuedCount}</button>`
           : selectedPending === 0
             ? `<button class="btn" disabled style="opacity:.55">未选中任何账号 (剩余 ${actionableCount})</button>`
-            : `<button class="btn" data-block>一键拉黑选中 ${selectedPending}${doneCount ? ` · 已完成 ${doneCount}` : ""}${selectedPending < actionableCount ? ` · 跳过 ${actionableCount - selectedPending}` : ""}</button>`
+            : `<button class="btn" data-block>一键${actionText.verb}选中 ${selectedPending}${doneCount ? ` · 已完成 ${doneCount}` : ""}${selectedPending < actionableCount ? ` · 跳过 ${actionableCount - selectedPending}` : ""}</button>`
       }
       <div class="row"><span class="lnk" data-each>逐个查看处理</span>
         <span class="lnk" data-ign>忽略本页</span></div>`;
@@ -948,7 +954,7 @@ export function createBubble(h: BubbleHandlers, pos: "tr" | "br" = "tr") {
       });
     });
     // Per-row select toggle — uncheck excludes from the bulk action so the
-    // user can opt-out specific accounts before "一键拉黑".
+    // user can opt-out specific accounts before the bulk account action.
     card.querySelectorAll<HTMLInputElement>("[data-sel]").forEach((cb) => {
       cb.addEventListener("change", () => {
         const id = cb.dataset.sel;
@@ -1078,6 +1084,7 @@ export interface BadgeActions {
   onAppeal: () => void;
   onCheck?: () => void; // present => ghost manual-check state
   canReport?: boolean;
+  action?: ModerationAction;
 }
 
 interface ManualPopoverOptions {
@@ -1203,13 +1210,13 @@ function attachManualPopover(
         <div style="color:var(--muted);line-height:1.55">${escHtml(
           opts.description ??
             (hideCheck
-              ? "AI 正在分析中；如已确认可疑，可直接上报或拉黑并上报。"
-              : "未命中公榜时，可主动检查；确认可疑后再上报或拉黑并上报。"),
+              ? `AI 正在分析中；如已确认可疑，可直接上报或${actionLabels(a.action ?? "mute").verb}。`
+              : `未命中公榜时，可主动检查；确认可疑后再上报或${actionLabels(a.action ?? "mute").verb}。`),
         )}</div>
         <div class="acts">
           ${hideCheck ? "" : '<button data-c>检查</button>'}
           <button data-r>上报</button>
-          <button data-b>拉黑并上报</button>
+          <button data-b>${actionLabels(a.action ?? "mute").verb}</button>
         </div>`;
       if (!hideCheck) {
         manualPop.querySelector("[data-c]")?.addEventListener("click", () => {
@@ -1247,11 +1254,12 @@ export function createStatusBadge(
   a?: BadgeActions,
 ): HTMLElement {
   const el = document.createElement("span");
+  const labels = actionLabels(a?.action ?? "mute");
   if (kind === "analyzing") {
     el.className = "xss-badge analyzing labeled";
     el.setAttribute(
       "aria-label",
-      a?.canReport ? "MXGA 正在分析，可手动上报或拉黑并上报" : "MXGA 正在分析",
+      a?.canReport ? `MXGA 正在分析，可手动上报或${labels.verb}并上报` : "MXGA 正在分析",
     );
     el.innerHTML = `<span class="xss-ico">${icon("shield", "currentColor", 12)}</span><span class="xss-label">分析</span>`;
     if (a) attachManualPopover(el, a, { hideCheck: true });
@@ -1261,8 +1269,8 @@ export function createStatusBadge(
     el.innerHTML = `<span class="xss-ico">${icon("shield", "currentColor", 12)}</span><span class="xss-label">排队</span>`;
   } else {
     el.className = "xss-badge blocking labeled";
-    el.setAttribute("aria-label", "MXGA 已加入后台拉黑队列");
-    el.innerHTML = `<span class="xss-ico">${icon("shield-x", "currentColor", 12)}</span><span class="xss-label">屏蔽中</span>`;
+    el.setAttribute("aria-label", `MXGA 已加入${labels.background}队列`);
+    el.innerHTML = `<span class="xss-ico">${icon("shield-x", "currentColor", 12)}</span><span class="xss-label">${labels.gerund}</span>`;
   }
   return el;
 }
@@ -1285,8 +1293,9 @@ export function createBadge(
     return el;
   }
   if (!v) {
+    const labels = actionLabels(a.action ?? "mute");
     el.className = "xss-badge ghost labeled";
-    el.setAttribute("aria-label", a.canReport ? "MXGA：检查、上报或拉黑并上报" : "MXGA 手动检查");
+    el.setAttribute("aria-label", a.canReport ? `MXGA：检查、上报或${labels.verb}` : "MXGA 手动检查");
     el.innerHTML = `<span class="xss-ico">${icon("shield", "currentColor", 12)}</span><span class="xss-label">检查</span>`;
     attachManualPopover(el, a);
     return el;
@@ -1300,7 +1309,7 @@ export function createBadge(
   // Tier-specific tooltip + tag — tells the user exactly which gate matched.
   const tip =
     source === "list"
-      ? "公榜确认：≥1 个维护者已经把此账号公开拉黑"
+      ? "公榜确认：≥1 个维护者已经确认此账号"
       : source === "cache"
         ? "本地缓存命中：本机之前已经判过这个号"
         : "AI 现场判定：本次会话首次扫描，已记录待人工确认";
@@ -1340,7 +1349,7 @@ export function createBadge(
         <ul>${v.reasons.map((r) => `<li>${escHtml(r)}</li>`).join("")}</ul>
         ${note ? `<div style="color:var(--muted)">${escHtml(note)}</div>` : ""}
         <div class="acts">
-          ${spammy ? '<button data-b>拉黑</button><button data-h>隐藏</button>' : ""}
+          ${spammy ? `<button data-b>${actionLabels(a.action ?? "mute").verb}</button><button data-h>隐藏</button>` : ""}
           ${a.canReport ? '<button data-r>上报</button>' : ""}
           <button data-a>误判?</button>
         </div>`;
