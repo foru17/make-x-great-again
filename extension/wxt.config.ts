@@ -14,6 +14,9 @@ export default defineConfig({
   // .output/chrome-mv3 into your own Chrome (logged into X) manually;
   // WXT still watches + hot-reloads it.
   webExt: { disabled: true },
+  // data_collection_permissions is already declared in manifest below (none: true).
+  // This silences WXT's redundant build-time reminder.
+  suppressWarnings: { firefoxDataCollection: true },
   manifest: ({ mode }) => ({
     // Brand-forward name. CWS_LISTING.md keeps the fallback copy in case the
     // listing needs a more neutral store-facing title.
@@ -61,5 +64,8 @@ export default defineConfig({
     ],
     action: { default_title: "MXGA" },
     options_ui: { open_in_tab: true },
+    // Firefox AMO requirement (Nov 2025+): declare that this extension
+    // collects no user data. Matches the "零数据收集" promise in the description.
+    data_collection_permissions: { none: true },
   }),
 });
