@@ -42,10 +42,16 @@ export type Verdict = z.infer<typeof Verdict>;
 
 /**
  * Append-only curation record. Governance red-line: an AI verdict is NEVER
- * auto-public. Everything lands as `auto_pending_review` until the review
- * pipeline promotes it.
+ * auto-public. Everything lands as `auto_pending_review` until a human gate
+ * or review pipeline promotes it. Status set is canonicalized in
+ * docs/SPEC-T1.md §3.3 to match the deployed edge DB.
  */
-export const ReviewStatus = z.enum(["auto_pending_review", "human_confirmed", "human_rejected"]);
+export const ReviewStatus = z.enum([
+  "auto_pending_review",
+  "human_confirmed",
+  "rejected",
+  "removed",
+]);
 export type ReviewStatus = z.infer<typeof ReviewStatus>;
 
 export const CurationRecord = z.object({

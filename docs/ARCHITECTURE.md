@@ -95,7 +95,14 @@ Cloudflare R2/CDN has **zero egress fees**.
    → R2 (versioned), optional GitHub mirror. Upheld appeals leave the next
    version with an auditable diff.
 
-## D1 schema (provisional)
+## D1 schema (provisional — superseded by SPEC-T1)
+
+> **The final, canonical curation record, status state machine, public
+> artifact schema, and gate thresholds now live in
+> [docs/SPEC-T1.md](SPEC-T1.md).** The notes below are kept for historical
+> context; on any conflict, SPEC-T1 wins. The canonical status set is
+> `auto_pending_review | human_confirmed | rejected | removed` (no `appealed`;
+> no `publications` D1 table — publish history lives in artifact `meta.json`).
 
 - **accounts** — `x_user_id` (unique, nullable when only a handle is known),
   `handle`, `handle_history` (json), `display_name`, `verdict`, `confidence`,
