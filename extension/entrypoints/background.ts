@@ -1,15 +1,13 @@
 // The only place that talks to the service / GitHub, so page CSP/CORS never
 // blocks us. Edge Worker /v1 API + GitHub Device-Flow login + admin proxy.
+// NOTE: Consumer-side classify/confirm/lookup are now LOCAL (no remote calls).
+// This background script only handles GitHub auth for admin users.
 import { GH_CLIENT_ID, getGhToken, setGh } from "../lib/auth";
 import { BRAND } from "../lib/brand";
 import { getSettings } from "../lib/settings";
-import { bumpStat, bumpStatBy, getStats } from "../lib/stats";
-import type { BgRequest, BgResponse, CurationRecord } from "../lib/types";
-import { refreshWhitelist, whitelistStatus } from "../lib/whitelist-cache";
+import type { BgRequest, BgResponse } from "../lib/types";
 
 const DEFAULT_BASE = BRAND.edgeBase;
-
-type CheckHit = { label: string; confidence: number };
 
 async function base(): Promise<string> {
   return (await getSettings()).edgeBase || DEFAULT_BASE;
@@ -20,44 +18,6 @@ async function call(path: string, init?: RequestInit): Promise<Record<string, un
   const body = (await res.json().catch(() => ({}))) as { error?: string };
   if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
   return body as Record<string, unknown>;
-}
-
-async function callCancelable(
-  path: string,
-  init?: RequestInit,
-  signal?: AbortSignal,
-): Promise<Record<string, unknown>> {
-  const res = await fetch((await base()) + path, { ...init, signal });
-  const body = (await res.json().catch(() => ({}))) as { error?: string };
-  if (!res.ok) throw new Error(body.error || `HTTP ${res.status}`);
-  return body as Record<string, unknown>;
-}
-
-/** POST JSON, attaching the GitHub token when present (gates write endpoints). */
-async function authedPost(signals: unknown) {
-  const tok = await getGhToken();
-  return {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      ...(tok ? { authorization: `Bearer ${tok}` } : {}),
-    },
-    body: JSON.stringify(signals),
-  };
-}
-
-function curationHit(userId: string, hit: CheckHit): CurationRecord {
-  return {
-    userId,
-    handle: "",
-    verdict: {
-      label: hit.label as CurationRecord["verdict"]["label"],
-      confidence: hit.confidence,
-      reasons: [],
-    },
-    reviewStatus: "human_confirmed",
-    model: "",
-  };
 }
 
 // ---- GitHub Device Flow (background = cross-origin allowed via host perms) ----
@@ -92,7 +52,7 @@ async function ghPoll(deviceCode: string) {
   const j = (await r.json()) as { access_token?: string; error?: string };
   if (!j.access_token) return { pending: j.error ?? "pending" };
   const u = await fetch("https://api.github.com/user", {
-    headers: { authorization: `Bearer ${j.access_token}`, "user-agent": "mxga" },
+    headers: { authorization: `Bearer ${j.access_token}`, "user-agent": "x-spam-sentinel" },
   });
   const user = (await u.json()) as { login?: string };
   await setGh(j.access_token, user.login ?? "github");
@@ -100,8 +60,6 @@ async function ghPoll(deviceCode: string) {
 }
 
 export default defineBackground(() => {
-  const classifyControllers = new Map<string, AbortController>();
-
   chrome.runtime.onMessage.addListener(
     (msg: BgRequest, _s: chrome.runtime.MessageSender, sendResponse: (r: BgResponse) => void) => {
       (async () => {
@@ -111,85 +69,6 @@ export default defineBackground(() => {
             sendResponse({ ok: true, data: { records: (h.published as number) ?? 0 } });
           } else if (msg.type === "records") {
             sendResponse({ ok: true, data: { records: [] } });
-          } else if (msg.type === "stats") {
-            sendResponse({ ok: true, data: await getStats() });
-          } else if (msg.type === "whitelist_status") {
-            sendResponse({ ok: true, data: await whitelistStatus() });
-          } else if (msg.type === "whitelist_refresh") {
-            sendResponse({ ok: true, data: await refreshWhitelist(true) });
-          } else if (msg.type === "lookup") {
-            const r = await call(`/v1/check?ids=${encodeURIComponent(msg.userId)}`);
-            const hits = (r.hits as Record<string, CheckHit>) ?? {};
-            const h = hits[msg.userId];
-            const hit: CurationRecord | null = h ? curationHit(msg.userId, h) : null;
-            // Only count a hit (not a miss) as a public-board win.
-            if (hit) void bumpStat("hitPublic");
-            sendResponse({ ok: true, data: { hit } });
-          } else if (msg.type === "lookup_batch") {
-            const ids = [...new Set(msg.userIds.filter((id) => /^\d+$/.test(id)))].slice(0, 100);
-            if (!ids.length) {
-              sendResponse({ ok: true, data: { hits: {} } });
-              return;
-            }
-            const qs = ids.map(encodeURIComponent).join(",");
-            const r = await call(`/v1/check?ids=${qs}`);
-            const rawHits = (r.hits as Record<string, CheckHit>) ?? {};
-            const hits: Record<string, CurationRecord> = {};
-            for (const id of ids) {
-              const h = rawHits[id];
-              if (h) hits[id] = curationHit(id, h);
-            }
-            const hitCount = Object.keys(hits).length;
-            if (hitCount) void bumpStatBy("hitPublic", hitCount);
-            sendResponse({ ok: true, data: { hits } });
-          } else if (msg.type === "classify") {
-            const controller = new AbortController();
-            classifyControllers.set(msg.requestId, controller);
-            try {
-              const r = await callCancelable(
-                "/v1/classify",
-                await authedPost(msg.signals),
-                controller.signal,
-              );
-              const rec = r.record as { verdict: CurationRecord["verdict"]; status: string };
-              const s = msg.signals as { userId?: string; handle: string };
-              // Only count fresh LLM work, not cache returns (server tells us via `cached`).
-              if (!r.cached) void bumpStat("scanned");
-              sendResponse({
-                ok: true,
-                data: {
-                  record: {
-                    userId: s.userId ?? "",
-                    handle: s.handle,
-                    verdict: rec.verdict,
-                    reviewStatus: rec.status,
-                    model: "edge",
-                  } satisfies CurationRecord,
-                  idResolved: !!s.userId,
-                },
-              });
-            } catch (e) {
-              if (controller.signal.aborted) {
-                sendResponse({ ok: false, error: "classify_canceled" });
-              } else {
-                throw e;
-              }
-            } finally {
-              if (classifyControllers.get(msg.requestId) === controller) {
-                classifyControllers.delete(msg.requestId);
-              }
-            }
-          } else if (msg.type === "cancel_classify") {
-            classifyControllers.get(msg.requestId)?.abort();
-            classifyControllers.delete(msg.requestId);
-            sendResponse({ ok: true, data: { canceled: true } });
-          } else if (msg.type === "confirm_spam") {
-            await call("/v1/confirm", await authedPost(msg.signals));
-            void bumpStat("blocked");
-            sendResponse({ ok: true });
-          } else if (msg.type === "report_spam") {
-            await call("/v1/report", await authedPost(msg.signals));
-            sendResponse({ ok: true });
           } else if (msg.type === "gh_start") {
             sendResponse({ ok: true, data: await ghStart() });
           } else if (msg.type === "gh_poll") {
@@ -211,22 +90,4 @@ export default defineBackground(() => {
       return true; // async response
     },
   );
-
-  // Keep the local whitelist mirror fresh. Once on install,
-  // once on every browser launch, and every 6h via chrome.alarms while
-  // any tab is active. All errors swallowed (the cache is best-effort —
-  // a miss just falls back to the normal classify path).
-  const ALARM = "mxga_whitelist_sync";
-  chrome.runtime.onInstalled.addListener(() => {
-    void refreshWhitelist(true);
-    chrome.alarms.create(ALARM, { periodInMinutes: 6 * 60 });
-  });
-  chrome.runtime.onStartup.addListener(() => {
-    void refreshWhitelist(false);
-  });
-  chrome.alarms.onAlarm.addListener((a) => {
-    if (a.name === ALARM) void refreshWhitelist(false);
-  });
-  // Service workers cold-start on first message — kick a refresh then too.
-  void refreshWhitelist(false);
 });

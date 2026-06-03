@@ -7,24 +7,19 @@ import type { Label, Verdict } from "./types";
 export const STYLE = `
 :host { all: initial; }
 * { box-sizing: border-box; font-family: system-ui,-apple-system,"Segoe UI",sans-serif; }
-:host, :root, .xss {
+:root, .xss {
   /* dark default (X dark mode) */
   --surface: rgba(13,17,23,.92); --border: rgba(255,255,255,.10);
   --shadow: 0 8px 28px rgba(0,0,0,.45); --text: #E6EDF3; --muted: #8B949E;
   --brand: #0EA5E9; --danger: #EF4444; --warn: #F59E0B; --neutral: #8B949E;
   --safe: #16A34A;
-  /* subtle overlays that need to invert with theme */
-  --hover: rgba(255,255,255,.06);
-  --shimmer: rgba(255,255,255,.18);
 }
 @media (prefers-color-scheme: light) {
-  :host, :root, .xss {
+  :root, .xss {
     --surface: rgba(255,255,255,.96); --border: rgba(15,23,42,.12);
     --shadow: 0 8px 28px rgba(15,23,42,.18); --text: #0F172A; --muted: #475569;
     --brand: #0369A1; --danger: #DC2626; --warn: #B45309; --neutral: #475569;
     --safe: #15803D;
-    --hover: rgba(15,23,42,.06);
-    --shimmer: rgba(15,23,42,.10);
   }
 }
 .xss-bubble {
@@ -38,47 +33,12 @@ export const STYLE = `
   -webkit-backdrop-filter: blur(12px); border-radius: 14px;
 }
 .pill {
-  display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px;
-  border-radius: 999px; cursor: pointer; transition: opacity .14s ease, transform .14s ease;
-  min-width: 0; min-height: 36px;
+  display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px;
+  border-radius: 999px; cursor: pointer; transition: opacity .14s ease;
 }
-.pill:hover { opacity: .94; transform: translateY(-1px); }
+.pill:hover { opacity: .92; }
 .pill .n {
   font-size: 12px; font-weight: 700; min-width: 16px; text-align: center;
-}
-.scan-pill {
-  display: grid; grid-template-columns: 22px auto auto;
-  align-items: center; gap: 7px; width: auto;
-}
-.scan-radar {
-  --accent: var(--brand); --angle: 360deg;
-  width: 22px; height: 22px; position: relative; display: grid; place-items: center;
-  border-radius: 999px; flex: none;
-  background: conic-gradient(var(--accent) var(--angle), color-mix(in srgb, var(--accent) 12%, transparent) 0deg);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent);
-}
-.scan-radar.danger { --accent: var(--danger); }
-.scan-core {
-  position: absolute; inset: 4px; display: grid; place-items: center;
-  border-radius: inherit; background: var(--surface);
-}
-.scan-sweep {
-  position: absolute; inset: 2px; border-radius: inherit; opacity: 0;
-  background: conic-gradient(from -30deg, transparent 0 64%, color-mix(in srgb, var(--accent) 58%, transparent) 76%, transparent 92%);
-}
-.scan-radar.busy .scan-sweep {
-  opacity: .95; animation: xradar 1.15s linear infinite;
-}
-.scan-radar.busy {
-  animation: xbreath 1.6s ease-in-out infinite;
-}
-.scan-title {
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  max-width: 46px; font-size: 12.5px; font-weight: 750; color: var(--text);
-}
-.scan-meta {
-  flex: none; font-size: 11px; font-weight: 650; color: var(--muted);
-  font-variant-numeric: tabular-nums;
 }
 .card { width: 312px; padding: 14px; display: none; }
 .card.open { display: block; animation: in .18s ease-out; }
@@ -86,21 +46,9 @@ export const STYLE = `
 .hd { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
 .hd .x { margin-left: auto; cursor: pointer; color: var(--muted); display: flex; }
 .hd .x:hover { color: var(--text); }
-.sub {
-  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 6px; margin: 10px 0 12px;
-  font-size: 11px; color: var(--muted);
-}
-.metric {
-  min-width: 0; height: 30px; display: flex; align-items: center; justify-content: center;
-  gap: 4px; padding: 0 5px; border-radius: 8px;
-  background: color-mix(in srgb, var(--muted) 7%, transparent);
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap; overflow: hidden;
-}
-.metric b { color: var(--text); font-size: 12px; font-weight: 760; line-height: 1; }
-.metric em { font-style: normal; overflow: hidden; text-overflow: ellipsis; }
-.metric i { width: 6px; height: 6px; border-radius: 50%; display: inline-block; flex: none; }
+.sub { display: flex; gap: 12px; margin: 10px 0 12px; font-size: 12px; color: var(--muted); }
+.dot { display: inline-flex; align-items: center; gap: 5px; }
+.dot i { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
 .btn {
   width: 100%; border: 0; border-radius: 10px; padding: 9px 12px;
   font-size: 13px; font-weight: 600; cursor: pointer; color: #fff;
@@ -108,246 +56,34 @@ export const STYLE = `
 }
 .btn:hover { filter: brightness(1.08); }
 .btn:disabled { opacity: .55; cursor: default; }
-
-/* Per-row block button — same color language as bulk btn, smaller scale. */
-.xss-act {
-  flex: none; border: 0; border-radius: 8px; padding: 5px 10px;
-  font-size: 11.5px; font-weight: 600; cursor: pointer; color: #fff;
-  background: var(--danger); transition: filter .14s ease, background .14s;
-  white-space: nowrap;
-}
-.xss-act:hover { filter: brightness(1.08); }
-.xss-act:disabled { cursor: default; }
-.xss-act.done {
-  background: var(--safe); color: #fff; opacity: .9;
-}
-.xss-act.queue {
-  background: transparent; color: var(--brand);
-  border: 1px solid var(--brand);
-}
-.xss-act.queue.busy { animation: xpulse 1.2s ease-in-out infinite; }
-.xss-act.retry {
-  background: transparent; color: var(--warn);
-  border: 1px solid var(--warn);
-}
-
-/* Per-row select checkbox — themed, replaces native browser styling. */
-.xss-row-cb {
-  width: 15px; height: 15px; flex: none; cursor: pointer;
-  appearance: none; -webkit-appearance: none;
-  border: 1.5px solid var(--border); border-radius: 4px;
-  background: transparent; transition: border-color .12s, background .12s;
-  position: relative; margin-top: 6px;
-}
-.xss-row-cb:hover { border-color: var(--danger); }
-.xss-row-cb:checked {
-  background: var(--danger); border-color: var(--danger);
-}
-.xss-row-cb:checked::after {
-  content: ""; position: absolute; left: 3px; top: 0;
-  width: 5px; height: 9px; border: solid #fff;
-  border-width: 0 1.5px 1.5px 0; transform: rotate(45deg);
-}
-.xss-row-cb:disabled { opacity: .35; cursor: default; }
 .row { display: flex; gap: 14px; margin-top: 10px; font-size: 12px; }
 .lnk { color: var(--muted); cursor: pointer; }
 .lnk:hover { color: var(--text); }
-.block-progress {
-  margin: -2px 0 13px;
-}
-.progress-head {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 6px; font-size: 11px; color: var(--muted);
-  font-variant-numeric: tabular-nums;
-}
-.progress-head b {
-  color: var(--text); font-size: 11px; font-weight: 750;
-}
-.progress-track {
-  height: 9px; display: flex; overflow: hidden; border-radius: 999px;
-  background: color-mix(in srgb, var(--muted) 12%, transparent);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--text) 8%, transparent);
-}
-.progress-seg {
-  height: 100%; min-width: 0; transition: width .22s ease;
-}
-.progress-seg + .progress-seg {
-  box-shadow: inset 1px 0 0 color-mix(in srgb, var(--surface) 70%, transparent);
-}
-.progress-seg.done { background: linear-gradient(90deg, color-mix(in srgb, var(--safe) 78%, #fff), var(--safe)); }
-.progress-seg.active {
-  background:
-    repeating-linear-gradient(115deg, rgba(255,255,255,.22) 0 6px, transparent 6px 12px),
-    linear-gradient(90deg, color-mix(in srgb, var(--danger) 72%, #fff), var(--danger));
-  animation: pbarshift .9s linear infinite;
-}
-.progress-seg.queued { background: linear-gradient(90deg, color-mix(in srgb, var(--brand) 76%, #fff), var(--brand)); }
-.progress-seg.failed { background: linear-gradient(90deg, color-mix(in srgb, var(--warn) 76%, #fff), var(--warn)); }
-.progress-seg.idle { background: color-mix(in srgb, var(--muted) 24%, transparent); }
-.progress-legend {
-  display: flex; flex-wrap: wrap; gap: 5px 10px; margin-top: 7px;
-  color: var(--muted); font-size: 10.5px;
-}
-.progress-legend span { display: inline-flex; align-items: center; gap: 4px; }
-.progress-legend i { width: 6px; height: 6px; border-radius: 999px; display: inline-block; }
-.queue-table {
-  max-height: 226px; overflow: auto; margin: 0 -4px 10px; padding: 0 4px;
-  scrollbar-width: thin;
-}
-.qrow {
-  display: flex; align-items: flex-start; gap: 8px; padding: 6px 4px;
-  border-radius: 10px; transform-origin: top center;
-  transition: background .14s ease, opacity .14s ease;
-}
-.qrow.new { animation: qrowin .24s cubic-bezier(.2,.7,.2,1); }
-.qrow.active { background: color-mix(in srgb, var(--danger) 8%, transparent); }
-.qrow.queued { background: color-mix(in srgb, var(--brand) 7%, transparent); }
-.qrow.failed { background: color-mix(in srgb, var(--warn) 8%, transparent); }
-.qrow.done {
-  overflow: hidden;
-  background: color-mix(in srgb, var(--safe) 8%, transparent);
-  animation: qrowdone .96s ease forwards;
-}
-.qavatar {
-  width: 26px; height: 26px; border-radius: 50%; flex: none; object-fit: cover;
-  transition: filter .18s ease, opacity .18s ease;
-}
-.qavatar.blank { background: var(--border); }
-.qbody { min-width: 0; flex: 1; }
-.qname {
-  font-weight: 650; font-size: 12px; overflow: hidden;
-  text-overflow: ellipsis; white-space: nowrap;
-}
-.qmeta { font-size: 11px; }
-.qsnip {
-  font-size: 11px; color: var(--muted); overflow: hidden;
-  text-overflow: ellipsis; white-space: nowrap;
-}
-.qnote { font-size: 11px; }
-.qrow.done .qavatar {
-  filter: grayscale(1); opacity: .38;
-}
-.qrow.done .qname,
-.qrow.done .qsnip {
-  text-decoration: line-through; opacity: .52;
-}
 svg { display: block; }
 .xss-badge {
-  --badge-color: var(--muted);
-  width: 20px; height: 20px; display: inline-grid; place-items: center;
-  margin-left: 5px; padding: 0; border-radius: 999px; font-size: 0;
-  line-height: 0; vertical-align: -4px; cursor: default; color: var(--badge-color);
-  border: 1px solid color-mix(in srgb, var(--badge-color) 42%, transparent);
-  background: color-mix(in srgb, var(--badge-color) 13%, transparent);
-  box-shadow: 0 1px 4px rgba(15,23,42,.08);
-  transition: transform .12s ease, opacity .12s ease, background .12s ease, border-color .12s ease, box-shadow .12s ease;
+  display: inline-flex; align-items: center; gap: 5px; margin-left: 6px;
+  padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700;
+  vertical-align: middle; cursor: default; color: var(--text);
+  border: 1px solid var(--border);
 }
-.xss-badge svg { width: 13px; height: 13px; stroke: currentColor; }
-.xss-badge.labeled {
-  width: auto; min-width: 20px; display: inline-flex; align-items: center; justify-content: center;
-  gap: 4px; padding: 0 6px; font-size: 11px; line-height: 1; font-weight: 750;
-  letter-spacing: 0; white-space: nowrap;
-}
-.xss-badge.labeled svg { width: 12px; height: 12px; flex: 0 0 auto; }
-.xss-badge .xss-ico {
-  width: 13px; height: 13px; flex: 0 0 auto; display: inline-grid; place-items: center;
-  position: relative; overflow: visible;
-}
-.xss-badge .xss-ico svg { width: 12px; height: 12px; }
-.xss-badge .xss-label { display: inline-block; }
-.xss-badge:hover {
-  transform: translateY(-1px); opacity: 1;
-  border-color: color-mix(in srgb, var(--badge-color) 64%, transparent);
-  background: color-mix(in srgb, var(--badge-color) 18%, transparent);
-  box-shadow: 0 3px 10px rgba(15,23,42,.13);
-}
-.xss-badge.ghost {
-  --badge-color: var(--brand);
-  cursor: pointer; opacity: .9;
-  border-color: color-mix(in srgb, var(--badge-color) 35%, transparent);
-  background: color-mix(in srgb, var(--badge-color) 9%, transparent);
-}
-.xss-badge.ghost:hover { opacity: .95; }
-.xss-badge.verdict.list {
-  color: #fff;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--danger) 92%, #fff), var(--danger));
-  border-color: color-mix(in srgb, var(--danger) 90%, transparent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 14%, transparent), 0 2px 7px color-mix(in srgb, var(--danger) 18%, transparent);
-}
-.xss-badge.verdict.fresh {
-  background: color-mix(in srgb, var(--badge-color) 16%, transparent);
-  border-color: color-mix(in srgb, var(--badge-color) 46%, transparent);
-}
-.xss-badge.verdict.fresh { animation: xrise .22s ease-out; }
-.xss-badge.verdict.spammy {
-  color: #fff;
-  --badge-color: var(--danger);
-  background: linear-gradient(180deg, color-mix(in srgb, var(--danger) 92%, #fff), var(--danger));
-  border-color: color-mix(in srgb, var(--danger) 90%, transparent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 14%, transparent), 0 2px 7px color-mix(in srgb, var(--danger) 18%, transparent);
-}
-.xss-badge.verdict.spammy:hover,
-.xss-badge.verdict.list:hover {
-  background: linear-gradient(180deg, color-mix(in srgb, var(--danger) 96%, #fff), color-mix(in srgb, var(--danger) 92%, #000));
-  border-color: var(--danger);
-}
-.xss-badge.verdict.cache {
-  opacity: .74;
-}
+.xss-badge.ghost { color: var(--muted); cursor: pointer; }
+.xss-badge.ghost:hover { color: var(--text); }
 .pop {
-  position: fixed; z-index: 2147482001; width: 280px; padding: 12px;
-  font-size: 12px; color: var(--text); border-radius: 12px;
-  box-shadow: 0 18px 48px rgba(15,23,42,.22), 0 2px 8px rgba(15,23,42,.10);
-  transform-origin: 12px 12px; animation: xpop .14s ease-out;
-  pointer-events: auto;
+  position: fixed; z-index: 2147482001; width: 260px; padding: 12px;
+  font-size: 12px; color: var(--text);
 }
-.pop h4 { margin: 0 0 6px; font-size: 12.5px; font-weight: 750; }
+.pop h4 { margin: 0 0 6px; font-size: 12px; font-weight: 700; }
 .pop ul { margin: 6px 0; padding-left: 16px; color: var(--muted); }
 .pop li { margin: 3px 0; }
-.acts { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+.acts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .acts button {
   border: 1px solid var(--border); background: transparent; color: var(--text);
-  border-radius: 999px; padding: 5px 10px; font-size: 11px; font-weight: 650;
-  cursor: pointer; transition: transform .12s ease, background .12s ease, border-color .12s ease, color .12s ease, filter .12s ease;
+  border-radius: 8px; padding: 4px 9px; font-size: 11px; cursor: pointer;
 }
-.acts button:hover {
-  transform: translateY(-1px);
-  background: var(--hover);
-}
-.acts button[data-c] {
-  color: var(--brand);
-  border-color: color-mix(in srgb, var(--brand) 42%, var(--border));
-  background: color-mix(in srgb, var(--brand) 8%, transparent);
-}
-.acts button[data-r] {
-  color: var(--warn);
-  border-color: color-mix(in srgb, var(--warn) 48%, var(--border));
-  background: color-mix(in srgb, var(--warn) 9%, transparent);
-}
-.acts button[data-b] {
-  color: #fff; border-color: transparent;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--danger) 92%, #fff), var(--danger));
-}
-.acts button[data-h] {
-  color: var(--muted);
-  border-color: color-mix(in srgb, var(--muted) 32%, var(--border));
-}
-.acts button[data-a] {
-  color: var(--muted);
-  border-color: transparent;
-}
-.acts button[data-b]:hover { filter: brightness(1.05); }
-.acts button:disabled {
-  cursor: default; transform: none; filter: none;
-}
-.acts button.done {
-  color: #fff; border-color: transparent; background: var(--safe);
-}
-.acts button.err {
-  color: #fff; border-color: transparent; background: var(--danger);
-}
+.acts button:hover { background: rgba(255,255,255,.06); }
 
 /* ---- animated badge states (transform/opacity only) ---- */
+.xss-badge.fresh { animation: xrise .22s ease-out; }
 .xss-badge.known { animation: xpop .18s ease-out; }
 .xss-badge .kdot {
   width: 6px; height: 6px; border-radius: 50%; background: var(--brand);
@@ -362,140 +98,56 @@ svg { display: block; }
   font-weight: 700; color: var(--warn); border: 1px solid var(--warn);
   letter-spacing: .3px;
 }
-/* Source-tier mini-tag — appended to spammy badges so the user can tell
-   公榜命中 / 本地缓存 / AI 现场判定 apart. Same shape as .ntag, varied color. */
-.xss-badge .stag {
-  margin-left: 4px; padding: 0 5px; border-radius: 999px; font-size: 9px;
-  font-weight: 700; letter-spacing: .3px; line-height: 1.55;
-}
-.xss-badge .stag.list  { color: #fff; background: var(--danger); }
-.xss-badge .stag.cache { color: var(--muted); border: 1px solid var(--border); }
-.xss-badge .stag.fresh { color: var(--warn); border: 1px solid var(--warn); }
-/* Whitelist badge — green checkmark, no popover content beyond the badge itself */
-.xss-badge.whitelist {
-  --badge-color: var(--safe);
-  background: color-mix(in srgb, var(--badge-color) 16%, transparent);
-  border-color: color-mix(in srgb, var(--badge-color) 50%, transparent);
-}
-.xss-badge.whitelist .wdot {
-  width: 6px; height: 6px; border-radius: 50%; background: var(--safe); flex: none;
-}
 .xss-badge.analyzing {
-  --badge-color: var(--brand);
-  overflow: visible;
+  color: var(--muted); position: relative; overflow: hidden;
 }
-.xss-badge.analyzing .xss-ico::after {
-  content: ""; position: absolute; inset: -3px; border-radius: 999px;
-  border: 1.5px solid transparent; border-top-color: var(--badge-color);
-  animation: xspin .7s linear infinite;
+.xss-badge.analyzing::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
+  transform: translateX(-100%); animation: xshim 1.1s ease-in-out infinite;
 }
+.xss-spin { animation: xspin .8s linear infinite; transform-origin: 50% 50%; }
 .xss-badge.pending {
-  --badge-color: var(--muted);
-  cursor: default;
+  color: var(--muted); cursor: default;
   animation: xpulse 1.6s ease-in-out infinite;
-}
-.xss-badge.blocking {
-  --badge-color: var(--danger);
-  color: #fff;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--danger) 92%, #fff), var(--danger));
-  border-color: color-mix(in srgb, var(--danger) 90%, transparent);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--danger) 18%, transparent), 0 2px 9px color-mix(in srgb, var(--danger) 24%, transparent);
-  overflow: visible;
-  animation: xblockpulse 1.25s ease-in-out infinite;
-}
-.xss-badge.blocking .xss-ico::after {
-  content: ""; position: absolute; inset: -4px; border-radius: 999px;
-  border: 1.5px solid color-mix(in srgb, #fff 30%, transparent);
-  border-top-color: #fff; animation: xspin .72s linear infinite;
 }
 @keyframes xrise { from { opacity: 0; transform: translateY(4px); } }
 @keyframes xpop  { from { opacity: 0; transform: scale(.9); } }
 @keyframes xspin { to { transform: rotate(360deg); } }
 @keyframes xshim { to { transform: translateX(100%); } }
 @keyframes xpulse { 0%,100% { opacity: .55; } 50% { opacity: .95; } }
-@keyframes xradar { to { transform: rotate(360deg); } }
-@keyframes xbreath { 0%,100% { filter: saturate(1); } 50% { filter: saturate(1.35); } }
-@keyframes xblockpulse {
-  0%,100% { transform: translateY(0); filter: brightness(1); }
-  50% { transform: translateY(-1px); filter: brightness(1.1); }
-}
-@keyframes qrowin {
-  from { opacity: 0; transform: translateY(-7px) scale(.985); }
-}
-@keyframes qrowdone {
-  0% { opacity: 1; max-height: 86px; transform: translateX(0); }
-  55% { opacity: .78; max-height: 86px; transform: translateX(0); }
-  100% {
-    opacity: 0; max-height: 0; transform: translateX(12px);
-    padding-top: 0; padding-bottom: 0;
-  }
-}
-@keyframes pbarshift {
-  to { background-position: 22px 0, 0 0; }
-}
 
-/* New-hit motion: one compact radar lap, slow at first then faster. */
-.pill.hit-pulse .scan-radar {
-  animation: xhitspin .82s cubic-bezier(.62, 0, 1, .62) 1, xhitglow .9s ease-out 1;
-}
-@keyframes xhitspin {
-  0% { transform: rotate(0deg) scale(1); }
-  42% { transform: rotate(72deg) scale(1.08); }
-  100% { transform: rotate(360deg) scale(1); }
-}
-@keyframes xhitglow {
-  0% { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent), 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent); }
-  32% { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 24%, transparent), 0 0 0 5px color-mix(in srgb, var(--accent) 18%, transparent); }
-  100% { box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 18%, transparent), 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent); }
+/* refined attention flash when a NEW spam account is found */
+.pill.flash { animation: xflash 1s ease-out 2; }
+@keyframes xflash {
+  0% { box-shadow: var(--shadow); transform: scale(1); }
+  18% { box-shadow: 0 0 0 4px rgba(239,68,68,.35), var(--shadow); transform: scale(1.06); }
+  60% { box-shadow: 0 0 0 0 rgba(239,68,68,0), var(--shadow); transform: scale(1); }
+  100% { box-shadow: var(--shadow); transform: scale(1); }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .card.open { animation: fade .18s ease-out; }
   @keyframes fade { from { opacity: 0; } }
   .xss-badge.fresh, .xss-badge.known { animation: fade .18s ease-out; }
-  .xss-badge.analyzing .xss-ico::after,
-  .xss-badge.blocking,
-  .xss-badge.blocking .xss-ico::after,
-  .scan-radar.busy,
-  .scan-radar.busy .scan-sweep,
-  .qrow.new,
-  .qrow.done,
-  .progress-seg.active { animation: none; }
+  .xss-badge.analyzing::after, .xss-spin { animation: none; }
   .xss-badge.pending { animation: none; opacity: .7; }
-  .pill.hit-pulse .scan-radar { animation: none; }
-}
-@media (max-width: 720px) {
-  .xss-badge.labeled {
-    width: 20px; padding: 0; gap: 0;
-  }
-  .xss-badge.labeled .xss-label { display: none; }
+  .pill.flash { animation: none; }
 }
 `;
 
 // Lucide-style 24-viewBox stroke icons. No emoji (per design system).
-const P: Record<string, string[]> = {
-  shield: ["M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"],
-  "shield-alert": [
-    "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
-    "M12 8v4",
-    "M12 16h.01",
-  ],
-  "shield-x": [
-    "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
-    "M9.5 9.5l5 5",
-    "M14.5 9.5l-5 5",
-  ],
-  "shield-check": [
-    "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
-    "M9 12l2 2 4-4",
-  ],
-  x: ["M18 6 6 18", "M6 6l12 12"],
+const P: Record<string, string> = {
+  shield: "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z",
+  "shield-alert": "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM12 8v4M12 16h.01",
+  "shield-x": "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM9.5 9.5l5 5M14.5 9.5l-5 5",
+  "shield-check": "M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10zM9 12l2 2 4-4",
+  x: "M18 6 6 18M6 6l12 12",
 };
 export function icon(name: keyof typeof P | string, color = "currentColor", size = 16): string {
-  const paths = P[name] ?? P.shield ?? [];
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"
-    stroke="${color}" stroke-width="2.15" stroke-linecap="round"
-    stroke-linejoin="round" aria-hidden="true">${paths.map((d) => `<path d="${d}"/>`).join("")}</svg>`;
+    stroke="${color}" stroke-width="1.75" stroke-linecap="round"
+    stroke-linejoin="round" aria-hidden="true"><path d="${P[name] ?? P.shield}"/></svg>`;
 }
 
 export const LABEL: Record<Label, { zh: string; varName: string; ic: string }> = {
@@ -506,65 +158,18 @@ export const LABEL: Record<Label, { zh: string; varName: string; ic: string }> =
   legit: { zh: "正常", varName: "--safe", ic: "shield-check" },
 };
 
-/**
- * HTML-escape any string we interpolate into innerHTML inside our Shadow
- * DOMs. The popover and card bodies render content sourced from:
- *   - X's own backend (display names, bios, avatar URLs) — usually safe but
- *     attacker-controlled at the source.
- *   - Our LLM Worker's `reasons` array — text we asked the model to write,
- *     so technically prompt-injectable via a malicious user's bio.
- * Neither source is allowed to reach innerHTML un-escaped. Shadow DOM does
- * NOT sandbox script execution: an `<img src=x onerror=...>` injected into
- * a content-script shadow root still runs in the isolated world, which has
- * chrome.storage / chrome.runtime / first-party x.com fetch access. So we
- * keep this strict and use it everywhere user-derived text touches HTML.
- */
-function escHtml(s: string): string {
-  return s.replace(
-    /[<>&"']/g,
-    (c) =>
-      ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;", "'": "&#39;" })[c] ?? c,
-  );
-}
-
-const BADGE_TEXT: Record<Label, string> = {
-  spam: "垃圾",
-  porn_bot: "色情",
-  likely_spam: "疑似",
-  uncertain: "存疑",
-  legit: "正常",
-};
-
 export interface Finding {
   handle: string;
   userId?: string;
   avatarUrl?: string;
   displayName?: string;
   snippet?: string;
-  blockSource?: "manual" | "block_all" | "list_hit" | "cache_hit";
-  blockQueued?: boolean;
-  blockActive?: boolean;
-  blockFailed?: boolean;
-  /** Set by drain() after a successful block — used by the card to strike
-   *  the row through and replace the per-row button with "已拉黑". */
-  blocked?: boolean;
-  /** Selection state for the bulk-block action. Undefined → treated as
-   *  selected (the default for a fresh finding). User uncheck → false →
-   *  bulk skips it; user can still per-row block manually. */
-  selected?: boolean;
+  source?: string;
   verdict: Verdict;
 }
 
-const BLOCK_SOURCE_TEXT: Record<NonNullable<Finding["blockSource"]>, string> = {
-  manual: "手动",
-  block_all: "批量",
-  list_hit: "公榜自动",
-  cache_hit: "缓存自动",
-};
-
 export interface BubbleHandlers {
-  onBlockAll: (f: Finding[]) => void;
-  onBlockOne: (f: Finding) => void;
+  onHideAll: (keys: string[]) => void;
   onReviewEach: () => void;
   onDismiss: () => void;
 }
@@ -578,228 +183,47 @@ export function createBubble(h: BubbleHandlers, pos: "tr" | "br" = "tr") {
 
   const pill = document.createElement("button");
   pill.className = "pill";
-  pill.setAttribute("aria-label", `${BRAND.acronym} 本页可疑账号`);
+  pill.setAttribute("aria-label", "x-spam-sentinel 本页可疑账号");
 
   const card = document.createElement("div");
   card.className = "card";
 
   root.append(pill, card);
   let open = false;
-  let autoOpenedForBlocking = false;
-  let userClosedBlockingQueue = false;
-  let autoCollapseTimer: ReturnType<typeof setTimeout> | undefined;
   let findings: Finding[] = [];
-  const visibleRows = new Set<string>();
-  const rowWasBlocked = new Map<string, boolean>();
-  const hiddenDoneRows = new Set<string>();
-  const doneHideTimers = new Map<string, ReturnType<typeof setTimeout>>();
   let scanning = 0; // accounts currently being checked (visible progress)
-  // Total accounts we've gotten a verdict (or skip-decision) on this page.
-  // Lets the pill say "已扫 N · 检查中 M · 命中 K" so the user feels the
-  // scan in motion, not just a static "守护中" until something pops.
-  let scanned = 0;
 
   const sev = (f: Finding[]) =>
     f.some((x) => x.verdict.label === "spam" || x.verdict.label === "porn_bot")
       ? "--danger"
       : "--warn";
 
-  const rowKey = (f: Finding) => f.userId || `h:${f.handle.toLowerCase()}`;
-
-  const blockStats = () => {
-    const done = findings.filter((x) => x.blocked).length;
-    const active = findings.filter((x) => x.blockActive && !x.blocked).length;
-    const failed = findings.filter((x) => x.blockFailed && !x.blocked).length;
-    const queued = findings.filter(
-      (x) => x.blockQueued && !x.blockActive && !x.blocked && !x.blockFailed,
-    ).length;
-    return {
-      found: findings.length,
-      done,
-      active,
-      failed,
-      queued,
-      pending: active + queued,
-    };
-  };
-
-  function clearAutoCollapse() {
-    if (autoCollapseTimer) {
-      clearTimeout(autoCollapseTimer);
-      autoCollapseTimer = undefined;
-    }
-  }
-
-  function clearDoneTimer(id: string) {
-    const timer = doneHideTimers.get(id);
-    if (timer) clearTimeout(timer);
-    doneHideTimers.delete(id);
-  }
-
-  function scheduleDoneHide(id: string) {
-    if (hiddenDoneRows.has(id) || doneHideTimers.has(id)) return;
-    doneHideTimers.set(
-      id,
-      setTimeout(() => {
-        doneHideTimers.delete(id);
-        hiddenDoneRows.add(id);
-        if (open) renderCard();
-      }, 1050),
-    );
-  }
-
-  function syncDoneRows(next: Finding[]) {
-    const live = new Set(next.map(rowKey));
-    for (const id of [...hiddenDoneRows]) {
-      if (!live.has(id)) hiddenDoneRows.delete(id);
-    }
-    for (const id of [...doneHideTimers.keys()]) {
-      if (!live.has(id)) clearDoneTimer(id);
-    }
-    for (const id of [...rowWasBlocked.keys()]) {
-      if (!live.has(id)) rowWasBlocked.delete(id);
-    }
-
-    next.forEach((f) => {
-      const id = rowKey(f);
-      const wasBlocked = rowWasBlocked.get(id) === true;
-      const isBlocked = f.blocked === true;
-      if (!isBlocked) {
-        rowWasBlocked.set(id, false);
-        hiddenDoneRows.delete(id);
-        clearDoneTimer(id);
-        return;
-      }
-      rowWasBlocked.set(id, true);
-      if (!wasBlocked) scheduleDoneHide(id);
-    });
-  }
-
-  function progressWidth(count: number, total: number) {
-    if (count <= 0 || total <= 0) return "0%";
-    return `${Math.max(0, Math.min(100, (count / total) * 100)).toFixed(2)}%`;
-  }
-
-  function progressSegment(kind: "done" | "active" | "queued" | "failed" | "idle", count: number, total: number) {
-    if (count <= 0) return "";
-    return `<span class="progress-seg ${kind}" style="width:${progressWidth(count, total)}"></span>`;
-  }
-
-  function renderBlockProgress(blocks: ReturnType<typeof blockStats>, idle: number) {
-    const total = Math.max(1, blocks.found);
-    const donePct = Math.round((blocks.done / total) * 100);
-    const pending = blocks.active + blocks.queued + idle;
-    return `<div class="block-progress" aria-label="拉黑进度 ${donePct}%">
-      <div class="progress-head">
-        <span>${pending > 0 ? `剩余 ${pending}` : "处理完成"}</span>
-        <b>${donePct}%</b>
-      </div>
-      <div class="progress-track">
-        ${progressSegment("done", blocks.done, total)}
-        ${progressSegment("active", blocks.active, total)}
-        ${progressSegment("queued", blocks.queued, total)}
-        ${progressSegment("failed", blocks.failed, total)}
-        ${progressSegment("idle", idle, total)}
-      </div>
-    </div>`;
-  }
-
-  function progressMarkup(opts: {
-    iconName: string;
-    iconColor: string;
-    title: string;
-    count?: string;
-    percent: number;
-    busy?: boolean;
-    danger?: boolean;
-  }) {
-    const percent = Math.max(0, Math.min(100, opts.percent));
-    const angle = Math.round(percent * 3.6);
-    return `<span class="scan-pill">
-      <span class="scan-radar ${opts.busy ? "busy" : ""} ${opts.danger ? "danger" : ""}" style="--angle:${angle}deg">
-        <span class="scan-sweep"></span>
-        <span class="scan-core">${icon(opts.iconName, opts.iconColor, 11)}</span>
-      </span>
-      <span class="scan-title">${opts.title}</span>
-      ${opts.count ? `<span class="scan-meta">${opts.count}</span>` : ""}
-    </span>`;
-  }
-
   function renderPill() {
-    const total = scanned + scanning;
-    const progress = scanning > 0
-      ? Math.max(8, Math.round((scanned / Math.max(1, total)) * 100))
-      : scanned > 0
-        ? 100
-        : 0;
-    // Findings/handled records present → keep a visible activity trail.
-    if (findings.length) {
-      const blocks = blockStats();
-      if (blocks.pending > 0) {
-        pill.innerHTML = progressMarkup({
-          iconName: "shield-x",
-          iconColor: "var(--danger)",
-          title: "拉黑中",
-          count: `${blocks.done}/${blocks.found}`,
-          percent: Math.max(8, Math.round((blocks.done / Math.max(1, blocks.found)) * 100)),
-          busy: true,
-          danger: true,
-        });
-        return;
-      }
-      if (blocks.done > 0 && blocks.done + blocks.failed >= blocks.found) {
-        pill.innerHTML = progressMarkup({
-          iconName: "shield-check",
-          iconColor: "var(--safe)",
-          title: "已拉黑",
-          count: String(blocks.done),
-          percent: 100,
-        });
-        return;
-      }
-      const c = `var(${sev(findings)})`;
-      pill.innerHTML = progressMarkup({
-        iconName: "shield-alert",
-        iconColor: c,
-        title: "命中",
-        count: String(findings.length),
-        percent: progress || 100,
-        busy: scanning > 0,
-        danger: true,
-      });
+    if (!findings.length && scanning > 0) {
+      // Visible processing feedback (esp. reply sections).
+      pill.innerHTML = `${icon("shield", "var(--brand)", 16)}<span class="n" style="font-weight:600;color:var(--muted)">检查中 ${scanning}…</span>`;
       return;
     }
-    // Active scanning, nothing flagged yet.
-    if (scanning > 0 || scanned > 0) {
-      pill.innerHTML = progressMarkup({
-        iconName: scanning > 0 ? "shield" : "shield-check",
-        iconColor: "var(--brand)",
-        title: scanning > 0 ? "扫描" : "已扫",
-        count: String(scanning > 0 ? scanning : scanned),
-        percent: progress,
-        busy: scanning > 0,
-      });
+    if (!findings.length) {
+      // Calm "guarding" state — confirms the extension is working even
+      // when nothing suspicious is on the page (no alarm color).
+      pill.innerHTML = `${icon("shield-check", "var(--brand)", 16)}<span class="n" style="font-weight:600;color:var(--muted)">守护中</span>`;
       return;
     }
-    // Calm "guarding" — page is idle, no signal in either direction.
-    pill.innerHTML = progressMarkup({
-      iconName: "shield-check",
-      iconColor: "var(--brand)",
-      title: "守护",
-      percent: 100,
-    });
+    const c = `var(${sev(findings)})`;
+    pill.innerHTML = `${icon("shield-alert", c, 16)}<span class="n">${findings.length}</span>`;
   }
 
   function renderCard() {
     if (!findings.length) {
       card.innerHTML = `
         <div class="hd">${icon("shield-check", "var(--brand)", 16)}
-          <span>${BRAND.acronym} 已启用</span>
+          <span>x-spam-sentinel 已启用</span>
           <span class="x" data-x>${icon("x", "currentColor", 14)}</span></div>
         <div class="sub" style="display:block;line-height:1.6">
           正在被动检查本页账号。发现可疑的垃圾/色情机器人时，会在这里提示并提供一键处理。</div>
         <div class="row"><span class="lnk" data-gov>为什么 / 治理</span></div>`;
-      card.querySelector("[data-x]")?.addEventListener("click", () => collapse());
+      card.querySelector("[data-x]")?.addEventListener("click", collapse);
       card.querySelector("[data-gov]")?.addEventListener("click", () =>
         window.open(BRAND.governance, "_blank", "noopener"),
       );
@@ -809,215 +233,83 @@ export function createBubble(h: BubbleHandlers, pos: "tr" | "br" = "tr") {
       (x) => x.verdict.label === "spam" || x.verdict.label === "porn_bot",
     ).length;
     const warn = findings.length - danger;
-    const blocks = blockStats();
-    const doneCount = blocks.done;
-    const activeCount = blocks.active;
-    const queuedCount = blocks.queued;
-    const failedCount = blocks.failed;
-    const idleCount = Math.max(
-      0,
-      findings.length - doneCount - activeCount - queuedCount - failedCount,
-    );
-    const actionableCount = findings.filter(
-      (x) => !x.blocked && !x.blockQueued && !x.blockActive,
-    ).length;
-    // Bulk action operates on the subset the user has left checked.
-    // Default state of a fresh finding is selected (selected !== false).
-    const selectedPending = findings.filter(
-      (x) => !x.blocked && !x.blockQueued && !x.blockActive && x.selected !== false,
-    ).length;
-    const visibleFindings = [
-      ...findings.filter((x) => !x.blocked && (x.blockActive || x.blockQueued)),
-      ...findings.filter((x) => !x.blocked && !x.blockActive && !x.blockQueued),
-      ...findings.filter((x) => x.blocked && !hiddenDoneRows.has(rowKey(x))),
-    ];
     card.innerHTML = `
-	      <div class="hd">${icon("shield-alert", "var(--brand)", 16)}
-	        <span>${actionableCount || activeCount || queuedCount ? `本页命中 ${findings.length} 个账号` : `本页已拉黑 ${doneCount} 个账号`}</span>
-	        <span class="x" data-x>${icon("x", "currentColor", 14)}</span></div>
-	      <div class="sub">
-	        <span class="metric" title="色情/垃圾 ${danger}，疑似 ${warn}">
-	          <i style="background:var(--danger)"></i><b>${findings.length}</b><em>命中</em>
-	        </span>
-	        <span class="metric" title="正在后台拉黑">
-	          <i style="background:var(--danger)"></i><b>${activeCount}</b><em>正在</em>
-	        </span>
-	        <span class="metric" title="等待后台拉黑">
-	          <i style="background:var(--brand)"></i><b>${queuedCount}</b><em>待拉</em>
-	        </span>
-	        <span class="metric" title="${failedCount ? `失败 ${failedCount}，` : ""}已成功拉黑">
-	          <i style="background:${failedCount ? "var(--warn)" : "var(--safe)"}"></i><b>${doneCount}</b><em>已拉</em>
-	        </span>
-	      </div>
-      ${renderBlockProgress(blocks, idleCount)}
-      <div class="queue-table">
-        ${visibleFindings
+      <div class="hd">${icon("shield-alert", "var(--brand)", 16)}
+        <span>本页发现 ${findings.length} 个可疑账号</span>
+        <span class="x" data-x>${icon("x", "currentColor", 14)}</span></div>
+      <div class="sub">
+        ${danger ? `<span class="dot"><i style="background:var(--danger)"></i>${danger} 色情/垃圾bot</span>` : ""}
+        ${warn ? `<span class="dot"><i style="background:var(--warn)"></i>${warn} 疑似</span>` : ""}
+      </div>
+      <div style="max-height:208px;overflow:auto;margin:0 -4px 10px">
+        ${findings
           .map((f) => {
             const m = LABEL[f.verdict.label];
             const col = `var(${m.varName})`;
-            // X serves avatar URLs as https://pbs.twimg.com/profile_images/...
-            // We still defense-in-depth escape the URL because attacker-
-            // controlled fields shouldn't reach attribute context raw.
             const av = f.avatarUrl
-              ? `<img src="${escHtml(f.avatarUrl)}" class="qavatar" alt="">`
-              : `<span class="qavatar blank"></span>`;
-            const name = escHtml(f.displayName?.trim() || `@${f.handle}`);
+              ? `<img src="${f.avatarUrl}" width="26" height="26" style="border-radius:50%;flex:none" alt="">`
+              : `<span style="width:26px;height:26px;border-radius:50%;flex:none;background:var(--border)"></span>`;
+            const esc = (s: string) =>
+              s.replace(/[<>&"]/g, (c) =>
+                ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" })[c] ?? c,
+              );
+            const name = esc(f.displayName?.trim() || `@${f.handle}`);
             const snip = f.snippet
-              ? escHtml(f.snippet.replace(/\s+/g, " ").trim()).slice(0, 60)
+              ? esc(f.snippet.replace(/\s+/g, " ").trim()).slice(0, 60)
               : "";
-            const id = rowKey(f);
-            const isNew = !visibleRows.has(id);
-            visibleRows.add(id);
-            const rowState = f.blocked
-              ? "done"
-              : f.blockActive
-                ? "active"
-                : f.blockQueued
-                  ? "queued"
-                  : f.blockFailed
-                    ? "failed"
-                    : "";
-            const rowClass = ["qrow", isNew ? "new" : "", rowState].filter(Boolean).join(" ");
-            const checked = f.blocked ? false : f.selected !== false;
-            const actClass = f.blocked
-              ? "xss-act done"
-              : f.blockActive
-                ? "xss-act queue busy"
-                : f.blockQueued
-                  ? "xss-act queue"
-                  : f.blockFailed
-                    ? "xss-act retry"
-                  : "xss-act";
-            const actText = f.blocked
-              ? "已拉黑"
-              : f.blockActive
-                ? "拉黑中"
-                : f.blockQueued
-                  ? "待拉黑"
-                  : f.blockFailed
-                    ? "重试"
-                    : "拉黑";
-            const source = f.blockSource ? ` · ${BLOCK_SOURCE_TEXT[f.blockSource]}` : "";
-            return `<div class="${rowClass}">
-              <input type="checkbox" class="xss-row-cb" data-sel="${id}"
-                aria-label="选中 @${escHtml(f.handle)}"
-                ${checked ? "checked" : ""} ${f.blocked || f.blockQueued || f.blockActive ? "disabled" : ""}>
+            const src = f.source
+              ? `<div style="font-size:10px;color:var(--muted)">${esc(f.source)}</div>`
+              : "";
+            return `<div style="display:flex;align-items:flex-start;gap:8px;padding:6px 4px">
               ${av}
-              <div class="qbody">
-                <div class="qname">${name}</div>
-                <div class="qmeta" style="color:${col}">@${escHtml(f.handle)} · ${m.zh} ${(f.verdict.confidence * 100).toFixed(0)}%</div>
-                ${snip ? `<div class="qsnip">${snip}</div>` : ""}
-                ${f.blockFailed ? `<div class="qnote" style="color:var(--warn)">自动屏蔽失败 · <a href="https://x.com/${escHtml(f.handle)}" target="_blank" rel="noopener" style="color:var(--warn)">手动屏蔽</a></div>` : ""}
-                ${f.blockActive && !f.blocked ? `<div class="qnote" style="color:var(--danger)">正在后台拉黑${source}</div>` : ""}
-                ${f.blockQueued && !f.blockActive && !f.blocked ? `<div class="qnote" style="color:var(--brand)">待后台拉黑${source}</div>` : ""}
-                ${f.blocked ? `<div class="qnote" style="color:var(--safe)">✓ 已拉黑${source}</div>` : ""}
+              <div style="min-width:0;flex:1">
+                <div style="font-weight:600;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</div>
+                <div style="font-size:11px;color:${col}">@${esc(f.handle)} · ${m.zh} ${(f.verdict.confidence * 100).toFixed(0)}%</div>
+                ${snip ? `<div style="font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${snip}</div>` : ""}
+                ${src}
               </div>
-              <button class="${actClass}" data-one="${id}"${f.blocked || f.blockQueued || f.blockActive ? " disabled" : ""}>${actText}</button>
+              <button class="xss-act" data-hide="${f.userId || "h:" + f.handle}">隐藏</button>
             </div>`;
           })
           .join("")}
       </div>
-      ${
-        actionableCount === 0 && activeCount === 0 && queuedCount === 0
-          ? `<button class="btn" disabled style="background:var(--safe)">✓ 已全部处理 (${doneCount})</button>`
-          : activeCount || queuedCount
-            ? `<button class="btn" disabled style="background:var(--brand)">后台拉黑中 · 正在 ${activeCount} · 待 ${queuedCount}</button>`
-          : selectedPending === 0
-            ? `<button class="btn" disabled style="opacity:.55">未选中任何账号 (剩余 ${actionableCount})</button>`
-            : `<button class="btn" data-block>一键拉黑选中 ${selectedPending}${doneCount ? ` · 已完成 ${doneCount}` : ""}${selectedPending < actionableCount ? ` · 跳过 ${actionableCount - selectedPending}` : ""}</button>`
-      }
-      <div class="row"><span class="lnk" data-each>逐个查看处理</span>
+      <button class="btn" data-hide-all>一键隐藏全部 (${findings.length})</button>
+      <div class="row"><span class="lnk" data-each>逐个查看</span>
         <span class="lnk" data-ign>忽略本页</span></div>`;
-    card.querySelector("[data-x]")?.addEventListener("click", () => collapse());
+    card.querySelector("[data-x]")?.addEventListener("click", collapse);
     card.querySelector("[data-ign]")?.addEventListener("click", () => {
       h.onDismiss();
       root.remove();
     });
     card.querySelector("[data-each]")?.addEventListener("click", h.onReviewEach);
-    card.querySelectorAll<HTMLElement>("[data-one]").forEach((btn) => {
+    card.querySelectorAll<HTMLElement>("[data-hide]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const id = btn.dataset.one;
-        const f = findings.find((x) => rowKey(x) === id);
-        if (f) {
-          f.blockQueued = true;
-          f.blockFailed = false;
-          h.onBlockOne(f);
-          renderPill();
-          renderCard();
+        const id = btn.dataset.hide;
+        if (id) {
+          h.onHideAll([id]);
+          btn.textContent = "已隐藏";
+          (btn as HTMLButtonElement).disabled = true;
         }
       });
     });
-    // Per-row select toggle — uncheck excludes from the bulk action so the
-    // user can opt-out specific accounts before "一键拉黑".
-    card.querySelectorAll<HTMLInputElement>("[data-sel]").forEach((cb) => {
-      cb.addEventListener("change", () => {
-        const id = cb.dataset.sel;
-        const f = findings.find((x) => rowKey(x) === id);
-        if (f) {
-          f.selected = cb.checked;
-          renderCard(); // re-render so bulk button count updates immediately
-        }
-      });
-    });
-    const b = card.querySelector<HTMLButtonElement>("[data-block]");
+    const b = card.querySelector<HTMLButtonElement>("[data-hide-all]");
     b?.addEventListener("click", () => {
       b.disabled = true;
       b.textContent = "处理中…";
-      // Bulk only blocks the SELECTED, unblocked findings. The drain() in
-      // content.ts will get a curated array, not "all findings".
-      const selected = findings.filter(
-        (x) => !x.blocked && !x.blockQueued && !x.blockActive && x.selected !== false,
-      );
-      selected.forEach((f) => {
-        f.blockQueued = true;
-        f.blockFailed = false;
-      });
-      renderPill();
-      renderCard();
-      h.onBlockAll(selected);
+      h.onHideAll(findings.map((f) => f.userId || `h:${f.handle}`));
     });
   }
 
-  function expand(opts: { auto?: boolean } = {}) {
-    clearAutoCollapse();
+  function expand() {
     open = true;
-    autoOpenedForBlocking = !!opts.auto;
     card.classList.add("open");
     renderCard();
   }
-  function collapse(opts: { manual?: boolean } = {}) {
-    clearAutoCollapse();
-    if (opts.manual !== false && blockStats().pending > 0) {
-      userClosedBlockingQueue = true;
-    }
+  function collapse() {
     open = false;
     card.classList.remove("open");
   }
-  function syncBlockPanel(blocks = blockStats()) {
-    if (blocks.pending > 0) {
-      clearAutoCollapse();
-      if (!open && !userClosedBlockingQueue) expand({ auto: true });
-      return;
-    }
-    userClosedBlockingQueue = false;
-    if (autoOpenedForBlocking && open) {
-      clearAutoCollapse();
-      autoCollapseTimer = setTimeout(() => {
-        autoOpenedForBlocking = false;
-        collapse({ manual: false });
-      }, 1800);
-      return;
-    }
-    if (!open) autoOpenedForBlocking = false;
-  }
-  pill.addEventListener("click", () => {
-    if (open) {
-      collapse();
-    } else {
-      userClosedBlockingQueue = false;
-      expand();
-    }
-  });
+  pill.addEventListener("click", () => (open ? collapse() : expand()));
   root.addEventListener("keydown", (e) => {
     if ((e as KeyboardEvent).key === "Escape") collapse();
   });
@@ -1030,7 +322,7 @@ export function createBubble(h: BubbleHandlers, pos: "tr" | "br" = "tr") {
       localStorage.setItem("xss_onboarded", "1");
       expand();
       setTimeout(() => {
-        if (!findings.length) collapse({ manual: false });
+        if (!findings.length) collapse();
       }, 6000);
     }
   } catch {
@@ -1042,227 +334,43 @@ export function createBubble(h: BubbleHandlers, pos: "tr" | "br" = "tr") {
     update(f: Finding[]) {
       const grew = f.length > findings.length;
       findings = f;
-      syncDoneRows(f);
       root.style.display = "";
       renderPill();
-      const wasOpen = open;
-      const blocks = blockStats();
-      syncBlockPanel(blocks);
-      if (open && wasOpen) renderCard();
+      if (open) renderCard();
       if (grew) {
-        // New finding: replay one compact radar lap without resizing the pill.
-        pill.classList.remove("hit-pulse");
+        // refined double flash on a newly-found spam account
+        pill.classList.remove("flash");
         void pill.offsetWidth; // restart the animation
-        pill.classList.add("hit-pulse");
-        setTimeout(() => pill.classList.remove("hit-pulse"), 950);
+        pill.classList.add("flash");
+        setTimeout(() => pill.classList.remove("flash"), 2100);
       }
     },
     setScanning(n: number) {
       scanning = Math.max(0, n);
       if (!open) renderPill();
     },
-    /** Bump the "X accounts evaluated this page" counter. Drives the pill's
-     *  scan-progress label so the user sees motion on big reply threads even
-     *  when most accounts come back clean. */
-    bumpScanned() {
-      scanned++;
-      if (!open) renderPill();
-    },
   };
 }
 
 export interface BadgeActions {
-  onBlock: () => void;
   onHide: () => void;
-  onReport: () => void | Promise<void>;
   onAppeal: () => void;
-  onCheck?: () => void; // present => ghost manual-check state
-  canReport?: boolean;
-}
-
-interface ManualPopoverOptions {
-  hideCheck?: boolean;
-  description?: string;
 }
 
 /** Inline pill on the author row; hover/focus → popover with reasons. */
-/** Where a verdict came from. Drives badge color + tag so the user can tell
- *  「公榜确认 / 本地缓存 / AI 现场判定 / 维护者白名单」apart at a glance.
- *  - `list`      → human-confirmed public blacklist hit  → red 公榜 tag
- *  - `whitelist` → maintainer-curated safe list hit       → green 白名单 badge
- *  - `cache`     → local L2 cache hit (no network call)   → muted 缓存 tag
- *  - `fresh`     → just classified by the AI this session → amber AI tag */
-export type BadgeSource = "fresh" | "list" | "cache" | "whitelist";
+/** source: 'fresh' = just classified (rise-in); 'list'/'cache' = already on
+ *  record → instant calm "known" marker, no processing implied. */
+export type BadgeSource = "fresh" | "list" | "cache";
 
-type PopPoint = { x: number; y: number };
-let popoverShadow: ShadowRoot | null = null;
-
-function getPopoverRoot(): ShadowRoot {
-  if (popoverShadow && popoverShadow.host.isConnected) return popoverShadow;
-  const host = document.createElement("mxga-popovers");
-  host.style.position = "fixed";
-  host.style.inset = "0";
-  host.style.width = "0";
-  host.style.height = "0";
-  host.style.zIndex = "2147482001";
-  host.style.pointerEvents = "none";
-  host.style.overflow = "visible";
-  const root = host.attachShadow({ mode: "open" });
-  const st = document.createElement("style");
-  st.textContent = STYLE;
-  root.append(st);
-  (document.documentElement || document.body).appendChild(host);
-  popoverShadow = root;
-  return root;
-}
-
-function popPoint(ev: Event | undefined, el: HTMLElement): PopPoint {
-  if (ev instanceof MouseEvent) return { x: ev.clientX, y: ev.clientY };
-  const r = el.getBoundingClientRect();
-  return { x: r.left + r.width / 2, y: r.bottom };
-}
-
-function placePopover(pop: HTMLElement, point: PopPoint): void {
-  const pad = 8;
-  const gap = 10;
-  pop.style.left = `${Math.round(point.x + gap)}px`;
-  pop.style.top = `${Math.round(point.y + gap)}px`;
-  requestAnimationFrame(() => {
-    const r = pop.getBoundingClientRect();
-    const width = r.width || pop.offsetWidth || 280;
-    const height = r.height || pop.offsetHeight || 120;
-    let left = point.x + gap;
-    let top = point.y + gap;
-    if (left + width + pad > window.innerWidth) left = point.x - width - gap;
-    if (top + height + pad > window.innerHeight) top = point.y - height - gap;
-    const maxLeft = Math.max(pad, window.innerWidth - width - pad);
-    const maxTop = Math.max(pad, window.innerHeight - height - pad);
-    pop.style.left = `${Math.round(Math.min(Math.max(pad, left), maxLeft))}px`;
-    pop.style.top = `${Math.round(Math.min(Math.max(pad, top), maxTop))}px`;
-  });
-}
-
-async function runReportButton(btn: HTMLButtonElement, action: () => void | Promise<void>) {
-  if (btn.disabled) return;
-  const original = btn.textContent || "上报";
-  btn.disabled = true;
-  btn.classList.remove("done", "err");
-  btn.textContent = "上报中";
-  btn.title = "";
-  try {
-    await action();
-    btn.classList.add("done");
-    btn.textContent = "已上报";
-  } catch (e) {
-    btn.disabled = false;
-    btn.classList.add("err");
-    btn.textContent = "失败";
-    btn.title = e instanceof Error ? e.message : String(e);
-    window.setTimeout(() => {
-      btn.classList.remove("err");
-      btn.textContent = original;
-    }, 1800);
-  }
-}
-
-function attachManualPopover(
-  el: HTMLElement,
-  a: BadgeActions,
-  opts: ManualPopoverOptions = {},
-): void {
-  const hideCheck = !!opts.hideCheck;
-  if (!a.canReport) {
-    if (!hideCheck) el.addEventListener("click", () => a.onCheck?.());
-    return;
-  }
-  el.tabIndex = 0;
-  let manualPop: HTMLElement | null = null;
-  let manualHideTimer: number | undefined;
-  const hideManual = () => {
-    if (manualHideTimer) window.clearTimeout(manualHideTimer);
-    manualHideTimer = undefined;
-    manualPop?.remove();
-    manualPop = null;
-  };
-  const cancelManualHide = () => {
-    if (manualHideTimer) window.clearTimeout(manualHideTimer);
-    manualHideTimer = undefined;
-  };
-  const scheduleManualHide = () => {
-    cancelManualHide();
-    manualHideTimer = window.setTimeout(hideManual, 180);
-  };
-  const showManual = (ev?: Event) => {
-    cancelManualHide();
-    if (!manualPop) {
-      manualPop = document.createElement("div");
-      manualPop.className = "xss pop card";
-      manualPop.style.display = "block";
-      manualPop.innerHTML = `
-        <h4>手动处理</h4>
-        <div style="color:var(--muted);line-height:1.55">${escHtml(
-          opts.description ??
-            (hideCheck
-              ? "AI 正在分析中；如已确认可疑，可直接上报或拉黑并上报。"
-              : "未命中公榜时，可主动检查；确认可疑后再上报或拉黑并上报。"),
-        )}</div>
-        <div class="acts">
-          ${hideCheck ? "" : '<button data-c>检查</button>'}
-          <button data-r>上报</button>
-          <button data-b>拉黑并上报</button>
-        </div>`;
-      if (!hideCheck) {
-        manualPop.querySelector("[data-c]")?.addEventListener("click", () => {
-          a.onCheck?.();
-          hideManual();
-        });
-      }
-      manualPop.querySelector<HTMLButtonElement>("[data-r]")?.addEventListener("click", (ev) => {
-        ev.stopPropagation();
-        const btn = ev.currentTarget as HTMLButtonElement;
-        void runReportButton(btn, a.onReport).then(() => {
-          if (btn.classList.contains("done")) window.setTimeout(hideManual, 600);
-        });
-      });
-      manualPop.querySelector("[data-b]")?.addEventListener("click", () => {
-        a.onBlock();
-        hideManual();
-      });
-      manualPop.addEventListener("mouseenter", cancelManualHide);
-      manualPop.addEventListener("mouseleave", scheduleManualHide);
-      getPopoverRoot().appendChild(manualPop);
-    }
-    placePopover(manualPop, popPoint(ev, el));
-  };
-  el.addEventListener("click", showManual);
-  el.addEventListener("mouseenter", showManual);
-  el.addEventListener("focus", showManual);
-  el.addEventListener("mouseleave", scheduleManualHide);
-  el.addEventListener("blur", scheduleManualHide);
-}
-
-/** Animated transient states for newly-found and queued accounts. */
-export function createStatusBadge(
-  kind: "analyzing" | "pending" | "blocking",
-  a?: BadgeActions,
-): HTMLElement {
+/** Animated transient states for newly-found accounts. */
+export function createStatusBadge(kind: "analyzing" | "pending"): HTMLElement {
   const el = document.createElement("span");
   if (kind === "analyzing") {
-    el.className = "xss-badge analyzing labeled";
-    el.setAttribute(
-      "aria-label",
-      a?.canReport ? "MXGA 正在分析，可手动上报或拉黑并上报" : "MXGA 正在分析",
-    );
-    el.innerHTML = `<span class="xss-ico">${icon("shield", "currentColor", 12)}</span><span class="xss-label">分析</span>`;
-    if (a) attachManualPopover(el, a, { hideCheck: true });
-  } else if (kind === "pending") {
-    el.className = "xss-badge pending labeled";
-    el.setAttribute("aria-label", "MXGA 排队检测");
-    el.innerHTML = `<span class="xss-ico">${icon("shield", "currentColor", 12)}</span><span class="xss-label">排队</span>`;
+    el.className = "xss-badge analyzing";
+    el.innerHTML = `<span class="xss-spin">${icon("shield", "var(--brand)", 13)}</span><span>分析中…</span>`;
   } else {
-    el.className = "xss-badge blocking labeled";
-    el.setAttribute("aria-label", "MXGA 已加入后台拉黑队列");
-    el.innerHTML = `<span class="xss-ico">${icon("shield-x", "currentColor", 12)}</span><span class="xss-label">屏蔽中</span>`;
+    el.className = "xss-badge pending";
+    el.innerHTML = `${icon("shield", "currentColor", 13)}<span>排队检测…</span>`;
   }
   return el;
 }
@@ -1275,92 +383,60 @@ export function createBadge(
 ): HTMLElement {
   const el = document.createElement("span");
   el.tabIndex = 0;
-  // Maintainer whitelist hit — short-circuit to a green "已加入白名单" badge.
-  // Doesn't pop a verdict card; the user just needs to know "this account is
-  // explicitly vetted, don't worry about it".
-  if (source === "whitelist") {
-    el.className = "xss-badge whitelist labeled";
-    el.setAttribute("aria-label", "MXGA 维护者已确认安全（白名单）");
-    el.innerHTML = `<span class="xss-ico">${icon("shield-check", "currentColor", 12)}</span><span class="xss-label">白名单</span>`;
-    return el;
-  }
   if (!v) {
-    el.className = "xss-badge ghost labeled";
-    el.setAttribute("aria-label", a.canReport ? "MXGA：检查、上报或拉黑并上报" : "MXGA 手动检查");
-    el.innerHTML = `<span class="xss-ico">${icon("shield", "currentColor", 12)}</span><span class="xss-label">检查</span>`;
-    attachManualPopover(el, a);
+    el.className = "xss-badge ghost";
+    el.innerHTML = `${icon("shield", "currentColor", 13)}<span>检查</span>`;
     return el;
   }
   const meta = LABEL[v.label];
+  const color = `var(${meta.varName})`;
   const known = source === "list" || source === "cache";
-  const spammy = v.label === "spam" || v.label === "porn_bot" || v.label === "likely_spam";
-  const color = spammy ? "var(--danger)" : `var(${meta.varName})`;
-  el.className = `xss-badge labeled verdict ${source} ${spammy ? "spammy" : ""} ${known ? "known" : "fresh"}`;
-  el.style.setProperty("--badge-color", color);
-  // Tier-specific tooltip + tag — tells the user exactly which gate matched.
+  el.className = `xss-badge ${known ? "known" : "fresh"}`;
+  el.style.borderColor = color;
   const tip =
     source === "list"
-      ? "公榜确认：≥1 个维护者已经把此账号公开拉黑"
+      ? "命中公共名单"
       : source === "cache"
-        ? "本地缓存命中：本机之前已经判过这个号"
-        : "AI 现场判定：本次会话首次扫描，已记录待人工确认";
-  el.setAttribute("aria-label", `${tip}：${meta.zh} ${(v.confidence * 100).toFixed(0)}%`);
-  const badgeText = source === "list" ? "公榜" : BADGE_TEXT[v.label];
-  el.innerHTML = `<span class="xss-ico">${icon(meta.ic, "currentColor", 12)}</span><span class="xss-label">${badgeText}</span>`;
+        ? "本地缓存命中"
+        : "首次发现（本机首次判定，已记录待人工确认）";
+  el.title = tip;
+  // known → solid brand dot; fresh → hollow "first discovery" ring + 首发 tag
+  const mark = known
+    ? `<span class="kdot" title="${tip}"></span>`
+    : `<span class="ndot" title="${tip}"></span>`;
+  const tag = known ? "" : `<span class="ntag" title="${tip}">首发</span>`;
+  el.innerHTML =
+    `${mark}${icon(meta.ic, color, 13)}<span style="color:${color}">${meta.zh} ${(v.confidence * 100).toFixed(0)}%</span>${tag}`;
 
   let pop: HTMLElement | null = null;
-  let hideTimer: number | undefined;
+  const show = () => {
+    if (pop) return;
+    pop = document.createElement("div");
+    pop.className = "xss pop card";
+    pop.style.display = "block";
+    const spammy = ["spam", "porn_bot", "likely_spam"].includes(v.label);
+    pop.innerHTML = `
+      <h4 style="color:${color}">${meta.zh} · ${(v.confidence * 100).toFixed(0)}%</h4>
+      <ul>${v.reasons.map((r) => `<li>${r}</li>`).join("")}</ul>
+      ${note ? `<div style="color:var(--muted)">${note}</div>` : ""}
+      <div class="acts">
+        ${spammy ? '<button data-h>隐藏</button>' : ""}
+        <button data-a>误判?</button>
+      </div>`;
+    const r = el.getBoundingClientRect();
+    pop.style.left = `${Math.max(8, r.left)}px`;
+    pop.style.top = `${r.bottom + 6}px`;
+    pop.querySelector("[data-h]")?.addEventListener("click", a.onHide);
+    pop.querySelector("[data-a]")?.addEventListener("click", a.onAppeal);
+    el.getRootNode().appendChild?.(pop);
+  };
   const hide = () => {
-    if (hideTimer) window.clearTimeout(hideTimer);
-    hideTimer = undefined;
     pop?.remove();
     pop = null;
   };
-  const cancelHide = () => {
-    if (hideTimer) window.clearTimeout(hideTimer);
-    hideTimer = undefined;
-  };
-  const scheduleHide = () => {
-    cancelHide();
-    hideTimer = window.setTimeout(hide, 160);
-  };
-  const show = (ev?: Event) => {
-    cancelHide();
-    if (!pop) {
-      pop = document.createElement("div");
-      pop.className = "xss pop card";
-      pop.style.display = "block";
-      const spammy = ["spam", "porn_bot", "likely_spam"].includes(v.label);
-      // reasons come from the LLM Worker — technically prompt-injectable via
-      // a malicious user's bio. Escape unconditionally. note is a server-
-      // controlled debug string ("数字ID未解析…") but escape it too for
-      // consistency with the rest of the popover.
-      pop.innerHTML = `
-        <h4 style="color:${color}">${meta.zh} · ${(v.confidence * 100).toFixed(0)}%</h4>
-        <ul>${v.reasons.map((r) => `<li>${escHtml(r)}</li>`).join("")}</ul>
-        ${note ? `<div style="color:var(--muted)">${escHtml(note)}</div>` : ""}
-        <div class="acts">
-          ${spammy ? '<button data-b>拉黑</button><button data-h>隐藏</button>' : ""}
-          ${a.canReport ? '<button data-r>上报</button>' : ""}
-          <button data-a>误判?</button>
-        </div>`;
-      pop.querySelector("[data-b]")?.addEventListener("click", a.onBlock);
-      pop.querySelector("[data-h]")?.addEventListener("click", a.onHide);
-      pop.querySelector<HTMLButtonElement>("[data-r]")?.addEventListener("click", (ev) => {
-        ev.stopPropagation();
-        void runReportButton(ev.currentTarget as HTMLButtonElement, a.onReport);
-      });
-      pop.querySelector("[data-a]")?.addEventListener("click", a.onAppeal);
-      pop.addEventListener("mouseenter", cancelHide);
-      pop.addEventListener("mouseleave", scheduleHide);
-      getPopoverRoot().appendChild(pop);
-    }
-    placePopover(pop, popPoint(ev, el));
-  };
-  el.addEventListener("click", show);
   el.addEventListener("mouseenter", show);
   el.addEventListener("focus", show);
-  el.addEventListener("mouseleave", scheduleHide);
-  el.addEventListener("blur", scheduleHide);
+  el.addEventListener("mouseleave", () => setTimeout(hide, 120));
+  el.addEventListener("blur", hide);
   return el;
 }
