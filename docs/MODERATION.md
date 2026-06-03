@@ -1,7 +1,10 @@
 # Trust tiers, GitHub-gated reporting & admin moderation
 
-Public moderation design notes. This extends [GOVERNANCE.md](../GOVERNANCE.md)
-and the Cloudflare architecture.
+Status: **implemented** (server + extension + admin console shipped on the
+existing Cloudflare stack). Extends [GOVERNANCE.md](../GOVERNANCE.md) and the Cloudflare
+architecture. The design rationale below is unchanged; see **As-built (T6)**
+at the end for what actually shipped, the acceptance-criteria map, the
+verification points, and the two items still open for owner decision.
 
 ## Why (threat model)
 
@@ -96,3 +99,98 @@ All on the existing Cloudflare stack.
    Everything else → admin review queue. AI alone never auto-publishes
    (governance red line intact; the 3 real GitHub reporters are the human
    signal). K=3 is a tunable policy knob.
+
+---
+
+## As-built (T6) — what actually shipped
+
+The pipeline above is implemented end-to-end. File pointers are the live
+code on `main`.
+
+### Server (`services/edge/src/index.ts`)
+- **Identity** — `ghIdentity()` verifies the bearer token via
+  `GET https://api.github.com/user` and derives `reporter = gh:<id>`.
+  `requireReporter()` enforces it **only when `REQUIRE_AUTH=1`**; with the
+  flag off (current default) a missing token resolves to `"anon"` so the
+  already-shipped anonymous extension keeps working. `Env.REQUIRE_AUTH` is a
+  Worker secret (`wrangler secret put REQUIRE_AUTH`).
+- **Tiers** — `/v1/check`, `/v1/list`, `/v1/list/meta`, `/` and `/list`
+  are public and return **only `human_confirmed`** rows. `/v1/classify`,
+  `/v1/report`, `/v1/confirm` go through `requireReporter()` → `401
+  github_login_required` when auth is enforced.
+- **Auto/queue rule** — `submitReport()`: dedupes one report per
+  `(target, reporter)` via `INSERT OR IGNORE`, counts
+  `DISTINCT reporter_fp`, and only sets `human_confirmed` when
+  `AUTO_CONF=0.9` **and** `AUTO_REPORTERS=3` are both met; otherwise
+  `auto_pending_review`. `/v1/classify` **only ever** writes
+  `auto_pending_review` — an AI verdict is never public on its own.
+- **Admin (守门员)** — `GET /v1/admin/queue`, `POST /v1/admin/decide`
+  (`approve` / `reject` / `remove`), `GET /v1/admin/log` (keyset-paginated
+  audit trail). Gated by the `x-admin-token` header against the
+  `ADMIN_TOKEN` secret. Every decision writes `review_log`.
+
+### Extension (consumer, no admin surface)
+- GitHub **Device Flow** login in the background service worker
+  (`extension/entrypoints/background.ts`: `ghStart` → `login/device/code`,
+  `ghPoll` → `access_token` → `GET /user`). Token + login stored via
+  `extension/lib/auth.ts` (`chrome.storage.local`), public client id
+  `GH_CLIENT_ID` is a build constant (device flow has no secret).
+- `authedPost()` attaches `Authorization: Bearer <token>` to `/v1/classify`
+  and `/v1/confirm`. Login UI lives in `extension/entrypoints/options/App.tsx`.
+
+### Admin console (standalone, never in the extension)
+- `GET /admin` serves a self-contained page (`services/edge/src/pages/admin.ts`);
+  the maintainer pastes `ADMIN_TOKEN` once (kept in `localStorage`), `noindex`.
+  This replaced the earlier in-plugin admin tab per the owner's 2026-05-19
+  decision — the token never ships in the public extension.
+
+### Acceptance-criteria map
+
+| Criterion | Status | Evidence |
+|---|---|---|
+| AI single signal never auto-public; human signal = K GH reporters or admin | ✅ | `submitReport()` requires `reporters>=3`; `/v1/classify` writes only `auto_pending_review` |
+| Anonymous read-only; reporting forces GitHub login | ✅ (gated by flag) | `requireReporter()` + `REQUIRE_AUTH`; public reads are confirmed-only |
+| Per-GH-id **rate-limit / ban** | ⚠️ **partial** | only `(target,reporter)` dedup ships; no throughput cap or ban list yet — see Open #1 |
+| `/v1/classify` no longer a free anonymous endpoint | ✅ (gated by flag) | `requireReporter()` on the route |
+| Admin panel: pull queue, see evidence, approve/reject/remove + `review_log` | ✅ | `/v1/admin/*` + `/admin` page |
+| All on existing Cloudflare stack, no new infra | ✅ | Worker + D1 only |
+| Written to docs/MODERATION.md + conclusions | ✅ | this section |
+
+### Verification points
+- `services/edge`: `npm run typecheck` (tsc `--noEmit`) passes clean.
+  CI gate (PR #8) runs typecheck/test/build for core, extension, edge.
+- Behavior verified earlier on the deployed Worker (see issue history):
+  3 anonymous reports on one target → `reporters=1`, not auto-published;
+  `/v1/admin/queue` returns 403 without the token, the pending queue with it.
+
+### Open items (need owner decision — NOT blockers for T6 server/ext)
+1. **Per-GH-id rate-limit / ban is not implemented.** Today the only abuse
+   control on writes is the `(target, reporter)` unique-index dedup, which
+   stops one account being reported twice by the same person but does **not**
+   cap how many *distinct* targets a single GitHub id can hit, nor support
+   banning a bad reporter. The acceptance criterion asks for "可按 GH id 限流".
+   Proposed next increment: a `reporter_limits` / `banned_reporters` check in
+   `requireReporter()` (sliding-window count in D1 or a KV counter; ban list
+   table). Low effort, but it's a write-path behavior change — left for the
+   reviewer/owner to greenlight rather than slipped in here.
+2. **Reporter-identity storage contradicts GOVERNANCE.md.** GOVERNANCE.md
+   states *"Reporter identities are never stored — only a salted, hashed
+   fingerprint for anti-abuse."* T6 now stores `reporter_fp = gh:<id>`, a
+   stable GitHub numeric id (the `reports.reporter_fp` column comment in
+   `schema.sql` still says "salted hash … NO PII" and is now inaccurate).
+   A stable GH id is arguably pseudonymous identity, not a salted hash. Two
+   clean resolutions — **owner picks one**:
+   - **(a) Keep the promise:** store `HMAC(server_salt, "gh:"+id)` instead of
+     the raw id. Dedup/auto-count still work (same input → same hash); the id
+     becomes unlinkable without the salt. Update the `schema.sql` comment.
+   - **(b) Amend the contract:** GOVERNANCE.md explicitly permits storing the
+     GitHub **numeric** id (no handle/email) as the anti-abuse key, on the
+     grounds it is a low-PII pseudonymous handle the reporter opted into.
+     Update both docs to match.
+3. **`REQUIRE_AUTH` flip.** Server + extension login both shipped, so the
+   flag can be turned on (`wrangler secret put REQUIRE_AUTH` = `1`) once a
+   GitHub-login-capable extension build is published to users. Until then it
+   stays off to avoid breaking installed anonymous clients. Ops step, owner-timed.
+4. **`/v1/appeal` referenced by GOVERNANCE.md is not implemented** (removal is
+   only via admin `remove`). Belongs to the T1 governance track, noted here
+   for traceability — out of scope for T6.
