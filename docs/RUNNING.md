@@ -45,5 +45,6 @@ displayName, bio, up to ~10 recent tweets, and the triggering comment.
 pnpm typecheck && pnpm test && pnpm lint
 ```
 
-Schemas here are provisional — production data contract lives in
+Schemas and status flows follow the finalized T1 specification (see
+[SPEC-T1.md](./SPEC-T1.md)); the deployed data contract lives in
 [`services/edge/schema.sql`](../services/edge/schema.sql).
