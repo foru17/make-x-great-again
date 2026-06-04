@@ -106,9 +106,44 @@
 
 ---
 
+## 🆕 公开名单（Public List）—— 分片 + Bloom 索引
+
+从 2026-06 起，MXGA 同时发布一种 **CDN 友好**的公开名单格式，位于 `public-list/data/`：
+
+| 文件 | 内容 | 体积目标 |
+|---|---|---|
+| `meta.json` | 版本、时间戳、总条数、source commit | < 1 KB |
+| `index.json` | Bloom 过滤器成员索引 | < 50 KB（10k 条目约 12 KB） |
+| `shards/00.json` … `ff.json` | 按 userId 哈希分桶的条目 | 每 shard 数十 KB |
+
+### 为什么分片？
+
+- 浏览器扩展只需拉取 **一个 shard**（256 分之一），避免全量下载。
+- Bloom 索引在客户端实现 **零网络泄露的预检**：先查本地 bloom，命中再拉对应 shard。
+- 每个 shard 是独立 JSON，CDN 缓存友好；jsDelivr / raw GitHub 均可直接消费。
+
+### 消费方式
+
+```bash
+# 1. 拉 meta（最新版本号）
+curl https://cdn.jsdelivr.net/gh/foru17/make-x-great-again@latest/public-list/data/meta.json
+
+# 2. 拉 bloom 索引（客户端预检）
+curl https://cdn.jsdelivr.net/gh/foru17/make-x-great-again@latest/public-list/data/index.json
+
+# 3. 按需拉 shard（FNV-1a hash bucket）
+BUCKET=$(node -e "let h=2166136261;for(const c of '123456789'){h^=c.charCodeAt(0);h+=(h<<1)+(h<<4)+(h<<7)+(h<<8)+(h<<24)}console.log(Math.abs(h|0%256).toString(16).padStart(2,'0'))")
+curl "https://cdn.jsdelivr.net/gh/foru17/make-x-great-again@latest/public-list/data/shards/${BUCKET}.json"
+```
+
+完整生成逻辑见 [`src/public-list/`](../src/public-list/)，CI 发布见
+[`.github/workflows/publish-public-list.yml`](../.github/workflows/publish-public-list.yml)。
+
+---
+
 ## ✅ 怎么程序化使用这份数据
 
-### 拉取最新快照
+### 拉取最新快照（旧版 v1 全量 JSON）
 
 ```bash
 # 最稳的入口（GitHub raw）
@@ -133,7 +168,8 @@ curl https://x.zuoluo.tv/v1/whitelist?limit=2000
 1. **某账号被误判**：开 [GitHub issue](https://github.com/foru17/make-x-great-again/issues/new) 附 handle 和申诉理由
 2. 维护者复核 → 在 `/admin` 把该账号 status 改为 `rejected` 或 `whitelisted`
 3. **下个 6 小时周期**，该账号从这两个 JSON 自动消失（黑名单变小）/ 移到白名单
-4. 历史 commit 仍然存在 → 任何人可以从 git log 复原"该账号曾经在公榜上"的事实，但**当前快照**反映最新决定
+4. **下个公开名单发布周期**，该账号从 `public-list/` 中消失，git tag diff 即为审计 trail
+5. 历史 commit 仍然存在 → 任何人可以从 git log 复原"该账号曾经在公榜上"的事实，但**当前快照**反映最新决定
 
 这就是用 git history 作为审计 trail 的核心价值：**不可篡改 + 时间序列完整**。
 

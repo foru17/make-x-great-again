@@ -55,6 +55,13 @@ published data.
   timestamp", including the `evidence_text` (the public X content that
   triggered each verdict) and `reasons` array (LLM-stated rationale). See
   [`data/README.md`](./data/README.md) for the schema and update mechanism.
+- **Public list (sharded + bloom)**: the CDN-friendly `public-list/data/`
+  release is generated daily by CI, tagged with SemVer, and served via
+  jsDelivr / raw GitHub. Each release includes a bloom filter index
+  (~12 KB for 10k entries) and 256 hash-sharded JSONs. Removals appear
+  as missing entries in the next tag, and the git diff between tags is
+  the auditable change log. See [`DATA_USAGE.md`](./DATA_USAGE.md) and
+  [`src/public-list/`](./src/public-list/) for the full format.
 
 ## Accountability
 
