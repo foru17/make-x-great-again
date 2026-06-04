@@ -1,0 +1,88 @@
+name: Publish Public List
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "SemVer tag for this release (e.g. v1.0.0)"
+        required: true
+        type: string
+  schedule:
+    # Daily at 06:00 UTC — low-traffic, gives time for human review if needed.
+    - cron: "0 6 * * *"
+
+jobs:
+  generate:
+    name: Generate public list artefacts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+
+      - name: Generate public list
+        id: gen
+        run: |
+          mkdir -p public-list
+          pnpm tsx scripts/generate-public-list.ts \
+            "${{ inputs.version || github.ref_name }}" \
+            "${{ github.sha }}"
+        env:
+          CURATION_DB_PATH: ${{ secrets.CURATION_DB_PATH || '.curation-db/records.jsonl' }}
+          PUBLIC_LIST_DIR: public-list
+
+      - name: Validate artefacts
+        run: |
+          test -f public-list/data/meta.json
+          test -f public-list/data/index.json
+          test -d public-list/data/shards
+          echo "meta.json  : $(wc -c < public-list/data/meta.json) bytes"
+          echo "index.json : $(wc -c < public-list/data/index.json) bytes"
+          echo "shards     : $(ls public-list/data/shards | wc -l) files"
+          echo "entries    : $(jq '.count' public-list/data/meta.json)"
+          # Ensure index.json is under 50 KB
+          INDEX_SIZE=$(wc -c < public-list/data/index.json)
+          if [ "$INDEX_SIZE" -gt 51200 ]; then
+            echo "ERROR: index.json ($INDEX_SIZE bytes) exceeds 50 KB budget"
+            exit 1
+          fi
+
+      - name: Commit & tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add public-list/data/
+          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          VERSION="${{ inputs.version || github.ref_name }}"
+          git commit -m "data(public-list): release ${VERSION} · $(jq -r '.count' public-list/data/meta.json) entries · $(date -u +%Y-%m-%d)"
+          git tag -a "${VERSION}" -m "Public list ${VERSION}"
+          git push origin "${VERSION}"
+          # Push the commit to a dedicated branch so it can be PR'd or reviewed
+          git branch -f public-list-release || true
+          git push origin public-list-release --force-with-lease
+
+  cdn-smoke-test:
+    name: jsDelivr / raw CDN smoke test
+    runs-on: ubuntu-latest
+    needs: generate
+    steps:
+      - name: Wait for CDN propagation
+        run: sleep 30
+
+      - name: Smoke test jsDelivr
+        run: |
+          VERSION="${{ inputs.version || github.ref_name }}"
+          # jsDelivr caches GitHub releases heavily; use the commit-ish fallback
+          curl -sfL "https://cdn.jsdelivr.net/gh/foru17/make-x-great-again@${VERSION}/public-list/data/meta.json" | jq '.schema'
+          curl -sfL "https://cdn.jsdelivr.net/gh/foru17/make-x-great-again@${VERSION}/public-list/data/index.json" | jq '.schema'
+
+      - name: Smoke test GitHub raw
+        run: |
+          VERSION="${{ inputs.version || github.ref_name }}"
+          curl -sfL "https://raw.githubusercontent.com/foru17/make-x-great-again/${VERSION}/public-list/data/meta.json" | jq '.schema'
+          curl -sfL "https://raw.githubusercontent.com/foru17/make-x-great-again/${VERSION}/public-list/data/index.json" | jq '.schema'
