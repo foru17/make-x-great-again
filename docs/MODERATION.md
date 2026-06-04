@@ -35,7 +35,8 @@ LLM classification is no longer a free anonymous endpoint.
   `github.com/login/device`, enters code → extension stores the token in
   `chrome.storage`.
 - Worker verifies the token via `GET https://api.github.com/user`, derives
-  `reporter = gh:<id>` (no PII beyond a GitHub id), rate-limits/bans per id.
+  `reporter_fp = HMAC(REPORT_SALT, "gh:<id>")`, and rate-limits per
+  fingerprint. Raw GitHub ids stay in request memory only.
 - `/v1/report` & `/v1/confirm` require a valid GitHub identity → `401`
   otherwise. `/v1/check` stays anonymous.
 - Cost: a free GitHub OAuth App.
@@ -109,7 +110,8 @@ code on `main`.
 
 ### Server (`services/edge/src/index.ts`)
 - **Identity** — `ghIdentity()` verifies the bearer token via
-  `GET https://api.github.com/user` and derives `reporter = gh:<id>`.
+  `GET https://api.github.com/user`; write paths persist only
+  `HMAC(REPORT_SALT, "gh:<id>")` as `reports.reporter_fp`.
   `requireReporter()` enforces it **only when `REQUIRE_AUTH=1`**; with the
   flag off (current default) a missing token resolves to `"anon"` so the
   already-shipped anonymous extension keeps working. `Env.REQUIRE_AUTH` is a
@@ -150,7 +152,7 @@ code on `main`.
 |---|---|---|
 | AI single signal never auto-public; human signal = K GH reporters or admin | ✅ | `submitReport()` requires `reporters>=3`; `/v1/classify` writes only `auto_pending_review` |
 | Anonymous read-only; reporting forces GitHub login | ✅ (gated by flag) | `requireReporter()` + `REQUIRE_AUTH`; public reads are confirmed-only |
-| Per-GH-id **rate-limit / ban** | ⚠️ **partial** | only `(target,reporter)` dedup ships; no throughput cap or ban list yet — see Open #1 |
+| Per-reporter **rate-limit / ban** | ⚠️ **partial** | HMAC fingerprint dedupe + `rate_log` throughput cap ship; ban list remains a follow-up — see Open #1 |
 | `/v1/classify` no longer a free anonymous endpoint | ✅ (gated by flag) | `requireReporter()` on the route |
 | Admin panel: pull queue, see evidence, approve/reject/remove + `review_log` | ✅ | `/v1/admin/*` + `/admin` page |
 | All on existing Cloudflare stack, no new infra | ✅ | Worker + D1 only |
@@ -164,33 +166,19 @@ code on `main`.
   `/v1/admin/queue` returns 403 without the token, the pending queue with it.
 
 ### Open items (need owner decision — NOT blockers for T6 server/ext)
-1. **Per-GH-id rate-limit / ban is not implemented.** Today the only abuse
-   control on writes is the `(target, reporter)` unique-index dedup, which
-   stops one account being reported twice by the same person but does **not**
-   cap how many *distinct* targets a single GitHub id can hit, nor support
-   banning a bad reporter. The acceptance criterion asks for "可按 GH id 限流".
-   Proposed next increment: a `reporter_limits` / `banned_reporters` check in
-   `requireReporter()` (sliding-window count in D1 or a KV counter; ban list
-   table). Low effort, but it's a write-path behavior change — left for the
-   reviewer/owner to greenlight rather than slipped in here.
-2. **Reporter-identity storage contradicts GOVERNANCE.md.** GOVERNANCE.md
-   states *"Reporter identities are never stored — only a salted, hashed
-   fingerprint for anti-abuse."* T6 now stores `reporter_fp = gh:<id>`, a
-   stable GitHub numeric id (the `reports.reporter_fp` column comment in
-   `schema.sql` still says "salted hash … NO PII" and is now inaccurate).
-   A stable GH id is arguably pseudonymous identity, not a salted hash. Two
-   clean resolutions — **owner picks one**:
-   - **(a) Keep the promise:** store `HMAC(server_salt, "gh:"+id)` instead of
-     the raw id. Dedup/auto-count still work (same input → same hash); the id
-     becomes unlinkable without the salt. Update the `schema.sql` comment.
-   - **(b) Amend the contract:** GOVERNANCE.md explicitly permits storing the
-     GitHub **numeric** id (no handle/email) as the anti-abuse key, on the
-     grounds it is a low-PII pseudonymous handle the reporter opted into.
-     Update both docs to match.
+1. **Reporter ban list is not implemented yet.** Current abuse controls are
+   `(target, reporter_fp)` dedupe plus a `rate_log` sliding-window cap, but a
+   maintainer still cannot ban a bad reporter fingerprint/GitHub identity from
+   the Worker. That follow-up is tracked in LUO-62.
+2. **Reporter identity storage is now aligned with GOVERNANCE.md.** Report and
+   confirm paths persist `HMAC(REPORT_SALT, reporter_id)` fingerprints instead
+   of raw GitHub numeric ids; dedupe and reporter counts still work from the
+   stable fingerprint, while exported evidence and audit logs remain unlinkable
+   without the Worker secret.
 3. **`REQUIRE_AUTH` flip.** Server + extension login both shipped, so the
    flag can be turned on (`wrangler secret put REQUIRE_AUTH` = `1`) once a
    GitHub-login-capable extension build is published to users. Until then it
    stays off to avoid breaking installed anonymous clients. Ops step, owner-timed.
-4. **`/v1/appeal` referenced by GOVERNANCE.md is not implemented** (removal is
-   only via admin `remove`). Belongs to the T1 governance track, noted here
-   for traceability — out of scope for T6.
+4. **`/v1/appeal` is implemented as a review signal.** Filing an appeal writes
+   an `appeal_submitted` audit row and leaves the listing in place until a human
+   admin decides `remove`, matching SPEC-T1's anti-delisting-abuse rule.

@@ -24,6 +24,9 @@ interface Env {
   REQUIRE_AUTH?: string;
   ADMIN_TOKEN?: string; // bearer for the admin moderation endpoints
   AGENT_TOKEN?: string; // bearer for the side-channel agent endpoints (/v1/agent/*)
+  // HMAC salt for reporter anti-abuse fingerprints. Keep as a Worker secret;
+  // raw reporter identities must never be persisted in reports/review_log.
+  REPORT_SALT?: string;
   // Fine-grained GitHub PAT scoped to Contents:Write on the upstream repo,
   // used by the scheduled handler to mirror the curated whitelist /
   // blacklist to data/*.json. Unset = mirror is disabled and the cron is a
@@ -41,6 +44,8 @@ const AUTO_REPORTERS = 3; // distinct GitHub reporters required for auto-publish
 // future re-evaluation), but a fresh throwaway account can't help flip
 // status to human_confirmed. 90d is a common drive-by abuse cutoff.
 const REPORTER_MIN_AGE_DAYS = 90;
+const REPORT_WINDOW_MS = 60 * 60_000;
+const REPORT_MAX_PER_WINDOW = 10;
 const BLOOM_SIZE = 65_536; // 8 KB bit array
 const BLOOM_HASHES = 7;
 const BLOOM_SHARD_SIZE = 500; // accounts per logical shard in the JSON artifact
@@ -92,6 +97,25 @@ async function requireReporter(c: Ctx): Promise<Reporter | null> {
   const ident = await ghIdentity(c.req.raw);
   if (ident) return ident;
   return c.env.REQUIRE_AUTH === "1" ? null : { id: "anon", ageDays: 0 };
+}
+
+async function reporterFingerprint(env: Env, reporterId: string): Promise<string | null> {
+  const salt = env.REPORT_SALT?.trim();
+  if (!salt) return null;
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(salt),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const digest = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(reporterId));
+  const hex = Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, "0")).join("");
+  return `rpt:${hex.slice(0, 32)}`;
+}
+
+function reporterActor(fp: string): string {
+  return `reporter:${fp.slice(4, 16)}`;
 }
 
 const Signals = z.object({
@@ -237,6 +261,40 @@ function normalizeHandle(handle: string): string {
 
 function evidenceText(s: Signals): string | null {
   return (s.triggeringComment ?? s.recentTweets[0] ?? s.bio ?? "").trim().slice(0, 240) || null;
+}
+
+function reportEvidence(s: Signals): string {
+  return JSON.stringify({
+    signalsHash: sigHash(s),
+    snippet: evidenceText(s),
+    accountAgeDays: metricInt(s.accountAgeDays),
+    followersCount: metricInt(s.followersCount),
+    followingCount: metricInt(s.followingCount),
+    hasDefaultAvatar: s.hasDefaultAvatar ?? null,
+  }).slice(0, 1000);
+}
+
+async function reportRate(
+  env: Env,
+  fp: string,
+  now: number,
+): Promise<{ ok: boolean; remaining: number }> {
+  const windowStart = now - REPORT_WINDOW_MS;
+  const row = await env.DB.prepare("SELECT count(*) n FROM rate_log WHERE fp=? AND created_at>=?")
+    .bind(fp, windowStart)
+    .first<{ n: number }>();
+  const count = row?.n ?? 0;
+  return {
+    ok: count < REPORT_MAX_PER_WINDOW,
+    remaining: Math.max(0, REPORT_MAX_PER_WINDOW - count),
+  };
+}
+
+async function recordReportRate(env: Env, fp: string, now: number): Promise<void> {
+  await env.DB.batch([
+    env.DB.prepare("INSERT INTO rate_log (fp, created_at) VALUES (?,?)").bind(fp, now),
+    env.DB.prepare("DELETE FROM rate_log WHERE created_at<?").bind(now - REPORT_WINDOW_MS * 2),
+  ]);
 }
 
 interface AccountSignalSnapshot {
@@ -584,6 +642,7 @@ async function insertReportIfNew(
   handle: string,
   uid: string | null,
   reporter: Reporter,
+  fp: string,
   now: number,
 ): Promise<boolean> {
   const res = await env.DB.prepare(
@@ -601,12 +660,12 @@ async function insertReportIfNew(
       crypto.randomUUID(),
       uid,
       handle,
-      reporter.id,
+      fp,
       reporter.ageDays,
-      JSON.stringify(s).slice(0, 4000),
+      reportEvidence(s),
       now,
       handle,
-      reporter.id,
+      fp,
       uid,
       uid,
     )
@@ -723,6 +782,7 @@ app.get("/v1/health", async (c) => {
 });
 
 // Public membership check — only human_confirmed (the public list).
+// Confirmatory lookup for Bloom hits; cache hot paths at the edge.
 app.get("/v1/check", async (c) => {
   const ids = (c.req.query("ids") ?? "")
     .split(",")
@@ -730,6 +790,12 @@ app.get("/v1/check", async (c) => {
     .filter(Boolean)
     .slice(0, 100);
   if (!ids.length) return c.json({ hits: {} });
+  const cacheUrl = new URL(c.req.url);
+  cacheUrl.search = new URLSearchParams({ ids: [...ids].sort().join(",") }).toString();
+  const cacheKey = cacheUrl.toString();
+  const cached = await caches.default.match(cacheKey);
+  if (cached) return cached;
+
   const ph = ids.map(() => "?").join(",");
   const rows = await c.env.DB.prepare(
     `SELECT x_user_id, verdict_label, confidence FROM accounts
@@ -740,7 +806,12 @@ app.get("/v1/check", async (c) => {
   const hits: Record<string, { label: string; confidence: number }> = {};
   for (const r of rows.results ?? [])
     hits[r.x_user_id] = { label: r.verdict_label, confidence: r.confidence };
-  return c.json({ hits });
+  const resp = Response.json(
+    { hits },
+    { headers: { "Cache-Control": "public, max-age=15, s-maxage=30" } },
+  );
+  void caches.default.put(cacheKey, resp.clone());
+  return resp;
 });
 
 app.post("/v1/classify", async (c) => {
@@ -885,6 +956,13 @@ async function submitReport(c: Ctx, source: string) {
   }
   const uid = s.userId ?? null;
   const now = Date.now();
+  const fp = await reporterFingerprint(c.env, who.id);
+  if (!fp) return c.json({ error: "report_salt_required" }, 503);
+
+  const rate = await reportRate(c.env, fp, now);
+  if (!rate.ok) {
+    return c.json({ error: "rate_limited", remaining: 0, retryAfterMs: REPORT_WINDOW_MS }, 429);
+  }
 
   // Whitelist short-circuit — if maintainer has explicitly whitelisted the
   // target, ignore the report entirely (don't even store it). Avoids letting
@@ -897,8 +975,11 @@ async function submitReport(c: Ctx, source: string) {
 
   // one report per (target, reporter); always store, even for "young" GH
   // accounts — they just don't count toward AUTO_REPORTERS.
-  const insertedReport = await insertReportIfNew(c.env, s, s.handle, uid, who, now);
+  const insertedReport = await insertReportIfNew(c.env, s, s.handle, uid, who, fp, now);
   const alreadyReported = !insertedReport;
+  if (insertedReport) {
+    await recordReportRate(c.env, fp, now);
+  }
 
   // Reporter count for auto-publish: only GH accounts older than
   // REPORTER_MIN_AGE_DAYS count. NULL age = legacy rows; treat them as
@@ -966,7 +1047,7 @@ async function submitReport(c: Ctx, source: string) {
         uid,
         s.handle,
         finalStatus === status ? "report_queued" : "report_seen",
-        who.id,
+        reporterActor(fp),
         `${source} r=${reporters} age=${who.ageDays}d${
           wouldAutoIfEnabled ? " · would auto-publish if enabled" : ""
         }`,
@@ -978,6 +1059,44 @@ async function submitReport(c: Ctx, source: string) {
 }
 app.post("/v1/confirm", (c) => submitReport(c, "block"));
 app.post("/v1/report", (c) => submitReport(c, "report"));
+
+const AppealBody = z.object({
+  handle: z.string().min(1),
+  userId: z.string().regex(/^\d+$/).optional(),
+  reason: z.string().max(500).optional(),
+});
+
+app.post("/v1/appeal", async (c) => {
+  let body: z.infer<typeof AppealBody>;
+  try {
+    body = AppealBody.parse(await c.req.json());
+  } catch (err) {
+    return c.json({ error: "bad_request", detail: (err as Error).message }, 400);
+  }
+  const handle = normalizeHandle(body.handle);
+  const uid = body.userId ?? null;
+  const cur = await findAccount(c.env, handle, uid);
+  if (!cur) return c.json({ error: "not_found" }, 404);
+  if (cur.status !== "human_confirmed") {
+    return c.json({ ok: true, status: "not_listed", currentStatus: cur.status });
+  }
+
+  const now = Date.now();
+  const reasonHash = body.reason?.trim() ? ` reason_hash=${hash(body.reason.trim())}` : "";
+  await c.env.DB.prepare(
+    "INSERT INTO review_log (x_user_id,handle,action,actor,note,at) VALUES (?,?,?,?,?,?)",
+  )
+    .bind(
+      cur.x_user_id,
+      cur.handle,
+      "appeal_submitted",
+      "public",
+      `queued for removal review${reasonHash}`,
+      now,
+    )
+    .run();
+  return c.json({ ok: true, status: "appeal_queued" }, 202);
+});
 
 // ---- Admin (守门员) ----
 function admin(c: Ctx): boolean {

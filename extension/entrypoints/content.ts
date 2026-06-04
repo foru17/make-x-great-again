@@ -22,7 +22,23 @@ import {
   createStatusBadge,
 } from "../lib/ui";
 
-const APPEAL_URL = BRAND.appealNewIssue;
+async function submitAppeal(sig: Signals): Promise<void> {
+  try {
+    const s = await getSettings();
+    const base = s.edgeBase || BRAND.edgeBase;
+    await fetch(`${base}/v1/appeal`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        handle: sig.handle,
+        ...(sig.userId ? { userId: sig.userId } : {}),
+        reason: "extension appeal button",
+      }),
+    });
+  } catch (err) {
+    console.warn("[mxga] appeal failed", err);
+  }
+}
 
 /** Send a message to the background script (admin-only: GitHub auth, health). */
 function send<T = unknown>(msg: unknown): Promise<{ ok: boolean; data?: T; error?: string }> {
@@ -205,7 +221,7 @@ export default defineContentScript({
           v,
           {
             onHide: () => scheduleHide(key, sig, anchor),
-            onAppeal: () => window.open(APPEAL_URL, "_blank", "noopener"),
+            onAppeal: () => void submitAppeal(sig),
           },
           note,
           source,
