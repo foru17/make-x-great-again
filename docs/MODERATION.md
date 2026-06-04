@@ -1,8 +1,11 @@
 # Trust tiers, GitHub-gated reporting & admin moderation
 
-Status: **implemented** (server + extension + admin console shipped on the
-existing Cloudflare stack). Extends [GOVERNANCE.md](../GOVERNANCE.md) and the Cloudflare
-architecture. The design rationale below is unchanged; see **As-built (T6)**
+Status: **implemented for the Worker/admin surface** on the existing Cloudflare
+stack. The consumer extension is intentionally passive/local-list-only after
+the T5/T6 rollout, so report/confirm/classify write APIs are operated by
+trusted tooling/admin flows rather than exposed in the installed extension.
+Extends [GOVERNANCE.md](../GOVERNANCE.md) and the Cloudflare architecture.
+The design rationale below is unchanged; see **As-built (T6)**
 at the end for what actually shipped, the acceptance-criteria map, the
 verification points, and the two items still open for owner decision.
 
@@ -22,7 +25,7 @@ The moderation design protects three high-risk surfaces:
 | Tier | Who | Can do |
 |---|---|---|
 | **Anonymous** | any installed extension | **read only**: `/v1/check`, fetch public list/bloom. Cheap, cacheable, no abuse surface. Local heuristic + local cache still work. |
-| **Verified reporter** | signed in with **GitHub** | `/v1/report`. Rate-limited & bannable *per GitHub account*. |
+| **Verified reporter** | trusted caller with a **GitHub** bearer token | `/v1/report` / `/v1/confirm`. Rate-limited & bannable per HMAC reporter fingerprint. |
 | **Admin (守门员)** | maintainer allowlist | moderation panel: approve / reject / remove. |
 
 Key move: **separate cheap public reads from costly/abusable writes.** Server
@@ -30,15 +33,14 @@ LLM classification is no longer a free anonymous endpoint.
 
 ## GitHub-gated reporting (feasible, well-trodden)
 
-- Extension uses **GitHub OAuth Device Flow** (best for extensions — no
-  redirect-URI hassle): user clicks "用 GitHub 登录以上报" → opens
-  `github.com/login/device`, enters code → extension stores the token in
-  `chrome.storage`.
+- A trusted client may use **GitHub OAuth Device Flow** (best for browser-like
+  clients — no redirect-URI hassle): user clicks "用 GitHub 登录以上报" → opens
+  `github.com/login/device`, enters code → the client stores the token locally.
 - Worker verifies the token via `GET https://api.github.com/user`, derives
   `reporter_fp = HMAC(REPORT_SALT, "gh:<id>")`, and rate-limits per
   fingerprint. Raw GitHub ids stay in request memory only.
-- `/v1/report` & `/v1/confirm` require a valid GitHub identity → `401`
-  otherwise. `/v1/check` stays anonymous.
+- `/v1/report` & `/v1/confirm` require a valid GitHub identity when
+  `REQUIRE_AUTH=1` → `401` otherwise. `/v1/check` stays anonymous.
 - Cost: a free GitHub OAuth App.
 
 ## Report → AI → auto / queue → admin (the gatekeeper pipeline)
@@ -89,7 +91,7 @@ All on the existing Cloudflare stack.
 
 ## Current policy
 
-1. **`/v1/classify` = GitHub-authed only.** Anonymous installs get
+1. **`/v1/classify` = GitHub-authed when `REQUIRE_AUTH=1`.** Anonymous installs get
    read-only public list (`/v1/check`) + local heuristic + local cache.
    Server-side AI classification requires GitHub login. The server LLM key
    is never an anonymous endpoint. (UX implication: not-logged-in users
@@ -132,13 +134,11 @@ code on `main`.
   `ADMIN_TOKEN` secret. Every decision writes `review_log`.
 
 ### Extension (consumer, no admin surface)
-- GitHub **Device Flow** login in the background service worker
-  (`extension/entrypoints/background.ts`: `ghStart` → `login/device/code`,
-  `ghPoll` → `access_token` → `GET /user`). Token + login stored via
-  `extension/lib/auth.ts` (`chrome.storage.local`), public client id
-  `GH_CLIENT_ID` is a build constant (device flow has no secret).
-- `authedPost()` attaches `Authorization: Bearer <token>` to `/v1/classify`
-  and `/v1/confirm`. Login UI lives in `extension/entrypoints/options/App.tsx`.
+- The shipped consumer extension is passive and local-list-only. Its background
+  script returns explicit disabled errors for `gh_start` / `gh_poll`, and there
+  is no report/confirm/classify write path in normal content scanning.
+- `误判?` posts anonymous `POST /v1/appeal` as a review signal. Appeals do not
+  unpublish rows; admin `remove` is still the human decision point.
 
 ### Admin console (standalone, never in the extension)
 - `GET /admin` serves a self-contained page (`services/edge/src/pages/admin.ts`);
@@ -151,8 +151,8 @@ code on `main`.
 | Criterion | Status | Evidence |
 |---|---|---|
 | AI single signal never auto-public; human signal = K GH reporters or admin | ✅ | `submitReport()` requires `reporters>=3`; `/v1/classify` writes only `auto_pending_review` |
-| Anonymous read-only; reporting forces GitHub login | ✅ (gated by flag) | `requireReporter()` + `REQUIRE_AUTH`; public reads are confirmed-only |
-| Per-reporter **rate-limit / ban** | ⚠️ **partial** | HMAC fingerprint dedupe + `rate_log` throughput cap ship; ban list remains a follow-up — see Open #1 |
+| Anonymous read-only; reporting forces GitHub login | ✅ (gated by flag) | `requireReporter()` + `REQUIRE_AUTH`; public reads are confirmed-only; consumer extension has no write path |
+| Per-reporter **rate-limit / ban** | ✅ | HMAC fingerprint dedupe + `rate_log` throughput cap + `reporter_bans` admin API |
 | `/v1/classify` no longer a free anonymous endpoint | ✅ (gated by flag) | `requireReporter()` on the route |
 | Admin panel: pull queue, see evidence, approve/reject/remove + `review_log` | ✅ | `/v1/admin/*` + `/admin` page |
 | All on existing Cloudflare stack, no new infra | ✅ | Worker + D1 only |
@@ -165,20 +165,22 @@ code on `main`.
   3 anonymous reports on one target → `reporters=1`, not auto-published;
   `/v1/admin/queue` returns 403 without the token, the pending queue with it.
 
-### Open items (need owner decision — NOT blockers for T6 server/ext)
-1. **Reporter ban list is not implemented yet.** Current abuse controls are
-   `(target, reporter_fp)` dedupe plus a `rate_log` sliding-window cap, but a
-   maintainer still cannot ban a bad reporter fingerprint/GitHub identity from
-   the Worker. That follow-up is tracked in LUO-62.
-2. **Reporter identity storage is now aligned with GOVERNANCE.md.** Report and
+### Open items (owner-timed rollout)
+1. **Reporter identity storage is aligned with GOVERNANCE.md.** Report and
    confirm paths persist `HMAC(REPORT_SALT, reporter_id)` fingerprints instead
    of raw GitHub numeric ids; dedupe and reporter counts still work from the
    stable fingerprint, while exported evidence and audit logs remain unlinkable
    without the Worker secret.
-3. **`REQUIRE_AUTH` flip.** Server + extension login both shipped, so the
-   flag can be turned on (`wrangler secret put REQUIRE_AUTH` = `1`) once a
-   GitHub-login-capable extension build is published to users. Until then it
-   stays off to avoid breaking installed anonymous clients. Ops step, owner-timed.
+2. **Legacy fingerprint backfill.** If any old `gh:<id>` reporter rows exist,
+   set `REPORT_SALT`, apply `2026-06-04-reporter-bans.sql`, then call
+   `POST /v1/admin/reporter-fingerprints/backfill` once before relying on
+   `REQUIRE_AUTH=1`. Runtime dedupe also treats the current request's legacy
+   and HMAC aliases as the same reporter to prevent double-counting during the
+   transition.
+3. **`REQUIRE_AUTH` flip.** This is an owner-timed production operation:
+   confirm trusted write clients can supply GitHub bearer tokens, then set
+   `wrangler secret put REQUIRE_AUTH` to `1`. The consumer extension remains
+   read-only and is unaffected for `/v1/check` and local-list usage.
 4. **`/v1/appeal` is implemented as a review signal.** Filing an appeal writes
    an `appeal_submitted` audit row and leaves the listing in place until a human
    admin decides `remove`, matching SPEC-T1's anti-delisting-abuse rule.

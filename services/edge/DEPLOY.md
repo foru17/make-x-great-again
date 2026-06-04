@@ -45,6 +45,13 @@ by default for the personal account).
     npm run deploy
     # → https://x.zuoluo.tv     (workers.dev URL still works as a fallback)
 
+Before enabling reporter bans or a `REQUIRE_AUTH=1` rollout, apply the reporter
+ban migration and backfill any legacy `gh:<id>` fingerprints:
+
+    npx wrangler d1 execute xss-db --remote --file=./migrations/2026-06-04-reporter-bans.sql
+    curl -X POST https://x.zuoluo.tv/v1/admin/reporter-fingerprints/backfill \
+      -H "x-admin-token: $ADMIN_TOKEN"
+
 ## 5. Point the extension at it
 
 The extension defaults to `BRAND.edgeBase` (= `https://x.zuoluo.tv`) via
@@ -62,7 +69,8 @@ local / staging.
 `POST /v1/classify` · `POST /v1/confirm` · `POST /v1/report` ·
 `POST /v1/appeal` ·
 `GET /v1/list?limit&before&since` · `GET /v1/list/meta` ·
-`GET /v1/admin/queue` · `POST /v1/admin/decide` · `GET /v1/admin/log`
+`GET /v1/admin/queue` · `POST /v1/admin/decide` · `GET /v1/admin/log` ·
+`GET/POST/DELETE /v1/admin/reporter-bans`
 
 ## Governance
 
@@ -75,4 +83,6 @@ beyond the public numeric id.
 
 `/v1/appeal` queues a human removal review and does not unpublish by itself.
 Reporter identities are stored as HMAC fingerprints derived from `REPORT_SALT`;
-`rate_log` caps report/confirm signals per fingerprint per hour.
+`rate_log` caps report/confirm signals per fingerprint per hour, and
+`reporter_bans` blocks abusive fingerprints before any effective signal is
+written.

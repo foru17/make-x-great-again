@@ -118,6 +118,11 @@ function reporterActor(fp: string): string {
   return `reporter:${fp.slice(4, 16)}`;
 }
 
+function reporterAliases(fp: string, reporterId: string): [string, string] {
+  const legacy = reporterId.startsWith("gh:") ? reporterId : fp;
+  return legacy === fp ? [fp, fp] : [fp, legacy];
+}
+
 const Signals = z.object({
   // X numeric user id — immutable, the canonical identity key. Optional
   // because the fiber-walk that extracts it from X's React state fails on
@@ -276,12 +281,14 @@ function reportEvidence(s: Signals): string {
 
 async function reportRate(
   env: Env,
-  fp: string,
+  aliases: [string, string],
   now: number,
 ): Promise<{ ok: boolean; remaining: number }> {
   const windowStart = now - REPORT_WINDOW_MS;
-  const row = await env.DB.prepare("SELECT count(*) n FROM rate_log WHERE fp=? AND created_at>=?")
-    .bind(fp, windowStart)
+  const row = await env.DB.prepare(
+    "SELECT count(*) n FROM rate_log WHERE fp IN (?,?) AND created_at>=?",
+  )
+    .bind(aliases[0], aliases[1], windowStart)
     .first<{ n: number }>();
   const count = row?.n ?? 0;
   return {
@@ -295,6 +302,25 @@ async function recordReportRate(env: Env, fp: string, now: number): Promise<void
     env.DB.prepare("INSERT INTO rate_log (fp, created_at) VALUES (?,?)").bind(fp, now),
     env.DB.prepare("DELETE FROM rate_log WHERE created_at<?").bind(now - REPORT_WINDOW_MS * 2),
   ]);
+}
+
+async function activeReporterBan(
+  env: Env,
+  aliases: [string, string],
+  now: number,
+): Promise<{ id: number; reporter_fp: string; reason: string | null } | null> {
+  return (
+    (await env.DB.prepare(
+      `SELECT id, reporter_fp, reason
+         FROM reporter_bans
+        WHERE reporter_fp IN (?,?)
+          AND (expires_at IS NULL OR expires_at > ?)
+        ORDER BY created_at DESC
+        LIMIT 1`,
+    )
+      .bind(aliases[0], aliases[1], now)
+      .first<{ id: number; reporter_fp: string; reason: string | null }>()) ?? null
+  );
 }
 
 interface AccountSignalSnapshot {
@@ -643,6 +669,7 @@ async function insertReportIfNew(
   uid: string | null,
   reporter: Reporter,
   fp: string,
+  aliases: [string, string],
   now: number,
 ): Promise<boolean> {
   const res = await env.DB.prepare(
@@ -652,7 +679,7 @@ async function insertReportIfNew(
       WHERE NOT EXISTS (
         SELECT 1 FROM reports
          WHERE lower(handle)=?
-           AND reporter_fp=?
+           AND reporter_fp IN (?,?)
            AND (? IS NULL OR x_user_id IS NULL OR x_user_id=?)
       )`,
   )
@@ -665,7 +692,8 @@ async function insertReportIfNew(
       reportEvidence(s),
       now,
       handle,
-      fp,
+      aliases[0],
+      aliases[1],
       uid,
       uid,
     )
@@ -958,8 +986,14 @@ async function submitReport(c: Ctx, source: string) {
   const now = Date.now();
   const fp = await reporterFingerprint(c.env, who.id);
   if (!fp) return c.json({ error: "report_salt_required" }, 503);
+  const aliases = reporterAliases(fp, who.id);
 
-  const rate = await reportRate(c.env, fp, now);
+  const ban = await activeReporterBan(c.env, aliases, now);
+  if (ban) {
+    return c.json({ error: "reporter_banned", reason: ban.reason ?? "banned" }, 403);
+  }
+
+  const rate = await reportRate(c.env, aliases, now);
   if (!rate.ok) {
     return c.json({ error: "rate_limited", remaining: 0, retryAfterMs: REPORT_WINDOW_MS }, 429);
   }
@@ -975,7 +1009,7 @@ async function submitReport(c: Ctx, source: string) {
 
   // one report per (target, reporter); always store, even for "young" GH
   // accounts — they just don't count toward AUTO_REPORTERS.
-  const insertedReport = await insertReportIfNew(c.env, s, s.handle, uid, who, fp, now);
+  const insertedReport = await insertReportIfNew(c.env, s, s.handle, uid, who, fp, aliases, now);
   const alreadyReported = !insertedReport;
   if (insertedReport) {
     await recordReportRate(c.env, fp, now);
@@ -985,12 +1019,12 @@ async function submitReport(c: Ctx, source: string) {
   // REPORTER_MIN_AGE_DAYS count. NULL age = legacy rows; treat them as
   // eligible so existing maintainer history is preserved.
   const cnt = await c.env.DB.prepare(
-    `SELECT count(DISTINCT reporter_fp) n FROM reports
+    `SELECT count(DISTINCT CASE WHEN reporter_fp=? THEN ? ELSE reporter_fp END) n FROM reports
        WHERE lower(handle)=?
          AND (? IS NULL OR x_user_id IS NULL OR x_user_id=?)
          AND (reporter_age_days IS NULL OR reporter_age_days >= ?)`,
   )
-    .bind(s.handle, uid, uid, REPORTER_MIN_AGE_DAYS)
+    .bind(aliases[1], aliases[0], s.handle, uid, uid, REPORTER_MIN_AGE_DAYS)
     .first<{ n: number }>();
   const reporters = cnt?.n ?? (who.ageDays >= REPORTER_MIN_AGE_DAYS ? 1 : 0);
   if (alreadyReported && cur) {
@@ -1103,6 +1137,99 @@ function admin(c: Ctx): boolean {
   const t = c.env.ADMIN_TOKEN;
   return !!t && c.req.raw.headers.get("x-admin-token") === t;
 }
+
+const ReporterBanBody = z
+  .object({
+    reporterFp: z.string().min(1).max(128).optional(),
+    githubId: z.string().regex(/^\d+$/).optional(),
+    reason: z.string().max(500).optional(),
+    expiresAt: z.number().int().positive().nullable().optional(),
+  })
+  .refine((v) => !!v.reporterFp !== !!v.githubId, {
+    message: "provide exactly one of reporterFp or githubId",
+  });
+
+async function reporterFpForAdmin(
+  env: Env,
+  body: z.infer<typeof ReporterBanBody>,
+): Promise<string | null> {
+  if (body.reporterFp) return body.reporterFp.trim();
+  if (!body.githubId) return null;
+  return reporterFingerprint(env, `gh:${body.githubId}`);
+}
+
+app.get("/v1/admin/reporter-bans", async (c) => {
+  if (!admin(c)) return c.json({ error: "forbidden" }, 403);
+  const rows = await c.env.DB.prepare(
+    `SELECT id, reporter_fp, reason, created_by, created_at, expires_at
+       FROM reporter_bans
+      ORDER BY created_at DESC, id DESC
+      LIMIT 500`,
+  ).all();
+  return c.json({ bans: rows.results ?? [] });
+});
+
+app.post("/v1/admin/reporter-bans", async (c) => {
+  if (!admin(c)) return c.json({ error: "forbidden" }, 403);
+  let body: z.infer<typeof ReporterBanBody>;
+  try {
+    body = ReporterBanBody.parse(await c.req.json());
+  } catch (err) {
+    return c.json({ error: "bad_request", detail: (err as Error).message }, 400);
+  }
+  const fp = await reporterFpForAdmin(c.env, body);
+  if (!fp) return c.json({ error: "report_salt_required" }, 503);
+  const now = Date.now();
+  const res = await c.env.DB.prepare(
+    `INSERT INTO reporter_bans (reporter_fp, reason, created_by, created_at, expires_at)
+     VALUES (?, ?, 'admin', ?, ?)`,
+  )
+    .bind(fp, body.reason ?? null, now, body.expiresAt ?? null)
+    .run();
+  return c.json({ ok: true, id: res.meta.last_row_id, reporterFp: fp });
+});
+
+app.delete("/v1/admin/reporter-bans/:id", async (c) => {
+  if (!admin(c)) return c.json({ error: "forbidden" }, 403);
+  const id = Number(c.req.param("id"));
+  if (!Number.isFinite(id)) return c.json({ error: "bad_id" }, 400);
+  const res = await c.env.DB.prepare("DELETE FROM reporter_bans WHERE id=?").bind(id).run();
+  return c.json({ ok: true, deleted: res.meta.changes ?? 0 });
+});
+
+app.post("/v1/admin/reporter-fingerprints/backfill", async (c) => {
+  if (!admin(c)) return c.json({ error: "forbidden" }, 403);
+  if (!c.env.REPORT_SALT?.trim()) return c.json({ error: "report_salt_required" }, 503);
+  const rows = await c.env.DB.prepare(
+    `SELECT reporter_fp AS fp FROM reports WHERE reporter_fp LIKE 'gh:%'
+     UNION
+     SELECT fp FROM rate_log WHERE fp LIKE 'gh:%'
+     UNION
+     SELECT reporter_fp AS fp FROM reporter_bans WHERE reporter_fp LIKE 'gh:%'`,
+  ).all<{ fp: string }>();
+
+  let reports = 0;
+  let rateLog = 0;
+  let bans = 0;
+  for (const row of rows.results ?? []) {
+    const fp = row.fp;
+    const next = await reporterFingerprint(c.env, fp);
+    if (!next || next === fp) continue;
+    const [r1, r2, r3] = await c.env.DB.batch([
+      c.env.DB.prepare("UPDATE reports SET reporter_fp=? WHERE reporter_fp=?").bind(next, fp),
+      c.env.DB.prepare("UPDATE rate_log SET fp=? WHERE fp=?").bind(next, fp),
+      c.env.DB.prepare("UPDATE reporter_bans SET reporter_fp=? WHERE reporter_fp=?").bind(next, fp),
+    ]);
+    reports += r1.meta.changes ?? 0;
+    rateLog += r2.meta.changes ?? 0;
+    bans += r3.meta.changes ?? 0;
+  }
+  return c.json({
+    ok: true,
+    scanned: rows.results?.length ?? 0,
+    updated: { reports, rateLog, bans },
+  });
+});
 
 type AdminSort =
   | "time_desc"

@@ -43,6 +43,7 @@ Every migration must:
 | 2026-05-28 | `2026-05-28-public-trends.sql` | ⏳ apply before relying on `/v1/list/trends` at scale | adds `idx_accounts_status_published_at` | Speeds up public count/window queries and trend buckets. Companion rollback drops only this index. |
 | 2026-05-28 | `2026-05-28-account-profile-metrics.sql` | ⏳ apply before deploying admin metrics UI | adds nullable `account_created_at`, `account_age_days`, `followers_count`, `following_count` | Persists profile metrics already captured by the extension so `/admin` can show registration time, followers, and following counts. Rollback leaves nullable columns in place. |
 | 2026-05-29 | `2026-05-29-admin-sort-indexes.sql` | ⏳ apply before relying on admin metric sorting at scale | adds `status + account_created_at/followers_count/following_count` indexes | Helps admin queue/list endpoints sort and page by captured profile metrics. Companion rollback drops only these indexes. |
+| 2026-06-04 | `2026-06-04-reporter-bans.sql` | ⏳ apply before using reporter bans | adds `reporter_bans` table + active lookup index | Enables `/v1/admin/reporter-bans` and `/v1/admin/reporter-fingerprints/backfill`. After setting `REPORT_SALT`, run the backfill endpoint once before enforcing `REQUIRE_AUTH=1` in production. |
 
 Rollback: `2026-05-26-identity-cleanup.rollback.sql` (restores the
 `accounts` rows; `reports` deletes are not recoverable from migration data).

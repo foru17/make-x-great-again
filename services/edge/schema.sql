@@ -120,3 +120,17 @@ CREATE TABLE IF NOT EXISTS rate_log (
   created_at INTEGER NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_rate_log_fp_time ON rate_log(fp, created_at);
+
+-- Reporter bans: admin-maintained anti-abuse blocklist keyed by the same
+-- HMAC reporter fingerprint used by reports/rate_log. Temporary bans expire
+-- automatically when expires_at is in the past; NULL = permanent.
+CREATE TABLE IF NOT EXISTS reporter_bans (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  reporter_fp   TEXT NOT NULL,
+  reason        TEXT,
+  created_by    TEXT NOT NULL DEFAULT 'admin',
+  created_at    INTEGER NOT NULL,
+  expires_at    INTEGER
+);
+CREATE INDEX IF NOT EXISTS idx_reporter_bans_fp_active
+  ON reporter_bans(reporter_fp, expires_at);

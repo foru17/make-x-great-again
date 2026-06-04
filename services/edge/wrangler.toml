@@ -44,6 +44,7 @@ database_id = "c3a73f50-9af1-4b85-9b5b-db19dd33f175"
 #   npx wrangler secret put ADMIN_TOKEN     # /admin gate
 # Optional:
 #   npx wrangler secret put REQUIRE_AUTH         # "1" => /v1/classify requires GH login
+#   npx wrangler secret put REPORT_SALT          # HMAC salt for reporter fingerprints
 #   npx wrangler secret put WHITELIST_SYNC_TOKEN # fine-grained PAT, Contents:Write on the repo
 #   npx wrangler secret put WHITELIST_SYNC_REPO  # "owner/repo", default foru17/make-x-great-again
 
