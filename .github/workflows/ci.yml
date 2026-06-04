@@ -30,7 +30,6 @@ jobs:
         with: { node-version: 22 }
       - run: npm install --no-audit --no-fund
       - run: npx tsc --noEmit
-      - run: npm test
       - run: npx wxt build
 
   edge:
@@ -43,3 +42,4 @@ jobs:
         with: { node-version: 22 }
       - run: npm install --no-audit --no-fund
       - run: npx tsc --noEmit
+      - run: npm test
