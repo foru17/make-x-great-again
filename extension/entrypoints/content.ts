@@ -4,6 +4,7 @@ import { onSettingsChange, getSettings } from "../lib/settings";
 import { bumpStats } from "../lib/store";
 import { bumpStat } from "../lib/stats";
 import { type Cached, cacheGet, cacheSet, signalsHash } from "../lib/cache";
+import { getGhToken } from "../lib/auth";
 import {
   AUTO_THRESHOLD,
   extractFromArticle,
@@ -22,7 +23,28 @@ import {
   createStatusBadge,
 } from "../lib/ui";
 
-const APPEAL_URL = BRAND.appealNewIssue;
+/** Submit an appeal via the edge API. Returns true on success. */
+async function submitAppeal(handle: string): Promise<boolean> {
+  try {
+    const base = (await getSettings()).edgeBase || BRAND.edgeBase;
+    const token = await getGhToken();
+    const res = await fetch(`${base}/v1/appeal`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        ...(token ? { authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ handle }),
+    });
+    if (res.ok) return true;
+    const body = await res.json().catch(() => ({}));
+    console.warn("[xss] appeal failed:", res.status, body.error);
+    return false;
+  } catch (e) {
+    console.warn("[xss] appeal error:", e);
+    return false;
+  }
+}
 
 /** Send a message to the background script (admin-only: GitHub auth, health). */
 function send<T = unknown>(msg: unknown): Promise<{ ok: boolean; data?: T; error?: string }> {
@@ -205,7 +227,13 @@ export default defineContentScript({
           v,
           {
             onHide: () => scheduleHide(key, sig, anchor),
-            onAppeal: () => window.open(APPEAL_URL, "_blank", "noopener"),
+            onAppeal: () => {
+              void submitAppeal(sig.handle).then((ok) => {
+                if (ok) {
+                  scheduleHide(key, sig, anchor);
+                }
+              });
+            },
           },
           note,
           source,

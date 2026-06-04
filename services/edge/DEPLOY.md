@@ -30,6 +30,7 @@ URL / model in plaintext (so the repo stays publishable):
 Optional:
 
     npx wrangler secret put REQUIRE_AUTH     # "1" => /v1/classify requires GH login
+    npx wrangler secret put REPORT_SALT      # salt for HMAC-based reporter fingerprinting
 
 ## 3. Custom domain (already wired in `wrangler.toml`)
 
@@ -57,8 +58,9 @@ local / staging.
 `GET /` (landing) · `GET /list` (public board, polls /v1/list) ·
 `GET /admin` (gated by ADMIN_TOKEN, never ships in the consumer extension)
 
-`GET /v1/health` · `GET /v1/check?ids=` (public, human_confirmed only) ·
+`GET /v1/health` · `GET /v1/check?ids=` (public, human_confirmed only, edge-cached) ·
 `POST /v1/classify` · `POST /v1/confirm` · `POST /v1/report` ·
+`POST /v1/appeal` ·
 `GET /v1/list?limit&before&since` · `GET /v1/list/meta` ·
 `GET /v1/admin/queue` · `POST /v1/admin/decide` · `GET /v1/admin/log`
 
@@ -70,3 +72,7 @@ D1 is the source of truth. `POST /v1/classify` only ever writes
 `human_confirmed` solely via human action (`/v1/admin/decide` approve or
 `/v1/confirm`/`/v1/report` once 3 distinct GitHub reporters agree). No PII
 beyond the public numeric id.
+
+Reporter fingerprints are salted HMACs (`REPORT_SALT` secret) — raw GitHub
+ids are never stored in `reports` or `review_log`. Rate limiting caps at
+10 reports per fingerprint per hour via the `rate_log` table.

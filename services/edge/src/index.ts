@@ -24,6 +24,9 @@ interface Env {
   REQUIRE_AUTH?: string;
   ADMIN_TOKEN?: string; // bearer for the admin moderation endpoints
   AGENT_TOKEN?: string; // bearer for the side-channel agent endpoints (/v1/agent/*)
+  // Salt for HMAC-based reporter fingerprinting. Never store raw reporter IDs
+  // in reports/review_log — always hash with this salt.
+  REPORT_SALT?: string;
   // Fine-grained GitHub PAT scoped to Contents:Write on the upstream repo,
   // used by the scheduled handler to mirror the curated whitelist /
   // blacklist to data/*.json. Unset = mirror is disabled and the cron is a
@@ -92,6 +95,53 @@ async function requireReporter(c: Ctx): Promise<Reporter | null> {
   const ident = await ghIdentity(c.req.raw);
   if (ident) return ident;
   return c.env.REQUIRE_AUTH === "1" ? null : { id: "anon", ageDays: 0 };
+}
+
+/** HMAC-SHA256 fingerprint — salted, no raw PII in DB. */
+async function reporterFp(env: Env, reporterId: string): Promise<string> {
+  const salt = env.REPORT_SALT ?? "default-salt-change-me";
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(salt),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"],
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(reporterId));
+  return Array.from(new Uint8Array(sig))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")
+    .slice(0, 16);
+}
+
+/** Anonymized actor string for review_log — never raw GitHub id. */
+function anonymizedActor(reporter: Reporter): string {
+  return reporter.id === "anon" ? "anon" : `fp:${reporter.id.slice(0, 6)}`;
+}
+
+/** Rate limiting: check if reporter_fp has exceeded REPORT_MAX per window. */
+const REPORT_WINDOW_MS = 60 * 60_000; // 1 hour
+const REPORT_MAX = 10; // max reports per fp per window
+
+async function checkRateLimit(
+  env: Env,
+  fp: string,
+  now: number,
+): Promise<{ ok: boolean; remaining: number }> {
+  const windowStart = now - REPORT_WINDOW_MS;
+  const r = await env.DB.prepare("SELECT count(*) n FROM rate_log WHERE fp=? AND created_at>=?")
+    .bind(fp, windowStart)
+    .first<{ n: number }>();
+  const count = r?.n ?? 0;
+  return { ok: count < REPORT_MAX, remaining: Math.max(0, REPORT_MAX - count) };
+}
+
+async function recordRateLog(env: Env, fp: string, now: number): Promise<void> {
+  await env.DB.prepare("INSERT INTO rate_log (fp, created_at) VALUES (?,?)").bind(fp, now).run();
+  // Cleanup old entries outside the window (best-effort, non-blocking).
+  await env.DB.prepare("DELETE FROM rate_log WHERE created_at<?")
+    .bind(now - REPORT_WINDOW_MS * 2)
+    .run();
 }
 
 const Signals = z.object({
@@ -586,6 +636,8 @@ async function insertReportIfNew(
   reporter: Reporter,
   now: number,
 ): Promise<boolean> {
+  const fp = await reporterFp(env, reporter.id);
+  const evidence = evidenceText(s);
   const res = await env.DB.prepare(
     `INSERT INTO reports
        (id,x_user_id,handle,reporter_fp,reporter_age_days,evidence,status,created_at)
@@ -601,12 +653,12 @@ async function insertReportIfNew(
       crypto.randomUUID(),
       uid,
       handle,
-      reporter.id,
+      fp,
       reporter.ageDays,
-      JSON.stringify(s).slice(0, 4000),
+      evidence,
       now,
       handle,
-      reporter.id,
+      fp,
       uid,
       uid,
     )
@@ -723,6 +775,7 @@ app.get("/v1/health", async (c) => {
 });
 
 // Public membership check — only human_confirmed (the public list).
+// Uses Workers Cache API for hot-path responses; falls through to D1 on miss.
 app.get("/v1/check", async (c) => {
   const ids = (c.req.query("ids") ?? "")
     .split(",")
@@ -730,6 +783,11 @@ app.get("/v1/check", async (c) => {
     .filter(Boolean)
     .slice(0, 100);
   if (!ids.length) return c.json({ hits: {} });
+
+  const cacheKey = `https://x.zuoluo.tv/v1/check?ids=${ids.sort().join(",")}`;
+  const cached = await caches.default.match(cacheKey);
+  if (cached) return cached;
+
   const ph = ids.map(() => "?").join(",");
   const rows = await c.env.DB.prepare(
     `SELECT x_user_id, verdict_label, confidence FROM accounts
@@ -740,7 +798,15 @@ app.get("/v1/check", async (c) => {
   const hits: Record<string, { label: string; confidence: number }> = {};
   for (const r of rows.results ?? [])
     hits[r.x_user_id] = { label: r.verdict_label, confidence: r.confidence };
-  return c.json({ hits });
+
+  const resp = Response.json(
+    { hits },
+    {
+      headers: { "Cache-Control": "public, max-age=15, s-maxage=30" },
+    },
+  );
+  void caches.default.put(cacheKey, resp.clone());
+  return resp;
 });
 
 app.post("/v1/classify", async (c) => {
@@ -885,6 +951,13 @@ async function submitReport(c: Ctx, source: string) {
   }
   const uid = s.userId ?? null;
   const now = Date.now();
+  const fp = await reporterFp(c.env, who.id);
+
+  // Rate limit check
+  const rate = await checkRateLimit(c.env, fp, now);
+  if (!rate.ok) {
+    return c.json({ error: "rate_limited", remaining: 0, retryAfter: REPORT_WINDOW_MS }, 429);
+  }
 
   // Whitelist short-circuit — if maintainer has explicitly whitelisted the
   // target, ignore the report entirely (don't even store it). Avoids letting
@@ -899,6 +972,9 @@ async function submitReport(c: Ctx, source: string) {
   // accounts — they just don't count toward AUTO_REPORTERS.
   const insertedReport = await insertReportIfNew(c.env, s, s.handle, uid, who, now);
   const alreadyReported = !insertedReport;
+
+  // Record rate log (even for duplicates, so the window tracks activity).
+  await recordRateLog(c.env, fp, now);
 
   // Reporter count for auto-publish: only GH accounts older than
   // REPORTER_MIN_AGE_DAYS count. NULL age = legacy rows; treat them as
@@ -966,7 +1042,7 @@ async function submitReport(c: Ctx, source: string) {
         uid,
         s.handle,
         finalStatus === status ? "report_queued" : "report_seen",
-        who.id,
+        anonymizedActor(who),
         `${source} r=${reporters} age=${who.ageDays}d${
           wouldAutoIfEnabled ? " · would auto-publish if enabled" : ""
         }`,
@@ -978,6 +1054,47 @@ async function submitReport(c: Ctx, source: string) {
 }
 app.post("/v1/confirm", (c) => submitReport(c, "block"));
 app.post("/v1/report", (c) => submitReport(c, "report"));
+
+/**
+ * POST /v1/appeal — a listed account owner appeals their status.
+ * Creates an 'appeal_pending' entry in review_log and flips the account
+ * to 'auto_pending_review' so it re-enters the maintainer queue.
+ * Requires GitHub auth (when enforcement is on).
+ */
+app.post("/v1/appeal", async (c) => {
+  const who = await requireReporter(c);
+  if (!who) return c.json({ error: "github_login_required" }, 401);
+  const body = (await c.req.json()) as { handle?: string };
+  const handle = normalizeHandle(body.handle ?? "");
+  if (!handle) return c.json({ error: "handle_required" }, 400);
+  const now = Date.now();
+  const fp = await reporterFp(c.env, who.id);
+
+  const cur = await findAccount(c.env, handle, null);
+  if (!cur) return c.json({ error: "not_found", detail: "account not in our database" }, 404);
+  if (cur.status !== "human_confirmed") {
+    return c.json(
+      { error: "not_listed", detail: `status is ${cur.status}, not human_confirmed` },
+      400,
+    );
+  }
+
+  // Flip back to pending review so the maintainer sees it.
+  await c.env.DB.prepare(
+    "UPDATE accounts SET status='auto_pending_review', published_at=NULL, removed_at=? WHERE rowid=?",
+  )
+    .bind(now, cur.rowid)
+    .run();
+
+  // Audit trail — anonymized actor, no raw GitHub id.
+  await c.env.DB.prepare(
+    "INSERT INTO review_log (x_user_id,handle,action,actor,note,at) VALUES (?,?,?,?,?,?)",
+  )
+    .bind(cur.x_user_id, handle, "appeal_submitted", anonymizedActor(who), `appeal by ${fp}`, now)
+    .run();
+
+  return c.json({ ok: true, status: "appeal_pending", handle });
+});
 
 // ---- Admin (守门员) ----
 function admin(c: Ctx): boolean {
