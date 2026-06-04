@@ -43,4 +43,7 @@ if (matchByHandle) {
 // Test case 3: Non-existent lookup
 const nonExistent = "clean_user_123";
 const matchClean = handleMap.get(nonExistent.toLowerCase());
-console.log(`\nLookup non-existent "${nonExistent}":`, matchClean ? "❌ MATCHED (Expected: null)" : "✅ NULL (Correct)");
+console.log(
+  `\nLookup non-existent "${nonExistent}":`,
+  matchClean ? "❌ MATCHED (Expected: null)" : "✅ NULL (Correct)",
+);
