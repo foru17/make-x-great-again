@@ -99,3 +99,24 @@ CREATE TABLE IF NOT EXISTS keyword_rules (
   last_hit_at   INTEGER
 );
 CREATE INDEX IF NOT EXISTS idx_keyword_rules_enabled ON keyword_rules(enabled);
+
+-- Publications: D1 -> R2 publish ledger. Each row represents one successful
+-- artifact generation (bloom + sharded JSON + meta.json).
+CREATE TABLE IF NOT EXISTS publications (
+  id            INTEGER PRIMARY KEY AUTOINCREMENT,
+  version       TEXT NOT NULL UNIQUE,       -- "v<sha256-prefix>-<count>"
+  bloom_key     TEXT NOT NULL,              -- R2 object key for bloom filter
+  json_key      TEXT NOT NULL,              -- R2 object key for shard JSON
+  meta_key      TEXT NOT NULL,              -- R2 object key for meta.json
+  count         INTEGER NOT NULL,           -- # of human_confirmed accounts
+  published_at  INTEGER NOT NULL            -- epoch ms
+);
+CREATE INDEX IF NOT EXISTS idx_publications_version ON publications(version);
+
+-- Report rate limiting log, keyed by reporter fingerprint.
+CREATE TABLE IF NOT EXISTS rate_log (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  fp         TEXT NOT NULL,
+  created_at INTEGER NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_rate_log_fp_time ON rate_log(fp, created_at);

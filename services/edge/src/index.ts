@@ -8,6 +8,7 @@ import { listHtml } from "./pages/list";
 
 interface Env {
   DB: D1Database;
+  ARTIFACTS: R2Bucket;
   // LLM provider config — ALL three are Worker secrets (NOT in wrangler.toml).
   // The provider URL + model name are treated as sensitive (so the project can
   // be open-sourced without doxxing the inference dependency); the API key
@@ -40,6 +41,17 @@ const AUTO_REPORTERS = 3; // distinct GitHub reporters required for auto-publish
 // future re-evaluation), but a fresh throwaway account can't help flip
 // status to human_confirmed. 90d is a common drive-by abuse cutoff.
 const REPORTER_MIN_AGE_DAYS = 90;
+const BLOOM_SIZE = 65_536; // 8 KB bit array
+const BLOOM_HASHES = 7;
+const BLOOM_SHARD_SIZE = 500; // accounts per logical shard in the JSON artifact
+
+interface PublishedShardEntry {
+  userId: string | null;
+  handle: string;
+  label: string;
+  confidence: number;
+  published_at: number;
+}
 
 interface Reporter {
   /** Stable id, namespaced. `gh:<numeric>` for GitHub, `anon` when enforcement off. */
@@ -150,6 +162,34 @@ const sigHash = (s: Signals) =>
       s.accountAgeDays ?? -1,
     ]),
   );
+
+/** MurmurHash3-like 32-bit hash (deterministic, fast). */
+function murmur32(key: string, seed: number): number {
+  let h = seed;
+  for (let i = 0; i < key.length; i++) {
+    h = Math.imul(h ^ key.charCodeAt(i), 0x5bd1e995);
+    h ^= h >>> 13;
+    h = Math.imul(h, 0x5bd1e995);
+  }
+  return h >>> 0;
+}
+
+function buildBloom(items: string[]): Uint8Array {
+  const bits = new Uint8Array(BLOOM_SIZE);
+  for (const item of items) {
+    for (let h = 0; h < BLOOM_HASHES; h++) {
+      const pos = murmur32(item, h * 0x9e3779b9) % (BLOOM_SIZE * 8);
+      bits[pos >>> 3] |= 1 << (pos & 7);
+    }
+  }
+  return bits;
+}
+
+function bloomToBase64(bits: Uint8Array): string {
+  let binary = "";
+  for (let i = 0; i < bits.length; i++) binary += String.fromCharCode(bits[i] ?? 0);
+  return btoa(binary);
+}
 
 function userPrompt(s: Signals): string {
   const meta = [
@@ -1914,7 +1954,26 @@ app.get("/v1/whitelist", async (c) => {
   return c.json({ list, latestAt, count: list.length });
 });
 
+app.get("/v1/artifacts/:key", async (c) => {
+  const key = c.req.param("key");
+  if (!key || key.includes("..") || key.includes("/")) return c.json({ error: "invalid_key" }, 400);
+
+  const obj = await c.env.ARTIFACTS.get(key);
+  if (!obj) return c.json({ error: "not_found" }, 404);
+
+  return new Response(obj.body, {
+    headers: {
+      "Content-Type": key.endsWith(".json") ? "application/json" : "application/octet-stream",
+      "Cache-Control": "public, max-age=300, s-maxage=600",
+    },
+  });
+});
+
 app.get("/v1/list/meta", async (c) => {
+  const cacheKey = "https://x.zuoluo.tv/v1/list/meta";
+  const cached = await caches.default.match(cacheKey);
+  if (cached) return cached;
+
   const now = Date.now();
   const r = await c.env.DB.prepare(
     `SELECT count(*) n,
@@ -1926,15 +1985,40 @@ app.get("/v1/list/meta", async (c) => {
   )
     .bind(now - DAY_MS, now - 7 * DAY_MS)
     .first<{ n: number; latest: number | null; day: number; week: number; pending: number }>();
-  c.header("Cache-Control", "public, max-age=30, s-maxage=60");
-  return c.json({
+
+  const pub = await c.env.DB.prepare(
+    "SELECT version, bloom_key, json_key, meta_key, count, published_at FROM publications ORDER BY published_at DESC LIMIT 1",
+  ).first<{
+    version: string;
+    bloom_key: string;
+    json_key: string;
+    meta_key: string;
+    count: number;
+    published_at: number;
+  }>();
+
+  const payload = {
     count: r?.n ?? 0,
     day: r?.day ?? 0,
     week: r?.week ?? 0,
     pending: r?.pending ?? 0,
-    generatedAt: r?.latest ?? null,
-    version: `d1-${r?.n ?? 0}`,
+    generatedAt: pub?.published_at ?? r?.latest ?? null,
+    version: pub?.version ?? `d1-${r?.n ?? 0}`,
+    artifacts: pub
+      ? {
+          bloom: `/v1/artifacts/${pub.bloom_key}`,
+          shards: `/v1/artifacts/${pub.json_key}`,
+          meta: `/v1/artifacts/${pub.meta_key}`,
+        }
+      : null,
+  };
+  const resp = Response.json(payload, {
+    headers: {
+      "Cache-Control": "public, max-age=30, s-maxage=60",
+    },
   });
+  void caches.default.put(cacheKey, resp.clone());
+  return resp;
 });
 
 // Public trend data for the landing page. The server returns 48 hourly buckets
@@ -2734,9 +2818,105 @@ app.post("/v1/admin/sync-mirror", async (c) => {
   return c.json({ ok: true });
 });
 
+async function publishArtifacts(env: Env): Promise<void> {
+  const rows = await env.DB.prepare(
+    "SELECT x_user_id, handle, verdict_label, confidence, published_at FROM accounts WHERE status='human_confirmed' ORDER BY published_at DESC",
+  ).all<{
+    x_user_id: string | null;
+    handle: string;
+    verdict_label: string;
+    confidence: number;
+    published_at: number;
+  }>();
+
+  const accounts = rows.results ?? [];
+  if (!accounts.length) return;
+
+  const bloomItems = accounts.flatMap((a) =>
+    [a.handle, a.x_user_id].filter((v): v is string => !!v),
+  );
+  const bloomB64 = bloomToBase64(buildBloom(bloomItems));
+  const entries: Record<string, PublishedShardEntry> = {};
+  const shards: Record<string, string[]> = {};
+
+  for (let i = 0; i < accounts.length; i += BLOOM_SHARD_SIZE) {
+    const shardKey = `shard-${Math.floor(i / BLOOM_SHARD_SIZE)}.json`;
+    shards[shardKey] = [];
+    for (const a of accounts.slice(i, i + BLOOM_SHARD_SIZE)) {
+      const entry: PublishedShardEntry = {
+        userId: a.x_user_id,
+        handle: a.handle,
+        label: a.verdict_label,
+        confidence: a.confidence,
+        published_at: a.published_at,
+      };
+      const primaryKey = a.x_user_id ?? `handle:${a.handle.toLowerCase()}`;
+      entries[primaryKey] = entry;
+      if (a.handle) entries[`handle:${a.handle.toLowerCase()}`] = entry;
+      shards[shardKey].push(primaryKey);
+    }
+  }
+
+  const version = `v${bloomB64.slice(0, 16)}-${accounts.length}`;
+  const now = Date.now();
+  const bloomKey = `bloom-${version}.b64`;
+  const metaKey = `meta-${version}.json`;
+  const jsonKey = `shards-${version}.json`;
+
+  await env.ARTIFACTS.put(bloomKey, bloomB64, {
+    httpMetadata: {
+      contentType: "text/plain",
+      cacheControl: "public, max-age=300, s-maxage=600",
+    },
+  });
+  await env.ARTIFACTS.put(
+    metaKey,
+    JSON.stringify({
+      version,
+      count: accounts.length,
+      generatedAt: now,
+      bloomKey,
+      shardsKey: jsonKey,
+      shardCount: Object.keys(shards).length,
+      bloomSize: BLOOM_SIZE,
+      bloomHashes: BLOOM_HASHES,
+    }),
+    {
+      httpMetadata: {
+        contentType: "application/json",
+        cacheControl: "public, max-age=300, s-maxage=600",
+      },
+    },
+  );
+  await env.ARTIFACTS.put(
+    jsonKey,
+    JSON.stringify({
+      version,
+      generatedAt: now,
+      count: accounts.length,
+      shardSize: BLOOM_SHARD_SIZE,
+      shards,
+      entries,
+    }),
+    {
+      httpMetadata: {
+        contentType: "application/json",
+        cacheControl: "public, max-age=300, s-maxage=600",
+      },
+    },
+  );
+
+  await env.DB.prepare(
+    "INSERT OR IGNORE INTO publications (version, bloom_key, json_key, meta_key, count, published_at) VALUES (?,?,?,?,?,?)",
+  )
+    .bind(version, bloomKey, jsonKey, metaKey, accounts.length, now)
+    .run();
+}
+
 export default {
   fetch: app.fetch,
   scheduled(_event: ScheduledEvent, env: Env, ctx: ExecutionContext): void {
     ctx.waitUntil(mirrorToGitHub(env).catch((e) => console.warn("mirror error", e)));
+    ctx.waitUntil(publishArtifacts(env).catch((e) => console.warn("artifact publish error", e)));
   },
 };

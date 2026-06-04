@@ -47,13 +47,13 @@ database_id = "c3a73f50-9af1-4b85-9b5b-db19dd33f175"
 #   npx wrangler secret put WHITELIST_SYNC_TOKEN # fine-grained PAT, Contents:Write on the repo
 #   npx wrangler secret put WHITELIST_SYNC_REPO  # "owner/repo", default foru17/make-x-great-again
 
-# Scheduled mirror of curated whitelist/blacklist to the repo.
-# No-ops when WHITELIST_SYNC_TOKEN is unset; otherwise commits to
-# data/whitelist/v1.json and data/blacklist/v1.json every 6h.
+# Scheduled jobs:
+# - mirror curated whitelist/blacklist to the repo every 6h
+# - publish D1 confirmed entries to R2 artifacts every 10m
 [triggers]
-crons = ["0 */6 * * *"]
+crons = ["0 */6 * * *", "*/10 * * * *"]
 
-# R2 (published bloom/JSON artifact) — phase 2, uncomment when wiring publish:
-# [[r2_buckets]]
-# binding = "ARTIFACTS"
-# bucket_name = "xss-blocklist"
+# R2 (published bloom/JSON artifact) — versioned artifacts for CDN distribution.
+[[r2_buckets]]
+binding = "ARTIFACTS"
+bucket_name = "xss-blocklist"
