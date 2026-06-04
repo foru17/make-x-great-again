@@ -19,7 +19,7 @@ declare global {
   }
 }
 
-const edgeModuleUrl = new URL("../services/edge/src/index.ts", import.meta.url).href;
+const edgeModuleUrl = new URL("../src/index.ts", import.meta.url).href;
 const worker = (await import(edgeModuleUrl)).default as {
   fetch(req: Request, env: Record<string, unknown>): Promise<Response>;
 };
