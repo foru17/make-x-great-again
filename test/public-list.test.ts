@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { after, test } from "node:test";
@@ -174,7 +174,34 @@ test("generatePublicList: dedupes by userId, latest wins", () => {
   assert.equal(entry.c, 0.9);
 });
 
-// Need to import readFileSync for the test above
+test("generatePublicList: rebuilds data dir so removed entries do not leave stale shards", () => {
+  const dbPath = join(tmp, "stale-shard.jsonl");
+  const outDir = join(tmp, "out-stale-shard");
+  const lines = [
+    {
+      userId: "123",
+      handle: "gone",
+      signalsHash: "h1",
+      model: "m",
+      reviewStatus: "human_confirmed",
+      verdict: { label: "spam", confidence: 0.9, reasons: ["r1"] },
+      createdAt: "2026-01-01T00:00:00.000Z",
+    },
+  ];
+  writeFileSync(dbPath, lines.map((l) => JSON.stringify(l)).join("\n"), "utf8");
+  generatePublicList({ sourcePath: dbPath, outDir, version: "v1.0.0", sourceCommit: "abc123" });
+
+  const staleShardPath = join(outDir, "data", "shards", `${hashBucket("123", 256)}.json`);
+  assert.equal(existsSync(staleShardPath), true);
+
+  writeFileSync(dbPath, "", "utf8");
+  generatePublicList({ sourcePath: dbPath, outDir, version: "v1.0.1", sourceCommit: "def456" });
+
+  assert.equal(existsSync(staleShardPath), false);
+  const meta = JSON.parse(readFileSync(join(outDir, "data", "meta.json"), "utf8"));
+  assert.equal(meta.count, 0);
+});
+
 test("generatePublicList: meta and index schemas validate", () => {
   const dbPath = join(tmp, "schema.jsonl");
   const lines = [

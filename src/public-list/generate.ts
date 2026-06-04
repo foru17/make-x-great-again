@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import type { CurationRecord } from "../schema.ts";
 import { add, createBloomFilter, serialize } from "./bloom.ts";
@@ -86,8 +86,11 @@ export function generatePublicList(opts: GenerateOptions): GenerateResult {
     ...serialize(filter),
   });
 
-  // 6. Shard by hash bucket
-  const shardDir = join(outDir, "data", "shards");
+  // 6. Shard by hash bucket. Rebuild data/ from scratch so removed or
+  // successfully appealed accounts cannot survive as stale shard files.
+  const dataDir = join(outDir, "data");
+  rmSync(dataDir, { recursive: true, force: true });
+  const shardDir = join(dataDir, "shards");
   mkdirSync(shardDir, { recursive: true });
   const shards = new Map<string, PublicEntry[]>();
   for (const e of entries) {
@@ -102,7 +105,7 @@ export function generatePublicList(opts: GenerateOptions): GenerateResult {
   }
 
   // 7. Write index.json
-  const indexPath = join(outDir, "data", "index.json");
+  const indexPath = join(dataDir, "index.json");
   writeFileSync(indexPath, JSON.stringify(index, null, 2), "utf8");
 
   // 8. Write meta.json
@@ -115,7 +118,7 @@ export function generatePublicList(opts: GenerateOptions): GenerateResult {
     shardCount,
     removedCount: (opts["removedCount" as keyof GenerateOptions] as number | undefined) ?? 0,
   });
-  const metaPath = join(outDir, "data", "meta.json");
+  const metaPath = join(dataDir, "meta.json");
   writeFileSync(metaPath, JSON.stringify(meta, null, 2), "utf8");
 
   return {

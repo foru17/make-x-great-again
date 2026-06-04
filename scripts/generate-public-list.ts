@@ -1,5 +1,5 @@
 #!/usr/bin/env tsx
-import { readFileSync } from "node:fs";
+import { existsSync } from "node:fs";
 import { generatePublicList } from "../src/public-list/generate.ts";
 
 const [version, sourceCommit] = process.argv.slice(2);
@@ -13,6 +13,15 @@ if (!version || !sourceCommit) {
 
 const sourcePath = process.env.CURATION_DB_PATH ?? ".curation-db/records.jsonl";
 const outDir = process.env.PUBLIC_LIST_DIR ?? "public-list";
+
+if (!existsSync(sourcePath)) {
+  const message = `Curation DB not found at ${sourcePath}`;
+  if (process.env.CI === "true" || process.env.REQUIRE_CURATION_DB === "1") {
+    console.error(`ERROR: ${message}. Refusing to publish an empty public list.`);
+    process.exit(1);
+  }
+  console.warn(`WARN: ${message}. Generating an empty public list for local/dev use.`);
+}
 
 const result = generatePublicList({ sourcePath, outDir, version, sourceCommit });
 

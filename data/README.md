@@ -132,7 +132,7 @@ curl https://cdn.jsdelivr.net/gh/foru17/make-x-great-again@latest/public-list/da
 curl https://cdn.jsdelivr.net/gh/foru17/make-x-great-again@latest/public-list/data/index.json
 
 # 3. 按需拉 shard（FNV-1a hash bucket）
-BUCKET=$(node -e "let h=2166136261;for(const c of '123456789'){h^=c.charCodeAt(0);h+=(h<<1)+(h<<4)+(h<<7)+(h<<8)+(h<<24)}console.log(Math.abs(h|0%256).toString(16).padStart(2,'0'))")
+BUCKET=$(node -e "let h=2166136261;for(const c of '123456789'){h^=c.charCodeAt(0);h+=(h<<1)+(h<<4)+(h<<7)+(h<<8)+(h<<24)}console.log((Math.abs(h|0)%256).toString(16).padStart(2,'0'))")
 curl "https://cdn.jsdelivr.net/gh/foru17/make-x-great-again@latest/public-list/data/shards/${BUCKET}.json"
 ```
 

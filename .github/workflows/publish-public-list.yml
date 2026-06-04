@@ -15,6 +15,8 @@ jobs:
   generate:
     name: Generate public list artefacts
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -25,16 +27,41 @@ jobs:
       - run: pnpm typecheck
       - run: pnpm test
 
+      - name: Resolve release version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="v0.0.$(date -u +%Y%m%d)-schedule.${GITHUB_RUN_NUMBER}"
+          fi
+          if ! echo "$VERSION" | grep -Eq '^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+            echo "ERROR: invalid version: $VERSION"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Validate curation source
+        run: |
+          if [ ! -f "$CURATION_DB_PATH" ]; then
+            echo "ERROR: CURATION_DB_PATH does not exist: $CURATION_DB_PATH"
+            echo "Configure a prior private curation-db export/checkout step or set CURATION_DB_PATH to a generated JSONL file."
+            exit 1
+          fi
+        env:
+          CURATION_DB_PATH: ${{ secrets.CURATION_DB_PATH || '.curation-db/records.jsonl' }}
+
       - name: Generate public list
         id: gen
         run: |
           mkdir -p public-list
           pnpm tsx scripts/generate-public-list.ts \
-            "${{ inputs.version || github.ref_name }}" \
+            "${{ steps.version.outputs.version }}" \
             "${{ github.sha }}"
         env:
           CURATION_DB_PATH: ${{ secrets.CURATION_DB_PATH || '.curation-db/records.jsonl' }}
           PUBLIC_LIST_DIR: public-list
+          REQUIRE_CURATION_DB: "1"
 
       - name: Validate artefacts
         run: |
@@ -58,7 +85,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add public-list/data/
           git diff --cached --quiet && echo "No changes to commit" && exit 0
-          VERSION="${{ inputs.version || github.ref_name }}"
+          VERSION="${{ steps.version.outputs.version }}"
           git commit -m "data(public-list): release ${VERSION} · $(jq -r '.count' public-list/data/meta.json) entries · $(date -u +%Y-%m-%d)"
           git tag -a "${VERSION}" -m "Public list ${VERSION}"
           git push origin "${VERSION}"
@@ -76,13 +103,13 @@ jobs:
 
       - name: Smoke test jsDelivr
         run: |
-          VERSION="${{ inputs.version || github.ref_name }}"
+          VERSION="${{ needs.generate.outputs.version }}"
           # jsDelivr caches GitHub releases heavily; use the commit-ish fallback
           curl -sfL "https://cdn.jsdelivr.net/gh/foru17/make-x-great-again@${VERSION}/public-list/data/meta.json" | jq '.schema'
           curl -sfL "https://cdn.jsdelivr.net/gh/foru17/make-x-great-again@${VERSION}/public-list/data/index.json" | jq '.schema'
 
       - name: Smoke test GitHub raw
         run: |
-          VERSION="${{ inputs.version || github.ref_name }}"
+          VERSION="${{ needs.generate.outputs.version }}"
           curl -sfL "https://raw.githubusercontent.com/foru17/make-x-great-again/${VERSION}/public-list/data/meta.json" | jq '.schema'
           curl -sfL "https://raw.githubusercontent.com/foru17/make-x-great-again/${VERSION}/public-list/data/index.json" | jq '.schema'

@@ -41,7 +41,7 @@ If the bloom filter says *probably present*, fetch the exact shard:
 
 ```bash
 # Hash the user id to a 2-hex bucket (FNV-1a mod 256)
-BUCKET=$(node -e "let h=2166136261;for(const c of '123456789'){h^=c.charCodeAt(0);h+=(h<<1)+(h<<4)+(h<<7)+(h<<8)+(h<<24)}console.log(Math.abs(h|0%256).toString(16).padStart(2,'0'))")
+BUCKET=$(node -e "let h=2166136261;for(const c of '123456789'){h^=c.charCodeAt(0);h+=(h<<1)+(h<<4)+(h<<7)+(h<<8)+(h<<24)}console.log((Math.abs(h|0)%256).toString(16).padStart(2,'0'))")
 curl -sL "https://cdn.jsdelivr.net/gh/foru17/make-x-great-again@latest/public-list/data/shards/${BUCKET}.json"
 ```
 
