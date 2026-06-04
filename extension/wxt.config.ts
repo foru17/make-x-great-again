@@ -18,17 +18,6 @@ export default defineConfig({
     description:
       "Passive AI spam / porn-bot detection for X. Public-good, open source.",
     permissions: ["storage"],
-    host_permissions: [
-      // Public Worker entry point (custom domain).
-      "https://x.zuoluo.tv/*",
-      // Legacy workers.dev URL — kept so installs that still have an old
-      // edgeBase setting can still talk to the Worker until they update.
-      "https://x-spam-sentinel-edge.zuoluotv.workers.dev/*",
-      "https://github.com/*",
-      "https://api.github.com/*",
-      "http://127.0.0.1:8787/*",
-      "http://localhost:8787/*",
-    ],
     action: { default_title: "x-spam-sentinel" },
     options_ui: { open_in_tab: true },
   },

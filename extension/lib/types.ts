@@ -34,6 +34,7 @@ export interface Signals {
 /** Background messages — strictly local now (no remote classify/confirm). */
 export type BgRequest =
   | { type: "health" }
+  | { type: "stats" }
   | { type: "records" }
   | { type: "gh_start" }
   | { type: "gh_poll"; deviceCode: string }

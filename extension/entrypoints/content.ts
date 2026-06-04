@@ -2,6 +2,7 @@ import { isBlockedSync, warm as warmBlocklist, addBlocked } from "../lib/blockli
 import { BRAND } from "../lib/brand";
 import { onSettingsChange, getSettings } from "../lib/settings";
 import { bumpStats } from "../lib/store";
+import { bumpStat } from "../lib/stats";
 import { type Cached, cacheGet, cacheSet, signalsHash } from "../lib/cache";
 import {
   AUTO_THRESHOLD,
@@ -118,6 +119,7 @@ function executeHide(key: string, sig: Signals, _anchor: HTMLElement) {
   void addBlocked(key);
   if (sig.userId) void addBlocked(sig.userId);
   void bumpStats({ blocks: 1 });
+  void bumpStat("blocked");
   hideTweet(
     pendingActions.get(key)?.anchor ??
       document.querySelector(`[data-xss-key="${key}"]`),
@@ -167,7 +169,7 @@ export default defineContentScript({
 
     // Warm local data structures
     await warmBlocklist();
-    warmLocalIndex();
+    await warmLocalIndex();
 
     const isReplyContext = () => /^\/[^/]+\/status\/\d+/.test(location.pathname);
     const keyOf = (s: Signals) => s.userId || `h:${s.handle}`;
@@ -219,6 +221,7 @@ export default defineContentScript({
     function renderLocalIndex(anchor: HTMLElement, key: string, sig: Signals, entry: IndexEntry) {
       badgeFor(anchor, key, sig, entry.verdict, undefined, "list");
       pushFinding(sig, entry.verdict, "local-index");
+      void bumpStat("hitPublic");
     }
 
     async function process(sig: Signals, anchor: HTMLElement) {
@@ -247,44 +250,14 @@ export default defineContentScript({
       }
 
       // 3. Local public index lookup (no remote requests, <50ms).
-      if (sig.userId) {
-        const entry = lookupLocal(sig.userId, sig.handle);
-        if (entry) {
-          renderLocalIndex(anchor, key, sig, entry);
-          return;
-        }
-      }
-
-      // 4. Heuristic-only mode: no remote LLM, no classify.
-      //    Only show a neutral "check" badge for accounts that pass heuristic.
-      const h = heuristic(sig);
-      const wantAuto =
-        h.score >= AUTO_THRESHOLD || (settings.replyAuto && isReplyContext());
-      if (!wantAuto) {
-        badgeFor(anchor, key, sig, null); // clean-looking → neutral
+      const entry = lookupLocal(sig.userId, sig.handle);
+      if (entry) {
+        renderLocalIndex(anchor, key, sig, entry);
         return;
       }
 
-      // Out of burst budget → mark PENDING so next scan revisits.
-      if (!takeToken()) {
-        mountPending(anchor);
-        return;
-      }
-      active++;
-      bubbleApi?.setScanning(active);
-
-      // For heuristic-positive accounts not in local index, show a warning
-      // badge without any remote analysis.
-      const warningVerdict: Verdict = {
-        label: h.score >= 0.7 ? "likely_spam" : "uncertain",
-        confidence: Math.round(h.score * 100) / 100,
-        reasons: h.why,
-      };
-      badgeFor(anchor, key, sig, warningVerdict, "本地启发式判定（无远程分析）", "fresh");
-      pushFinding(sig, warningVerdict, "heuristic");
-
-      active--;
-      bubbleApi?.setScanning(active);
+      // 4. Local public list did not match. Just show neutral/unhit state.
+      badgeFor(anchor, key, sig, null);
     }
 
     function scan() {

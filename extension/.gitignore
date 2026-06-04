@@ -2,3 +2,4 @@ node_modules/
 .output/
 .wxt/
 stats.html
+public/blacklist-data.json

@@ -6,11 +6,16 @@
   "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {
+    "predev": "node ../scripts/compile-blacklist.js",
     "dev": "wxt",
+    "predev:firefox": "node ../scripts/compile-blacklist.js",
     "dev:firefox": "wxt -b firefox",
+    "prebuild": "node ../scripts/compile-blacklist.js",
     "build": "wxt build",
+    "prebuild:firefox": "node ../scripts/compile-blacklist.js",
     "build:firefox": "wxt build -b firefox",
     "zip": "wxt zip",
+    "precompile": "node ../scripts/compile-blacklist.js",
     "compile": "tsc --noEmit",
     "postinstall": "wxt prepare"
   },

@@ -628,66 +628,8 @@ function Settings() {
     setTimeout(poll, (interval || 5) * 1000);
   }
   return (
-    <Page title="设置" sub="登录与配置仅存于本机">
+    <Page title="设置" sub="配置仅存于本机">
       <div className="max-w-[680px] space-y-9">
-        <section>
-          <SectionH>GitHub 登录</SectionH>
-          <p className="mb-3 text-[13px] text-fg-2">
-            上报与服务端 AI 分析需要 GitHub 登录（防滥用、可追溯）。Device Flow 无 secret、无回调。
-          </p>
-          {login ? (
-            <div className="flex items-center gap-2 text-[13px]">
-              <span className="inline-flex items-center gap-1.5">
-                <i className="block h-1.5 w-1.5 rounded-full bg-ok" />
-                已登录
-              </span>
-              <code className="rounded-sm bg-card-hi px-2 py-0.5 font-mono text-[12px] text-fg">
-                @{login}
-              </code>
-              <Btn
-                size="sm"
-                tier="ghost"
-                onClick={async () => {
-                  await bg({ type: "gh_logout" });
-                  refresh();
-                }}
-              >
-                登出
-              </Btn>
-            </div>
-          ) : (
-            <Btn tier="primary" onClick={ghLogin}>
-              用 GitHub 登录
-            </Btn>
-          )}
-          {device ? (
-            <div className="mt-3 rounded-lg border border-border-2 bg-card p-3 shadow-sm">
-              <div className="mb-2 flex items-center justify-between gap-3">
-                <span className="text-[12px] font-medium text-fg-2">GitHub 验证码</span>
-                <a
-                  href={device.uri}
-                  target="_blank"
-                  rel="noopener"
-                  className="text-[12px] text-accent transition hover:underline"
-                >
-                  打开验证页 ↗
-                </a>
-              </div>
-              <div className="flex items-center gap-2">
-                <code className="flex min-h-11 flex-1 items-center justify-center rounded-md border border-border bg-bg px-3 font-mono text-[22px] font-semibold tracking-[0.18em] text-fg tabular-nums">
-                  {device.code}
-                </code>
-                <Btn size="sm" tier={copiedCode ? "default" : "primary"} onClick={copyDeviceCode}>
-                  {copiedCode ? "已复制" : "复制"}
-                </Btn>
-              </div>
-              {flow && <p className="mt-2 text-[12px] text-fg-3">{flow}</p>}
-            </div>
-          ) : (
-            flow && <p className="mt-2 text-[12px] text-warn">{flow}</p>
-          )}
-        </section>
-
         {st && (
           <section>
             <SectionH>检测行为</SectionH>
@@ -708,8 +650,8 @@ function Settings() {
             <Toggle
               on={st.replyAuto}
               onChange={(v) => save("replyAuto", v)}
-              label="回复区逐个自动检查"
-              hint="关闭可显著降低 LLM 调用 / 更克制"
+              label="回复区自动匹配"
+              hint="在回复区自动匹配公开名单"
             />
             <Toggle
               on={st.autoBlockListHits}
@@ -720,30 +662,10 @@ function Settings() {
           </section>
         )}
 
-        {st && (
-          <section>
-            <SectionH>高级 · 服务端地址</SectionH>
-            <p className="mb-2 text-[12px] text-fg-3">
-              留空 = 默认线上 <code className="font-mono text-fg">{EDGE_DEFAULT}</code>
-            </p>
-            <div className="flex gap-2">
-              <input
-                value={st.edgeBase}
-                onChange={(e) => setSt({ ...st, edgeBase: e.target.value })}
-                placeholder={EDGE_DEFAULT}
-                className="w-[340px] rounded-md border border-border-2 bg-transparent px-3 py-1.5 text-[12px] font-mono outline-none transition focus:border-accent"
-              />
-              <Btn tier="primary" size="sm" onClick={() => save("edgeBase", st.edgeBase.trim())}>
-                保存
-              </Btn>
-            </div>
-          </section>
-        )}
-
         <section>
           <SectionH>数据与隐私</SectionH>
           <p className="mb-3 text-[13px] text-fg-2">
-            检测缓存、拉黑记录、统计、登录态均仅存于本机；除公开 X 数字 ID 外不存 PII。
+            检测缓存、拉黑记录、统计均仅存于本机；除公开 X 数字 ID 外不存 PII。
           </p>
           <div className="flex items-center gap-3">
             <Btn tier="danger" onClick={() => setClearOpen(true)}>
@@ -760,9 +682,8 @@ function Settings() {
             <>
               这会清空本机上的：
               <ul className="my-2 list-inside list-disc text-fg-3">
-                <li>AI 检测缓存（下次扫描会再调 LLM）</li>
+                <li>本地检测缓存</li>
                 <li>你的拉黑历史 + 本地处理统计</li>
-                <li>GitHub 登录态（仅本机，不撤 GH token）</li>
               </ul>
               <b className="text-fg">不可恢复。</b>
             </>
