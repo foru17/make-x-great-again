@@ -31,7 +31,7 @@ export async function warmLocalIndex(): Promise<void> {
         userId,
         handle,
         verdict: {
-          label: label as any,
+          label: label as Verdict['label'],
           confidence,
           reasons,
         },
