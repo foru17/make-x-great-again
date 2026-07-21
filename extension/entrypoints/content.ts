@@ -232,6 +232,8 @@ interface PendingAction {
   sig: Signals;
   anchor: HTMLElement;
   timer: ReturnType<typeof setTimeout>;
+  /** Live countdown tick for the pending badge capsule. */
+  tick?: ReturnType<typeof setInterval>;
   ts: number;
   /** Per-action override of settings.actionMode — the popover's secondary
    *  隐藏 button schedules a local-only hide even when the mode is block. */
@@ -240,6 +242,15 @@ interface PendingAction {
    *  lands in the 处理记录 audit trail. */
   tweetId?: string;
   tweetText?: string;
+}
+
+/** Clear the hide-timer and countdown tick for a pending entry. */
+function clearPendingTimers(p: PendingAction) {
+  clearTimeout(p.timer);
+  if (p.tick) {
+    clearInterval(p.tick);
+    p.tick = undefined;
+  }
 }
 
 export default defineContentScript({
@@ -297,6 +308,10 @@ export default defineContentScript({
       const tweetId = art ? articleStatusId(art) : null;
       const tweetText = sig.triggeringComment || sig.recentTweets[0];
       const timer = setTimeout(() => {
+        const p = pendingActions.get(key);
+        if (p) clearPendingTimers(p);
+        // executeHide still reads mode / tweet fields / anchor from the map
+        // (popover 隐藏 → local). Match SPA flush: run first, then delete.
         try {
           void executeHide(key, sig).catch(() => {});
         } finally {
@@ -325,7 +340,7 @@ export default defineContentScript({
     function cancelPending(key: string) {
       const pending = pendingActions.get(key);
       if (!pending) return;
-      clearTimeout(pending.timer);
+      clearPendingTimers(pending);
       pendingActions.delete(key);
       articleOf(pending.anchor)?.removeAttribute("data-xss-key");
       // Restore the badge to its previous state
@@ -406,15 +421,34 @@ export default defineContentScript({
 
     function badgeForPending(anchor: HTMLElement, sig: Signals, mode?: ActionMode) {
       clearMounts(anchor);
+      const key = keyOf(sig);
       const verb = actionVerb(mode ?? settings.actionMode);
+      const pend = pendingActions.get(key);
+      const deadline = (pend?.ts ?? Date.now()) + PENDING_MS;
+      const remainSecs = () =>
+        Math.max(1, Math.ceil((deadline - Date.now()) / 1000));
       mountBadge(anchor, () => {
         const el = document.createElement("span");
         el.className = "xss-badge pending";
-        el.innerHTML = `<span style="color:var(--warn)">⏳ 5秒后${verb}</span>
+        el.innerHTML = `<span style="color:var(--warn)">⏳ <span data-cd>${remainSecs()}</span>秒后${verb}</span>
           <button data-undo style="margin-left:6px;padding:1px 6px;border:1px solid var(--warn);background:transparent;color:var(--warn);border-radius:4px;font-size:10px;cursor:pointer">撤销</button>`;
+        const cd = el.querySelector<HTMLElement>("[data-cd]");
+        if (pend && cd) {
+          if (pend.tick) clearInterval(pend.tick);
+          // ~4 Hz is enough for second boundaries without thrashing the DOM.
+          pend.tick = setInterval(() => {
+            if (!cd.isConnected) {
+              if (pend.tick) clearInterval(pend.tick);
+              pend.tick = undefined;
+              return;
+            }
+            const n = remainSecs();
+            if (cd.textContent !== String(n)) cd.textContent = String(n);
+          }, 250);
+        }
         el.querySelector("[data-undo]")?.addEventListener("click", (e) => {
           e.stopPropagation();
-          cancelPending(keyOf(sig));
+          cancelPending(key);
         });
         return el;
       });
@@ -982,7 +1016,7 @@ export default defineContentScript({
                 // action supersedes the preview window.
                 const pending = pendingActions.get(key);
                 if (pending) {
-                  clearTimeout(pending.timer);
+                  clearPendingTimers(pending);
                   pendingActions.delete(key);
                 }
                 const ok = await executeHide(key, sig).catch(() => false);
@@ -1041,7 +1075,7 @@ export default defineContentScript({
     // per-page state so detached DOM nodes can be garbage-collected.
     ctx.addEventListener(window, "wxt:locationchange", () => {
       for (const [key, p] of pendingActions) {
-        clearTimeout(p.timer);
+        clearPendingTimers(p);
         void executeHide(key, p.sig);
       }
       pendingActions.clear();
