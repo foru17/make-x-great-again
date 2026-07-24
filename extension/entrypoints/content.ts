@@ -257,7 +257,9 @@ interface PendingAction {
 
 export default defineContentScript({
   matches: ["https://x.com/*", "https://twitter.com/*"],
-  cssInjectionMode: "ui",
+  // STYLE is mounted explicitly inside createShadowRootUi below. "manual"
+  // prevents WXT from fetching an unbuilt content.css on Firefox.
+  cssInjectionMode: "manual",
   async main(ctx) {
     let bubbleApi: ReturnType<typeof createBubble> | null = null;
     let dismissed = false;
