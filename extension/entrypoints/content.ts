@@ -1,6 +1,11 @@
-import { hideAccountSurface } from "../lib/account-surface";
+import { hideAccountSurface, restoreAccountSurfaces } from "../lib/account-surface";
 import { autoEligible, capAutoTierAction } from "../lib/auto-policy";
-import { addBlocked, isBlockedSync, warm as warmBlocklist } from "../lib/blocklist";
+import {
+  BLOCKED_KEY,
+  addBlocked,
+  isBlockedSync,
+  warm as warmBlocklist,
+} from "../lib/blocklist";
 import { BRAND } from "../lib/brand";
 import { type Cached, cacheGet, signalsHash } from "../lib/cache";
 import {
@@ -403,7 +408,7 @@ export default defineContentScript({
         sameAuthor || (!!anchor && !art)
           ? anchor
           : document.querySelector(`[data-xss-key="${CSS.escape(key)}"]`);
-      if (target) hideAccountSurface(target);
+      if (target) hideAccountSurface(target, key);
       // If this account is a live bubble finding (a listed hit the user chose
       // to handle from the badge popover rather than the batch panel), drive
       // its row to "done" so it stops offering an actionable button and joins
@@ -595,7 +600,7 @@ export default defineContentScript({
           // shrink / fly-into-chip) belongs to the corner bubble; animating
           // the page's own DOM competes with X's scroll/virtualizer and reads
           // as jank on the timeline.
-          hideAccountSurface(autoTarget(it));
+          hideAccountSurface(autoTarget(it), it.key);
           // The action has now SETTLED (attempted) — drop its pending marker so
           // it stops being a resume candidate; only items whose queue died
           // before this point stay pending. On X failure, annotate the record.
@@ -865,17 +870,20 @@ export default defineContentScript({
         // (profile header), and a hit stored under one form must short-circuit
         // the other — otherwise it gets auto-processed twice and 恢复显示
         // (which deletes one id) never actually un-hides it.
-        if (
-          isBlockedSync(key) ||
-          (sig.userId && isBlockedSync(sig.userId)) ||
-          isBlockedSync(`h:${sig.handle}`)
-        ) {
+        const activeBlockedKey = isBlockedSync(key)
+          ? key
+          : sig.userId && isBlockedSync(sig.userId)
+            ? sig.userId
+            : isBlockedSync(`h:${sig.handle}`)
+              ? `h:${sig.handle}`
+              : null;
+        if (activeBlockedKey) {
           if (
             autoActing.has(key) &&
             articleOf(anchor)?.getAttribute("data-xss-key") === key
           )
             return;
-          hideAccountSurface(anchor);
+          hideAccountSurface(anchor, activeBlockedKey);
           return;
         }
 
@@ -1161,6 +1169,7 @@ export default defineContentScript({
     try {
       chrome.storage.onChanged.addListener((changes, area) => {
         if (area !== "local") return;
+        let shouldScan = false;
         if (changes["xss:ghToken"]) {
           void refreshOnlineAuth().then((changed) => {
             if (!changed || !onlineAuthenticated) return;
@@ -1170,13 +1179,21 @@ export default defineContentScript({
             scan();
           });
         }
-        if (!changes[LIST_KEY] && !changes[WL_KEY]) return;
-        for (const host of document.querySelectorAll<HTMLElement>(".xss-mount")) {
-          // Badges live in the host's shadow root; keep pending-undo flows.
-          if (host.shadowRoot?.querySelector(".xss-badge.pending")) continue;
-          host.remove();
+        if (changes[BLOCKED_KEY]) {
+          const next = new Set<string>(
+            (changes[BLOCKED_KEY]?.newValue as string[] | undefined) ?? [],
+          );
+          shouldScan = restoreAccountSurfaces(next) > 0;
         }
-        scan();
+        if (changes[LIST_KEY] || changes[WL_KEY]) {
+          for (const host of document.querySelectorAll<HTMLElement>(".xss-mount")) {
+            // Badges live in the host's shadow root; keep pending-undo flows.
+            if (host.shadowRoot?.querySelector(".xss-badge.pending")) continue;
+            host.remove();
+          }
+          shouldScan = true;
+        }
+        if (shouldScan) scan();
       });
     } catch {
       /* non-fatal */

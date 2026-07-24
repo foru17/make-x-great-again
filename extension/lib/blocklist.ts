@@ -1,7 +1,7 @@
 // Local persistent blocklist. Once the user blocks an account it is hidden
 // on every page forever and never re-rendered / re-analyzed / re-requested
 // (the strongest short-circuit + the user-confirm signal for the public DB).
-const KEY = "xss:blocked";
+export const BLOCKED_KEY = "xss:blocked";
 
 let mem: Set<string> | null = null;
 
@@ -10,8 +10,8 @@ let mem: Set<string> | null = null;
 // the change without a reload.
 try {
   chrome.storage.onChanged.addListener((changes, area) => {
-    if (area === "local" && changes[KEY]) {
-      mem = new Set<string>((changes[KEY]?.newValue as string[]) ?? []);
+    if (area === "local" && changes[BLOCKED_KEY]) {
+      mem = new Set<string>((changes[BLOCKED_KEY]?.newValue as string[]) ?? []);
     }
   });
 } catch {
@@ -21,8 +21,8 @@ try {
 async function load(): Promise<Set<string>> {
   if (mem) return mem;
   try {
-    const got = await chrome.storage.local.get(KEY);
-    mem = new Set<string>((got[KEY] as string[]) ?? []);
+    const got = await chrome.storage.local.get(BLOCKED_KEY);
+    mem = new Set<string>((got[BLOCKED_KEY] as string[]) ?? []);
   } catch {
     mem = new Set();
   }
@@ -47,7 +47,7 @@ export async function addBlocked(id: string): Promise<void> {
   if (s.has(id)) return;
   s.add(id);
   try {
-    await chrome.storage.local.set({ [KEY]: [...s] });
+    await chrome.storage.local.set({ [BLOCKED_KEY]: [...s] });
   } catch {
     /* non-fatal */
   }
@@ -57,7 +57,7 @@ export async function removeBlocked(id: string): Promise<void> {
   const s = await load();
   if (!s.delete(id)) return;
   try {
-    await chrome.storage.local.set({ [KEY]: [...s] });
+    await chrome.storage.local.set({ [BLOCKED_KEY]: [...s] });
   } catch {
     /* non-fatal */
   }
