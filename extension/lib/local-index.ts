@@ -142,11 +142,14 @@ async function getBundledSafariList(): Promise<StoredList | null> {
   }
 }
 
-function requestBackgroundSync(): void {
+export async function requestBackgroundSync(): Promise<void> {
   try {
     // Fire-and-forget: background owns the download. Safari starts with its
     // packaged snapshot, then receives newer versions via storage.onChanged.
-    void chrome.runtime.sendMessage({ type: "list-sync" });
+    // Firefox rejects the returned Promise when this helper is reached from
+    // the background itself (there is no separate receiving context), so the
+    // rejection must be consumed just like the synchronous unavailable case.
+    await chrome.runtime.sendMessage({ type: "list-sync" });
   } catch {
     /* background unavailable (tests) — keep the current maps */
   }
@@ -170,13 +173,13 @@ export async function warmLocalIndex(): Promise<void> {
   if (bundled) {
     buildMaps(bundled);
     warmed = true;
-    requestBackgroundSync();
+    void requestBackgroundSync();
     return;
   }
 
   userIdMap ??= new Map();
   handleMap ??= new Map();
-  requestBackgroundSync();
+  void requestBackgroundSync();
 }
 
 /** Synchronous lookup by numeric userId. Returns null if not found. */

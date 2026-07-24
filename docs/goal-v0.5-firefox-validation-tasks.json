@@ -1,6 +1,6 @@
 {
   "goal": "Validate the MXGA v0.5 Firefox extension on a real Firefox runtime and retain reproducible evidence",
-  "updatedAt": "2026-07-24T19:22:55+08:00",
+  "updatedAt": "2026-07-24T19:30:58+08:00",
   "constraints": {
     "browser": "Firefox with an isolated temporary profile",
     "releaseVersion": "0.5.0",
@@ -49,8 +49,21 @@
       "id": "firefox-runtime-smoke",
       "task": "Install the exact unpacked artifact into an isolated real Firefox profile and exercise background, popup, options, and local storage",
       "verify": "Firefox accepts the temporary add-on; popup and options render and interact; persisted settings survive reload; runtime and browser consoles contain no new MXGA errors; screenshots are captured",
-      "passes": false,
-      "evidence": []
+      "passes": true,
+      "evidence": [
+        "GeckoDriver 0.36.0 installed the exact production ZIP as temporary add-on x-spam-sentinel@zuoluo.tv in a GeckoDriver-created isolated profile",
+        "The pending Firefox application update completed during the first isolated launch; the successful runtime was Mozilla Firefox 152.0.6 on macOS arm64",
+        "Firefox background health messaging returned ok; the popup rendered, and clicking 打开管理面板 created the real moz-extension options tab",
+        "Options overview and settings rendered; 显示角标气泡 changed true → false, storage key xss:settings persisted false across a full page reload, then both UI and storage were restored to true",
+        "Extension-origin console errors after the fix: 0. Firefox 152 logged one resource:// ConduitsChild internal closed-conduit teardown message during the forced options reload; it is retained separately in the runtime report",
+        "Runtime report: .ui-acceptance/2026-07-24-firefox/runtime-smoke/runtime-smoke.json (SHA-256 cb511ca1e8acf534eb4418cb557a35da2b03a0a7c9be8002a039e32aefdb6bee)",
+        "Popup screenshot: .ui-acceptance/2026-07-24-firefox/runtime-smoke/firefox-popup.png (520x635 PNG; SHA-256 ea7a4a67d48ed827f8b66a251e3c9d024b5e53346fd08eb254f42f0b8f853122)",
+        "Options screenshot: .ui-acceptance/2026-07-24-firefox/runtime-smoke/firefox-options-settings.png (1440x815 PNG; SHA-256 445f62c27e1512b983a2963371dfd4c251b43b63118a16aa0b8f783d23212c81)",
+        "Both screenshots were visually inspected: v0.5.0 is visible, text and controls are legible, the restored bubble switch is on, and no clipping or drift is visible",
+        "The generated temporary Firefox profile no longer existed after session deletion; no GeckoDriver or rust_mozprofile Firefox process remained",
+        "Post-fix extension compile passed; complete extension suite passed 27/27; Firefox production build and ZIP passed",
+        "Tested install ZIP SHA-256: f7de2ce899eeb8756c34a5207284e125b23c5b731be99cf10b9ffb29bf545d63"
+      ]
     },
     {
       "id": "firefox-x-surface",
@@ -104,6 +117,29 @@
       "expected": "AMO lint findings are recorded and reviewed rather than silently treated as a clean report",
       "actual": "web-ext reports 15 UNSAFE_VAR_ASSIGNMENT warnings in bundled UI/React code and no errors",
       "resolution": "No runtime behavior was changed in this artifact task; source review confirmed untrusted display names, handles, snippets, reasons, notes, IDs, and avatar URLs are escaped or allowlisted before template insertion. Retain the warnings for final adversarial review."
+    },
+    {
+      "id": "firefox-background-self-message",
+      "severity": "resolved-medium",
+      "status": "resolved",
+      "area": "Firefox background runtime",
+      "expected": "A fresh Firefox profile can warm an empty local index without emitting an unhandled runtime error",
+      "actual": "requestBackgroundSync discarded the Promise returned by chrome.runtime.sendMessage. When warmLocalIndex ran inside the Firefox background itself, Firefox rejected it with 'Could not establish connection. Receiving end does not exist.'",
+      "resolution": "requestBackgroundSync now awaits and consumes both synchronous and asynchronous unavailable-receiver failures; a targeted regression covers Firefox's rejected Promise",
+      "evidence": [
+        "Before fix: the real Firefox browser console recorded two background.js missing-receiver errors during popup/health startup",
+        "After fix: the same isolated Firefox flow reports zero extension-origin errors",
+        "Complete extension suite passed 27/27, including background sync request consumes Firefox's missing-receiver rejection"
+      ]
+    },
+    {
+      "id": "firefox-closed-conduit-teardown",
+      "severity": "informational",
+      "status": "upstream-runtime-noise",
+      "area": "Firefox browser internals",
+      "expected": "A forced options-page reload tears down extension API listeners without browser-internal noise",
+      "actual": "Firefox 152.0.6 logged one sendRemoveListener on closed conduit message from resource://gre/modules/ConduitsChild.sys.mjs while destroying the old extension page context",
+      "resolution": "Recorded separately from extension-origin errors; storage persistence, the reloaded page, and the restored setting all completed successfully"
     }
   ],
   "needsUserAction": []
