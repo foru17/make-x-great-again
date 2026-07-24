@@ -1,0 +1,77 @@
+{
+  "goal": "Validate the MXGA v0.5 Firefox extension on a real Firefox runtime and retain reproducible evidence",
+  "updatedAt": "2026-07-24T19:27:00+08:00",
+  "constraints": {
+    "browser": "Firefox with an isolated temporary profile",
+    "releaseVersion": "0.5.0",
+    "externalActionCap": {
+      "mute": 1,
+      "block": 1
+    },
+    "cleanup": "Remove temporary profiles and reverse every test-only setting or X action",
+    "apiLoopLimit": 20,
+    "evidence": "Every passed task must cite command output, a screenshot path, or both"
+  },
+  "tasks": [
+    {
+      "id": "firefox-baseline",
+      "task": "Establish the exact v0.5 source, toolchain, Firefox runtime, existing test surface, and generated-manifest expectations",
+      "verify": "Inspect Git state, package versions, Firefox binary/version, build scripts, WXT Firefox configuration, and existing Firefox claims before changing runtime code",
+      "passes": true,
+      "evidence": [
+        "Git baseline: d2087403ab765e46ec6f80133a81ccf7796dd763 on codex/firefox-v0.5-validation; worktree contained only this new checklist",
+        "extension/package.json and extension/package-lock.json both report 0.5.0; WXT requirement is ^0.20.27",
+        "Installed real browser: Mozilla Firefox 150.0.3 at /Applications/Firefox.app/Contents/MacOS/firefox",
+        "Toolchain: Node v26.5.0, pnpm 10.29.2, npm 11.17.0",
+        "Firefox scripts exist for compile, seven targeted test files, production build, development runtime, and ZIP packaging",
+        "WXT source explicitly generates Firefox Manifest V3 with gecko ID x-spam-sentinel@zuoluo.tv, minimum Firefox 109.0, host patterns in optional_permissions, and required data collection set to none",
+        "No inherited extension/node_modules or extension/.output artifacts were present; geckodriver and web-ext were not on PATH",
+        "Existing personal Firefox profiles were detected but not opened or modified; runtime validation is constrained to an isolated temporary profile"
+      ]
+    },
+    {
+      "id": "firefox-artifact",
+      "task": "Compile, test, build, package, and lint the production Firefox artifact",
+      "verify": "Extension compile/tests/build/zip pass; generated manifest contains the intended Firefox MV3 ID, minimum version, permissions, data-collection declaration, and no unsupported Chrome-only permission shape",
+      "passes": false,
+      "evidence": []
+    },
+    {
+      "id": "firefox-runtime-smoke",
+      "task": "Install the exact unpacked artifact into an isolated real Firefox profile and exercise background, popup, options, and local storage",
+      "verify": "Firefox accepts the temporary add-on; popup and options render and interact; persisted settings survive reload; runtime and browser consoles contain no new MXGA errors; screenshots are captured",
+      "passes": false,
+      "evidence": []
+    },
+    {
+      "id": "firefox-x-surface",
+      "task": "Validate content-script detection, badge/bubble interaction, local hide, undo, and processed-record recovery on an X page",
+      "verify": "A deterministic or real X surface produces the expected v0.5 states in Firefox, including the repaired profile-header hide path, with before/after screenshots and no extension runtime error",
+      "passes": false,
+      "evidence": []
+    },
+    {
+      "id": "firefox-permissions",
+      "task": "Validate Firefox-specific optional permission and action-mode behavior",
+      "verify": "X/GitHub permissions are absent after install, requested only at the documented interaction, denial falls back safely, and any explicitly authorized native X action is capped and reversed",
+      "passes": false,
+      "evidence": []
+    },
+    {
+      "id": "firefox-responsive-accessibility",
+      "task": "Validate popup/options desktop and compact layouts, dark mode, keyboard reachability, and accessible names in Firefox",
+      "verify": "Desktop and compact Firefox screenshots show no clipping or drift; focus order and accessible labels are directly checked; console remains clean",
+      "passes": false,
+      "evidence": []
+    },
+    {
+      "id": "firefox-final-review",
+      "task": "Attempt to falsify every prior Firefox pass and publish a concise compatibility report",
+      "verify": "Re-run critical checks from the committed source, inspect all evidence files and hashes, confirm clean secret/diff review, and list any user-only or store-signing gaps",
+      "passes": false,
+      "evidence": []
+    }
+  ],
+  "findings": [],
+  "needsUserAction": []
+}
