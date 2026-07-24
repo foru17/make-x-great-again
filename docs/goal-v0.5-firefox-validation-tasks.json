@@ -1,6 +1,6 @@
 {
   "goal": "Validate the MXGA v0.5 Firefox extension on a real Firefox runtime and retain reproducible evidence",
-  "updatedAt": "2026-07-24T19:27:00+08:00",
+  "updatedAt": "2026-07-24T19:22:55+08:00",
   "constraints": {
     "browser": "Firefox with an isolated temporary profile",
     "releaseVersion": "0.5.0",
@@ -33,8 +33,17 @@
       "id": "firefox-artifact",
       "task": "Compile, test, build, package, and lint the production Firefox artifact",
       "verify": "Extension compile/tests/build/zip pass; generated manifest contains the intended Firefox MV3 ID, minimum version, permissions, data-collection declaration, and no unsupported Chrome-only permission shape",
-      "passes": false,
-      "evidence": []
+      "passes": true,
+      "evidence": [
+        "npm run compile passed; extension test suite passed 26/26, including a new Firefox manifest regression",
+        "npm run build:firefox passed: Firefox MV3 production tree is 460.09 kB",
+        "npm run zip:firefox passed: install ZIP is 159,503 bytes and source ZIP is 387,643 bytes; unzip -t reported no compressed-data errors",
+        "Generated manifest is v0.5.0 MV3 with background.scripts, gecko ID x-spam-sentinel@zuoluo.tv, desktop minimum 140.0, Android minimum 142.0, required data collection none, and X/Twitter/GitHub patterns only in optional_permissions",
+        "web-ext 10.3.0 lint: 0 errors, 15 generic innerHTML warnings, and 0 Firefox/minimum-version/API compatibility warnings",
+        "Source inspection confirmed page/list-derived values used by the flagged content-script templates are escaped; the remaining lint code is UNSAFE_VAR_ASSIGNMENT, including generated React runtime",
+        "Production dependency audit: 0 vulnerabilities",
+        "SHA-256: manifest 883b2b0afcc8a11a22abb38b4eb4ab28b9cf1131878d1a36e145cb8370279100; install ZIP 2b6e05c407729224f864995fce1d60be5fb9236753707ab8eea77b6caf21abcb; source ZIP 413e51269ec944c3ec1e8c1ab4b5d4241cc51d2d5d46af1548656b761a13d653"
+      ]
     },
     {
       "id": "firefox-runtime-smoke",
@@ -72,6 +81,30 @@
       "evidence": []
     }
   ],
-  "findings": [],
+  "findings": [
+    {
+      "id": "firefox-consent-minimum-version",
+      "severity": "resolved-medium",
+      "status": "resolved",
+      "area": "Firefox manifest compatibility",
+      "expected": "The declared Firefox minimum versions support every manifest key and permission API used by v0.5",
+      "actual": "The source declared Firefox 109.0 while data_collection_permissions starts at Firefox desktop 140 and Android 142; web-ext also flagged permissions.request as unsupported on Firefox Android 109",
+      "resolution": "Raised the generated desktop minimum to 140.0 and Android minimum to 142.0, then added a manifest regression test and rebuilt both Firefox ZIPs",
+      "evidence": [
+        "Before fix: web-ext 10.3.0 reported 20 warnings including KEY_FIREFOX_UNSUPPORTED_BY_MIN_VERSION, KEY_FIREFOX_ANDROID_UNSUPPORTED_BY_MIN_VERSION, and ANDROID_INCOMPATIBLE_API",
+        "After fix: web-ext 10.3.0 reported 0 errors and 0 Firefox/minimum-version/API compatibility warnings",
+        "Mozilla Firefox built-in consent documentation identifies desktop 140 and Android 142 as the supported baselines"
+      ]
+    },
+    {
+      "id": "amo-dynamic-html-lint",
+      "severity": "review-warning",
+      "status": "triaged",
+      "area": "AMO static lint",
+      "expected": "AMO lint findings are recorded and reviewed rather than silently treated as a clean report",
+      "actual": "web-ext reports 15 UNSAFE_VAR_ASSIGNMENT warnings in bundled UI/React code and no errors",
+      "resolution": "No runtime behavior was changed in this artifact task; source review confirmed untrusted display names, handles, snippets, reasons, notes, IDs, and avatar URLs are escaped or allowlisted before template insertion. Retain the warnings for final adversarial review."
+    }
+  ],
   "needsUserAction": []
 }

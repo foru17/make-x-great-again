@@ -76,18 +76,19 @@ export default defineConfig({
     options_ui: { open_in_tab: true },
     // Firefox / AMO requirements (ignored by the Chrome build):
     //  - gecko.id: stable add-on ID, keyed to a domain we control.
-    //  - strict_min_version 109.0: the first Firefox release with Manifest V3
-    //    support (we no longer ship any MAIN-world content script).
-    //  - Local matching transmits no personal data. After the optional GitHub
-    //    login, unknown accounts can send public website content for online AI
-    //    classification; whitelist application can also send the user's public
-    //    X handle. AMO requires these optional categories for new listings.
+    //  - strict_min_version 140.0 (desktop) / 142.0 (Android): the first
+    //    releases supporting Firefox's built-in data-collection consent
+    //    declared and requested below.
+    //  - Routine local matching transmits no personal data. After the optional
+    //    GitHub login, unknown accounts can send public website content for
+    //    online AI classification; whitelist application can also send the
+    //    user's public X handle. AMO requires these optional categories.
     ...(browser === "firefox"
       ? {
           browser_specific_settings: {
             gecko: {
               id: "x-spam-sentinel@zuoluo.tv",
-              strict_min_version: "109.0",
+              strict_min_version: "140.0",
               data_collection_permissions: {
                 required: ["none"],
                 optional: [
@@ -96,6 +97,9 @@ export default defineConfig({
                   "websiteContent",
                 ],
               },
+            },
+            gecko_android: {
+              strict_min_version: "142.0",
             },
           },
         }
