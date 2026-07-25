@@ -216,6 +216,54 @@ Located in [`services/agent-runner/`](../services/agent-runner):
   `hermes -z PROMPT --yolo` per handle, POST verdict).
 - `policy.yaml` — confidence thresholds (above).
 
+## Budgeted batch runner: OpenAI-compatible
+
+`services/agent-runner/run_batch_openai.py` is the fail-closed path for
+large queue cleanups:
+
+- one logical cycle fetches at most 100 accounts;
+- it shares one compact policy across sub-batches of 25, so a cycle makes at
+  most four model calls;
+- dry-run is the default; only `APPLY_DECISIONS=1` enables writes;
+- writes land only in private agent staging statuses. `reject` becomes
+  `agent_whitelist`, `blacklist` becomes `agent_blacklist`, and `pending`
+  becomes `agent_pending`; the runner never publishes directly;
+- a blacklist recommendation is downgraded unless it has a spam/porn label,
+  confidence >= 0.95, and a hard evidence code;
+- non-porn accounts with `following_count > 100000` are routed out of the
+  pending queue;
+- response IDs must match the input IDs exactly once, usage must be present
+  before apply, parse failures are capped at two, and per-cycle input/output
+  token ceilings stop later sub-batches.
+
+Config additions in the runner `.env`:
+
+```sh
+AGENT_ID=batch-openai-v2
+AGENT_LLM_BASE_URL=https://api.openai.com/v1
+AGENT_LLM_API_KEY=<secret>
+AGENT_LLM_MODEL=<model-id>
+PROMPT_FILE_BATCH_OPENAI=/path/to/prompt_batch_openai.tmpl
+MAX_ITEMS_PER_CYCLE=100
+LLM_SUB_BATCH_SIZE=25
+MAX_INPUT_TOKENS_PER_CYCLE=30000
+MAX_OUTPUT_TOKENS_PER_CYCLE=10000
+MAX_PARSE_FAILURES=2
+APPLY_DECISIONS=0
+```
+
+Run tests and one dry-run cycle:
+
+```sh
+cd services/agent-runner
+python3 -m unittest -v test_batch_review.py test_run_batch_openai.py
+python3 run_batch_openai.py
+```
+
+Inspect the single JSON result, then set `APPLY_DECISIONS=1` only for an
+approved cycle. Promotion from agent staging remains a separate maintainer
+action.
+
 ### Install on a Mac mini
 
 ```sh
