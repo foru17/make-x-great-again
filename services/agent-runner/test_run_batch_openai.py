@@ -130,6 +130,52 @@ class BatchRunnerAdapterTests(unittest.TestCase):
                 }
             )
 
+    def test_default_cycle_uses_ten_provider_safe_calls_for_100_accounts(self) -> None:
+        items = [
+            {
+                "x_user_id": str(uid),
+                "handle": f"candidate_{uid}",
+                "evidence_text": "normal conversation",
+            }
+            for uid in range(900, 1000)
+        ]
+        batch_sizes = []
+
+        def worker_call(method, _path, _body=None):
+            self.assertEqual("GET", method)
+            return {"queue": items}
+
+        def llm_call(batch):
+            batch_sizes.append(len(batch))
+            decisions = [
+                {
+                    "id": item["id"],
+                    "decision": "reject",
+                    "label": "legit",
+                    "confidence": 0.95,
+                    "signals": [],
+                    "reason": "normal conversation",
+                }
+                for item in batch
+            ]
+            return {
+                "choices": [{"message": {"content": json.dumps({"decisions": decisions})}}],
+                "usage": {
+                    "prompt_tokens": 500,
+                    "completion_tokens": 200,
+                    "total_tokens": 700,
+                },
+            }
+
+        result = run_cycle(
+            RunnerConfig(model="test-model"),
+            worker_call=worker_call,
+            llm_call=llm_call,
+        )
+
+        self.assertEqual([10] * 10, batch_sizes)
+        self.assertEqual(100, len(result["decisions"]))
+
 
 if __name__ == "__main__":
     unittest.main()

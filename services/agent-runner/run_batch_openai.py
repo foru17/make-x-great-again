@@ -24,7 +24,7 @@ class RunnerConfig:
     model: str
     apply: bool = False
     max_items: int = 100
-    sub_batch_size: int = 25
+    sub_batch_size: int = 10
     max_input_tokens: int = 30_000
     max_output_tokens: int = 10_000
     max_parse_failures: int = 2
@@ -41,7 +41,7 @@ def config_from_env(env: dict[str, str]) -> RunnerConfig:
         model=model,
         apply=env.get("APPLY_DECISIONS") == "1",
         max_items=max_items,
-        sub_batch_size=int(env.get("LLM_SUB_BATCH_SIZE", "25")),
+        sub_batch_size=int(env.get("LLM_SUB_BATCH_SIZE", "10")),
         max_input_tokens=int(env.get("MAX_INPUT_TOKENS_PER_CYCLE", "30000")),
         max_output_tokens=int(env.get("MAX_OUTPUT_TOKENS_PER_CYCLE", "10000")),
         max_parse_failures=int(env.get("MAX_PARSE_FAILURES", "2")),
@@ -106,7 +106,7 @@ def run_cycle(config: RunnerConfig, *, worker_call, llm_call) -> dict[str, Any]:
         limits=ReviewLimits(
             max_items=config.max_items,
             sub_batch_size=config.sub_batch_size,
-            max_calls=4,
+            max_calls=10,
             max_parse_failures=config.max_parse_failures,
             max_input_tokens=config.max_input_tokens,
             max_output_tokens=config.max_output_tokens,

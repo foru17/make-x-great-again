@@ -11,8 +11,8 @@ from typing import Any, Callable
 @dataclass(frozen=True)
 class ReviewLimits:
     max_items: int = 100
-    sub_batch_size: int = 25
-    max_calls: int = 4
+    sub_batch_size: int = 10
+    max_calls: int = 10
     max_parse_failures: int = 2
     max_input_tokens: int = 30_000
     max_output_tokens: int = 10_000
