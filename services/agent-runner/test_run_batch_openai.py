@@ -1,19 +1,56 @@
 from io import BytesIO
 import json
+from pathlib import Path
+from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
 import urllib.error
 
 from run_batch_openai import (
+    DailyUsageLedger,
     RunnerConfig,
     config_from_env,
     decision_body,
+    limit_for_daily_usage,
+    make_llm_call,
     make_worker_call,
     run_cycle,
+    single_instance_lock,
 )
 
 
 class BatchRunnerAdapterTests(unittest.TestCase):
+    def test_daily_usage_ledger_sums_provider_token_fields(self) -> None:
+        with TemporaryDirectory() as directory:
+            ledger = DailyUsageLedger(Path(directory), day="2026-07-26")
+            ledger.record(
+                {
+                    "prompt_tokens": 100,
+                    "completion_tokens": 40,
+                    "total_tokens": 140,
+                }
+            )
+            ledger.record(
+                {
+                    "input_tokens": 60,
+                    "output_tokens": 20,
+                    "total_tokens": 80,
+                }
+            )
+
+            self.assertEqual(
+                {"input_tokens": 160, "output_tokens": 60, "total_tokens": 220},
+                ledger.totals(),
+            )
+
+    def test_single_instance_lock_rejects_an_overlapping_cycle(self) -> None:
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / ".batch-openai.lock"
+            with single_instance_lock(path) as first:
+                with single_instance_lock(path) as second:
+                    self.assertTrue(first)
+                    self.assertFalse(second)
+
     def test_reject_is_staged_as_agent_whitelist_not_published(self) -> None:
         body = decision_body(
             {
@@ -169,6 +206,34 @@ class BatchRunnerAdapterTests(unittest.TestCase):
         self.assertFalse(config_from_env({**base, "APPLY_DECISIONS": "true"}).apply)
         self.assertTrue(config_from_env({**base, "APPLY_DECISIONS": "1"}).apply)
 
+    def test_daily_budget_limits_the_next_cycle_and_stops_when_exhausted(self) -> None:
+        config = RunnerConfig(
+            model="test-model",
+            max_input_tokens=30_000,
+            max_output_tokens=10_000,
+            daily_input_tokens=150_000,
+            daily_output_tokens=90_000,
+        )
+
+        limited = limit_for_daily_usage(
+            config,
+            {"input_tokens": 140_000, "output_tokens": 85_000, "total_tokens": 225_000},
+        )
+
+        self.assertIsNotNone(limited)
+        self.assertEqual(10_000, limited.max_input_tokens)
+        self.assertEqual(5_000, limited.max_output_tokens)
+        self.assertIsNone(
+            limit_for_daily_usage(
+                config,
+                {
+                    "input_tokens": 150_000,
+                    "output_tokens": 85_000,
+                    "total_tokens": 235_000,
+                },
+            )
+        )
+
     def test_environment_cannot_raise_the_cycle_above_100_accounts(self) -> None:
         with self.assertRaisesRegex(ValueError, "MAX_ITEMS_PER_CYCLE"):
             config_from_env(
@@ -249,6 +314,42 @@ class BatchRunnerAdapterTests(unittest.TestCase):
             {"ok": False, "error": "stale_agent_decision"},
             result,
         )
+
+    def test_llm_call_records_usage_before_the_cycle_can_fail(self) -> None:
+        payload = {
+            "choices": [{"message": {"content": '{"decisions":[]}'}}],
+            "usage": {
+                "prompt_tokens": 120,
+                "completion_tokens": 30,
+                "total_tokens": 150,
+            },
+        }
+
+        class Response:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def read(self):
+                return json.dumps(payload).encode()
+
+        recorded = []
+        call = make_llm_call(
+            base_url="https://example.test",
+            api_key="test-key",
+            model="test-model",
+            prompt_template="ACCOUNTS_JSON_PLACEHOLDER",
+            timeout_s=10,
+            usage_callback=recorded.append,
+        )
+
+        with patch("run_batch_openai.urllib.request.urlopen", return_value=Response()):
+            result = call([])
+
+        self.assertEqual(payload, result)
+        self.assertEqual([payload["usage"]], recorded)
 
 
 if __name__ == "__main__":

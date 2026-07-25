@@ -238,7 +238,11 @@ large queue cleanups:
   before apply, parse failures are capped at two, and per-cycle input/output
   token ceilings stop later sub-batches;
 - concurrent `409 stale_agent_decision` responses are skipped and counted,
-  rather than aborting the remaining safe writes.
+  rather than aborting the remaining safe writes;
+- a non-blocking file lock prevents overlapping cron cycles, while a UTC
+  JSONL usage ledger records every provider response before parsing/writes;
+- daily input/output token ceilings stop new cycles and also shrink the last
+  allowed cycle to the remaining budget.
 
 Config additions in the runner `.env`:
 
@@ -252,7 +256,11 @@ MAX_ITEMS_PER_CYCLE=100
 LLM_SUB_BATCH_SIZE=10
 MAX_INPUT_TOKENS_PER_CYCLE=30000
 MAX_OUTPUT_TOKENS_PER_CYCLE=10000
+DAILY_INPUT_TOKEN_BUDGET=150000
+DAILY_OUTPUT_TOKEN_BUDGET=90000
 MAX_PARSE_FAILURES=2
+LOG_DIR=/path/to/x-spam-agent/logs
+BATCH_LOCK_FILE=/path/to/x-spam-agent/logs/.batch-openai.lock
 APPLY_DECISIONS=0
 ```
 
