@@ -276,6 +276,13 @@ Inspect the single JSON result, then set `APPLY_DECISIONS=1` only for an
 approved cycle. Promotion from agent staging remains a separate maintainer
 action.
 
+For the production Hermes cron, install
+`services/agent-runner/x-spam-batch-openai.sh` under `~/.hermes/scripts/`
+and point the existing `x-spam-agent` job at it. The wrapper pins the reviewed
+model, 100-account cycle, 10-account provider sub-batches, 15k/9k per-cycle
+limits, and 150k/90k UTC daily limits without storing credentials in the
+script.
+
 ### Install on a Mac mini
 
 ```sh
