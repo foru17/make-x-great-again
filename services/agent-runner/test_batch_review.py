@@ -465,6 +465,55 @@ class BatchReviewTests(unittest.TestCase):
         self.assertEqual("usage_missing", result["halted_reason"])
         self.assertEqual([], writes)
 
+    def test_apply_skips_stale_rows_and_counts_only_confirmed_writes(self) -> None:
+        items = [
+            {
+                "x_user_id": str(uid),
+                "handle": f"candidate_{uid}",
+                "evidence_text": "normal conversation",
+            }
+            for uid in range(711, 713)
+        ]
+
+        def llm_call(batch):
+            decisions = [
+                {
+                    "id": item["id"],
+                    "decision": "reject",
+                    "label": "legit",
+                    "confidence": 0.95,
+                    "signals": [],
+                    "reason": "normal conversation",
+                }
+                for item in batch
+            ]
+            return {
+                "choices": [{"message": {"content": json.dumps({"decisions": decisions})}}],
+                "usage": {
+                    "prompt_tokens": 100,
+                    "completion_tokens": 40,
+                    "total_tokens": 140,
+                },
+            }
+
+        outcomes = iter(
+            [
+                {"ok": False, "error": "stale_agent_decision"},
+                {"ok": True, "status": "agent_whitelist"},
+            ]
+        )
+        result = review_batch(
+            items,
+            llm_call=llm_call,
+            writer=lambda _decision: next(outcomes),
+            apply=True,
+            limits=ReviewLimits(),
+        )
+
+        self.assertEqual(1, result["applied"])
+        self.assertEqual(1, result["skipped_stale"])
+        self.assertFalse(result["halted"])
+
 
 if __name__ == "__main__":
     unittest.main()

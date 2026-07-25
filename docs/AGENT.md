@@ -234,7 +234,9 @@ large queue cleanups:
   pending queue;
 - response IDs must match the input IDs exactly once, usage must be present
   before apply, parse failures are capped at two, and per-cycle input/output
-  token ceilings stop later sub-batches.
+  token ceilings stop later sub-batches;
+- concurrent `409 stale_agent_decision` responses are skipped and counted,
+  rather than aborting the remaining safe writes.
 
 Config additions in the runner `.env`:
 

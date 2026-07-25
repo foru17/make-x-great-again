@@ -138,6 +138,16 @@ def make_worker_call(*, base_url: str, token: str, agent_id: str):
                 payload = json.loads(response.read().decode() or "{}")
         except urllib.error.HTTPError as error:
             detail = error.read().decode(errors="replace")[:400]
+            if error.code == 409:
+                try:
+                    conflict = json.loads(detail)
+                except json.JSONDecodeError:
+                    conflict = None
+                if (
+                    isinstance(conflict, dict)
+                    and conflict.get("error") == "stale_agent_decision"
+                ):
+                    return conflict
             raise RuntimeError(f"worker HTTP {error.code}: {detail}") from error
         if not isinstance(payload, dict):
             raise RuntimeError("worker response is not a JSON object")

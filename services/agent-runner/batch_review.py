@@ -134,6 +134,7 @@ def review_batch(
     usage = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
     calls = 0
     applied = 0
+    skipped_stale = 0
     parse_failures = 0
     halted = False
     halted_reason = None
@@ -172,13 +173,21 @@ def review_batch(
 
     if apply and not halted:
         for decision in decisions:
-            writer(decision)
+            outcome = writer(decision)
+            if (
+                isinstance(outcome, dict)
+                and outcome.get("ok") is False
+                and outcome.get("error") == "stale_agent_decision"
+            ):
+                skipped_stale += 1
+                continue
             applied += 1
 
     return {
         "processed": len(items),
         "calls": calls,
         "applied": applied,
+        "skipped_stale": skipped_stale,
         "halted": halted,
         "halted_reason": halted_reason,
         "parse_failures": parse_failures,

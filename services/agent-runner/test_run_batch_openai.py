@@ -1,7 +1,16 @@
+from io import BytesIO
 import json
 import unittest
+from unittest.mock import patch
+import urllib.error
 
-from run_batch_openai import RunnerConfig, config_from_env, decision_body, run_cycle
+from run_batch_openai import (
+    RunnerConfig,
+    config_from_env,
+    decision_body,
+    make_worker_call,
+    run_cycle,
+)
 
 
 class BatchRunnerAdapterTests(unittest.TestCase):
@@ -175,6 +184,32 @@ class BatchRunnerAdapterTests(unittest.TestCase):
 
         self.assertEqual([10] * 10, batch_sizes)
         self.assertEqual(100, len(result["decisions"]))
+
+    def test_worker_call_returns_stale_conflict_for_safe_skipping(self) -> None:
+        conflict = urllib.error.HTTPError(
+            "https://example.test/v1/agent/decide",
+            409,
+            "Conflict",
+            {},
+            BytesIO(b'{"ok":false,"error":"stale_agent_decision"}'),
+        )
+        call = make_worker_call(
+            base_url="https://example.test",
+            token="test-token",
+            agent_id="test-agent",
+        )
+
+        with patch("run_batch_openai.urllib.request.urlopen", side_effect=conflict):
+            result = call(
+                "POST",
+                "/v1/agent/decide",
+                {"handle": "candidate", "decision": "pending"},
+            )
+
+        self.assertEqual(
+            {"ok": False, "error": "stale_agent_decision"},
+            result,
+        )
 
 
 if __name__ == "__main__":
