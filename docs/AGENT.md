@@ -230,6 +230,8 @@ large queue cleanups:
   becomes `agent_pending`; the runner never publishes directly;
 - a blacklist recommendation is downgraded unless it has a spam/porn label,
   confidence >= 0.95, and a hard evidence code;
+- the model returns only compact decisions; the runner derives short audit
+  reasons from the final decision and hard evidence codes;
 - non-porn accounts with `following_count > 100000` are routed out of the
   pending queue;
 - response IDs must match the input IDs exactly once, usage must be present

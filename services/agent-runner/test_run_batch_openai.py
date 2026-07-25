@@ -63,6 +63,45 @@ class BatchRunnerAdapterTests(unittest.TestCase):
         self.assertNotIn("published_tier", blacklist)
         self.assertNotIn("published_tier", pending)
 
+    def test_missing_model_reason_gets_a_compact_audit_reason(self) -> None:
+        blacklist = decision_body(
+            {
+                "handle": "candidate",
+                "x_user_id": "804",
+                "decision": "blacklist",
+                "label": "spam",
+                "confidence": 0.99,
+                "signals": ["P6"],
+            },
+            model="test-model",
+        )
+        reject = decision_body(
+            {
+                "handle": "normal_person",
+                "x_user_id": "805",
+                "decision": "reject",
+                "label": "legit",
+                "confidence": 0.95,
+                "signals": [],
+            },
+            model="test-model",
+        )
+        pending = decision_body(
+            {
+                "handle": "uncertain_person",
+                "x_user_id": "806",
+                "decision": "pending",
+                "label": "uncertain",
+                "confidence": 0.5,
+                "signals": [],
+            },
+            model="test-model",
+        )
+
+        self.assertEqual(["hard evidence P6"], blacklist["reasons"])
+        self.assertEqual(["no blacklistable evidence"], reject["reasons"])
+        self.assertEqual(["insufficient hard evidence"], pending["reasons"])
+
     def test_run_cycle_defaults_to_dry_run_and_only_reads_the_worker_queue(self) -> None:
         worker_calls = []
 

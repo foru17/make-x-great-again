@@ -70,12 +70,20 @@ def decision_body(decision: dict[str, Any], *, model: str) -> dict[str, Any]:
     route = routing.get(decision["decision"])
     if route is None:
         raise ValueError("unsupported decision")
+    reason = str(decision.get("reason") or "").strip()
+    if not reason:
+        if decision["decision"] == "blacklist":
+            reason = f"hard evidence {'/'.join(str(s) for s in decision.get('signals') or [])}"
+        elif decision["decision"] == "reject":
+            reason = "no blacklistable evidence"
+        else:
+            reason = "insufficient hard evidence"
     body: dict[str, Any] = {
         "handle": decision["handle"],
         "decision": route[0],
         "label": decision["label"],
         "confidence": float(decision["confidence"]),
-        "reasons": [str(decision.get("reason") or "")[:200]],
+        "reasons": [reason[:200]],
         "signals": decision.get("signals") or [],
         "action": route[1],
         "model": model,
