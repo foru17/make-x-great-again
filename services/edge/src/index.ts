@@ -4689,31 +4689,109 @@ async function agent(c: Ctx): Promise<{ ok: true; agentId: string } | { ok: fals
   return { ok: true, agentId: id };
 }
 
+type AgentQueueRow = {
+  x_user_id: string | null;
+  handle: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  verdict_label: string;
+  confidence: number;
+  account_created_at: string | null;
+  account_age_days: number | null;
+  followers_count: number | null;
+  following_count: number | null;
+  reasons: string | null;
+  evidence_text: string | null;
+  last_scored: number;
+  signals_hash: string | null;
+  agent_id: string | null;
+  agent_at: number | null;
+  agent_signals_hash: string | null;
+  agent_attempts: number;
+};
+
+const AGENT_QUEUE_COLUMNS =
+  `x_user_id, handle, display_name, avatar_url, verdict_label, confidence,
+   account_created_at, account_age_days, followers_count, following_count,
+   reasons, evidence_text, last_scored, signals_hash,
+   agent_id, agent_at, agent_signals_hash, agent_attempts`;
+
+const AGENT_QUEUE_BUCKETS = [
+  {
+    where: "following_count > 100000",
+    orderBy: "following_count DESC, last_scored DESC",
+  },
+  {
+    where:
+      "(following_count IS NULL OR following_count <= 100000) AND verdict_label = 'porn_bot'",
+    orderBy: "confidence DESC, last_scored DESC",
+  },
+  {
+    where:
+      "(following_count IS NULL OR following_count <= 100000) AND verdict_label = 'spam'",
+    orderBy: "confidence DESC, last_scored DESC",
+  },
+  {
+    where:
+      "(following_count IS NULL OR following_count <= 100000) AND verdict_label = 'likely_spam'",
+    orderBy: "confidence DESC, last_scored DESC",
+  },
+  {
+    where:
+      "(following_count IS NULL OR following_count <= 100000) AND verdict_label NOT IN ('porn_bot','spam','likely_spam')",
+    orderBy: "last_scored DESC",
+  },
+] as const;
+
+export async function loadAgentQueue(
+  db: D1Database,
+  agentId: string,
+  limit: number,
+): Promise<AgentQueueRow[]> {
+  const queue: AgentQueueRow[] = [];
+  for (const bucket of AGENT_QUEUE_BUCKETS) {
+    const remaining = limit - queue.length;
+    if (remaining <= 0) break;
+    const rows = await db.prepare(
+      `SELECT ${AGENT_QUEUE_COLUMNS}
+         FROM accounts
+        WHERE status = 'auto_pending_review'
+          AND (
+            agent_id IS NULL
+            OR agent_id != ?
+            OR (
+              agent_attempts < 3
+              AND (
+                agent_at IS NULL
+                OR agent_signals_hash IS NULL
+                OR agent_signals_hash != signals_hash
+              )
+            )
+          )
+          AND ${bucket.where}
+        ORDER BY ${bucket.orderBy}
+        LIMIT ?`,
+    )
+      .bind(agentId, remaining)
+      .all<AgentQueueRow>();
+    queue.push(...(rows.results ?? []));
+  }
+  return queue;
+}
+
 // GET /v1/agent/queue — items the agent should look at next.
-// Returns auto_pending_review rows where the agent either hasn't scored yet
-// or scored against a stale signals_hash. Ordered last_scored DESC so fresh
-// items get attention first. Capped to 100 per call to bound work.
+// A reviewer can re-check rows last handled by a different agent, while its
+// own fresh annotations stay idempotent. High-following rows and first-pass
+// porn/spam labels are returned before ambiguous accounts so the fixed token
+// budget reaches the most actionable queue segments first. Capped at 100.
 app.get("/v1/agent/queue", async (c) => {
   const a = await agent(c);
   if (!a.ok) return c.json({ error: "forbidden" }, 403);
   const limit = Math.min(100, Math.max(1, Number(c.req.query("limit")) || 30));
-  const rows = await c.env.DB.prepare(
-    `SELECT x_user_id, handle, display_name, avatar_url, verdict_label, confidence,
-            account_created_at, account_age_days, followers_count, following_count,
-            reasons, evidence_text, last_scored, signals_hash,
-            agent_id, agent_at, agent_signals_hash, agent_attempts
-       FROM accounts
-      WHERE status = 'auto_pending_review'
-        AND agent_attempts < 3
-        AND (agent_at IS NULL OR agent_signals_hash IS NULL OR agent_signals_hash != signals_hash)
-      ORDER BY last_scored DESC
-      LIMIT ?`,
-  )
-    .bind(limit)
-    .all();
+  const queue = await loadAgentQueue(c.env.DB, a.agentId, limit);
   return c.json({
     agent_id: a.agentId,
-    queue: rows.results ?? [],
+    queue,
   });
 });
 
