@@ -360,7 +360,7 @@ class BatchRunnerAdapterTests(unittest.TestCase):
         self.assertEqual(payload, result)
         self.assertEqual([payload["usage"]], recorded)
 
-    def test_llm_call_caps_provider_output_per_sub_batch(self) -> None:
+    def test_llm_call_caps_total_completion_tokens_per_sub_batch(self) -> None:
         payload = {
             "choices": [{"message": {"content": '{"decisions":[]}'}}],
             "usage": {
@@ -396,7 +396,8 @@ class BatchRunnerAdapterTests(unittest.TestCase):
 
         request = urlopen.call_args.args[0]
         body = json.loads(request.data)
-        self.assertEqual(900, body["max_tokens"])
+        self.assertEqual(900, body["max_completion_tokens"])
+        self.assertNotIn("max_tokens", body)
 
 
 if __name__ == "__main__":

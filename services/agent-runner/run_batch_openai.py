@@ -280,7 +280,7 @@ def make_llm_call(
                         }
                     ],
                     "temperature": 0,
-                    "max_tokens": max_output_tokens,
+                    "max_completion_tokens": max_output_tokens,
                     "response_format": {"type": "json_object"},
                 },
                 ensure_ascii=False,
