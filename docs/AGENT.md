@@ -92,9 +92,15 @@ never copy this token into scripts, logs, commits, or the runner host config.
 ### `GET /v1/agent/queue?limit=<N>`
 
 Returns up to `N` (default 30, max 100) `auto_pending_review` rows the
-agent hasn't yet scored — or has scored against a stale `signals_hash`.
-Sorted `last_scored DESC`. `agent_attempts < 3` caps retries on chronic
-agent failures; successful agent decisions reset this counter to 0.
+current agent hasn't yet scored, was last scored by a different agent, or
+has scored against a stale `signals_hash`. A different reviewer may re-check
+legacy rows even when the previous agent exhausted its retry counter; the
+counter still caps retries of the current agent's own stale rows.
+
+The queue is split into disjoint priority buckets: `following_count >
+100000` first, then first-pass `porn_bot`, `spam`, and `likely_spam`, followed
+by the remaining labels. Each bucket retains deterministic confidence/freshness
+ordering, and the combined response never exceeds the requested limit.
 
 ```jsonc
 {
