@@ -85,6 +85,10 @@ Both endpoints take `Authorization: Bearer <AGENT_TOKEN>` and
 `X-Agent-Id: <runner-id>`. `AGENT_TOKEN` is a wrangler secret separate
 from `ADMIN_TOKEN`; the runner host stores it in a `chmod 600` file.
 
+For local maintainer-only promotion commands, store `ADMIN_TOKEN` in the
+repository-root `.env`. The file is gitignored and must remain `chmod 600`;
+never copy this token into scripts, logs, commits, or the runner host config.
+
 ### `GET /v1/agent/queue?limit=<N>`
 
 Returns up to `N` (default 30, max 100) `auto_pending_review` rows the
