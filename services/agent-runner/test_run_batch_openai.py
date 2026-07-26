@@ -206,7 +206,7 @@ class BatchRunnerAdapterTests(unittest.TestCase):
         self.assertFalse(config_from_env({**base, "APPLY_DECISIONS": "true"}).apply)
         self.assertTrue(config_from_env({**base, "APPLY_DECISIONS": "1"}).apply)
 
-    def test_daily_budget_limits_the_next_cycle_and_stops_when_exhausted(self) -> None:
+    def test_daily_budget_requires_headroom_for_a_full_cycle(self) -> None:
         config = RunnerConfig(
             model="test-model",
             max_input_tokens=30_000,
@@ -220,9 +220,18 @@ class BatchRunnerAdapterTests(unittest.TestCase):
             {"input_tokens": 140_000, "output_tokens": 85_000, "total_tokens": 225_000},
         )
 
-        self.assertIsNotNone(limited)
-        self.assertEqual(10_000, limited.max_input_tokens)
-        self.assertEqual(5_000, limited.max_output_tokens)
+        self.assertIsNone(limited)
+        self.assertEqual(
+            config,
+            limit_for_daily_usage(
+                config,
+                {
+                    "input_tokens": 120_000,
+                    "output_tokens": 80_000,
+                    "total_tokens": 200_000,
+                },
+            ),
+        )
         self.assertIsNone(
             limit_for_daily_usage(
                 config,
@@ -350,6 +359,44 @@ class BatchRunnerAdapterTests(unittest.TestCase):
 
         self.assertEqual(payload, result)
         self.assertEqual([payload["usage"]], recorded)
+
+    def test_llm_call_caps_provider_output_per_sub_batch(self) -> None:
+        payload = {
+            "choices": [{"message": {"content": '{"decisions":[]}'}}],
+            "usage": {
+                "prompt_tokens": 120,
+                "completion_tokens": 30,
+                "total_tokens": 150,
+            },
+        }
+
+        class Response:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def read(self):
+                return json.dumps(payload).encode()
+
+        call = make_llm_call(
+            base_url="https://example.test",
+            api_key="test-key",
+            model="test-model",
+            prompt_template="ACCOUNTS_JSON_PLACEHOLDER",
+            timeout_s=10,
+            max_output_tokens=900,
+        )
+
+        with patch(
+            "run_batch_openai.urllib.request.urlopen", return_value=Response()
+        ) as urlopen:
+            call([])
+
+        request = urlopen.call_args.args[0]
+        body = json.loads(request.data)
+        self.assertEqual(900, body["max_tokens"])
 
 
 if __name__ == "__main__":

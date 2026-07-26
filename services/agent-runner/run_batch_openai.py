@@ -8,7 +8,7 @@ agent staging decisions; this runner never publishes directly.
 from __future__ import annotations
 
 from contextlib import contextmanager
-from dataclasses import dataclass, replace
+from dataclasses import dataclass
 from datetime import datetime, timezone
 import fcntl
 import json
@@ -21,6 +21,8 @@ import urllib.error
 import urllib.request
 
 from batch_review import ReviewLimits, review_batch
+
+MAX_LLM_CALLS_PER_CYCLE = 10
 
 
 @contextmanager
@@ -131,13 +133,12 @@ def limit_for_daily_usage(
     output_remaining = config.daily_output_tokens - int(
         totals.get("output_tokens") or 0
     )
-    if input_remaining <= 0 or output_remaining <= 0:
+    if (
+        input_remaining < config.max_input_tokens
+        or output_remaining < config.max_output_tokens
+    ):
         return None
-    return replace(
-        config,
-        max_input_tokens=min(config.max_input_tokens, input_remaining),
-        max_output_tokens=min(config.max_output_tokens, output_remaining),
-    )
+    return config
 
 
 def load_env(path: Path) -> dict[str, str]:
@@ -206,7 +207,7 @@ def run_cycle(config: RunnerConfig, *, worker_call, llm_call) -> dict[str, Any]:
         limits=ReviewLimits(
             max_items=config.max_items,
             sub_batch_size=config.sub_batch_size,
-            max_calls=10,
+            max_calls=MAX_LLM_CALLS_PER_CYCLE,
             max_parse_failures=config.max_parse_failures,
             max_input_tokens=config.max_input_tokens,
             max_output_tokens=config.max_output_tokens,
@@ -263,6 +264,7 @@ def make_llm_call(
     model: str,
     prompt_template: str,
     timeout_s: int,
+    max_output_tokens: int = 4096,
     usage_callback: Callable[[dict[str, Any]], None] | None = None,
 ):
     def call(batch: list[dict[str, Any]]) -> dict[str, Any]:
@@ -278,7 +280,7 @@ def make_llm_call(
                         }
                     ],
                     "temperature": 0,
-                    "max_tokens": 4096,
+                    "max_tokens": max_output_tokens,
                     "response_format": {"type": "json_object"},
                 },
                 ensure_ascii=False,
@@ -381,6 +383,9 @@ def main() -> int:
                 model=config.model,
                 prompt_template=prompt_path.read_text(),
                 timeout_s=int(env.get("AGENT_LLM_TIMEOUT_S", "90")),
+                max_output_tokens=max(
+                    1, config.max_output_tokens // MAX_LLM_CALLS_PER_CYCLE
+                ),
                 usage_callback=ledger.record,
             )
             result = run_cycle(config, worker_call=worker_call, llm_call=llm_call)

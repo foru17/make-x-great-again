@@ -245,8 +245,9 @@ large queue cleanups:
   rather than aborting the remaining safe writes;
 - a non-blocking file lock prevents overlapping cron cycles, while a UTC
   JSONL usage ledger records every provider response before parsing/writes;
-- daily input/output token ceilings stop new cycles and also shrink the last
-  allowed cycle to the remaining budget.
+- a new cycle starts only when the daily budget has headroom for the full
+  configured cycle; each of the ten provider calls is capped at one tenth of
+  the cycle output budget so the reserved output ceiling cannot be overrun.
 
 Config additions in the runner `.env`:
 
