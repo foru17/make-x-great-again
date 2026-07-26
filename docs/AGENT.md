@@ -226,8 +226,9 @@ Located in [`services/agent-runner/`](../services/agent-runner):
 large queue cleanups:
 
 - one logical cycle fetches at most 100 accounts;
-- it shares one compact policy across provider-safe sub-batches of 10, so a
-  cycle makes at most ten model calls;
+- it shares one compact policy across configurable provider-safe sub-batches;
+  the production wrapper uses 20 accounts per call, so a 100-account cycle
+  makes at most five model calls;
 - dry-run is the default; only `APPLY_DECISIONS=1` enables writes;
 - writes land only in private agent staging statuses. `reject` becomes
   `agent_whitelist`, `blacklist` becomes `agent_blacklist`, and `pending`
@@ -246,10 +247,14 @@ large queue cleanups:
 - a non-blocking file lock prevents overlapping cron cycles, while a UTC
   JSONL usage ledger records every provider response before parsing/writes;
 - a new cycle starts only when the daily budget has headroom for the full
-  configured cycle; each of the ten provider calls uses a reasoning-inclusive
-  completion cap at one tenth of the cycle output budget. The full-cycle
+  configured cycle; the cycle output budget is divided across the planned
+  provider calls as a reasoning-inclusive completion cap. The full-cycle
   admission check remains the authoritative guard when a compatible proxy
-  reports small usage differences around its requested per-call cap.
+  reports small usage differences around its requested per-call cap;
+- `AGENT_REASONING_EFFORT` is optional and validated before calls. The
+  production wrapper uses the provider-tested `none` setting to avoid hidden
+  reasoning-token overhead while the deterministic blacklist safety gate and
+  separate maintainer promotion remain unchanged.
 
 Config additions in the runner `.env`:
 
@@ -258,9 +263,10 @@ AGENT_ID=batch-openai-v2
 AGENT_LLM_BASE_URL=https://api.openai.com/v1
 AGENT_LLM_API_KEY=<secret>
 AGENT_LLM_MODEL=<model-id>
+AGENT_REASONING_EFFORT=none
 PROMPT_FILE_BATCH_OPENAI=/path/to/prompt_batch_openai.tmpl
 MAX_ITEMS_PER_CYCLE=100
-LLM_SUB_BATCH_SIZE=10
+LLM_SUB_BATCH_SIZE=20
 MAX_INPUT_TOKENS_PER_CYCLE=30000
 MAX_OUTPUT_TOKENS_PER_CYCLE=10000
 DAILY_INPUT_TOKEN_BUDGET=150000
@@ -286,9 +292,9 @@ action.
 For the production Hermes cron, install
 `services/agent-runner/x-spam-batch-openai.sh` under `~/.hermes/scripts/`
 and point the existing `x-spam-agent` job at it. The wrapper pins the reviewed
-model, 100-account cycle, 10-account provider sub-batches, 15k/9k per-cycle
+model, 100-account cycle, 20-account provider sub-batches, 15k/9k per-cycle
 limits, and 150k/90k UTC daily limits without storing credentials in the
-script.
+script. Model reasoning is disabled after a live compatibility probe.
 
 ### Install on a Mac mini
 

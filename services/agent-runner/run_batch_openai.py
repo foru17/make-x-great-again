@@ -93,6 +93,7 @@ class DailyUsageLedger:
 @dataclass(frozen=True)
 class RunnerConfig:
     model: str
+    reasoning_effort: str | None = None
     apply: bool = False
     max_items: int = 100
     sub_batch_size: int = 10
@@ -112,6 +113,7 @@ def config_from_env(env: dict[str, str]) -> RunnerConfig:
         raise ValueError("MAX_ITEMS_PER_CYCLE must be between 1 and 100")
     config = RunnerConfig(
         model=model,
+        reasoning_effort=env.get("AGENT_REASONING_EFFORT") or None,
         apply=env.get("APPLY_DECISIONS") == "1",
         max_items=max_items,
         sub_batch_size=int(env.get("LLM_SUB_BATCH_SIZE", "10")),
@@ -123,7 +125,22 @@ def config_from_env(env: dict[str, str]) -> RunnerConfig:
     )
     if config.daily_input_tokens < 1 or config.daily_output_tokens < 1:
         raise ValueError("daily token budgets must be positive")
+    if config.reasoning_effort not in {None, "none", "low", "medium", "high", "xhigh"}:
+        raise ValueError(
+            "AGENT_REASONING_EFFORT must be none, low, medium, high, or xhigh"
+        )
     return config
+
+
+def completion_token_cap(config: RunnerConfig) -> int:
+    planned_calls = (
+        config.max_items + config.sub_batch_size - 1
+    ) // config.sub_batch_size
+    if planned_calls < 1 or planned_calls > MAX_LLM_CALLS_PER_CYCLE:
+        raise ValueError(
+            f"cycle would exceed max LLM calls={MAX_LLM_CALLS_PER_CYCLE}"
+        )
+    return max(1, config.max_output_tokens // planned_calls)
 
 
 def limit_for_daily_usage(
@@ -265,26 +282,27 @@ def make_llm_call(
     prompt_template: str,
     timeout_s: int,
     max_output_tokens: int = 4096,
+    reasoning_effort: str | None = None,
     usage_callback: Callable[[dict[str, Any]], None] | None = None,
 ):
     def call(batch: list[dict[str, Any]]) -> dict[str, Any]:
+        request_body: dict[str, Any] = {
+            "model": model,
+            "messages": [
+                {
+                    "role": "user",
+                    "content": build_prompt(prompt_template, batch),
+                }
+            ],
+            "temperature": 0,
+            "max_completion_tokens": max_output_tokens,
+            "response_format": {"type": "json_object"},
+        }
+        if reasoning_effort is not None:
+            request_body["reasoning_effort"] = reasoning_effort
         request = urllib.request.Request(
             f"{base_url.rstrip('/')}/chat/completions",
-            data=json.dumps(
-                {
-                    "model": model,
-                    "messages": [
-                        {
-                            "role": "user",
-                            "content": build_prompt(prompt_template, batch),
-                        }
-                    ],
-                    "temperature": 0,
-                    "max_completion_tokens": max_output_tokens,
-                    "response_format": {"type": "json_object"},
-                },
-                ensure_ascii=False,
-            ).encode(),
+            data=json.dumps(request_body, ensure_ascii=False).encode(),
             method="POST",
         )
         request.add_header("Authorization", f"Bearer {api_key}")
@@ -383,9 +401,8 @@ def main() -> int:
                 model=config.model,
                 prompt_template=prompt_path.read_text(),
                 timeout_s=int(env.get("AGENT_LLM_TIMEOUT_S", "90")),
-                max_output_tokens=max(
-                    1, config.max_output_tokens // MAX_LLM_CALLS_PER_CYCLE
-                ),
+                max_output_tokens=completion_token_cap(config),
+                reasoning_effort=config.reasoning_effort,
                 usage_callback=ledger.record,
             )
             result = run_cycle(config, worker_call=worker_call, llm_call=llm_call)

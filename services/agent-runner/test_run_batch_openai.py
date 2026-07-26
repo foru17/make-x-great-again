@@ -9,6 +9,7 @@ import urllib.error
 from run_batch_openai import (
     DailyUsageLedger,
     RunnerConfig,
+    completion_token_cap,
     config_from_env,
     decision_body,
     limit_for_daily_usage,
@@ -206,6 +207,32 @@ class BatchRunnerAdapterTests(unittest.TestCase):
         self.assertFalse(config_from_env({**base, "APPLY_DECISIONS": "true"}).apply)
         self.assertTrue(config_from_env({**base, "APPLY_DECISIONS": "1"}).apply)
 
+    def test_environment_accepts_only_supported_reasoning_effort(self) -> None:
+        base = {"AGENT_LLM_MODEL": "test-model"}
+
+        self.assertIsNone(config_from_env(base).reasoning_effort)
+        self.assertEqual(
+            "none",
+            config_from_env(
+                {**base, "AGENT_REASONING_EFFORT": "none"}
+            ).reasoning_effort,
+        )
+        with self.assertRaisesRegex(ValueError, "AGENT_REASONING_EFFORT"):
+            config_from_env({**base, "AGENT_REASONING_EFFORT": "turbo"})
+
+    def test_completion_cap_is_divided_across_planned_calls(self) -> None:
+        self.assertEqual(
+            1_800,
+            completion_token_cap(
+                RunnerConfig(
+                    model="test-model",
+                    max_items=100,
+                    sub_batch_size=20,
+                    max_output_tokens=9_000,
+                )
+            ),
+        )
+
     def test_daily_budget_requires_headroom_for_a_full_cycle(self) -> None:
         config = RunnerConfig(
             model="test-model",
@@ -398,6 +425,44 @@ class BatchRunnerAdapterTests(unittest.TestCase):
         body = json.loads(request.data)
         self.assertEqual(900, body["max_completion_tokens"])
         self.assertNotIn("max_tokens", body)
+
+    def test_llm_call_can_disable_reasoning(self) -> None:
+        payload = {
+            "choices": [{"message": {"content": '{"decisions":[]}'}}],
+            "usage": {
+                "prompt_tokens": 120,
+                "completion_tokens": 30,
+                "total_tokens": 150,
+            },
+        }
+
+        class Response:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *_args):
+                return False
+
+            def read(self):
+                return json.dumps(payload).encode()
+
+        call = make_llm_call(
+            base_url="https://example.test",
+            api_key="test-key",
+            model="test-model",
+            prompt_template="ACCOUNTS_JSON_PLACEHOLDER",
+            timeout_s=10,
+            reasoning_effort="none",
+        )
+
+        with patch(
+            "run_batch_openai.urllib.request.urlopen", return_value=Response()
+        ) as urlopen:
+            call([])
+
+        request = urlopen.call_args.args[0]
+        body = json.loads(request.data)
+        self.assertEqual("none", body["reasoning_effort"])
 
 
 if __name__ == "__main__":
