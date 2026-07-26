@@ -247,8 +247,9 @@ large queue cleanups:
   JSONL usage ledger records every provider response before parsing/writes;
 - a new cycle starts only when the daily budget has headroom for the full
   configured cycle; each of the ten provider calls uses a reasoning-inclusive
-  completion cap at one tenth of the cycle output budget, so the reserved
-  output ceiling cannot be overrun.
+  completion cap at one tenth of the cycle output budget. The full-cycle
+  admission check remains the authoritative guard when a compatible proxy
+  reports small usage differences around its requested per-call cap.
 
 Config additions in the runner `.env`:
 
