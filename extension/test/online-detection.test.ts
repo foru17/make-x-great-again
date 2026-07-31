@@ -4,6 +4,7 @@ import {
   MAX_AUTO_CLASSIFICATIONS_PER_PAGE,
   OnlineClassificationLimiter,
   classifyAndCache,
+  onlineVerdictVisibility,
   postOnlineClassification,
   shouldAutoClassify,
 } from "../lib/online-detection";
@@ -24,6 +25,16 @@ const verdict: Verdict = {
   confidence: 0.91,
   reasons: ["normal account history"],
 };
+
+test("legit online verdicts stay silent while reviewable verdicts remain visible", () => {
+  assert.equal(onlineVerdictVisibility(verdict), "silent");
+  for (const label of ["spam", "porn_bot", "likely_spam", "uncertain"] as const) {
+    assert.equal(
+      onlineVerdictVisibility({ label, confidence: 0.8, reasons: ["test"] }),
+      "badge",
+    );
+  }
+});
 
 test("authenticated local misses auto-classify, with a hard per-page cap", () => {
   assert.equal(
