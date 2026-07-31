@@ -1,4 +1,4 @@
-const GOOGLE_TAG_ID = "G-LQXDB27FRB";
+const GOOGLE_TAG_ID = process.env.GOOGLE_TAG_ID || "";
 
 export function googleAnalyticsHead(): string {
   if (!GOOGLE_TAG_ID) return "";
