@@ -1170,10 +1170,14 @@ function WhitelistApplySection({ edgeBase }: { edgeBase: string }) {
     try {
       if (import.meta.env.BROWSER === "firefox") {
         const dataGranted = await chrome.permissions.request({
-          data_collection: ["authenticationInfo", "personallyIdentifyingInfo"],
+          data_collection: [
+            "authenticationInfo",
+            "personallyIdentifyingInfo",
+            "websiteContent",
+          ],
         } as chrome.permissions.Permissions & { data_collection: string[] });
         if (!dataGranted) {
-          setMsg({ text: "未授权白名单申请所需的数据传输权限。", ok: false });
+          setMsg({ text: "未授权在线 AI 检测与白名单申请所需的数据传输权限。", ok: false });
           return;
         }
       }
@@ -1304,9 +1308,15 @@ function WhitelistApplySection({ edgeBase }: { edgeBase: string }) {
     "w-full rounded-md border border-border-2 bg-transparent px-3 py-2 text-[13px] outline-none transition focus:border-accent";
 
   const identityLine = login && (
-    <p className="text-[12px] text-fg-3">
-      GitHub 身份：<b className="text-fg-2">@{login}</b>
-    </p>
+    <div className="space-y-1 text-[12px] text-fg-3">
+      <p>
+        GitHub 身份：<b className="text-fg-2">@{login}</b> · 新账号在线 AI 检测已启用
+      </p>
+      <p className="leading-relaxed">
+        本地名单、缓存与官方规则均未命中的账号，会把公开资料和当前公开文本提交到
+        x.zuoluo.tv 检测；单页最多 40 个，结果缓存在本机。
+      </p>
+    </div>
   );
 
   // ---- Terminal states render as a status panel, not the apply form ----

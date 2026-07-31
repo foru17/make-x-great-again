@@ -57,9 +57,9 @@ X 现在的问题，大家都知道：
 - 算法决定你看到谁，而不是你决定
 - 看一个人聊过什么、最热几条是什么——只能手动翻几十层
 
-**Make X Great Again (MXGA)** 装上之后，定期同步的社区共建公开黑名单帮你标出这些垃圾号，一键本地隐藏——默认「本地隐藏」不调用 X 的任何接口，也不上传浏览或扫描数据；如需更进一步，可在设置里选择用你自己的 X 登录态调用 X 原生静音 / 拉黑（动作仍不经过我们的服务器）。
+**Make X Great Again (MXGA)** 装上之后，定期同步的社区共建公开黑名单帮你标出这些垃圾号，一键本地隐藏。未登录 GitHub 时只做本地名单 / 规则匹配；登录后，对尚未命中的新账号默认触发在线 AI 检测。你也可以选择用自己的 X 登录态调用 X 原生静音 / 拉黑（动作仍不经过我们的服务器）。
 
-不收集你的信息，不要注册，源码全开。
+默认本地优先，无广告追踪，源码全开；可选在线检测的数据流完整公开。
 
 ## 五件事，分阶段做
 
@@ -82,7 +82,8 @@ X 现在的问题，大家都知道：
 - **三种处理方式（可选）**：设置页「处理方式」里可切换点「隐藏」时的默认行为——**本地隐藏**（默认，零联网，X 无感）/ **X 静音**（用你的 X 登录态调 X 原生静音，单向、对方不知情、关注关系不变）/ **X 拉黑**（X 原生屏蔽，互相看不到、解除关注）。静音 / 拉黑均为可选，且只在切换到该模式时才在运行时申请 x.com 的可选权限；这两种动作经过一个全局限速队列（跨 tab 串行、约 1.2s 间隔 + 抖动、阶段性冷却、429 退避）调用 X 自家接口，不经过我们的服务器，也不收集任何数据
 - **随时取消隐藏**：设置页可查看本地隐藏列表，一键取消隐藏纠正误判（本地隐藏一侧始终可恢复）
 - **误判申诉**：徽标里点「申诉」会打开 GitHub 上的申诉 issue 模板，由维护者人工复核
-- **最小数据流**：默认权限为 `storage`、`alarms`、`unlimitedStorage`；x.com 与 GitHub host 权限按功能申请。无统计上报，浏览内容、扫描结果和处理记录只存在本机；GitHub 登录与白名单 API 仅在你主动申请白名单时使用
+- **登录后的新账号检测**：GitHub 登录后，本地名单、缓存和官方规则都未命中的账号会把公开资料与当前公开文本提交到 `/v1/classify`；单页最多 40 个、最多 3 个并发，结果缓存在本机。退出 GitHub 后恢复纯本地匹配
+- **最小数据流**：默认权限为 `storage`、`alarms`、`unlimitedStorage`；x.com 与 GitHub host 权限按功能申请。无统计上报，本地处理记录不上传；在线检测与白名单申请的完整字段见隐私声明
 - **守门员审核台**（[/admin](https://x.zuoluo.tv/admin)，需要 ADMIN_TOKEN）：待审队列 / 黑名单 / 白名单 / 审计日志 四个 tab，全自定义弹窗
 - **公开公榜**（[/list](https://x.zuoluo.tv/list)）：所有 `human_confirmed` 账号公开可查，含理由 + 举报人数
 - **共建机制（在网站端，不在扩展里）**：举报 / 确认走 [x.zuoluo.tv](https://x.zuoluo.tv) 的 API（GitHub token 验证、加盐指纹存储）；alpha 阶段所有举报先进人工队列。`3 个 ≥90 天 GH 账号 + AI 置信 ≥0.9` 是保留的自动发布治理门槛，目前默认关闭
@@ -210,7 +211,12 @@ CONTRIBUTING.md       贡献指南
 
 ## 当前进度
 
-**v0.5.0**（最新，2026-06-10）—— 被动本地优先 + 可选 X 原生动作
+**v0.5.1**（最新，2026-07-31）—— 恢复 GitHub 登录后的新账号在线 AI 检测
+- **自动检测恢复**：本地名单、缓存和官方规则均未命中的新增账号会默认调用 `/v1/classify`，判定写入账号级本地缓存
+- **登录门控与成本边界**：未登录绝不调用分类接口；每个 SPA 页面最多 40 个账号、最多 3 个并发，服务端继续执行身份 / 全局限流
+- **隐私披露**：登录页明确展示在线检测的数据流；Firefox 将 `websiteContent` 列为可选数据权限
+
+**v0.5.0**（2026-06-10）—— 被动本地优先 + 可选 X 原生动作
 - **名单下载、本地匹配**：公开黑名单与白名单由后台定时同步；命中和统计在本地完成，不上传浏览内容、扫描结果或处理记录
 - **处理方式三选一**：点「隐藏」默认仅**本地隐藏**（display:none + 本地隐藏列表，零联网，可随时取消）；可选 **X 静音** / **X 拉黑**——用你自己的 X 登录态调用 X 自家接口（`mutes/users/create.json` / `blocks/create.json`），经全局限速队列调度，不经过我们的服务器
 - **权限分层**：默认权限为 `storage`、`alarms`、`unlimitedStorage`；x.com 与 GitHub host 权限仅在启用对应功能时申请
@@ -264,11 +270,11 @@ CONTRIBUTING.md       贡献指南
 
 | 层 | 选型 | 备注 |
 |---|---|---|
-| 扩展 | WXT 0.20 · React 19 · Tailwind v4 · Shadow DOM · Chrome + Firefox MV3 | content-script 用 Shadow DOM 隔离样式，不污染 X；后台同步公开名单、本地匹配；可选 X 静音/拉黑用 x.com 可选权限调 X 自家接口 |
+| 扩展 | WXT 0.20 · React 19 · Tailwind v4 · Shadow DOM · Chrome + Firefox MV3 | content-script 用 Shadow DOM 隔离样式；后台同步公开名单、本地匹配；GitHub 登录后对新增账号调用在线 AI；可选 X 静音/拉黑用 x.com 可选权限调 X 自家接口 |
 | Safari | Safari Web Extension MV3 · Swift 6 · SwiftUI · macOS 15+ / iOS 18+ | 单一 Xcode 工程复用 WXT WebExtension 源码与名单同步；支持本地隐藏及可选 X 静音/拉黑。iOS 仅作用于 Safari 网页；构建见 [macOS](./docs/SAFARI.md) / [iOS](./docs/SAFARI-IOS.md) |
 | 边缘 | Cloudflare Worker · Hono · D1 SQLite · R2 | 单 region，custom domain `x.zuoluo.tv` |
-| LLM | 任何 OpenAI 兼容 `/chat/completions` | 仅靠 system prompt 约束，不微调；只在服务端策展管线使用 |
-| 身份 | GitHub token 验证（仅网站端举报/共建流程） | 扩展无任何登录；X 静音/拉黑复用你浏览器已有的 X 登录态，不读取也不上传该凭据；服务端只存加盐 HMAC 指纹 |
+| LLM | 任何 OpenAI 兼容 `/chat/completions` | 仅靠 system prompt 约束，不微调；扩展只调用服务端 `/v1/classify`，不直连 LLM |
+| 身份 | GitHub token 验证 | 扩展登录后用于在线 AI 检测、举报与白名单申请；X 静音/拉黑复用浏览器已有的 X 登录态，不向我们的服务上传该凭据；服务端只存加盐 HMAC 指纹 |
 | 同步 | Workers Cron：`*/10 * * * *` 发布 R2 工件 · `0 */6 * * *` 镜像 data/ 仓库 | 扩展安装/更新后拉取，之后每 6 小时检查名单版本 |
 
 更细的架构与决策记录在 [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md)。
