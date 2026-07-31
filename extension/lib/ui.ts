@@ -1712,7 +1712,7 @@ export function createBadge(
           ? "命中官方关键词规则（本机比对）"
           : source === "cache"
             ? "本地缓存命中"
-            : "首次发现（本机首次判定，已记录待人工确认）";
+            : "在线 AI 检测结果";
     // No native title: the hover popover already carries the details, and the
     // OS tooltip floating next to it reads as visual noise.
     el.setAttribute("aria-label", `${meta.zh} ${(v.confidence * 100).toFixed(0)}% · ${tip}`);
