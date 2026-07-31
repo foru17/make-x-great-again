@@ -104,9 +104,23 @@ export default defineBackground(() => {
             sendResponse({ ok: true, data: await ghStart() });
           } else if (msg.type === "gh_poll") {
             sendResponse({ ok: true, data: await ghPoll(msg.deviceCode) });
+          } else if (msg.type === "auth_status") {
+            const { getGhToken } = await import("../lib/auth");
+            sendResponse({ ok: true, data: { authenticated: !!(await getGhToken()) } });
           } else if (msg.type === "open_options") {
             chrome.runtime.openOptionsPage();
             sendResponse({ ok: true });
+          } else if (msg.type === "classify") {
+            const { getGhToken } = await import("../lib/auth");
+            const { edgeBase } = await import("../lib/list-sync");
+            const { postOnlineClassification } = await import("../lib/online-detection");
+            sendResponse(
+              await postOnlineClassification({
+                base: await edgeBase(),
+                token: (await getGhToken()) || null,
+                sig: msg.sig,
+              }),
+            );
           } else if (msg.type === "report") {
             // Authenticated POST /v1/report from the SHARED extension origin
             // (same path the whitelist-apply flow uses), not the content

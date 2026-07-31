@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
   MAX_AUTO_CLASSIFICATIONS_PER_PAGE,
+  OnlineClassificationLimiter,
   classifyAndCache,
   postOnlineClassification,
   shouldAutoClassify,
@@ -48,6 +49,30 @@ test("logged-out or locally known accounts never auto-classify", () => {
     shouldAutoClassify({ authenticated: true, localResult: "known", requestsStarted: 0 }),
     false,
   );
+});
+
+test("online classification concurrency is bounded", async () => {
+  const limiter = new OnlineClassificationLimiter(2);
+  let active = 0;
+  let maximum = 0;
+  let release = () => {};
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const tasks = Array.from({ length: 5 }, () =>
+    limiter.run(async () => {
+      active += 1;
+      maximum = Math.max(maximum, active);
+      await gate;
+      active -= 1;
+    }),
+  );
+
+  await new Promise<void>((resolve) => setImmediate(resolve));
+  assert.equal(active, 2);
+  release();
+  await Promise.all(tasks);
+  assert.equal(maximum, 2);
 });
 
 test("classification sends once and persists a reusable account verdict", async () => {

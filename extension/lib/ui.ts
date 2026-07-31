@@ -1622,6 +1622,16 @@ export function createActingBadge(verb: string, queued = false): HTMLElement {
   return el;
 }
 
+/** In-place progress state while a locally unknown account is being checked
+ * by the authenticated online classifier. */
+export function createAnalyzingBadge(): HTMLElement {
+  const el = document.createElement("span");
+  el.className = "xss-badge analyzing";
+  el.setAttribute("aria-label", "在线 AI 检测中");
+  el.innerHTML = `<span class="xss-spin">${icon("shield", "currentColor", 12)}</span><span>检测中</span>`;
+  return el;
+}
+
 export interface BadgeActions {
   /** Run one action against this account in the given mode. The popover
    *  exposes the full ladder (隐藏 / 静音 / 拉黑); the caller's configured

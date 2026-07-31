@@ -14,6 +14,11 @@ import { LIST_KEY, WL_KEY } from "../lib/list-sync";
 import { type IndexEntry, isWhitelisted, lookupLocal, warmLocalIndex } from "../lib/local-index";
 import { matchLocalRules } from "../lib/local-rules";
 import {
+  OnlineClassificationLimiter,
+  classifyAndCache,
+  shouldAutoClassify,
+} from "../lib/online-detection";
+import {
   type ActionMode,
   type CategoryAction,
   type Settings,
@@ -37,6 +42,7 @@ import {
   type Finding,
   STYLE,
   createActingBadge,
+  createAnalyzingBadge,
   createBadge,
   createBubble,
 } from "../lib/ui";
@@ -254,12 +260,15 @@ export default defineContentScript({
     const pendingActions = new Map<string, PendingAction>();
     const inFlight = new Set<string>(); // keys currently in process()
     const hitPublicSeen = new Set<string>(); // hitPublic stat: once per account
+    const onlineClassificationLimiter = new OnlineClassificationLimiter();
+    let autoClassificationsStarted = 0;
+    let onlineAuthenticated = false;
 
     let settings = await getSettings();
     if (!settings.enabled) return; // master off → don't init (applies next load)
     // Build marker — confirms which content-script build is live in this tab
     // (reloading the unpacked extension does NOT refresh already-open tabs).
-    console.info("[MXGA] content script ready · build 2026-07-24 (profile-pending-settle)");
+    console.info("[MXGA] content script ready · build 2026-07-31 (v0.5.1-online-ai)");
     onSettingsChange((s) => {
       const modeChanged = s.actionMode !== settings.actionMode;
       settings = s;
@@ -284,6 +293,21 @@ export default defineContentScript({
     // Warm local data structures
     await warmBlocklist();
     await warmLocalIndex();
+
+    async function refreshOnlineAuth(): Promise<boolean> {
+      const before = onlineAuthenticated;
+      try {
+        const response = (await chrome.runtime.sendMessage({ type: "auth_status" })) as {
+          ok?: boolean;
+          data?: { authenticated?: boolean };
+        };
+        onlineAuthenticated = response?.ok === true && response.data?.authenticated === true;
+      } catch {
+        onlineAuthenticated = false;
+      }
+      return before !== onlineAuthenticated;
+    }
+    await refreshOnlineAuth();
 
     const keyOf = (s: Signals) => s.userId || `h:${s.handle}`;
 
@@ -700,6 +724,37 @@ export default defineContentScript({
       pushFinding(sig, c.verdict, "cache");
     }
 
+    async function renderOnlineDetection(
+      anchor: HTMLElement,
+      key: string,
+      sig: Signals,
+    ): Promise<void> {
+      clearMounts(anchor);
+      mountBadge(anchor, createAnalyzingBadge);
+      const result = await onlineClassificationLimiter.run(async () => {
+        if (!onlineAuthenticated) return { status: "unauthenticated" as const };
+        return classifyAndCache(key, sig);
+      });
+      if (result.status === "unauthenticated") onlineAuthenticated = false;
+      if (result.status !== "classified") {
+        badgeFor(anchor, key, sig, null);
+        return;
+      }
+      badgeFor(
+        anchor,
+        key,
+        sig,
+        result.verdict,
+        result.cached ? "在线记录命中" : "在线 AI 检测完成",
+        "fresh",
+      );
+      pushFinding(sig, result.verdict, "online-ai");
+      if (!result.cached) {
+        void bumpStats({ detections: 1, label: result.verdict.label });
+        void bumpStat("scanned");
+      }
+    }
+
     function renderLocalIndex(
       anchor: HTMLElement,
       key: string,
@@ -877,7 +932,21 @@ export default defineContentScript({
           return;
         }
 
-        // 5. Local public list did not match. Just show neutral/unhit state.
+        // 5. Local miss. Restored v0.4 behavior: a GitHub-authenticated user
+        //    automatically submits the newly encountered account for online
+        //    AI detection. The per-route hard cap bounds client/API spend;
+        //    logged-out and overflow rows stay in the neutral manual state.
+        if (
+          shouldAutoClassify({
+            authenticated: onlineAuthenticated,
+            localResult: "unknown",
+            requestsStarted: autoClassificationsStarted,
+          })
+        ) {
+          autoClassificationsStarted += 1;
+          await renderOnlineDetection(anchor, key, sig);
+          return;
+        }
         badgeFor(anchor, key, sig, null);
       } finally {
         inFlight.delete(key);
@@ -1047,6 +1116,7 @@ export default defineContentScript({
       pendingActions.clear();
       anchorByKey.clear();
       findings = [];
+      autoClassificationsStarted = 0;
       // Collapse the card and archive this page's processed rows — the
       // bubble follows the user across SPA navigations, so a stale open
       // panel over a new page reads as broken; the session's records stay
@@ -1075,7 +1145,17 @@ export default defineContentScript({
     // page against the fresh list. Pending/hidden rows are untouched.
     try {
       chrome.storage.onChanged.addListener((changes, area) => {
-        if (area !== "local" || (!changes[LIST_KEY] && !changes[WL_KEY])) return;
+        if (area !== "local") return;
+        if (changes["xss:ghToken"]) {
+          void refreshOnlineAuth().then((changed) => {
+            if (!changed || !onlineAuthenticated) return;
+            for (const host of document.querySelectorAll<HTMLElement>(".xss-mount")) {
+              if (host.shadowRoot?.querySelector(".xss-badge.ghost")) host.remove();
+            }
+            scan();
+          });
+        }
+        if (!changes[LIST_KEY] && !changes[WL_KEY]) return;
         for (const host of document.querySelectorAll<HTMLElement>(".xss-mount")) {
           // Badges live in the host's shadow root; keep pending-undo flows.
           if (host.shadowRoot?.querySelector(".xss-badge.pending")) continue;

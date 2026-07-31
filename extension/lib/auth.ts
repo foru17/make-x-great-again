@@ -2,8 +2,8 @@
 // Storage keys (xss:ghToken / xss:ghLogin) are inherited from the v0.4
 // cloud-auth build so a user upgrading from <=0.4 keeps their saved token.
 // The token is only ever sent to GitHub (identity lookup) and to our edge
-// Worker as a bearer for /v1/whitelist/apply and /v1/report — it never
-// touches X.
+// Worker as a bearer for /v1/classify, /v1/whitelist/apply and /v1/report —
+// it never touches X.
 const K = { ghToken: "xss:ghToken", ghLogin: "xss:ghLogin" } as const;
 
 async function get(k: string): Promise<string> {

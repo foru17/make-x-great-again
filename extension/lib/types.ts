@@ -47,9 +47,15 @@ export type BgRequest =
   // fetches need the optional github.com host permission granted first.
   | { type: "gh_start" }
   | { type: "gh_poll"; deviceCode: string }
+  // The content script only receives a boolean; the GitHub token stays in
+  // extension-local storage and is read by the background worker.
+  | { type: "auth_status" }
   // Content script asks the background to open the options page (e.g. a report
   // needs GitHub authorization the user hasn't granted yet).
   | { type: "open_options" }
+  // GitHub-authenticated online AI detection for accounts that missed the
+  // local public list, persistent verdict cache, and local keyword rules.
+  | { type: "classify"; sig: Signals }
   // 举报: the authenticated POST to /v1/report MUST run in the background —
   // a content-script fetch is bound by x.com's CORS/CSP, whereas the SW shares
   // the extension origin the whitelist-apply flow already reports from.
