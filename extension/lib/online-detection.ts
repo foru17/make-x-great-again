@@ -53,6 +53,12 @@ export function shouldAutoClassify(input: {
   );
 }
 
+/** A clean online result is remembered as a scan sentinel but stays visually
+ * silent. Only verdicts that may need review should occupy the author row. */
+export function onlineVerdictVisibility(verdict: Verdict): "silent" | "badge" {
+  return verdict.label === "legit" ? "silent" : "badge";
+}
+
 interface ClassificationBody {
   cached?: boolean;
   record?: {

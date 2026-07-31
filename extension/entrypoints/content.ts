@@ -16,6 +16,7 @@ import { matchLocalRules } from "../lib/local-rules";
 import {
   OnlineClassificationLimiter,
   classifyAndCache,
+  onlineVerdictVisibility,
   shouldAutoClassify,
 } from "../lib/online-detection";
 import {
@@ -45,6 +46,7 @@ import {
   createAnalyzingBadge,
   createBadge,
   createBubble,
+  createCheckedMarker,
 } from "../lib/ui";
 
 /** "误判申诉" — opens the GitHub appeal issue template, PRE-FILLED with the
@@ -719,7 +721,16 @@ export default defineContentScript({
       );
     }
 
+    function markChecked(anchor: HTMLElement): void {
+      clearMounts(anchor);
+      mountBadge(anchor, createCheckedMarker);
+    }
+
     function renderCached(anchor: HTMLElement, key: string, sig: Signals, c: Cached) {
+      if (onlineVerdictVisibility(c.verdict) === "silent") {
+        markChecked(anchor);
+        return;
+      }
       badgeFor(anchor, key, sig, c.verdict, undefined, "cache");
       pushFinding(sig, c.verdict, "cache");
     }
@@ -740,6 +751,14 @@ export default defineContentScript({
         badgeFor(anchor, key, sig, null);
         return;
       }
+      if (!result.cached) {
+        void bumpStats({ detections: 1, label: result.verdict.label });
+        void bumpStat("scanned");
+      }
+      if (onlineVerdictVisibility(result.verdict) === "silent") {
+        markChecked(anchor);
+        return;
+      }
       badgeFor(
         anchor,
         key,
@@ -749,10 +768,6 @@ export default defineContentScript({
         "fresh",
       );
       pushFinding(sig, result.verdict, "online-ai");
-      if (!result.cached) {
-        void bumpStats({ detections: 1, label: result.verdict.label });
-        void bumpStat("scanned");
-      }
     }
 
     function renderLocalIndex(

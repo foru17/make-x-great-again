@@ -433,13 +433,17 @@ svg { display: block; }
   letter-spacing: .3px;
 }
 .xss-badge.analyzing {
-  color: var(--muted); position: relative; overflow: hidden;
+  color: var(--brand); position: relative; overflow: hidden;
+  background: color-mix(in srgb, var(--brand) 8%, transparent);
+  border-color: color-mix(in srgb, var(--brand) 30%, transparent);
+  box-shadow: none;
 }
 .xss-badge.analyzing::after {
   content: ""; position: absolute; inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--brand) 14%, transparent), transparent);
   transform: translateX(-100%); animation: xshim 1.1s ease-in-out infinite;
 }
+.xss-checked { display: none !important; }
 .xss-spin { animation: xspin .8s linear infinite; transform-origin: 50% 50%; }
 /* Pending-undo badge (⏳ 5秒后处理 + 撤销) — warn-outlined, not a solid pill. */
 .xss-badge.pending {
@@ -1629,6 +1633,16 @@ export function createAnalyzingBadge(): HTMLElement {
   el.className = "xss-badge analyzing";
   el.setAttribute("aria-label", "在线 AI 检测中");
   el.innerHTML = `<span class="xss-spin">${icon("shield", "currentColor", 12)}</span><span>检测中</span>`;
+  return el;
+}
+
+/** Invisible scan sentinel for a cached or newly classified clean account.
+ * Keeping the mount prevents virtualized rows from being submitted again. */
+export function createCheckedMarker(): HTMLElement {
+  const el = document.createElement("span");
+  el.className = "xss-checked";
+  el.hidden = true;
+  el.setAttribute("aria-hidden", "true");
   return el;
 }
 
