@@ -36,6 +36,10 @@ interface Secrets {
   // no-op (the public /v1/whitelist endpoint still works).
   WHITELIST_SYNC_TOKEN?: string;
   WHITELIST_SYNC_REPO?: string; // "owner/repo", defaults to foru17/make-x-great-again
+  // Required data-only branch for the GitHub mirror. There is deliberately no
+  // default: omitting a branch from GitHub's Contents API writes to the repo's
+  // default branch, which a scheduled data export must never do implicitly.
+  WHITELIST_SYNC_BRANCH?: string;
   // Optional override for the global hourly LLM-call ceiling (see
   // LLM_GLOBAL_MAX_PER_WINDOW below).
   LLM_GLOBAL_MAX_PER_WINDOW?: string;
@@ -4336,6 +4340,24 @@ app.get("/admin.legacy", (c) => {
 // enhancement. Cron trigger in wrangler.toml.
 type MirrorPublishResult = "skipped" | "committed" | "failed" | "disabled";
 
+function mirrorBranch(env: Bindings): string | null {
+  const branch = env.WHITELIST_SYNC_BRANCH?.trim() ?? "";
+  // A conservative subset of git-check-ref-format. In particular, disallow
+  // traversal-like and ambiguous forms before interpolating a ref into a URL.
+  if (
+    !branch ||
+    branch.length > 255 ||
+    !/^[A-Za-z0-9][A-Za-z0-9._/-]*$/.test(branch) ||
+    branch.includes("..") ||
+    branch.includes("//") ||
+    branch.endsWith("/") ||
+    branch.endsWith(".")
+  ) {
+    return null;
+  }
+  return branch;
+}
+
 async function mirrorToGitHub(
   env: Bindings,
 ): Promise<{
@@ -4347,6 +4369,58 @@ async function mirrorToGitHub(
   // PAT not provided yet — mirror disabled.
   if (!token) return { whitelist: "disabled", blacklist: "disabled", lite: "disabled" };
   const repo = env.WHITELIST_SYNC_REPO ?? "foru17/make-x-great-again";
+  const branch = mirrorBranch(env);
+  const failed = { whitelist: "failed", blacklist: "failed", lite: "failed" } as const;
+  if (!branch) {
+    logWarn("mirror.branch_not_configured", { repo });
+    return failed;
+  }
+  const dataBranch = branch;
+  const githubHeaders = {
+    authorization: `Bearer ${token}`,
+    "user-agent": "mxga-worker",
+    accept: "application/vnd.github+json",
+  };
+
+  // Fail closed before reading D1 or producing payloads. GitHub's Contents API
+  // defaults to the repository's default branch when `branch` is omitted, so
+  // verify both that our explicit data branch exists and that it is not the
+  // default branch. A deleted/misnamed data branch becomes an observable sync
+  // failure instead of silently falling back to main.
+  const repoMeta = await fetch(`https://api.github.com/repos/${repo}`, {
+    headers: githubHeaders,
+  });
+  if (!repoMeta.ok) {
+    logWarn("mirror.repo_unavailable", { repo, status: repoMeta.status });
+    return failed;
+  }
+  const defaultBranch = ((await repoMeta.json()) as { default_branch?: string }).default_branch;
+  if (!defaultBranch || dataBranch === defaultBranch) {
+    logWarn("mirror.branch_not_isolated", {
+      repo,
+      branch: dataBranch,
+      defaultBranch: defaultBranch ?? null,
+    });
+    return failed;
+  }
+  const encodedBranch = dataBranch.split("/").map(encodeURIComponent).join("/");
+  const branchHead = await fetch(
+    `https://api.github.com/repos/${repo}/git/ref/heads/${encodedBranch}`,
+    { headers: githubHeaders },
+  );
+  if (!branchHead.ok) {
+    logWarn("mirror.branch_unavailable", { repo, branch: dataBranch, status: branchHead.status });
+    return failed;
+  }
+  const branchRef = ((await branchHead.json()) as { ref?: string }).ref;
+  if (branchRef !== `refs/heads/${dataBranch}`) {
+    logWarn("mirror.branch_ref_mismatch", {
+      repo,
+      branch: dataBranch,
+      branchRef: branchRef ?? null,
+    });
+    return failed;
+  }
 
   /** UTF-8 safe base64 (btoa() only handles latin-1). Uses TextEncoder rather
    *  than unescape(encodeURIComponent()): the latter expands every CJK byte to
@@ -4395,12 +4469,10 @@ async function mirrorToGitHub(
     // (for diff-aware skip).
     let sha: string | undefined;
     let unchanged = false;
-    const head = await fetch(url, {
-      headers: {
-        authorization: `Bearer ${token}`,
-        "user-agent": "mxga-worker",
-        accept: "application/vnd.github+json",
-      },
+    const readUrl = new URL(url);
+    readUrl.searchParams.set("ref", dataBranch);
+    const head = await fetch(readUrl, {
+      headers: githubHeaders,
     });
     if (head.ok) {
       const j = (await head.json()) as { sha?: string; content?: string };
@@ -4420,14 +4492,13 @@ async function mirrorToGitHub(
     const put = await fetch(url, {
       method: "PUT",
       headers: {
-        authorization: `Bearer ${token}`,
-        "user-agent": "mxga-worker",
-        accept: "application/vnd.github+json",
+        ...githubHeaders,
         "content-type": "application/json",
       },
       body: JSON.stringify({
         message: commitMessage,
         content: b64utf8(nextBody),
+        branch: dataBranch,
         ...(sha ? { sha } : {}),
       }),
     });
@@ -5031,6 +5102,15 @@ app.post("/v1/admin/sync-mirror", async (c) => {
   if (!(await admin(c))) return c.json({ error: "forbidden" }, 403);
   if (!c.env.WHITELIST_SYNC_TOKEN) {
     return c.json({ error: "mirror_disabled", reason: "WHITELIST_SYNC_TOKEN not set" }, 503);
+  }
+  if (!mirrorBranch(c.env)) {
+    return c.json(
+      {
+        error: "mirror_branch_not_configured",
+        reason: "WHITELIST_SYNC_BRANCH must name a valid, non-default data branch",
+      },
+      503,
+    );
   }
   const results = await mirrorToGitHub(c.env);
   const failed =

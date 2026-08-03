@@ -48,8 +48,8 @@
     {
       "id": "mirror-main-isolation",
       "scope": "GitHub 名单镜像写入独立数据分支，代码 main 不再被运行时数据提交直接写入",
-      "verification": "镜像 GET/PUT 明确携带 data 分支；缺失分支时失败可观察；主线能力探针成为测试门禁",
-      "passes": false
+      "verification": "2026-08-03 实测：4 项镜像隔离测试通过；未配置分支返回 503；独立分支 GET ref 与 PUT branch 均显式绑定；分支等于默认分支或不存在时在读取 D1/写文件前返回 502；Worker 全量 110 项与 typecheck 通过",
+      "passes": true
     },
     {
       "id": "agent-review-recovery",

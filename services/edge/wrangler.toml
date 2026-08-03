@@ -51,6 +51,7 @@ database_id = "c3a73f50-9af1-4b85-9b5b-db19dd33f175"
 #   npx wrangler secret put REPORT_SALT          # HMAC salt for reporter fingerprints
 #   npx wrangler secret put WHITELIST_SYNC_TOKEN # fine-grained PAT, Contents:Write on the repo
 #   npx wrangler secret put WHITELIST_SYNC_REPO  # "owner/repo", default foru17/make-x-great-again
+#   npx wrangler secret put WHITELIST_SYNC_BRANCH # required dedicated data branch; never main/default
 
 # Scheduled jobs:
 # - mirror curated whitelist/blacklist to the repo every 6h
