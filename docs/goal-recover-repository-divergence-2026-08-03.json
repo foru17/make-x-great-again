@@ -30,8 +30,8 @@
     {
       "id": "keyword-sweep-safety",
       "scope": "恢复 queue/all 扫描、D1 bind 上限、分区游标覆盖、Unicode 预筛选与截断反馈",
-      "verification": "100+ 规则不超 bind 上限；扫描跨过首窗口；auto_legit 命中回到待审而不直接上榜",
-      "passes": false
+      "verification": "2026-08-03 实测：queue/all、100+ 规则分块、rowid 跨窗口、非 ASCII 大小写预筛选、分类写入和 auto_legit 回待审共 8 项核心测试通过；Worker 全量 92 项与 typecheck 通过",
+      "passes": true
     },
     {
       "id": "admin-filtered-pagination",
