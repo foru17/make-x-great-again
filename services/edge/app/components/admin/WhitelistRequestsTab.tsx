@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { AuthError, api, type WhitelistRequest } from "@/lib/adminApi";
 import { ago, fmtN, verdictZh, xUrl } from "@/lib/format";
+import { omitResolvedRequests } from "@/lib/whitelistRequests";
 import { useConfirm } from "./confirm";
 import { EmptyState, ListShell } from "./MoreFoot";
 import { ViewHead } from "./ViewHead";
@@ -45,7 +46,7 @@ export function WhitelistRequestsTab({
   const confirm = useConfirm();
   const [list, setList] = useState<WhitelistRequest[]>([]);
   const [loading, setLoading] = useState(true);
-  const [busy, setBusy] = useState(false);
+  const [busyIds, setBusyIds] = useState<Set<number>>(() => new Set());
 
   const load = useCallback(() => {
     setLoading(true);
@@ -78,19 +79,23 @@ export function WhitelistRequestsTab({
       });
       if (!ok) return;
     }
-    setBusy(true);
+    setBusyIds((current) => new Set(current).add(r.id));
     try {
       await (action === "approve"
         ? api.whitelistRequestApprove(r.id)
         : api.whitelistRequestReject(r.id));
       toast.success(action === "approve" ? `已批准 @${r.handle}` : `已驳回 @${r.handle}`);
-      load();
+      setList((current) => omitResolvedRequests(current, [r.id]));
       onMutated();
     } catch (e) {
       if (e instanceof AuthError) onAuth();
       else toast.error("操作失败");
     } finally {
-      setBusy(false);
+      setBusyIds((current) => {
+        const next = new Set(current);
+        next.delete(r.id);
+        return next;
+      });
     }
   };
 
@@ -114,24 +119,26 @@ export function WhitelistRequestsTab({
       okVariant: listed.length > 0 ? "destructive" : undefined,
     });
     if (!ok) return;
-    setBusy(true);
+    const targetIds = list.map((r) => r.id);
+    setBusyIds(new Set(targetIds));
     let done = 0;
+    const completedIds: number[] = [];
     for (const r of list) {
       try {
         await api.whitelistRequestApprove(r.id);
         done++;
+        completedIds.push(r.id);
       } catch (e) {
         if (e instanceof AuthError) {
           onAuth();
-          setBusy(false);
-          return;
+          break;
         }
       }
     }
-    setBusy(false);
+    setList((current) => omitResolvedRequests(current, completedIds));
+    setBusyIds(new Set());
     toast.success(`已批准 ${done}/${list.length} 条`);
-    load();
-    onMutated();
+    if (completedIds.length > 0) onMutated();
   };
 
   return (
@@ -142,7 +149,7 @@ export function WhitelistRequestsTab({
         desc="扩展用户用 GitHub 身份提交的自助白名单申请（账号注册满 90 天才能提交）。批准 = 该 X 账号进白名单、永不再扫；驳回只关闭申请。"
         actions={
           list.length > 0 && (
-            <Button size="sm" onClick={approveAll} disabled={busy}>
+            <Button size="sm" onClick={approveAll} disabled={busyIds.size > 0}>
               全部批准
             </Button>
           )
@@ -157,6 +164,7 @@ export function WhitelistRequestsTab({
           {list.map((r) => (
             <div
               key={r.id}
+              aria-busy={busyIds.has(r.id)}
               className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b px-4 py-3 last:border-b-0"
             >
               <div className="min-w-0 flex-1">
@@ -185,10 +193,15 @@ export function WhitelistRequestsTab({
                 </div>
               </div>
               <div className="flex shrink-0 items-center gap-2">
+                {busyIds.has(r.id) && (
+                  <span className="text-[12px] text-muted-foreground" aria-live="polite">
+                    处理中…
+                  </span>
+                )}
                 <Button
                   size="sm"
                   className="bg-success text-success-foreground hover:bg-success/90"
-                  disabled={busy}
+                  disabled={busyIds.has(r.id)}
                   onClick={() => decide(r, "approve")}
                 >
                   批准
@@ -197,7 +210,7 @@ export function WhitelistRequestsTab({
                   size="sm"
                   variant="outline"
                   className="text-destructive"
-                  disabled={busy}
+                  disabled={busyIds.has(r.id)}
                   onClick={() => decide(r, "reject")}
                 >
                   驳回
