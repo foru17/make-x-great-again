@@ -1,6 +1,6 @@
 {
   "goal": "安全发布 2026-08-03 恢复分支到 GitHub 与 Cloudflare Worker",
-  "updatedAt": "2026-08-03T18:47:39+08:00",
+  "updatedAt": "2026-08-03T18:58:28+08:00",
   "constraints": {
     "productionDataMutation": "禁止修改 D1 名单数据；只允许 Worker 代码/静态资源、镜像分支和必要 secret",
     "rollback": "部署前记录当前版本；线上验证失败立即回滚",
@@ -30,20 +30,20 @@
     {
       "id": "github-publish",
       "scope": "推送恢复分支并创建包含验证证据的 Draft PR",
-      "verification": "2026-08-03 实测：恢复分支已推送；Draft PR #177 指向 main 且 GitHub 判定 MERGEABLE；PR 包含 112/26/34 项测试、构建、真实 Firefox 与敏感信息检查证据",
+      "verification": "2026-08-03 实测：恢复分支已推送；Draft PR #177 指向 main 且 GitHub 判定 MERGEABLE；Core、Edge、Extension 三组 CI 在提交 00d6630 全部通过；PR 包含 112/26/34 项测试、构建、真实 Firefox 与敏感信息检查证据",
       "passes": true
     },
     {
       "id": "worker-deploy",
       "scope": "发布 Worker 代码和管理台静态资源，不执行 D1 写入/迁移",
-      "verification": "新 Cloudflare 版本 100% 生效；版本信息与发布输出已记录",
-      "passes": false
+      "verification": "2026-08-03 实测：从源码提交 00d66305d5873edea4acf5f861563cf44ec09d75 发布 Cloudflare Worker 版本 8c5ab1ff-e6a2-44c4-8fa1-763ad6c0033b；部署 c84cfb7c-6f70-4e6c-9f06-3cf18ab06550 以 100% 流量生效；发布过程仅上传 Worker 与 9 个新/变更静态资源，未执行 D1 写入或迁移",
+      "passes": true
     },
     {
       "id": "production-smoke",
       "scope": "线上鉴权、管理台静态资源、白名单幂等、镜像安全和关键只读接口验收",
-      "verification": "公开页面/接口与鉴权门禁正常；新资源哈希生效；未触发名单数据写入；失败时已回滚",
-      "passes": false
+      "verification": "2026-08-03 实测：自定义域与 workers.dev 的 /v1/health 均为 200、published=206152（与发布前一致）；/admin 为 200 并加载新资源 index-DjKVADPe.js 与 index-DLteGqS9.css；未认证 /v1/admin/stats 为 403；data-mirror 与 main 均保持 a975f616；WHITELIST_SYNC_BRANCH secret 名称存在；白名单大小写归一与幂等由 Edge 112/112 测试覆盖且生产未做名单写入；桌面浅色、移动深色截图位于 Codex visualizations 目录，经截图检查无溢出/错位",
+      "passes": true
     }
   ]
 }
