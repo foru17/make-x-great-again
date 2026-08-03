@@ -54,8 +54,8 @@
     {
       "id": "agent-review-recovery",
       "scope": "恢复预算化批量审核、过期写入保护、推理 token 上限和风险优先重审",
-      "verification": "Python runner 测试与 /v1/agent/queue 风险优先测试通过，循环/API 数量均有硬上限",
-      "passes": false
+      "verification": "2026-08-03 实测：Python runner 26 项、Agent 队列 2 项、Worker 全量 112 项及 typecheck 通过；每轮最多 100 账号/10 次模型调用，输入/输出/UTC 日预算与解析失败均有硬熔断；过期 signals 写入被跳过，旧 Agent 结果按风险重审",
+      "passes": true
     },
     {
       "id": "extension-online-detection",
