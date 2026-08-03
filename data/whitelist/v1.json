@@ -1,8 +1,43 @@
 {
   "schema": 1,
-  "generatedAt": 1785736863534,
-  "count": 2023,
+  "generatedAt": 1785758438119,
+  "count": 2030,
   "list": [
+    {
+      "handle": "airtouch97",
+      "x_user_id": null,
+      "last_scored": 1785743673031
+    },
+    {
+      "handle": "oa20200911",
+      "x_user_id": "1521770541362733056",
+      "last_scored": 1785743643167
+    },
+    {
+      "handle": "hggend",
+      "x_user_id": null,
+      "last_scored": 1785743632800
+    },
+    {
+      "handle": "chenenpei",
+      "x_user_id": "2304298184",
+      "last_scored": 1785743611288
+    },
+    {
+      "handle": "realchaindoctor",
+      "x_user_id": null,
+      "last_scored": 1785743606694
+    },
+    {
+      "handle": "beetleyibo",
+      "x_user_id": "2067196261665759232",
+      "last_scored": 1785742967318
+    },
+    {
+      "handle": "liuweijiavip",
+      "x_user_id": "2031285494081007620",
+      "last_scored": 1785742960651
+    },
     {
       "handle": "msg__couple",
       "x_user_id": null,
