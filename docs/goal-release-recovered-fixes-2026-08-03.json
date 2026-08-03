@@ -18,8 +18,8 @@
     {
       "id": "data-mirror-branch",
       "scope": "从远端 main 创建独立 data-mirror 分支，禁止运行时镜像触碰 main",
-      "verification": "远端 refs/heads/data-mirror 存在且初始 SHA 与发布前 origin/main 一致",
-      "passes": false
+      "verification": "2026-08-03 实测：新建远端 refs/heads/data-mirror=a975f616ce517191c333c179c121bb13d152b27c，与发布前 origin/main 完全一致；仓库默认分支仍为 main",
+      "passes": true
     },
     {
       "id": "mirror-secret",
