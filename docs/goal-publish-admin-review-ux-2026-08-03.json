@@ -21,8 +21,13 @@
     },
     {
       "id": "publish-source",
-      "verification": "按仓库约定将三个已验证提交和发布清单推送到远端，不覆盖他人提交。",
-      "passes": false
+      "verification": {
+        "remote": "origin/codex/release-admin-review-ux-2026-08-03",
+        "base": "origin/main@a975f61",
+        "push": "git push -u origin codex/release-admin-review-ux-2026-08-03：new branch published",
+        "safety": "发布前重新 fetch；origin/main...HEAD 为 0 behind / 4 ahead，未覆盖远端 main 或他人提交。"
+      },
+      "passes": true
     },
     {
       "id": "deploy-production",
