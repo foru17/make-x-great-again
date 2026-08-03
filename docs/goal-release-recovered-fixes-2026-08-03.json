@@ -12,8 +12,8 @@
     {
       "id": "release-preflight",
       "scope": "确认 GitHub/Cloudflare 身份、干净工作树、回滚版本与发布构建",
-      "verification": "gh/wrangler 鉴权通过；工作树无非本轮改动；记录当前线上版本；dry-run 通过",
-      "passes": false
+      "verification": "2026-08-03 实测：GitHub foru17 具备 admin/push；Wrangler 4.110.0 登录正确 Cloudflare 账号；origin/main=a975f616；回滚版本=4dbf2b54（100%）；Edge 112 项、双 typecheck、CSS/App 构建及 deploy --dry-run 全部通过；生成 CSS 已以 0a6651a 单独提交",
+      "passes": true
     },
     {
       "id": "data-mirror-branch",
