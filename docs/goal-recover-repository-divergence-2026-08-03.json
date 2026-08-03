@@ -36,8 +36,8 @@
     {
       "id": "admin-filtered-pagination",
       "scope": "恢复待审队列和黑名单的多维筛选、筛选范围批处理、offset/total 页码分页",
-      "verification": "API 总数与列表同源；页面可跳页；筛选范围批处理先 dry-run 再执行且有 2000 条硬上限",
-      "passes": false
+      "verification": "2026-08-03 实测：筛选/文本一致性、同源 total+offset、筛选 dry-run/执行/分类/非法动作共 12 项 API 测试通过；恢复页码与筛选面板；Worker 全量 104 项、双 typecheck 与 Vite build 通过",
+      "passes": true
     },
     {
       "id": "admin-secondary-workflows",

@@ -2321,6 +2321,220 @@ function sortCursorWhere(sort: AdminSort, timeColumn: string, cursor: SortCursor
   };
 }
 
+// ---- Free-text admin filters ----
+// The `q` + per-field text half of the admin filter set, shared verbatim by
+// /v1/admin/queue, /v1/admin/blacklist and /v1/admin/decide-by-filter. It
+// lived as three hand-copied SQL blocks; the blacklist copy silently lacked
+// the per-field filters entirely, so the same filter UI meant different things
+// depending on which tab you were standing in. One builder = one behavior.
+//
+//   q             — multi-field fuzzy. Auto-routed: a purely numeric q with no
+//                   explicit `uid` is treated as a uid prefix (that's someone
+//                   pasting an X numeric id), otherwise a case-insensitive
+//                   substring across handle / display_name / evidence_text /
+//                   reasons.
+//   uid           — x_user_id prefix (so '2056413' surfaces a whole
+//                   batch-created cluster).
+//   handle / evidence / display_name / reasons — case-insensitive substrings.
+//
+// SQLite LIKE is ASCII-case-insensitive by default; both sides are lower()ed
+// so handles behave consistently with idx_accounts_handle_norm.
+interface TextFilters {
+  q: string | null;
+  uid: string | null;
+  handle: string | null;
+  evidence: string | null;
+  displayName: string | null;
+  reasons: string | null;
+}
+
+function parseTextFilters(get: (k: string) => string | undefined): TextFilters {
+  const str = (k: string) => (get(k) || "").trim() || null;
+  let q = (get("q") || "").trim().replace(/^@+/, "") || null;
+  let uid = str("uid");
+  if (q && /^\d+$/.test(q) && !uid) {
+    uid = q;
+    q = null;
+  }
+  return {
+    q,
+    uid,
+    handle: str("handle"),
+    evidence: str("evidence"),
+    displayName: str("display_name"),
+    reasons: str("reasons"),
+  };
+}
+
+function textFilterWhere(alias: string, f: TextFilters): { sql: string; binds: unknown[] } {
+  const a = alias;
+  return {
+    sql: `
+          AND (? IS NULL OR (
+                 lower(${a}.handle) LIKE '%' || lower(?) || '%'
+              OR ${a}.x_user_id LIKE ? || '%'
+              OR lower(coalesce(${a}.display_name,'')) LIKE '%' || lower(?) || '%'
+              OR lower(coalesce(${a}.evidence_text,'')) LIKE '%' || lower(?) || '%'
+              OR lower(coalesce(${a}.reasons,'')) LIKE '%' || lower(?) || '%'
+          ))
+          AND (? IS NULL OR ${a}.x_user_id LIKE ? || '%')
+          AND (? IS NULL OR lower(${a}.handle) LIKE '%' || lower(?) || '%')
+          AND (? IS NULL OR lower(coalesce(${a}.evidence_text,'')) LIKE '%' || lower(?) || '%')
+          AND (? IS NULL OR lower(coalesce(${a}.display_name,'')) LIKE '%' || lower(?) || '%')
+          AND (? IS NULL OR lower(coalesce(${a}.reasons,'')) LIKE '%' || lower(?) || '%')`,
+    binds: [
+      f.q,
+      f.q,
+      f.q,
+      f.q,
+      f.q,
+      f.q,
+      f.uid,
+      f.uid,
+      f.handle,
+      f.handle,
+      f.evidence,
+      f.evidence,
+      f.displayName,
+      f.displayName,
+      f.reasons,
+      f.reasons,
+    ],
+  };
+}
+
+function textFiltersEcho(f: TextFilters): Record<string, string | null> {
+  return {
+    q: f.q,
+    uid: f.uid,
+    handle: f.handle,
+    evidence: f.evidence,
+    display_name: f.displayName,
+    reasons: f.reasons,
+  };
+}
+
+// ---- Multi-dimension admin filters ----
+// Structured, AND-combined dimensions shared by /v1/admin/queue,
+// /v1/admin/blacklist and /v1/admin/decide-by-filter. Everything is bound
+// (never interpolated); a missing/blank param disables that dimension via
+// the `(? IS NULL OR …)` pattern so the statement shape stays constant.
+interface DimFilters {
+  followersMin: number | null;
+  followersMax: number | null;
+  followingMin: number | null;
+  followingMax: number | null;
+  createdAfter: string | null; // YYYY-MM-DD, inclusive
+  createdBefore: string | null; // YYYY-MM-DD, inclusive
+  category: string | null;
+  verdict: string | null;
+  source: string | null;
+  tier: string | null; // published_tier (blacklist views)
+}
+
+function parseDimFilters(get: (k: string) => string | undefined): DimFilters {
+  const num = (k: string): number | null => {
+    const raw = (get(k) || "").trim();
+    if (!raw) return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  };
+  const date = (k: string): string | null => {
+    const raw = (get(k) || "").trim();
+    return /^\d{4}-\d{2}-\d{2}$/.test(raw) ? raw : null;
+  };
+  const str = (k: string): string | null => (get(k) || "").trim() || null;
+  return {
+    followersMin: num("followers_min"),
+    followersMax: num("followers_max"),
+    followingMin: num("following_min"),
+    followingMax: num("following_max"),
+    createdAfter: date("created_after"),
+    createdBefore: date("created_before"),
+    category: str("category"),
+    verdict: str("verdict"),
+    source: str("source"),
+    tier: str("tier"),
+  };
+}
+
+function dimFiltersEcho(f: DimFilters): Record<string, string | number | null> {
+  return {
+    followers_min: f.followersMin,
+    followers_max: f.followersMax,
+    following_min: f.followingMin,
+    following_max: f.followingMax,
+    created_after: f.createdAfter,
+    created_before: f.createdBefore,
+    category: f.category,
+    verdict: f.verdict,
+    source: f.source,
+    tier: f.tier,
+  };
+}
+
+// Registration-date comparisons run against the same normalized expression
+// the created_* sorts use (ISO string, or one derived from account_age_days),
+// truncated to YYYY-MM-DD so lexicographic <=/>= equals date comparison.
+// Rows with no observable registration date are excluded when a created_*
+// bound is set — an unknown age must not pass an age filter.
+function dimFilterWhere(
+  alias: string,
+  f: DimFilters,
+  timeColumn: string,
+): { sql: string; binds: unknown[] } {
+  const created = `substr(${createdSortExpr(alias, timeColumn)}, 1, 10)`;
+  return {
+    sql: `
+      AND (? IS NULL OR ${alias}.followers_count >= ?)
+      AND (? IS NULL OR ${alias}.followers_count <= ?)
+      AND (? IS NULL OR ${alias}.following_count >= ?)
+      AND (? IS NULL OR ${alias}.following_count <= ?)
+      AND (? IS NULL OR ${created} >= ?)
+      AND (? IS NULL OR ${created} <= ?)
+      AND (? IS NULL OR ${alias}.category = ?)
+      AND (? IS NULL OR ${alias}.verdict_label = ?)
+      AND (? IS NULL OR ${alias}.source = ?)
+      AND (? IS NULL OR coalesce(${alias}.published_tier,'') = ?)`,
+    binds: [
+      f.followersMin,
+      f.followersMin,
+      f.followersMax,
+      f.followersMax,
+      f.followingMin,
+      f.followingMin,
+      f.followingMax,
+      f.followingMax,
+      f.createdAfter,
+      f.createdAfter,
+      f.createdBefore,
+      f.createdBefore,
+      f.category,
+      f.category,
+      f.verdict,
+      f.verdict,
+      f.source,
+      f.source,
+      f.tier,
+      f.tier,
+    ],
+  };
+}
+
+// Count rows matching a list view's filter set, reusing that view's own CTE so
+// "命中 N 条" can never disagree with what the list actually returns.
+async function countMatches(
+  env: Bindings,
+  cte: string,
+  binds: unknown[],
+  fromWhere: string,
+): Promise<number> {
+  const row = await env.DB.prepare(`${cte} SELECT count(*) AS n ${fromWhere}`)
+    .bind(...binds)
+    .first<{ n: number }>();
+  return row?.n ?? 0;
+}
+
 app.get("/v1/admin/queue", async (c) => {
   if (!(await admin(c))) return c.json({ error: "forbidden" }, 403);
   // Keyset pagination on last_scored DESC. Same dedup-by-handle CTE as before;
@@ -2330,41 +2544,21 @@ app.get("/v1/admin/queue", async (c) => {
   // without re-counting client-side.
   //
   // Filters (all optional, all AND-combined, all applied INSIDE the dedup CTE
-  // so search returns one canonical row per handle, not all variants):
-  //   q             — multi-field fuzzy. Auto-routed: if it matches /^\d+$/
-  //                   and `uid` is not set, treated as a uid prefix; otherwise
-  //                   matched as a case-insensitive substring across handle /
-  //                   display_name / evidence_text / reasons.
-  //   uid           — x_user_id prefix match (so '2056413' surfaces the whole
-  //                   batch-created cluster).
-  //   handle        — case-insensitive substring of handle.
-  //   evidence      — case-insensitive substring of evidence_text (the
-  //                   triggering tweet); the strongest cluster signal.
-  //   display_name  — substring of display_name.
-  //   reasons       — substring of the raw JSON reasons text.
-  //
-  // SQLite LIKE is ASCII-case-insensitive by default; we explicitly lower()
-  // both sides to keep the behavior consistent for handles, which may have
-  // mixed case at write-time but live under idx_accounts_handle_norm.
+  // so search returns one canonical row per handle, not all variants). The
+  // text half is built by textFilterWhere and is byte-identical to the one
+  // /v1/admin/blacklist and /v1/admin/decide-by-filter use.
   const sort = adminSort(c.req.query("sort"));
   const cursor = decodeSortCursor(c.req.query("before") || null);
-  const cursorWhere = sortCursorWhere(sort, "last_scored", cursor);
   const limit = Math.min(200, Math.max(1, Number(c.req.query("limit")) || 100));
-  const rawQ = (c.req.query("q") || "").trim() || null;
-  let q: string | null = rawQ;
-  let uid: string | null = (c.req.query("uid") || "").trim() || null;
-  // Smart routing: a numeric `q` with no explicit uid filter is almost
-  // certainly the user pasting in an X numeric id; treat it as a uid prefix
-  // so the indexed lookup wins and we don't waste the search across text
-  // fields where digit substrings would mostly be noise.
-  if (q && /^\d+$/.test(q) && !uid) {
-    uid = q;
-    q = null;
-  }
-  const handle = (c.req.query("handle") || "").trim() || null;
-  const evidence = (c.req.query("evidence") || "").trim() || null;
-  const displayName = (c.req.query("display_name") || "").trim() || null;
-  const reasons = (c.req.query("reasons") || "").trim() || null;
+  // Page-number pagination. `offset` (rows to skip) wins over the keyset
+  // cursor when present — the console needs "jump to page N", which a cursor
+  // cannot express. The cursor path stays for callers that still use it.
+  const offset = Math.max(0, Math.floor(Number(c.req.query("offset")) || 0));
+  const cursorWhere = offset > 0 ? { sql: "1=1", binds: [] as unknown[] } : sortCursorWhere(sort, "last_scored", cursor);
+  const text = parseTextFilters((k) => c.req.query(k));
+  const textWhere = textFilterWhere("a", text);
+  const dims = parseDimFilters((k) => c.req.query(k));
+  const dimWhere = dimFilterWhere("a", dims, "last_scored");
 
   const sortExpr = sortValueExpr("a", sort, "last_scored");
   // For the "举报人数" sort we need the reporter count for *every* pending row
@@ -2379,8 +2573,7 @@ app.get("/v1/admin/queue", async (c) => {
            FROM reports GROUP BY lower(handle)
        ) rc ON rc.h = lower(a.handle)`
     : "";
-  const rows = await c.env.DB.prepare(
-    `WITH ranked AS (
+  const cte = `WITH ranked AS (
        SELECT a.rowid AS rid,
               a.*,
               ${sortExpr} AS sort_value,
@@ -2392,18 +2585,15 @@ app.get("/v1/admin/queue", async (c) => {
          FROM accounts a
          ${repJoin}
         WHERE a.status='auto_pending_review'
-          AND (? IS NULL OR (
-                 lower(a.handle) LIKE '%' || lower(?) || '%'
-              OR lower(coalesce(a.display_name,'')) LIKE '%' || lower(?) || '%'
-              OR lower(coalesce(a.evidence_text,'')) LIKE '%' || lower(?) || '%'
-              OR lower(coalesce(a.reasons,'')) LIKE '%' || lower(?) || '%'
-          ))
-          AND (? IS NULL OR a.x_user_id LIKE ? || '%')
-          AND (? IS NULL OR lower(a.handle) LIKE '%' || lower(?) || '%')
-          AND (? IS NULL OR lower(coalesce(a.evidence_text,'')) LIKE '%' || lower(?) || '%')
-          AND (? IS NULL OR lower(coalesce(a.display_name,'')) LIKE '%' || lower(?) || '%')
-          AND (? IS NULL OR lower(coalesce(a.reasons,'')) LIKE '%' || lower(?) || '%')
-     )
+          ${textWhere.sql}
+          ${dimWhere.sql}
+     )`;
+  // `total=1` runs the matching COUNT over the same filter set. The UI asks for
+  // it when the filters change and reuses it while paging, so a page turn never
+  // re-scans the partition just to redraw the same number.
+  const total = (await c.req.query("total")) === "1" ? await countMatches(c.env, cte, [...textWhere.binds, ...dimWhere.binds], "FROM ranked WHERE rn=1") : null;
+  const rows = await c.env.DB.prepare(
+    `${cte}
      SELECT a.rid, a.sort_value,
             a.x_user_id, a.handle, a.display_name, a.avatar_url, a.verdict_label, a.confidence,
             a.account_created_at, a.account_age_days, a.followers_count, a.following_count,
@@ -2415,27 +2605,9 @@ app.get("/v1/admin/queue", async (c) => {
        FROM ranked a
       WHERE a.rn=1
         AND ${cursorWhere.sql}
-      ORDER BY ${sortOrderSql(sort, "last_scored")} LIMIT ?`,
+      ORDER BY ${sortOrderSql(sort, "last_scored")} LIMIT ? OFFSET ?`,
   )
-    .bind(
-      q,
-      q,
-      q,
-      q,
-      q,
-      uid,
-      uid,
-      handle,
-      handle,
-      evidence,
-      evidence,
-      displayName,
-      displayName,
-      reasons,
-      reasons,
-      ...cursorWhere.binds,
-      limit,
-    )
+    .bind(...textWhere.binds, ...dimWhere.binds, ...cursorWhere.binds, limit, offset)
     .all<{ rid: number; sort_value: string | number | null; last_scored: number }>();
   const rawList = rows.results ?? [];
   const list = rawList.map(({ rid: _rid, sort_value: _sortValue, ...row }) => row);
@@ -2443,9 +2615,11 @@ app.get("/v1/admin/queue", async (c) => {
   return c.json({
     queue: list,
     nextBefore: rawList.length === limit && last ? encodeSortCursor(last, last.last_scored) : null,
+    total,
+    offset,
     // Echo back the effective filter set so the UI can keep the inputs in
     // sync (especially after the smart `q` → `uid` rewrite above).
-    appliedFilters: { q, uid, handle, evidence, display_name: displayName, reasons, sort },
+    appliedFilters: { ...textFiltersEcho(text), sort, ...dimFiltersEcho(dims) },
   });
 });
 
@@ -2469,6 +2643,11 @@ app.get("/v1/admin/stats", async (c) => {
   const reportsRow = await c.env.DB.prepare("SELECT count(*) AS n FROM reports").first<{
     n: number;
   }>();
+  // Pending self-service whitelist applications — the 白名单申请 tab had no
+  // count chip, so a fresh application was invisible until someone opened it.
+  const wlReqRow = await c.env.DB.prepare(
+    "SELECT count(*) AS n FROM whitelist_requests WHERE status='pending'",
+  ).first<{ n: number }>();
   const byStatus: Record<string, number> = {};
   for (const r of statusRows.results ?? []) byStatus[r.status] = r.n;
   return c.json({
@@ -2480,6 +2659,7 @@ app.get("/v1/admin/stats", async (c) => {
     auto_legit: byStatus.auto_legit ?? 0,
     pending_raw: byStatus.auto_pending_review ?? 0,
     reports: reportsRow?.n ?? 0,
+    whitelist_requests: wlReqRow?.n ?? 0,
     // Agent staging buckets — populated by the side-channel agent pipeline
     // (see docs/AGENT.md). These rows are NOT on the public list yet; they
     // wait for a human (or governance auto-promotion) to flip them.
@@ -2714,6 +2894,127 @@ app.post("/v1/admin/decide-batch", async (c) => {
     ok: true,
     status: statusForAction(body.action),
     processed: body.items.length,
+  });
+});
+
+// Filter-scoped batch decide — acts on EVERY queue row matching a filter set
+// (the same text + dimension filters /v1/admin/queue accepts), not just the
+// rows the UI happened to have loaded. Two-phase by design: the UI first
+// calls dryRun:true to show the maintainer the exact row count, then executes
+// after explicit confirmation. Capped per call; the response reports
+// truncation so a huge sweep is several deliberate clicks, not one blind one.
+const DECIDE_BY_FILTER_MAX = 2000;
+const DecideByFilterBody = z.object({
+  // 'categorize' stamps a spam category without touching status — the
+  // "这一整批筛出来的都是博彩" flow on rows that are already on the public list.
+  action: z.enum(["approve", "reject", "remove", "whitelist", "categorize"]),
+  // Which partition the filters select from. 'queue' = 待审队列
+  // (auto_pending_review, deduped by handle); 'blacklist' = 公榜
+  // (human_confirmed). Same filter grammar either way.
+  scope: z.enum(["queue", "blacklist"]).optional().default("queue"),
+  category: z.enum(SPAM_CATEGORIES).optional(),
+  dryRun: z.boolean().optional().default(false),
+  filters: z.record(z.string(), z.string()).optional().default({}),
+});
+
+app.post("/v1/admin/decide-by-filter", async (c) => {
+  if (!(await admin(c))) return c.json({ error: "forbidden" }, 403);
+  let body: z.infer<typeof DecideByFilterBody>;
+  try {
+    body = DecideByFilterBody.parse(await c.req.json());
+  } catch (err) {
+    return c.json({ error: "bad_request", detail: (err as Error).message }, 400);
+  }
+  if (body.action === "categorize" && !body.category) {
+    return c.json({ error: "bad_request", detail: "categorize requires a category" }, 400);
+  }
+  // 公榜行已经在榜上，再「拉黑」一次没有意义，还会重置 published_at —— 直接拒掉，
+  // 避免 UI 误传一个看起来无害却会改写收录时间的动作。
+  if (body.scope === "blacklist" && body.action === "approve") {
+    return c.json({ error: "bad_request", detail: "approve is not valid on the blacklist" }, 400);
+  }
+  const get = (k: string) => body.filters[k];
+  const text = parseTextFilters(get);
+  const textWhere = textFilterWhere("a", text);
+  const dims = parseDimFilters(get);
+  const onQueue = body.scope !== "blacklist";
+  const dimWhere = dimFilterWhere("a", dims, onQueue ? "last_scored" : "published_at");
+
+  // Targets are selected exactly the way the matching list view selects them,
+  // so "命中 N 条" here equals the N the maintainer is looking at: the queue
+  // dedups by handle (one canonical row per handle), the blacklist does not.
+  // Both shapes expose `rid/x_user_id/handle/rn` so everything downstream is
+  // scope-agnostic.
+  const cte = onQueue
+    ? `WITH ranked AS (
+       SELECT a.rowid AS rid,
+              a.x_user_id, a.handle,
+              row_number() OVER (
+                PARTITION BY lower(a.handle)
+                ORDER BY CASE WHEN a.x_user_id IS NOT NULL THEN 0 ELSE 1 END,
+                         a.last_scored DESC
+              ) AS rn
+         FROM accounts a
+        WHERE a.status='auto_pending_review'
+          ${textWhere.sql}
+          ${dimWhere.sql}
+     )`
+    : `WITH ranked AS (
+       SELECT a.rowid AS rid, a.x_user_id, a.handle, 1 AS rn
+         FROM accounts a
+        WHERE a.status='human_confirmed'
+          ${textWhere.sql}
+          ${dimWhere.sql}
+     )`;
+  const binds = [...textWhere.binds, ...dimWhere.binds];
+  const countRow = await c.env.DB.prepare(`${cte} SELECT count(*) AS n FROM ranked WHERE rn=1`)
+    .bind(...binds)
+    .first<{ n: number }>();
+  const matched = countRow?.n ?? 0;
+  if (body.dryRun) {
+    return c.json({ ok: true, dryRun: true, matched, cap: DECIDE_BY_FILTER_MAX });
+  }
+  const rows = await c.env.DB.prepare(
+    `${cte} SELECT rid, x_user_id, handle FROM ranked WHERE rn=1 ORDER BY rid LIMIT ?`,
+  )
+    .bind(...binds, DECIDE_BY_FILTER_MAX)
+    .all<{ rid: number; x_user_id: string | null; handle: string }>();
+  const targets = rows.results ?? [];
+  const now = Date.now();
+  // Compact filter fingerprint for the audit trail (dropped empties, ≤180 chars).
+  const filterNote = JSON.stringify(
+    Object.fromEntries(Object.entries(body.filters).filter(([, v]) => (v ?? "").trim())),
+  ).slice(0, 180);
+  const note = `filter_batch scope=${body.scope}${
+    body.category ? ` category=${body.category}` : ""
+  } filters=${filterNote}`;
+  const stmts: D1PreparedStatement[] = [];
+  for (const t of targets) {
+    const h = normalizeHandle(t.handle);
+    if (body.action === "categorize") {
+      // Category only — status/published_at untouched. Addressed by rowid so a
+      // handle collision can't drag a sibling row along.
+      stmts.push(
+        c.env.DB.prepare("UPDATE accounts SET category=? WHERE rowid=?").bind(body.category, t.rid),
+      );
+    } else {
+      stmts.push(
+        ...buildDecideStatements(c.env, h, t.x_user_id ?? undefined, body.action, now, body.category),
+      );
+    }
+    stmts.push(reviewLogStmt(c.env, t.x_user_id, h, body.action, note, now));
+  }
+  const CHUNK = 100;
+  for (let i = 0; i < stmts.length; i += CHUNK) {
+    await c.env.DB.batch(stmts.slice(i, i + CHUNK));
+  }
+  return c.json({
+    ok: true,
+    status: body.action === "categorize" ? null : statusForAction(body.action),
+    scope: body.scope,
+    matched,
+    processed: targets.length,
+    truncated: matched > targets.length,
   });
 });
 
@@ -3603,25 +3904,32 @@ app.get("/v1/admin/blacklist", async (c) => {
   if (!(await admin(c))) return c.json({ error: "forbidden" }, 403);
   const sort = adminSort(c.req.query("sort"));
   const cursor = decodeSortCursor(c.req.query("before") || null);
-  const cursorWhere = sortCursorWhere(sort, "published_at", cursor);
   const limit = Math.min(200, Math.max(1, Number(c.req.query("limit")) || 100));
-  const q = (c.req.query("q") || "").trim().replace(/^@+/, "") || null;
+  const offset = Math.max(0, Math.floor(Number(c.req.query("offset")) || 0));
+  const cursorWhere =
+    offset > 0
+      ? { sql: "1=1", binds: [] as unknown[] }
+      : sortCursorWhere(sort, "published_at", cursor);
+  const text = parseTextFilters((k) => c.req.query(k));
+  const textWhere = textFilterWhere("a", text);
+  const dims = parseDimFilters((k) => c.req.query(k));
+  const dimWhere = dimFilterWhere("a", dims, "published_at");
   const sortExpr = sortValueExpr("a", sort, "published_at");
-  const rows = await c.env.DB.prepare(
-    `WITH base AS (
+  const cte = `WITH base AS (
        SELECT a.rowid AS rid,
               a.*,
               ${sortExpr} AS sort_value
          FROM accounts a
         WHERE a.status='human_confirmed'
-          AND (? IS NULL OR (
-               lower(a.handle) LIKE '%' || lower(?) || '%'
-            OR a.x_user_id LIKE ? || '%'
-            OR lower(coalesce(a.display_name,'')) LIKE '%' || lower(?) || '%'
-            OR lower(coalesce(a.evidence_text,'')) LIKE '%' || lower(?) || '%'
-            OR lower(coalesce(a.reasons,'')) LIKE '%' || lower(?) || '%'
-          ))
-     )
+          ${textWhere.sql}
+          ${dimWhere.sql}
+     )`;
+  const total =
+    c.req.query("total") === "1"
+      ? await countMatches(c.env, cte, [...textWhere.binds, ...dimWhere.binds], "FROM base")
+      : null;
+  const rows = await c.env.DB.prepare(
+    `${cte}
      SELECT a.rid, a.sort_value,
             a.x_user_id, a.handle, a.display_name, a.avatar_url,
             a.account_created_at, a.account_age_days, a.followers_count, a.following_count,
@@ -3634,9 +3942,9 @@ app.get("/v1/admin/blacklist", async (c) => {
                 AND ifnull(r.x_user_id,'')=ifnull(a.x_user_id,'')) reporters
        FROM base a
       WHERE ${cursorWhere.sql}
-      ORDER BY ${sortOrderSql(sort, "published_at")} LIMIT ?`,
+      ORDER BY ${sortOrderSql(sort, "published_at")} LIMIT ? OFFSET ?`,
   )
-    .bind(q, q, q, q, q, q, ...cursorWhere.binds, limit)
+    .bind(...textWhere.binds, ...dimWhere.binds, ...cursorWhere.binds, limit, offset)
     .all<{
       rid: number;
       sort_value: string | number | null;
@@ -3668,7 +3976,9 @@ app.get("/v1/admin/blacklist", async (c) => {
   return c.json({
     list,
     nextBefore: rawList.length === limit && last ? encodeSortCursor(last, last.published_at) : null,
-    appliedFilters: { q, sort },
+    total,
+    offset,
+    appliedFilters: { ...textFiltersEcho(text), sort, ...dimFiltersEcho(dims) },
   });
 });
 

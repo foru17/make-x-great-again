@@ -67,7 +67,6 @@ export interface Account {
   followers_count?: number;
   following_count?: number;
   published_at?: number;
-  published_tier?: string | null;
   last_scored?: number;
   last_decided_at?: number;
   last_decided_by?: string;
@@ -93,6 +92,8 @@ export interface Stats {
   agent_blacklist: number;
   agent_whitelist: number;
   reports?: number;
+  /** Pending self-service whitelist applications (白名单申请 tab chip). */
+  whitelist_requests?: number;
 }
 
 export interface Rule {
@@ -101,6 +102,8 @@ export interface Rule {
   field: string;
   action: string;
   verdict_label: string;
+  /** Spam category stamped onto matched accounts. null = 按判定标签推断。 */
+  category?: string | null;
   note?: string;
   enabled: number | boolean;
   hit_count?: number;
@@ -121,6 +124,8 @@ export interface WhitelistRequest {
   account_status?: string | null;
   account_verdict_label?: string | null;
   account_category?: string | null;
+  /** Avatar of the applicant's accounts row, when we have one. */
+  avatar_url?: string | null;
 }
 
 export interface LogEntry {
@@ -134,12 +139,17 @@ export interface LogEntry {
 export interface ListResult {
   list: Account[];
   nextBefore: number | null;
-  appliedFilters?: { sort?: string };
+  /** Rows matching the filter set — only computed when the request asks (`total=1`). */
+  total?: number | null;
+  offset?: number;
+  appliedFilters?: { sort?: string } & Record<string, unknown>;
 }
 export interface QueueResult {
   queue: Account[];
   nextBefore: number | null;
-  appliedFilters?: Record<string, string>;
+  total?: number | null;
+  offset?: number;
+  appliedFilters?: Record<string, unknown>;
 }
 
 export type Item = { handle: string; xUserId?: string };
@@ -162,6 +172,28 @@ export const api = {
       // id; coerce null/"" to undefined so JSON.stringify drops the key
       // (the API's zod schema accepts undefined but rejects null).
       body: JSON.stringify({ handle, xUserId: xUserId || undefined, action }),
+    }),
+  decideByFilter: (body: {
+    /** 'categorize' only stamps the category — status is untouched. */
+    action: "approve" | "reject" | "remove" | "whitelist" | "categorize";
+    /** Which partition the filters select from (default 'queue'). */
+    scope?: "queue" | "blacklist";
+    category?: string;
+    dryRun?: boolean;
+    filters: Record<string, string>;
+  }) =>
+    req<{
+      ok: boolean;
+      dryRun?: boolean;
+      matched: number;
+      processed?: number;
+      truncated?: boolean;
+      cap?: number;
+      error?: string;
+    }>("/v1/admin/decide-by-filter", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(body),
     }),
   decideBatch: (action: string, items: Item[], category?: string) =>
     req<{ ok: boolean; error?: string }>("/v1/admin/decide-batch", {
@@ -228,13 +260,29 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify({ enabled }),
     }),
+  ruleUpdate: (id: number, patch: Record<string, string | null | undefined>) =>
+    req<{ ok: boolean; error?: string; detail?: string }>(`/v1/admin/keyword-rules/${id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(patch),
+    }),
   ruleDelete: (id: number) =>
     req<{ ok: boolean }>(`/v1/admin/keyword-rules/${id}`, { method: "DELETE" }),
-  rulesApply: () =>
-    req<{ ok: boolean; matched: number; perRule?: { id: number; hits: number }[]; error?: string }>(
-      "/v1/admin/keyword-rules/apply-to-queue",
-      { method: "POST" },
-    ),
+  rulesApply: (scope: "queue" | "all" = "queue") =>
+    req<{
+      ok: boolean;
+      matched: number;
+      legitMatched?: number;
+      legitTruncated?: boolean;
+      queueTruncated?: boolean;
+      scanned?: { queue: number; legit: number };
+      perRule?: { id: number; hits: number }[];
+      error?: string;
+    }>("/v1/admin/keyword-rules/apply-to-queue", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ scope }),
+    }),
 };
 
 /** Split a Set of "uid|handle" keys into {handle,xUserId} items, chunked at 100. */
@@ -252,12 +300,27 @@ export function chunk<T>(arr: T[], n: number): T[][] {
 export const BATCH_CHUNK = 100;
 export const rowKey = (a: Account) => `${a.x_user_id || ""}|${a.handle}`;
 
-export const SORT_OPTIONS: { value: string; label: string }[] = [
-  { value: "time_desc", label: "更新时间 ↓" },
+// Sort vocabulary. Every list tab draws its options from here so the same
+// ordering never shows up as "粉丝 多→少" in one tab and "粉丝数 多→少" in the next.
+const ACCOUNT_SORT: { value: string; label: string }[] = [
   { value: "created_desc", label: "注册时间 新→旧" },
   { value: "created_asc", label: "注册时间 旧→新" },
   { value: "followers_desc", label: "粉丝数 多→少" },
   { value: "followers_asc", label: "粉丝数 少→多" },
   { value: "following_desc", label: "关注数 多→少" },
   { value: "following_asc", label: "关注数 少→多" },
+];
+const UPDATED_SORT = { value: "time_desc", label: "更新时间 新→旧" };
+
+/** 黑名单 / 白名单 — decided rows, newest decision first by default. */
+export const SORT_OPTIONS: { value: string; label: string }[] = [UPDATED_SORT, ...ACCOUNT_SORT];
+
+/** 待审队列 — adds the triage-only orderings (风险/把握/举报). */
+export const QUEUE_SORT_OPTIONS: { value: string; label: string }[] = [
+  { value: "severity", label: "风险等级（默认）" },
+  { value: "conf_desc", label: "把握 高→低" },
+  { value: "conf_asc", label: "把握 低→高" },
+  { value: "rep_desc", label: "举报数 多→少" },
+  ...ACCOUNT_SORT,
+  UPDATED_SORT,
 ];

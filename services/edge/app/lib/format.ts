@@ -1,5 +1,7 @@
 // Shared formatting + verdict metadata for the admin console.
 
+export const PAGE_SIZE_LABEL = "，每页 100 条";
+
 export function fmtN(n: number | null | undefined): string {
   return typeof n === "number" ? n.toLocaleString("zh-CN") : "—";
 }
@@ -21,6 +23,90 @@ export function ago(ms: number | null | undefined): string {
   if (h < 24) return `${h}h`;
   return `${Math.round(h / 24)}d`;
 }
+
+/** The one relative-time form used across the console: "3h前". */
+export function agoZh(ms: number | null | undefined): string {
+  const t = ago(ms);
+  return t ? `${t}前` : "—";
+}
+
+export const ACTION_ZH = {
+  approve: "拉黑",
+  whitelist: "白名单",
+  reject: "驳回",
+  remove: "移除",
+  requeue: "退回",
+  categorize: "归类",
+} as const;
+export type ActionKey = keyof typeof ACTION_ZH;
+export const batchZh = (key: ActionKey): string => `批量${ACTION_ZH[key]}`;
+
+const LOG_ACTION_ZH: Record<string, string> = {
+  approve: "拉黑（进公榜）",
+  reject: "驳回",
+  remove: "移除",
+  whitelist: "加白名单",
+  whitelist_add: "加白名单",
+  whitelist_remove: "移出白名单",
+  whitelist_apply: "用户申请白名单",
+  whitelist_request_approve: "批准白名单申请",
+  whitelist_request_reject: "驳回白名单申请",
+  categorize: "改类别",
+  keyword_blacklist: "规则命中 · 拉黑",
+  keyword_whitelist: "规则命中 · 加白名单",
+  keyword_reject: "规则命中 · 驳回",
+  keyword_mention_blacklist: "提及连带 · 拉黑",
+  report_queued: "用户举报 · 入队",
+  report_seen: "用户举报 · 已记录",
+  reporter_banned: "举报人封禁",
+  appeal_submitted: "用户申诉",
+  ai_blacklist: "AI 判定 · 拉黑",
+  agent_blacklist: "AI · 拟拉黑",
+  agent_whitelist: "AI · 拟加白",
+  agent_pending: "AI · 待定",
+  agent_annotate: "AI · 标注",
+  agent_failed: "AI · 判定失败",
+  agent_promote_blacklist: "确认 AI 建议 · 拉黑",
+  agent_promote_whitelist: "确认 AI 建议 · 白名单",
+  agent_promote_reject: "确认 AI 建议 · 驳回",
+  agent_promote_requeue: "确认 AI 建议 · 退回",
+  auto_confirm: "自动确认",
+  uid_conflict_recall: "UID 冲突撤回",
+};
+const warnedActions = new Set<string>();
+export function logActionZh(action: string): string {
+  const translated = LOG_ACTION_ZH[action];
+  if (translated) return translated;
+  if (!warnedActions.has(action)) {
+    warnedActions.add(action);
+    console.warn(`[admin] 审计日志动作未汉化：${action}（请补 LOG_ACTION_ZH）`);
+  }
+  return action;
+}
+
+const STATUS_ZH: Record<string, string> = {
+  human_confirmed: "已在公榜",
+  auto_pending_review: "待审队列中",
+  auto_legit: "AI 判为正常",
+  whitelisted: "已是白名单",
+  rejected: "已驳回",
+  removed: "已移除",
+  agent_blacklist: "AI 拟拉黑",
+  agent_whitelist: "AI 拟加白",
+  agent_pending: "AI 待定",
+};
+export function statusZh(status: string | null | undefined): string {
+  return (status && STATUS_ZH[status]) || status || "";
+}
+
+export const ACTION_EFFECT: Record<ActionKey, string> = {
+  approve: "进公榜，客户端会拦截",
+  whitelist: "永不再扫，举报也会被吞掉",
+  reject: "不公开，留档不上榜",
+  remove: "撤下并不再公开",
+  requeue: "退回待审队列重新走流程",
+  categorize: "只改 spam 类别，不改公榜状态",
+};
 
 function ymd(ms: number): string {
   const d = new Date(ms);
