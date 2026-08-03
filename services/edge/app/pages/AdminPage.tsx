@@ -129,7 +129,7 @@ function Console({ onAuth }: { onAuth: () => void }) {
       </header>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="mb-5 h-auto flex-wrap justify-start gap-1 bg-muted/60 p-1">
+        <TabsList className="mb-5 flex-wrap justify-start gap-1 bg-muted/60 p-1 group-data-[orientation=horizontal]/tabs:h-auto">
           {TABS.map((t) => (
             <TabsTrigger key={t.v} value={t.v} className="data-[state=active]:bg-card">
               {t.label}
