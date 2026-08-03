@@ -66,8 +66,8 @@
     {
       "id": "firefox-runtime-recovery",
       "scope": "恢复 Firefox 同步异常处理、账号表面恢复、权限基线和手动 CSS 注入",
-      "verification": "Firefox manifest、local-index、账号隐藏恢复测试和 build:firefox 通过",
-      "passes": false
+      "verification": "2026-08-03 实测：扩展全量 34 项、compile、Chrome/Firefox MV3 build 与 Firefox ZIP 通过；Firefox 152.0.6 隔离配置安装当前 0.5.1 ZIP，后台健康、popup/options、设置持久化及恢复均通过，扩展相关错误 0；截图与 runtime-smoke.json 已保存；manifest 含 140/142 基线、可选 websiteContent 声明且无缺失 CSS",
+      "passes": true
     },
     {
       "id": "final-adversarial-verification",

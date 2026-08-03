@@ -20,7 +20,10 @@ test("Firefox manifest uses the consent-compatible release baselines", async () 
   assert.equal(settings?.gecko_android?.strict_min_version, "142.0");
   assert.deepEqual(settings?.gecko?.data_collection_permissions, {
     required: ["none"],
-    optional: ["authenticationInfo", "personallyIdentifyingInfo"],
+    // Authenticated online detection sends rendered public profile/tweet
+    // signals only after GitHub login, so Firefox must disclose websiteContent
+    // alongside the existing auth and whitelist-identity categories.
+    optional: ["authenticationInfo", "personallyIdentifyingInfo", "websiteContent"],
   });
   assert.deepEqual(manifest.optional_permissions, [
     "*://x.com/*",
