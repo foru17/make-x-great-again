@@ -24,8 +24,8 @@
     {
       "id": "mirror-secret",
       "scope": "配置生产 WHITELIST_SYNC_BRANCH=data-mirror",
-      "verification": "wrangler secret list 可见 WHITELIST_SYNC_BRANCH；不输出 secret 值",
-      "passes": false
+      "verification": "2026-08-03 实测：Wrangler 交互式写入成功；secret list 可见 WHITELIST_SYNC_BRANCH（未输出值）；Cloudflare 已以版本 f10b2c68 100% 保存该 secret",
+      "passes": true
     },
     {
       "id": "github-publish",
