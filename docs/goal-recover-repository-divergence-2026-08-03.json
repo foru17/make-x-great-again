@@ -1,0 +1,79 @@
+{
+  "goal": "恢复代码仓库分叉期间遗漏的生产修复，并重新建立可验证的单一发布基线",
+  "created_at": "2026-08-03",
+  "base": "codex/release-admin-review-ux-2026-08-03@e87fbc4",
+  "tasks": [
+    {
+      "id": "baseline-and-guardrails",
+      "scope": "记录生产基线、公开测试边界和可重复的能力差异探针",
+      "verification": "2026-08-03 实测：c49760c 的 pager_files/queue/blacklist/total_offset_api 均为 yes，生产基线 HEAD 均为 no；Wrangler deployments list 确认当前生产版本为 4dbf2b54-fa64-4c51-abcc-303c4dbf4a87",
+      "passes": true
+    },
+    {
+      "id": "whitelist-identity-convergence",
+      "scope": "恢复白名单幂等写入、UID 身份隔离、handle-only 重复行清理及迁移/schema 文件",
+      "verification": "HTTP 重复手动加白不再 500；不同非空 UID 共享历史 handle 时不串白；迁移可重复执行并可回滚",
+      "passes": false
+    },
+    {
+      "id": "bounded-d1-batches",
+      "scope": "所有审核批量写入按 D1 安全上限分块，并返回实际变更数",
+      "verification": "批量分类、白名单移除、审核决定和 Agent 提升超过单批上限时全部真实落库",
+      "passes": false
+    },
+    {
+      "id": "keyword-rule-correctness",
+      "scope": "规则优先于机器缓存、覆盖举报路径，并在命中时写入正确类别",
+      "verification": "缓存 auto_legit 可被规则纠正；人工终态不被覆盖；举报命中与规则类别测试通过",
+      "passes": false
+    },
+    {
+      "id": "keyword-sweep-safety",
+      "scope": "恢复 queue/all 扫描、D1 bind 上限、分区游标覆盖、Unicode 预筛选与截断反馈",
+      "verification": "100+ 规则不超 bind 上限；扫描跨过首窗口；auto_legit 命中回到待审而不直接上榜",
+      "passes": false
+    },
+    {
+      "id": "admin-filtered-pagination",
+      "scope": "恢复待审队列和黑名单的多维筛选、筛选范围批处理、offset/total 页码分页",
+      "verification": "API 总数与列表同源；页面可跳页；筛选范围批处理先 dry-run 再执行且有 2000 条硬上限",
+      "passes": false
+    },
+    {
+      "id": "admin-secondary-workflows",
+      "scope": "恢复白名单申请数量/头像/批量操作、规则编辑、审核日志汉化，同时保留局部更新与新版判断来源展示",
+      "verification": "单项申请处理不刷新列表；批量申请、规则编辑和中文审计动作测试及桌面/移动端构建通过",
+      "passes": false
+    },
+    {
+      "id": "mirror-main-isolation",
+      "scope": "GitHub 名单镜像写入独立数据分支，代码 main 不再被运行时数据提交直接写入",
+      "verification": "镜像 GET/PUT 明确携带 data 分支；缺失分支时失败可观察；主线能力探针成为测试门禁",
+      "passes": false
+    },
+    {
+      "id": "agent-review-recovery",
+      "scope": "恢复预算化批量审核、过期写入保护、推理 token 上限和风险优先重审",
+      "verification": "Python runner 测试与 /v1/agent/queue 风险优先测试通过，循环/API 数量均有硬上限",
+      "passes": false
+    },
+    {
+      "id": "extension-online-detection",
+      "scope": "恢复已登录用户的在线检测、并发/每页上限、缓存与正常结果静默展示",
+      "verification": "在线检测公开接口测试通过；未登录与已知账号不调用接口；每页和并发上限生效",
+      "passes": false
+    },
+    {
+      "id": "firefox-runtime-recovery",
+      "scope": "恢复 Firefox 同步异常处理、账号表面恢复、权限基线和手动 CSS 注入",
+      "verification": "Firefox manifest、local-index、账号隐藏恢复测试和 build:firefox 通过",
+      "passes": false
+    },
+    {
+      "id": "final-adversarial-verification",
+      "scope": "逐项证伪复核、全量测试、类型检查、构建、敏感信息和生产差异检查",
+      "verification": "全部任务 passes=true；无 token/key/隐私进入 diff；未部署、未推送",
+      "passes": false
+    }
+  ]
+}
