@@ -3055,45 +3055,65 @@ async function whitelistUpsert(
   reasons: string,
   now: number,
 ): Promise<void> {
-  // Canonical-row-by-uid pass first (same contract as writeAccount): when a
-  // row already holds this uid under a DIFFERENT handle — the "blacklisted,
-  // then renamed" appeal case — a plain INSERT would trip the partial
-  // idx_accounts_uid_uq index, which the ON CONFLICT(x_user_id,handle)
-  // clause below does not cover, and the whole upsert would throw.
-  let updatedByUid = false;
-  if (uid) {
-    const byUid = await env.DB.prepare(
+  // D1 compares lower(handle) with the bound value verbatim, so every
+  // identity lookup and write in this flow must share the same normalized key.
+  handle = normalizeHandle(handle);
+  // Resolve one canonical identity row before writing. With a uid, findAccount
+  // prefers that immutable identity and falls back only to a handle-only row
+  // that can safely absorb the uid. Without a uid it reuses the freshest
+  // existing handle row instead of inserting another SQLite NULL-key sibling.
+  let canonical = await findAccount(env, handle, uid);
+  const updateCanonical = (rowid: number) =>
+    env.DB.prepare(
       `UPDATE accounts SET
+         x_user_id=COALESCE(x_user_id, ?),
          handle=?,
          status='whitelisted',
          source='admin_whitelist',
          verdict_label='legit',
          confidence=1.0,
          reasons=?,
+         signals_hash=NULL,
+         category=NULL,
          published_at=NULL,
          published_tier=NULL,
          last_scored=?,
          display_name=COALESCE(?, display_name),
          avatar_url=COALESCE(?, avatar_url)
-       WHERE x_user_id=?`,
+       WHERE rowid=?`,
     )
-      .bind(handle, reasons, now, displayName || null, avatarUrl, uid)
+      .bind(uid, handle, reasons, now, displayName || null, avatarUrl, rowid)
       .run();
-    updatedByUid = (byUid.meta.changes ?? 0) > 0;
-  }
-  if (!updatedByUid) {
+
+  if (canonical) {
+    try {
+      await updateCanonical(canonical.rowid);
+    } catch (err) {
+      // A concurrent request may have inserted the uid row after findAccount
+      // selected a handle-only row. Re-resolve once and update the winner.
+      if (!uid) throw err;
+      const raced = await findAccount(env, handle, uid);
+      if (!raced || raced.rowid === canonical.rowid) throw err;
+      canonical = raced;
+      await updateCanonical(canonical.rowid);
+    }
+  } else {
     await env.DB.prepare(
       `INSERT INTO accounts
          (x_user_id,handle,display_name,avatar_url,verdict_label,confidence,reasons,
           status,source,signals_hash,first_seen,last_scored,published_at)
        VALUES (?,?,?,?,'legit',1.0,?, 'whitelisted','admin_whitelist', NULL, ?, ?, NULL)
-       ON CONFLICT(x_user_id,handle) DO UPDATE SET
+       ON CONFLICT DO UPDATE SET
+         handle=excluded.handle,
          status='whitelisted',
          source='admin_whitelist',
          verdict_label='legit',
          confidence=1.0,
          reasons=excluded.reasons,
+         signals_hash=NULL,
+         category=NULL,
          published_at=NULL,
+         published_tier=NULL,
          last_scored=excluded.last_scored,
          display_name=COALESCE(excluded.display_name, accounts.display_name),
          avatar_url=COALESCE(excluded.avatar_url, accounts.avatar_url)`,
@@ -3101,29 +3121,12 @@ async function whitelistUpsert(
       .bind(uid, handle, displayName, avatarUrl, reasons, now, now)
       .run();
   }
-  // Whitelisting is a handle-level decision: demote EVERY other row for the
-  // same handle out of the publishable/queue states. Without this, a
-  // handle-only whitelist add left a uid-bearing human_confirmed sibling on
-  // the public list (real case: @bailyLU stayed blacklisted in the artifact
-  // and /v1/check after the admin whitelisted the handle). rejected/removed
-  // rows are left as-is — they're unpublished audit history.
-  await env.DB.prepare(
-    `UPDATE accounts
-        SET status='whitelisted',
-            source='admin_whitelist',
-            verdict_label='legit',
-            confidence=1.0,
-            reasons=?,
-            signals_hash=NULL,
-            published_at=NULL,
-            published_tier=NULL,
-            last_scored=?
-      WHERE lower(handle)=lower(?)
-        AND status IN ('human_confirmed','auto_pending_review','auto_legit',
-                       'agent_blacklist','agent_whitelist','agent_pending')`,
-  )
-    .bind(reasons, now, handle)
-    .run();
+
+  canonical = await findAccount(env, handle, uid);
+  if (!canonical) throw new Error("whitelist upsert did not produce a canonical account row");
+  // Collapse only handle-only siblings. A different non-null uid sharing a
+  // recycled handle is a different X account and must keep its own decision.
+  await cleanupHandleOnlyAccountDuplicates(env, handle, canonical.rowid);
 }
 
 app.post("/v1/admin/whitelist", async (c) => {

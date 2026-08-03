@@ -12,8 +12,8 @@
     {
       "id": "whitelist-identity-convergence",
       "scope": "恢复白名单幂等写入、UID 身份隔离、handle-only 重复行清理及迁移/schema 文件",
-      "verification": "HTTP 重复手动加白不再 500；不同非空 UID 共享历史 handle 时不串白；迁移可重复执行并可回滚",
-      "passes": false
+      "verification": "2026-08-03 实测：realChainDoctor 通过本地 Wrangler+D1 连续 POST 两次均为 HTTP 200，有效白名单行仍为 1；22 项身份/申请/迁移测试通过；services/edge typecheck 通过",
+      "passes": true
     },
     {
       "id": "bounded-d1-batches",

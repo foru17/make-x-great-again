@@ -55,6 +55,12 @@ CREATE INDEX IF NOT EXISTS idx_accounts_status_following ON accounts(status, fol
 -- duplicate when the user renames their handle.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_uid_uq
   ON accounts(x_user_id) WHERE x_user_id IS NOT NULL;
+-- SQLite treats NULL values as distinct inside the composite PRIMARY KEY.
+-- Keep at most one active handle-only identity while preserving removed audit
+-- rows; the Worker reuses/collapses that canonical row before every write.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_active_null_handle_uq
+  ON accounts(lower(handle))
+  WHERE x_user_id IS NULL AND status <> 'removed';
 
 CREATE TABLE IF NOT EXISTS reports (
   id                  TEXT PRIMARY KEY,     -- uuid
