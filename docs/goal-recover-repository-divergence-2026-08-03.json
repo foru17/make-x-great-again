@@ -18,8 +18,8 @@
     {
       "id": "bounded-d1-batches",
       "scope": "所有审核批量写入按 D1 安全上限分块，并返回实际变更数",
-      "verification": "批量分类、白名单移除、审核决定和 Agent 提升超过单批上限时全部真实落库",
-      "passes": false
+      "verification": "2026-08-03 实测：分类、白名单移除、审核决定和 Agent 提升的 120-240 条语句均按最多 100 条分批；未命中分类返回 updated=0；3 项回归测试与 services/edge typecheck 通过",
+      "passes": true
     },
     {
       "id": "keyword-rule-correctness",

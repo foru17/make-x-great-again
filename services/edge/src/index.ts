@@ -2539,6 +2539,20 @@ function reviewLogStmt(
   ).bind(xUserId, handle, action, "admin", note, now);
 }
 
+// Run variable-length write lists through D1 in bounded batches and return the
+// number of rows D1 says actually changed. Oversized batches have previously
+// returned success without applying their statements, so no per-item admin
+// write path may call DB.batch directly.
+const D1_BATCH_MAX = 100;
+async function batchAll(env: Bindings, stmts: D1PreparedStatement[]): Promise<number> {
+  let changes = 0;
+  for (let i = 0; i < stmts.length; i += D1_BATCH_MAX) {
+    const results = await env.DB.batch(stmts.slice(i, i + D1_BATCH_MAX));
+    for (const result of results) changes += result.meta?.changes ?? 0;
+  }
+  return changes;
+}
+
 // An optional numeric id (x_user_id / github id). Tolerates an explicit JSON
 // null — clients commonly spread a possibly-null id field — by normalizing it
 // to undefined so the rest of the pipeline sees `string | undefined`.
@@ -2583,12 +2597,12 @@ app.post("/v1/admin/decide", async (c) => {
       now,
     ),
   );
-  await c.env.DB.batch(stmts);
+  await batchAll(c.env, stmts);
   return c.json({ ok: true, status: statusForAction(action) });
 });
 
-// Batch decide — accepts up to 100 items, single homogeneous action, runs as
-// one D1 transaction. Either all rows commit or none do (D1 batch is atomic).
+// Batch decide — accepts up to 100 items and one homogeneous action. The
+// prepared statements are sent in bounded D1 transactions.
 // Speeds up "拉黑这 80 条" from ~10s of sequential network round-trips to
 // ~300ms in one shot, and removes the half-applied state risk on network
 // hiccups mid-batch.
@@ -2626,7 +2640,7 @@ app.post("/v1/admin/decide-batch", async (c) => {
     stmts.push(...buildDecideStatements(c.env, h, it.xUserId, body.action, now, body.category));
     stmts.push(reviewLogStmt(c.env, it.xUserId ?? null, h, body.action, batchNote, now));
   }
-  await c.env.DB.batch(stmts);
+  await batchAll(c.env, stmts);
   return c.json({
     ok: true,
     status: statusForAction(body.action),
@@ -2673,8 +2687,13 @@ app.post("/v1/admin/category-batch", async (c) => {
       reviewLogStmt(c.env, uid, h, "categorize", `panel_batch category=${body.category}`, now),
     );
   }
-  await c.env.DB.batch(stmts);
-  return c.json({ ok: true, category: body.category, processed: body.items.length });
+  const changes = await batchAll(c.env, stmts);
+  return c.json({
+    ok: true,
+    category: body.category,
+    processed: body.items.length,
+    updated: Math.max(0, changes - body.items.length),
+  });
 });
 
 // Batch whitelist-remove — drops a list of accounts from the whitelist back
@@ -2714,8 +2733,12 @@ app.delete("/v1/admin/whitelist-batch", async (c) => {
     );
     stmts.push(reviewLogStmt(c.env, uid, h, "whitelist_remove", "panel_batch", now));
   }
-  await c.env.DB.batch(stmts);
-  return c.json({ ok: true, processed: body.items.length });
+  const changes = await batchAll(c.env, stmts);
+  return c.json({
+    ok: true,
+    processed: body.items.length,
+    updated: Math.max(0, changes - body.items.length),
+  });
 });
 
 // Paginated AI/decision audit trail. Keyset pagination on the id PK
@@ -4452,7 +4475,7 @@ app.post("/v1/admin/agent-promote", async (c) => {
       ).bind(...(body.x_user_id ? [now, handle, body.x_user_id] : [now, handle])),
     );
   }
-  await c.env.DB.batch(stmts);
+  await batchAll(c.env, stmts);
   return c.json({ ok: true, target: body.target });
 });
 
@@ -4491,7 +4514,7 @@ app.post("/v1/admin/agent-promote-batch", async (c) => {
       );
     }
   }
-  await c.env.DB.batch(stmts);
+  await batchAll(c.env, stmts);
   return c.json({ ok: true, target: body.target, processed: body.items.length });
 });
 
