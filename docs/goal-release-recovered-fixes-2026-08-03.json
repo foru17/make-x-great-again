@@ -1,0 +1,49 @@
+{
+  "goal": "安全发布 2026-08-03 恢复分支到 GitHub 与 Cloudflare Worker",
+  "updatedAt": "2026-08-03T18:47:39+08:00",
+  "constraints": {
+    "productionDataMutation": "禁止修改 D1 名单数据；只允许 Worker 代码/静态资源、镜像分支和必要 secret",
+    "rollback": "部署前记录当前版本；线上验证失败立即回滚",
+    "mirrorBranch": "data-mirror",
+    "apiLoopLimit": 20,
+    "extensionStores": "不包含 Chrome/Firefox 商店发布"
+  },
+  "tasks": [
+    {
+      "id": "release-preflight",
+      "scope": "确认 GitHub/Cloudflare 身份、干净工作树、回滚版本与发布构建",
+      "verification": "gh/wrangler 鉴权通过；工作树无非本轮改动；记录当前线上版本；dry-run 通过",
+      "passes": false
+    },
+    {
+      "id": "data-mirror-branch",
+      "scope": "从远端 main 创建独立 data-mirror 分支，禁止运行时镜像触碰 main",
+      "verification": "远端 refs/heads/data-mirror 存在且初始 SHA 与发布前 origin/main 一致",
+      "passes": false
+    },
+    {
+      "id": "mirror-secret",
+      "scope": "配置生产 WHITELIST_SYNC_BRANCH=data-mirror",
+      "verification": "wrangler secret list 可见 WHITELIST_SYNC_BRANCH；不输出 secret 值",
+      "passes": false
+    },
+    {
+      "id": "github-publish",
+      "scope": "推送恢复分支并创建包含验证证据的 Draft PR",
+      "verification": "远端恢复分支 SHA 等于本地 HEAD；Draft PR 指向 main",
+      "passes": false
+    },
+    {
+      "id": "worker-deploy",
+      "scope": "发布 Worker 代码和管理台静态资源，不执行 D1 写入/迁移",
+      "verification": "新 Cloudflare 版本 100% 生效；版本信息与发布输出已记录",
+      "passes": false
+    },
+    {
+      "id": "production-smoke",
+      "scope": "线上鉴权、管理台静态资源、白名单幂等、镜像安全和关键只读接口验收",
+      "verification": "公开页面/接口与鉴权门禁正常；新资源哈希生效；未触发名单数据写入；失败时已回滚",
+      "passes": false
+    }
+  ]
+}
