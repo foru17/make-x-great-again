@@ -1,10 +1,15 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
+import { FeedAvatar } from "@/components/site/FeedAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { AuthError, api, type WhitelistRequest } from "@/lib/adminApi";
-import { ago, fmtN, verdictZh, xUrl } from "@/lib/format";
+import { agoZh, fmtN, statusZh, verdictZh, xUrl } from "@/lib/format";
+import { useSelection } from "@/lib/useSelection";
+import { cn } from "@/lib/utils";
 import { omitResolvedRequests } from "@/lib/whitelistRequests";
+import { BatchBar } from "./BatchBar";
 import { useConfirm } from "./confirm";
 import { EmptyState, ListShell } from "./MoreFoot";
 import { ViewHead } from "./ViewHead";
@@ -14,11 +19,13 @@ import { ViewHead } from "./ViewHead";
  *  gets a loud red warning instead of a quiet chip. */
 const LISTED_STATUSES = new Set(["human_confirmed", "agent_blacklist"]);
 
+const isListed = (r: WhitelistRequest) => !!r.account_status && LISTED_STATUSES.has(r.account_status);
+
 function AccountStateChip({ r }: { r: WhitelistRequest }) {
   if (!r.account_status) {
     return <Badge variant="outline" className="text-muted-foreground">库中无记录</Badge>;
   }
-  if (LISTED_STATUSES.has(r.account_status)) {
+  if (isListed(r)) {
     return (
       <Badge variant="destructive">
         ⚠ 已在黑名单 · {verdictZh(r.account_verdict_label ?? undefined)}
@@ -29,8 +36,8 @@ function AccountStateChip({ r }: { r: WhitelistRequest }) {
     return <Badge className="bg-success text-success-foreground">已是白名单</Badge>;
   }
   return (
-    <Badge variant="secondary">
-      {r.account_status}
+    <Badge variant="secondary" title={r.account_status}>
+      {statusZh(r.account_status)}
       {r.account_verdict_label ? ` · ${verdictZh(r.account_verdict_label)}` : ""}
     </Badge>
   );
@@ -62,84 +69,107 @@ export function WhitelistRequestsTab({
 
   useEffect(() => void load(), [load]);
 
-  const decide = async (r: WhitelistRequest, action: "approve" | "reject") => {
-    const listed = r.account_status && LISTED_STATUSES.has(r.account_status);
-    if (action === "approve" && listed) {
-      const ok = await confirm({
-        title: "该账号已在公共黑名单",
-        body: (
-          <p>
-            <b>@{r.handle}</b> 目前是{" "}
-            <b className="text-destructive">{r.account_status}</b>
-            ，批准会把它从公榜拉到白名单（永不再扫）。确认继续？
-          </p>
-        ),
-        okLabel: "仍然批准",
-        okVariant: "destructive",
-      });
-      if (!ok) return;
-    }
-    setBusyIds((current) => new Set(current).add(r.id));
-    try {
-      await (action === "approve"
-        ? api.whitelistRequestApprove(r.id)
-        : api.whitelistRequestReject(r.id));
-      toast.success(action === "approve" ? `已批准 @${r.handle}` : `已驳回 @${r.handle}`);
-      setList((current) => omitResolvedRequests(current, [r.id]));
-      onMutated();
-    } catch (e) {
-      if (e instanceof AuthError) onAuth();
-      else toast.error("操作失败");
-    } finally {
-      setBusyIds((current) => {
-        const next = new Set(current);
-        next.delete(r.id);
-        return next;
-      });
-    }
-  };
+  // Row key is the request id — an applicant can only have one pending row,
+  // but ids are what the decide endpoints take.
+  const keys = useMemo(() => list.map((r) => String(r.id)), [list]);
+  const sel = useSelection(keys);
 
-  const approveAll = async () => {
-    const listed = list.filter((r) => r.account_status && LISTED_STATUSES.has(r.account_status));
-    const ok = await confirm({
-      title: "批准全部申请",
-      body: (
-        <p>
-          确认批准全部 <b>{list.length}</b> 条待审申请？
-          {listed.length > 0 && (
-            <>
-              <br />
-              <b className="text-destructive">其中 {listed.length} 条已在公共黑名单</b>
-              ，批准会把它们拉到白名单。
-            </>
-          )}
-        </p>
-      ),
-      okLabel: `批准 ${list.length} 条`,
-      okVariant: listed.length > 0 ? "destructive" : undefined,
-    });
-    if (!ok) return;
-    const targetIds = list.map((r) => r.id);
-    setBusyIds(new Set(targetIds));
-    let done = 0;
+  /** Approve/reject a set of requests one call at a time (the API is per-id),
+   *  with the same toast-progress shape as the other tabs' batch actions. */
+  const decideMany = async (targets: WhitelistRequest[], action: "approve" | "reject") => {
+    const verb = action === "approve" ? "批准" : "驳回";
+    const targetIds = targets.map((request) => request.id);
+    setBusyIds((current) => new Set([...current, ...targetIds]));
+    const id = toast.loading(`批量${verb} 0/${targets.length}`);
     const completedIds: number[] = [];
-    for (const r of list) {
+    let authFailed = false;
+    for (const request of targets) {
       try {
-        await api.whitelistRequestApprove(r.id);
-        done++;
-        completedIds.push(r.id);
-      } catch (e) {
-        if (e instanceof AuthError) {
+        await (action === "approve"
+          ? api.whitelistRequestApprove(request.id)
+          : api.whitelistRequestReject(request.id));
+        completedIds.push(request.id);
+        if (targets.length > 1) {
+          toast.loading(`批量${verb} ${completedIds.length}/${targets.length}`, { id });
+        }
+      } catch (error) {
+        if (error instanceof AuthError) {
+          authFailed = true;
           onAuth();
           break;
         }
       }
     }
     setList((current) => omitResolvedRequests(current, completedIds));
-    setBusyIds(new Set());
-    toast.success(`已批准 ${done}/${list.length} 条`);
+    setBusyIds((current) => {
+      const next = new Set(current);
+      for (const targetId of targetIds) next.delete(targetId);
+      return next;
+    });
+    sel.clear();
     if (completedIds.length > 0) onMutated();
+
+    if (authFailed) {
+      toast.dismiss(id);
+    } else if (completedIds.length === targets.length) {
+      toast.success(
+        targets.length === 1
+          ? `已${verb} @${targets[0].handle}`
+          : `已${verb} ${completedIds.length} 条`,
+        { id },
+      );
+    } else {
+      toast.error(`${verb}未全部完成（已完成 ${completedIds.length}/${targets.length}）`, { id });
+    }
   };
+
+  /** Approving a listed account pulls it off the public blacklist — always
+   *  confirm, and say how many of the targets that applies to. */
+  const confirmThenDecide = async (targets: WhitelistRequest[], action: "approve" | "reject") => {
+    if (!targets.length) return;
+    const listed = targets.filter(isListed);
+    const one = targets.length === 1 ? targets[0] : null;
+    if (action === "approve" && listed.length > 0) {
+      const ok = await confirm({
+        title: one ? "该账号已在公共黑名单" : "选中的申请里有公榜账号",
+        body: one ? (
+          <p>
+            <b>@{one.handle}</b> 目前是{" "}
+            <b className="text-destructive">{statusZh(one.account_status)}</b>
+            ，批准会把它从公榜拉到白名单（永不再扫）。确认继续？
+          </p>
+        ) : (
+          <p>
+            确认批准这 <b>{targets.length}</b> 条申请？
+            <br />
+            <b className="text-destructive">其中 {listed.length} 条已在公共黑名单</b>
+            ，批准会把它们从公榜拉到白名单（永不再扫）。
+          </p>
+        ),
+        okLabel: one ? "仍然批准" : `批准 ${targets.length} 条`,
+        okVariant: "destructive",
+      });
+      if (!ok) return;
+    } else if (!one) {
+      const ok = await confirm({
+        title: action === "approve" ? "批量批准申请" : "批量驳回申请",
+        body: (
+          <p>
+            确认{action === "approve" ? "批准" : "驳回"}选中的 <b>{targets.length}</b> 条申请？
+            {action === "approve"
+              ? "批准 = 这些 X 账号进白名单、永不再扫。"
+              : "驳回只关闭申请，不改账号状态。"}
+          </p>
+        ),
+        okLabel: `${action === "approve" ? "批准" : "驳回"} ${targets.length} 条`,
+        okVariant: action === "approve" ? undefined : "destructive",
+      });
+      if (!ok) return;
+    }
+    await decideMany(targets, action);
+  };
+
+  const selected = list.filter((r) => sel.sel.has(String(r.id)));
 
   return (
     <div>
@@ -147,27 +177,66 @@ export function WhitelistRequestsTab({
         title="白名单申请"
         count={fmtN(list.length)}
         desc="扩展用户用 GitHub 身份提交的自助白名单申请（账号注册满 90 天才能提交）。批准 = 该 X 账号进白名单、永不再扫；驳回只关闭申请。"
-        actions={
-          list.length > 0 && (
-            <Button size="sm" onClick={approveAll} disabled={busyIds.size > 0}>
-              全部批准
-            </Button>
-          )
-        }
       />
+      {list.length > 0 && (
+        <BatchBar
+          selected={sel.selected}
+          visible={list.length}
+          allChecked={sel.allChecked}
+          indeterminate={sel.indeterminate}
+          onToggleAll={sel.toggleAll}
+          actions={
+            <>
+              <Button
+                size="sm"
+                className="bg-success text-success-foreground hover:bg-success/90"
+                disabled={busyIds.size > 0}
+                onClick={() => confirmThenDecide(selected, "approve")}
+              >
+                批量批准
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="text-destructive"
+                disabled={busyIds.size > 0}
+                onClick={() => confirmThenDecide(selected, "reject")}
+              >
+                批量驳回
+              </Button>
+              <Button size="sm" variant="ghost" onClick={sel.clear}>
+                清空选择
+              </Button>
+            </>
+          }
+        />
+      )}
       {loading ? (
         <EmptyState>加载中…</EmptyState>
       ) : list.length === 0 ? (
         <EmptyState>没有待审的白名单申请。</EmptyState>
       ) : (
         <ListShell>
-          {list.map((r) => (
+          {list.map((r, i) => (
             <div
               key={r.id}
               aria-busy={busyIds.has(r.id)}
-              className="flex flex-wrap items-center gap-x-4 gap-y-2 border-b px-4 py-3 last:border-b-0"
+              // Same grid as AccountRow: checkbox + avatar + body, with the
+              // actions dropping to their own row below the sm breakpoint so
+              // they never sit on top of the status chip at 390px.
+              className={cn(
+                "grid grid-cols-[auto_auto_1fr] items-center gap-x-3 gap-y-2 border-b px-4 py-3 transition-colors last:border-b-0 hover:bg-accent/50",
+                "sm:grid-cols-[auto_auto_1fr_auto]",
+                sel.sel.has(String(r.id)) && "bg-primary/5",
+              )}
             >
-              <div className="min-w-0 flex-1">
+              <Checkbox
+                checked={sel.sel.has(String(r.id))}
+                onClick={(e) => sel.toggle(i, (e as React.MouseEvent).shiftKey)}
+                aria-label={`选中 @${r.handle}`}
+              />
+              <FeedAvatar handle={r.handle} url={r.avatar_url ?? undefined} />
+              <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <a
                     href={xUrl(r.handle)}
@@ -187,14 +256,14 @@ export function WhitelistRequestsTab({
                 <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-muted-foreground">
                   <span>GH 账龄 {r.gh_age_days != null ? `${fmtN(r.gh_age_days)} 天` : "—"}</span>
                   <span title={new Date(r.created_at).toLocaleString("zh-CN")}>
-                    申请于 {ago(r.created_at)}前
+                    申请 {agoZh(r.created_at)}
                   </span>
                   {r.note && <span className="text-foreground/80">“{r.note}”</span>}
                 </div>
               </div>
-              <div className="flex shrink-0 items-center gap-2">
+              <div className="col-span-full flex shrink-0 flex-wrap justify-end gap-2 sm:col-span-1">
                 {busyIds.has(r.id) && (
-                  <span className="text-[12px] text-muted-foreground" aria-live="polite">
+                  <span className="self-center text-[12px] text-muted-foreground" aria-live="polite">
                     处理中…
                   </span>
                 )}
@@ -202,7 +271,7 @@ export function WhitelistRequestsTab({
                   size="sm"
                   className="bg-success text-success-foreground hover:bg-success/90"
                   disabled={busyIds.has(r.id)}
-                  onClick={() => decide(r, "approve")}
+                  onClick={() => confirmThenDecide([r], "approve")}
                 >
                   批准
                 </Button>
@@ -211,7 +280,7 @@ export function WhitelistRequestsTab({
                   variant="outline"
                   className="text-destructive"
                   disabled={busyIds.has(r.id)}
-                  onClick={() => decide(r, "reject")}
+                  onClick={() => confirmThenDecide([r], "reject")}
                 >
                   驳回
                 </Button>

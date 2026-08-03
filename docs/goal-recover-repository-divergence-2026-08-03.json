@@ -42,8 +42,8 @@
     {
       "id": "admin-secondary-workflows",
       "scope": "恢复白名单申请数量/头像/批量操作、规则编辑、审核日志汉化，同时保留局部更新与新版判断来源展示",
-      "verification": "单项申请处理不刷新列表；批量申请、规则编辑和中文审计动作测试及桌面/移动端构建通过",
-      "passes": false
+      "verification": "2026-08-03 实测：单条驳回只发 1 次 POST、无列表 GET，剩余申请原位保留；200 条申请头像补全按 90/90/20 分块；恢复批量审批、规则编辑、中文审计动作和申请数量；桌面与 390px 三页截图无横向溢出；Worker 全量 106 项、双 typecheck 与 Vite build 通过",
+      "passes": true
     },
     {
       "id": "mirror-main-isolation",

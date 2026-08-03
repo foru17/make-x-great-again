@@ -3782,43 +3782,41 @@ app.get("/v1/admin/whitelist-requests", async (c) => {
   const reqs = rows.results ?? [];
   // One bounded lookup over the requested handles (idx_accounts_handle_norm);
   // prefer the uid-matching account row, else the freshest same-handle row.
-  const accountByReq = new Map<
-    number,
-    { status: string; verdict_label: string; category: string | null }
-  >();
+  // Chunked at 90 handles per statement — D1 rejects a statement with >100
+  // bound parameters, and `limit` here goes up to 500.
+  interface AccRow {
+    x_user_id: string | null;
+    h: string;
+    status: string;
+    verdict_label: string;
+    category: string | null;
+    avatar_url: string | null;
+    last_scored: number;
+  }
+  const accountByReq = new Map<number, AccRow>();
   if (reqs.length) {
-    const ph = reqs.map(() => "?").join(",");
-    const accs = await c.env.DB.prepare(
-      `SELECT x_user_id, lower(handle) AS h, status, verdict_label, category, last_scored
-         FROM accounts WHERE lower(handle) IN (${ph})`,
-    )
-      .bind(...reqs.map((r) => r.handle.toLowerCase()))
-      .all<{
-        x_user_id: string | null;
-        h: string;
-        status: string;
-        verdict_label: string;
-        category: string | null;
-        last_scored: number;
-      }>();
-    const byHandle = new Map<string, typeof accs.results>();
-    for (const a of accs.results ?? []) {
-      const arr = byHandle.get(a.h) ?? [];
-      arr.push(a);
-      byHandle.set(a.h, arr);
+    const handles = [...new Set(reqs.map((r) => r.handle.toLowerCase()))];
+    const byHandle = new Map<string, AccRow[]>();
+    for (let i = 0; i < handles.length; i += 90) {
+      const group = handles.slice(i, i + 90);
+      const accs = await c.env.DB.prepare(
+        `SELECT x_user_id, lower(handle) AS h, status, verdict_label, category, avatar_url, last_scored
+           FROM accounts WHERE lower(handle) IN (${group.map(() => "?").join(",")})`,
+      )
+        .bind(...group)
+        .all<AccRow>();
+      for (const a of accs.results ?? []) {
+        const arr = byHandle.get(a.h) ?? [];
+        arr.push(a);
+        byHandle.set(a.h, arr);
+      }
     }
     for (const r of reqs) {
       const cands = byHandle.get(r.handle.toLowerCase()) ?? [];
       const best =
         (r.x_user_id && cands.find((a) => a.x_user_id === r.x_user_id)) ||
         [...cands].sort((x, y) => y.last_scored - x.last_scored)[0];
-      if (best) {
-        accountByReq.set(r.id, {
-          status: best.status,
-          verdict_label: best.verdict_label,
-          category: best.category,
-        });
-      }
+      if (best) accountByReq.set(r.id, best);
     }
   }
   return c.json({
@@ -3827,6 +3825,9 @@ app.get("/v1/admin/whitelist-requests", async (c) => {
       account_status: accountByReq.get(r.id)?.status ?? null,
       account_verdict_label: accountByReq.get(r.id)?.verdict_label ?? null,
       account_category: accountByReq.get(r.id)?.category ?? null,
+      // Avatar for the review row. Null when the applicant has no accounts row
+      // at all (never scanned) — the panel falls back to unavatar by handle.
+      avatar_url: accountByReq.get(r.id)?.avatar_url ?? null,
     })),
   });
 });

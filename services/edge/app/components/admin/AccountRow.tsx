@@ -1,33 +1,11 @@
 import { ExternalLink } from "lucide-react";
-import { useState } from "react";
+import { FeedAvatar } from "@/components/site/FeedAvatar";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import type { Account } from "@/lib/adminApi";
 import { accountChips, actorBadge, displayName, edgeClass, xUrl } from "@/lib/format";
 import { cn } from "@/lib/utils";
-
-function Avatar({ a }: { a: Account }) {
-  const [err, setErr] = useState(false);
-  const url = a.avatar_url || `https://unavatar.io/twitter/${encodeURIComponent(a.handle)}`;
-  const fb = (a.handle || "?").slice(0, 1).toUpperCase();
-  return (
-    <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted text-sm font-medium text-muted-foreground">
-      {err ? (
-        fb
-      ) : (
-        <img
-          src={url}
-          alt=""
-          loading="lazy"
-          referrerPolicy="no-referrer"
-          className="size-full object-cover"
-          onError={() => setErr(true)}
-        />
-      )}
-    </div>
-  );
-}
 
 const ACTOR_TONE: Record<string, string> = {
   human: "border-border bg-accent text-foreground",
@@ -93,7 +71,7 @@ export function AccountRow({
         onClick={(e) => onToggle((e as React.MouseEvent).shiftKey)}
         aria-label={`选中 @${a.handle}`}
       />
-      <Avatar a={a} />
+      <FeedAvatar handle={a.handle} url={a.avatar_url} />
       <div className="col-span-1 min-w-0">
         <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
           <a

@@ -63,10 +63,10 @@ const TABS = [
   { v: "queue", label: "待审队列", count: (s: Stats) => s.queue },
   { v: "blacklist", label: "黑名单", count: (s: Stats) => s.blacklist },
   { v: "whitelist", label: "白名单", count: (s: Stats) => s.whitelist },
-  { v: "wlRequests", label: "白名单申请", count: null },
-  { v: "agentPending", label: "AI 待定", count: (s: Stats) => s.agent_pending },
-  { v: "agentBL", label: "AI 拟拉黑", count: (s: Stats) => s.agent_blacklist },
-  { v: "agentWL", label: "AI 拟加白", count: (s: Stats) => s.agent_whitelist },
+  { v: "wlRequests", label: "白名单申请", count: (s: Stats) => s.whitelist_requests ?? 0 },
+  { v: "agentPending", label: "🤖 待定", count: (s: Stats) => s.agent_pending },
+  { v: "agentBL", label: "🤖 拟拉黑", count: (s: Stats) => s.agent_blacklist },
+  { v: "agentWL", label: "🤖 拟加白", count: (s: Stats) => s.agent_whitelist },
   { v: "rules", label: "关键字规则", count: null },
   { v: "log", label: "审计日志", count: null },
 ];
@@ -129,9 +129,13 @@ function Console({ onAuth }: { onAuth: () => void }) {
       </header>
 
       <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="mb-5 flex-wrap justify-start gap-1 bg-muted/60 p-1 group-data-[orientation=horizontal]/tabs:h-auto">
+        {/* The shadcn TabsList pins a 36px height on horizontal orientation,
+            which a plain `h-auto` can't override (different variant group), so
+            a wrapped 3-row tab list on mobile spilled over the page title.
+            Override the orientation-scoped height, not the base one. */}
+        <TabsList className="mb-5 h-auto flex-wrap justify-start gap-1 bg-muted/60 p-1 group-data-[orientation=horizontal]/tabs:h-auto">
           {TABS.map((t) => (
-            <TabsTrigger key={t.v} value={t.v} className="data-[state=active]:bg-card">
+            <TabsTrigger key={t.v} value={t.v} className="h-8 flex-none data-[state=active]:bg-card">
               {t.label}
               {t.count && stats && (
                 <span className="ml-1.5 text-[11px] tabular-nums text-muted-foreground">

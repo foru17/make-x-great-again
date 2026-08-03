@@ -45,6 +45,7 @@ interface Account {
   signals_hash?: string | null;
   last_scored?: number;
   category?: string | null;
+  avatar_url?: string | null;
 }
 
 interface WhitelistRequest {
@@ -143,6 +144,7 @@ class MockStmt implements D1PreparedStatement {
       return { results: rows as T[] };
     }
     if (this.sql.includes("FROM accounts WHERE lower(handle) IN")) {
+      this.db.accountLookupBindCounts.push(this.args.length);
       const handles = new Set(this.args.map((v) => String(v).toLowerCase()));
       const rows = this.db.accounts
         .filter((a) => handles.has(a.handle.toLowerCase()))
@@ -152,6 +154,7 @@ class MockStmt implements D1PreparedStatement {
           status: a.status,
           verdict_label: a.verdict_label,
           category: a.category ?? null,
+          avatar_url: a.avatar_url ?? null,
           last_scored: a.last_scored ?? 0,
         }));
       return { results: rows as T[] };
@@ -342,6 +345,7 @@ class MockStmt implements D1PreparedStatement {
 
 class MockDB implements D1Database {
   accounts: Account[] = [];
+  accountLookupBindCounts: number[] = [];
   whitelistRequests: WhitelistRequest[] = [];
   rateLog: { fp: string; created_at: number }[] = [];
   bans: {
@@ -615,6 +619,7 @@ test("admin whitelist-requests list flags an applicant that is on the blacklist"
     status: "human_confirmed",
     verdict_label: "spam",
     confidence: 0.97,
+    avatar_url: "https://pbs.twimg.com/badguy.jpg",
   });
   db.whitelistRequests.push({
     id: 1,
@@ -635,11 +640,45 @@ test("admin whitelist-requests list flags an applicant that is on the blacklist"
   );
   assert.equal(res.status, 200);
   const body = (await res.json()) as {
-    list: { handle: string; account_status: string | null; account_verdict_label: string | null }[];
+    list: {
+      handle: string;
+      account_status: string | null;
+      account_verdict_label: string | null;
+      avatar_url: string | null;
+    }[];
   };
   assert.equal(body.list.length, 1);
   assert.equal(body.list[0]?.account_status, "human_confirmed");
   assert.equal(body.list[0]?.account_verdict_label, "spam");
+  assert.equal(body.list[0]?.avatar_url, "https://pbs.twimg.com/badguy.jpg");
+});
+
+test("admin whitelist-requests chunks account enrichment below the D1 bind cap", async () => {
+  const db = new MockDB();
+  for (let i = 0; i < 200; i++) {
+    db.whitelistRequests.push({
+      id: i + 1,
+      x_user_id: String(1000 + i),
+      handle: `applicant_${i}`,
+      reporter_fp: `rpt:${i}`,
+      gh_age_days: 400,
+      note: null,
+      status: "pending",
+      created_at: i,
+      decided_at: null,
+    });
+  }
+
+  const res = await worker.fetch(
+    new Request("https://x.test/v1/admin/whitelist-requests?status=pending", {
+      headers: { "x-admin-token": "admin" },
+    }),
+    env(db),
+  );
+
+  assert.equal(res.status, 200);
+  assert.deepEqual(db.accountLookupBindCounts, [90, 90, 20]);
+  assert.ok(db.accountLookupBindCounts.every((count) => count <= 90));
 });
 
 test("admin approve flips the account to whitelisted and settles the request", async () => {
