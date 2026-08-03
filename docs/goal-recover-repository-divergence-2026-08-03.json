@@ -72,8 +72,8 @@
     {
       "id": "final-adversarial-verification",
       "scope": "逐项证伪复核、全量测试、类型检查、构建、敏感信息和生产差异检查",
-      "verification": "全部任务 passes=true；无 token/key/隐私进入 diff；未部署、未推送",
-      "passes": false
+      "verification": "2026-08-03 证伪复核：Edge 112、Agent 26、扩展 34 项全绿；Worker/App/Extension 类型检查、管理台/Chrome/Firefox 构建和 Firefox ZIP 均通过；Firefox 真实运行时通过；生产依赖漏洞 0；63 个变更文件无 data/、token/key/隐私；本地服务/浏览器/临时文件已清理；未推送、未部署。发布前仍需创建远端独立数据分支并配置 WHITELIST_SYNC_BRANCH（当前二者均不存在）",
+      "passes": true
     }
   ]
 }
