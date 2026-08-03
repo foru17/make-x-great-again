@@ -31,8 +31,17 @@
     },
     {
       "id": "deploy-production",
-      "verification": "使用仓库既有生产配置部署，不新增或修改计费资源和存量绑定，记录部署版本与地址。",
-      "passes": false
+      "verification": {
+        "command": "npm run deploy -- --keep-vars --strict --message 'admin review UX 2026-08-03'：passed",
+        "version_id": "7cc3a13e-5164-4e9c-8f44-6ef2ae56b0f5",
+        "targets": [
+          "https://x-spam-sentinel-edge.zuoluotv.workers.dev",
+          "https://x.zuoluo.tv"
+        ],
+        "upload": "9 个新增或变更静态资源上传成功；Worker 585.10 KiB / gzip 127.04 KiB；startup 9 ms。",
+        "bindings": "部署结果仍为既有 DB(xss-db)、ARTIFACTS(xss-blocklist)、ASSETS；既有两个 cron 保持原值。"
+      },
+      "passes": true
     },
     {
       "id": "verify-production",
