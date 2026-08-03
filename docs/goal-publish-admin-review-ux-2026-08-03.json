@@ -33,20 +33,50 @@
       "id": "deploy-production",
       "verification": {
         "command": "npm run deploy -- --keep-vars --strict --message 'admin review UX 2026-08-03'：passed",
-        "version_id": "7cc3a13e-5164-4e9c-8f44-6ef2ae56b0f5",
+        "version_id": "4dbf2b54-fa64-4c51-abcc-303c4dbf4a87",
         "targets": [
           "https://x-spam-sentinel-edge.zuoluotv.workers.dev",
           "https://x.zuoluo.tv"
         ],
-        "upload": "9 个新增或变更静态资源上传成功；Worker 585.10 KiB / gzip 127.04 KiB；startup 9 ms。",
+        "upload": "初次部署后，移动端视觉验收发现标签导航与标题重叠；提交 b0a9ac8 修复并重新部署。最终 9 个新增或变更静态资源上传成功；Worker 585.23 KiB / gzip 127.05 KiB；startup 12 ms。",
         "bindings": "部署结果仍为既有 DB(xss-db)、ARTIFACTS(xss-blocklist)、ASSETS；既有两个 cron 保持原值。"
       },
       "passes": true
     },
     {
       "id": "verify-production",
-      "verification": "实测线上管理后台可访问、静态资源更新、关键接口健康，并核对发布版本。",
-      "passes": false
+      "verification": {
+        "health": "GET https://x.zuoluo.tv/v1/health：200，{ok:true,published:205858}",
+        "final_regression": "移动端修复并重新部署后再次执行 npm test：70 passed, 0 failed。",
+        "assets": "GET /admin 引用 /app/assets/index-78V9LZmy.js；线上 AdminPage-BPzWT_63.js 包含关键字规则、AI 自动审查、人工确认、历史记录、处理中、判断结果等新文案。",
+        "version": "wrangler versions view 4dbf2b54-fa64-4c51-abcc-303c4dbf4a87：message=admin review UX mobile layout fix；fetch/scheduled handlers、7 个 secrets 与 DB/ARTIFACTS/ASSETS 绑定完整。",
+        "browser": {
+          "source_labels": [
+            "关键字规则",
+            "AI 自动审查",
+            "人工确认",
+            "历史记录"
+          ],
+          "whitelist_list_gets_before": 1,
+          "whitelist_list_gets_after": 1,
+          "whitelist_decision_posts": 1,
+          "remaining_row_dom_connected": true,
+          "technical_terms_visible": false,
+          "desktop_overflow": false,
+          "mobile_dark_overflow": false,
+          "mobile_tabs_overlap_title": false,
+          "console_errors": 0,
+          "request_failures": 0,
+          "production_admin_chunk_loaded": true
+        },
+        "screenshots": [
+          "/Users/luolei/.codex/visualizations/2026/08/03/admin-review-ux-release/production-blacklist-desktop.png",
+          "/Users/luolei/.codex/visualizations/2026/08/03/admin-review-ux-release/production-whitelist-local-update-desktop.png",
+          "/Users/luolei/.codex/visualizations/2026/08/03/admin-review-ux-release/production-agent-desktop.png",
+          "/Users/luolei/.codex/visualizations/2026/08/03/admin-review-ux-release/production-agent-mobile-dark.png"
+        ]
+      },
+      "passes": true
     }
   ]
 }
