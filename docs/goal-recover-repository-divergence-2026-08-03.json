@@ -24,8 +24,8 @@
     {
       "id": "keyword-rule-correctness",
       "scope": "规则优先于机器缓存、覆盖举报路径，并在命中时写入正确类别",
-      "verification": "缓存 auto_legit 可被规则纠正；人工终态不被覆盖；举报命中与规则类别测试通过",
-      "passes": false
+      "verification": "2026-08-03 实测：fresh auto_legit 被新规则纠正，同目标状态不重复写，人工终态不覆盖；举报规则发布/高粉降级与规则分类均通过；42 项相关回归和 services/edge typecheck 通过",
+      "passes": true
     },
     {
       "id": "keyword-sweep-safety",

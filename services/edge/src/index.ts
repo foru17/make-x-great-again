@@ -1208,6 +1208,10 @@ function statusForRuleAction(action: string): "human_confirmed" | "whitelisted" 
   return "human_confirmed"; // 'blacklist' default
 }
 
+// Only machine-made, non-terminal verdicts may be overturned by a newly-added
+// keyword rule. Human decisions and Agent staging remain authoritative.
+const RULE_OVERRIDABLE_STATUSES = new Set(["auto_pending_review", "auto_legit"]);
+
 // Mention-promotion allowlist — handles that must NEVER be auto-blacklisted via
 // the @-mention path below, even if a spam tweet @-mentions them. These are
 // official/utility accounts a spam post might legitimately tag (e.g. asking
@@ -1440,17 +1444,45 @@ app.post("/v1/classify", async (c) => {
       },
     });
   }
+  // Rules must run before cache reuse: a newly-added rule should immediately
+  // correct stale machine verdicts, while terminal human decisions stay fixed.
+  const ruleHit = await matchKeywordRules(c.env, s);
+  let ruleDest: string | null = null;
+  let ruleDemotedToQueue = false;
+  if (ruleHit) {
+    ruleDest = statusForRuleAction(ruleHit.action);
+    ruleDemotedToQueue =
+      ruleDest === "human_confirmed" &&
+      !autoPublishEligible(ruleHit.verdict_label, s.followersCount ?? null);
+    if (ruleDemotedToQueue) ruleDest = "auto_pending_review";
+  }
   // Reuse the existing verdict (no LLM) when either the signals are byte-for-byte
   // unchanged, OR the account already has a verdict that's still fresh per its
   // status TTL. The latter collapses the recentTweets-drift re-classification
   // storm (same account, many viewers/times) that dominated LLM spend.
+  let cachedPrevResponse: Response | null = null;
   if (prev) {
     const exact = prev.signals_hash === h;
     const ttl = RESCORE_TTL_MS[prev.status];
     const fresh = ttl !== undefined && Date.now() - prev.last_scored < ttl;
     if (exact || fresh) {
-      await updateAccountSignalSnapshot(c.env, prev.rowid, signalSnapshot(s));
-      return c.json({
+      const ruleOverrides =
+        ruleDest !== null && RULE_OVERRIDABLE_STATUSES.has(prev.status) && ruleDest !== prev.status;
+      if (!ruleOverrides) {
+        await updateAccountSignalSnapshot(c.env, prev.rowid, signalSnapshot(s));
+        return c.json({
+          cached: true,
+          record: {
+            verdict: {
+              label: prev.verdict_label,
+              confidence: prev.confidence,
+              reasons: safeReasons(prev.reasons),
+            },
+            status: prev.status,
+          },
+        });
+      }
+      cachedPrevResponse = c.json({
         cached: true,
         record: {
           verdict: {
@@ -1467,7 +1499,6 @@ app.post("/v1/classify", async (c) => {
   // the account straight to the rule's destination status (default 'blacklist'
   // → 'human_confirmed' on the public list). The audit log records
   // actor='rule:<id>' so any hit is traceable.
-  const ruleHit = await matchKeywordRules(c.env, s);
   if (ruleHit) {
     const now = Date.now();
     // See RULE_WRITE_MAX_PER_WINDOW: this branch writes (and can publish), so
@@ -1479,18 +1510,11 @@ app.post("/v1/classify", async (c) => {
       return c.json({ error: "report_salt_required", detail: "REPORT_SALT not configured" }, 503);
     }
     if (!(await throttleOk(c.env, ruleFp, now, RULE_WRITE_MAX_PER_WINDOW))) {
+      if (cachedPrevResponse) return cachedPrevResponse;
       return c.json({ error: "rate_limited", retryAfterMs: REPORT_WINDOW_MS }, 429);
     }
     await recordReportRate(c.env, ruleFp, now);
-    let status: string = statusForRuleAction(ruleHit.action);
-    // Auto-publish gate: a 'blacklist' hit may only publish when the rule's
-    // verdict label is an actual spam label AND the account isn't known
-    // high-reach. Demoted hits land in the maintainer queue instead — the
-    // rule still matched (hit_count/audit intact), it just can't self-publish.
-    const ruleDemotedToQueue =
-      status === "human_confirmed" &&
-      !autoPublishEligible(ruleHit.verdict_label, s.followersCount ?? null);
-    if (ruleDemotedToQueue) status = "auto_pending_review";
+    const status = ruleDest ?? statusForRuleAction(ruleHit.action);
     const reasons = [`matched keyword rule "${ruleHit.pattern}" on ${ruleHit.field}`];
     const verdict = {
       label: ruleHit.verdict_label,
@@ -1505,7 +1529,7 @@ app.post("/v1/classify", async (c) => {
       verdictLabel: ruleHit.verdict_label,
       confidence: 1.0,
       reasons: JSON.stringify(reasons),
-      category: statusForRuleAction(ruleHit.action) === "human_confirmed" ? categoryForRule(ruleHit) : null,
+      category: categoryForRule(ruleHit),
       model: null,
       status,
       source: "auto_keyword",
@@ -1746,14 +1770,36 @@ async function submitReport(c: Ctx, source: string) {
     return c.json({ ok: true, status: cur.status, reporters, auto: false, duplicate: true });
   }
 
-  // reuse a recent AI verdict if present, else classify now
+  // Apply enabled rules on reports too; this path previously skipped them and
+  // queued accounts that the same payload would have classified by rule.
   const prev = await findAccount(c.env, s.handle, uid);
+  const ruleHit = await matchKeywordRules(c.env, s);
+  const ruleApplies = ruleHit && (!prev || RULE_OVERRIDABLE_STATUSES.has(prev.status));
   let vLabel: string;
   let vConf: number;
   // Fresh-classify rows get the LLM's category; for prev rows pass null so
   // writeAccount's COALESCE keeps whatever category the row already carries.
   let vCategory: string | null = null;
-  if (prev) {
+  let vReasons = '["reported"]';
+  let ruleStatus: string | null = null;
+  let rulePublished = false;
+  if (ruleApplies && ruleHit) {
+    vLabel = ruleHit.verdict_label;
+    vConf = 1;
+    vReasons = JSON.stringify([
+      `matched keyword rule "${ruleHit.pattern}" on ${ruleHit.field}`,
+      "reported",
+    ]);
+    ruleStatus = statusForRuleAction(ruleHit.action);
+    if (ruleStatus === "human_confirmed") {
+      if (autoPublishEligible(ruleHit.verdict_label, s.followersCount ?? null)) {
+        rulePublished = true;
+        vCategory = categoryForRule(ruleHit);
+      } else {
+        ruleStatus = "auto_pending_review";
+      }
+    }
+  } else if (prev) {
     vLabel = prev.verdict_label;
     vConf = prev.confidence;
   } else {
@@ -1774,7 +1820,7 @@ async function submitReport(c: Ctx, source: string) {
   const aiSpam = (vLabel === "spam" || vLabel === "porn_bot") && vConf >= AUTO_CONF;
   const wouldAutoIfEnabled = aiSpam && reporters >= AUTO_REPORTERS;
   const auto = false; // manual-confirmation-only for now
-  const status = "auto_pending_review";
+  const status = ruleStatus ?? "auto_pending_review";
 
   const written = await writeAccount(c.env, {
     uid,
@@ -1783,17 +1829,40 @@ async function submitReport(c: Ctx, source: string) {
     avatarUrl: s.avatarUrl,
     verdictLabel: vLabel,
     confidence: vConf,
-    reasons: '["reported"]',
+    reasons: vReasons,
     category: vCategory,
-    model: prev ? null : c.env.LLM_API_MODEL,
+    model: prev || ruleApplies ? null : c.env.LLM_API_MODEL,
     status,
     source,
     evidenceText: evidenceText(s),
     now,
-    publishedAt: auto ? now : null,
+    publishedAt: rulePublished ? now : null,
+    publishedTier: rulePublished ? "rule" : null,
     ...signalSnapshot(s),
   });
   const finalStatus = written?.status ?? status;
+  if (ruleApplies && ruleHit) {
+    await c.env.DB.batch([
+      c.env.DB.prepare(
+        "UPDATE keyword_rules SET hit_count=hit_count+1, last_hit_at=? WHERE id=?",
+      ).bind(now, ruleHit.id),
+      c.env.DB.prepare(
+        "INSERT INTO review_log (x_user_id, handle, action, actor, note, at) VALUES (?,?,?,?,?,?)",
+      ).bind(
+        uid,
+        s.handle,
+        `keyword_${ruleHit.action}`,
+        `rule:${ruleHit.id}`,
+        `via ${source}: matched "${ruleHit.pattern}" on ${ruleHit.field}${
+          ruleStatus === "auto_pending_review" &&
+          statusForRuleAction(ruleHit.action) === "human_confirmed"
+            ? " · queued (auto-publish guard: label/high-follower)"
+            : ""
+        }`,
+        now,
+      ),
+    ]);
+  }
   if (!alreadyReported) {
     await c.env.DB.prepare(
       "INSERT INTO review_log (x_user_id,handle,action,actor,note,at) VALUES (?,?,?,?,?,?)",
