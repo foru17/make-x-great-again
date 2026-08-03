@@ -74,7 +74,6 @@ export function ListPager({
             </PaginationItem>
             {pageWindow(page, pageCount ?? 1).map((p, i) =>
               p === "…" ? (
-                // biome-ignore lint/suspicious/noArrayIndexKey: ellipses have no id
                 <PaginationItem key={`gap-${i}`}>
                   <PaginationEllipsis />
                 </PaginationItem>

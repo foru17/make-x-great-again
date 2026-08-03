@@ -3347,8 +3347,10 @@ app.post("/v1/admin/keyword-rules/apply-to-queue", async (c) => {
       seen.add(low);
       terms.push({ sql: `instr(${HAYSTACK},?)>0`, bind: low });
     }
-    // eslint-disable-next-line no-control-regex
-    if (raw !== low && /[^\x00-\x7f]/.test(raw) && !seen.has(raw)) {
+    const hasNonAscii = Array.from(raw).some(
+      (character) => (character.codePointAt(0) ?? 0) > 0x7f,
+    );
+    if (raw !== low && hasNonAscii && !seen.has(raw)) {
       seen.add(raw);
       terms.push({ sql: `instr(${RAW_HAYSTACK},?)>0`, bind: raw });
     }
@@ -3580,12 +3582,12 @@ async function whitelistUpsert(
 ): Promise<void> {
   // D1 compares lower(handle) with the bound value verbatim, so every
   // identity lookup and write in this flow must share the same normalized key.
-  handle = normalizeHandle(handle);
+  const normalizedHandle = normalizeHandle(handle);
   // Resolve one canonical identity row before writing. With a uid, findAccount
   // prefers that immutable identity and falls back only to a handle-only row
   // that can safely absorb the uid. Without a uid it reuses the freshest
   // existing handle row instead of inserting another SQLite NULL-key sibling.
-  let canonical = await findAccount(env, handle, uid);
+  let canonical = await findAccount(env, normalizedHandle, uid);
   const updateCanonical = (rowid: number) =>
     env.DB.prepare(
       `UPDATE accounts SET
@@ -3605,7 +3607,7 @@ async function whitelistUpsert(
          avatar_url=COALESCE(?, avatar_url)
        WHERE rowid=?`,
     )
-      .bind(uid, handle, reasons, now, displayName || null, avatarUrl, rowid)
+      .bind(uid, normalizedHandle, reasons, now, displayName || null, avatarUrl, rowid)
       .run();
 
   if (canonical) {
@@ -3615,7 +3617,7 @@ async function whitelistUpsert(
       // A concurrent request may have inserted the uid row after findAccount
       // selected a handle-only row. Re-resolve once and update the winner.
       if (!uid) throw err;
-      const raced = await findAccount(env, handle, uid);
+      const raced = await findAccount(env, normalizedHandle, uid);
       if (!raced || raced.rowid === canonical.rowid) throw err;
       canonical = raced;
       await updateCanonical(canonical.rowid);
@@ -3641,15 +3643,15 @@ async function whitelistUpsert(
          display_name=COALESCE(excluded.display_name, accounts.display_name),
          avatar_url=COALESCE(excluded.avatar_url, accounts.avatar_url)`,
     )
-      .bind(uid, handle, displayName, avatarUrl, reasons, now, now)
+      .bind(uid, normalizedHandle, displayName, avatarUrl, reasons, now, now)
       .run();
   }
 
-  canonical = await findAccount(env, handle, uid);
+  canonical = await findAccount(env, normalizedHandle, uid);
   if (!canonical) throw new Error("whitelist upsert did not produce a canonical account row");
   // Collapse only handle-only siblings. A different non-null uid sharing a
   // recycled handle is a different X account and must keep its own decision.
-  await cleanupHandleOnlyAccountDuplicates(env, handle, canonical.rowid);
+  await cleanupHandleOnlyAccountDuplicates(env, normalizedHandle, canonical.rowid);
 }
 
 app.post("/v1/admin/whitelist", async (c) => {
