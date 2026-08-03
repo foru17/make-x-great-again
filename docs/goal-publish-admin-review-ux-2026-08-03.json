@@ -1,0 +1,38 @@
+{
+  "goal": "将管理后台三项审核体验优化按项目现有发布链路发布，并验证线上结果",
+  "created_at": "2026-08-03",
+  "tasks": [
+    {
+      "id": "release-preflight",
+      "verification": {
+        "source": "从 origin/main@a975f61 建立 codex/release-admin-review-ux-2026-08-03；旧开发分支落后 main 97 个提交，未直接部署；仅重新移植三项审核 UI/API 改动。",
+        "impact": "只更新 Worker 代码与静态管理后台；不执行 D1 SQL，不创建或修改 D1/R2，不改密钥、路由、定时任务或绑定。",
+        "tests": "npm test：70 passed, 0 failed",
+        "typecheck": [
+          "npm run typecheck：passed",
+          "npm run typecheck:app：passed",
+          "npm run types:check：generated bindings up to date"
+        ],
+        "build": "npm run predeploy：passed；2488 modules transformed",
+        "cloudflare": "Wrangler 4.110.0；OAuth 身份可访问 wrangler.toml 中 account_id；7 个既有 secrets 均存在。",
+        "dry_run": "npx wrangler deploy --dry-run --keep-vars --strict：passed；585.06 KiB upload / 127.03 KiB gzip；只识别既有 DB、ARTIFACTS、ASSETS 三个绑定。"
+      },
+      "passes": true
+    },
+    {
+      "id": "publish-source",
+      "verification": "按仓库约定将三个已验证提交和发布清单推送到远端，不覆盖他人提交。",
+      "passes": false
+    },
+    {
+      "id": "deploy-production",
+      "verification": "使用仓库既有生产配置部署，不新增或修改计费资源和存量绑定，记录部署版本与地址。",
+      "passes": false
+    },
+    {
+      "id": "verify-production",
+      "verification": "实测线上管理后台可访问、静态资源更新、关键接口健康，并核对发布版本。",
+      "passes": false
+    }
+  ]
+}
