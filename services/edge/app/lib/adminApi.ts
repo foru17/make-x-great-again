@@ -67,6 +67,7 @@ export interface Account {
   followers_count?: number;
   following_count?: number;
   published_at?: number;
+  published_tier?: string | null;
   last_scored?: number;
   last_decided_at?: number;
   last_decided_by?: string;

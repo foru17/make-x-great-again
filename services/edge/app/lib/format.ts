@@ -51,6 +51,102 @@ export function verdictZh(label: string | undefined): string {
   return (label && VERDICTS[label]?.zh) || label || "uncertain";
 }
 
+export interface BlacklistDecisionLike {
+  published_tier?: string | null;
+  source?: string | null;
+  reasons?: string | null;
+  verdict_label?: string;
+  confidence?: number;
+  reporters?: number;
+  last_decided_by?: string;
+  agent_id?: string;
+  agent_label?: string;
+}
+
+export interface BlacklistDecisionSource {
+  label: string;
+  detail: string;
+  tone: "human" | "agent" | "rule" | "muted";
+}
+
+const RULE_FIELD_ZH: Record<string, string> = {
+  bio: "简介",
+  tweet: "发言",
+  handle: "账号名",
+  display_name: "显示名称",
+};
+
+function reasonStrings(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function keywordRuleDetail(raw: string | null | undefined): string {
+  for (const reason of reasonStrings(raw)) {
+    const match = reason.match(/matched keyword rule "([^"]+)" on ([a-z_]+)/i);
+    if (match) {
+      const field = RULE_FIELD_ZH[match[2]] || "账号内容";
+      return `${field}命中“${match[1]}”，由规则自动加入黑名单`;
+    }
+  }
+  return "账号内容命中已启用的关键字规则，自动加入黑名单";
+}
+
+/** Turn storage-level provenance into a maintainer-facing explanation. */
+export function blacklistDecisionSource(a: BlacklistDecisionLike): BlacklistDecisionSource {
+  if (a.published_tier === "rule" || (!a.published_tier && a.source === "auto_keyword")) {
+    return { label: "关键字规则", detail: keywordRuleDetail(a.reasons), tone: "rule" };
+  }
+  if (a.published_tier === "mention" || (!a.published_tier && a.source === "auto_keyword_mention")) {
+    return {
+      label: "关联规则",
+      detail: "发言中提及了已命中规则的账号，因此被关联加入黑名单",
+      tone: "rule",
+    };
+  }
+  if (a.published_tier === "ai") {
+    const confidence = Math.round((a.confidence || 0) * 100);
+    return {
+      label: "AI 自动审查",
+      detail: `AI 判断为${verdictZh(a.verdict_label)}，把握 ${confidence}%，自动加入黑名单`,
+      tone: "agent",
+    };
+  }
+  if (a.published_tier === "human" || a.last_decided_by?.startsWith("human:")) {
+    if (a.agent_id || a.agent_label) {
+      return {
+        label: "人工确认",
+        detail: "AI 提供初审建议，管理员复核后确认拉黑",
+        tone: "human",
+      };
+    }
+    if (a.source === "report" && (a.reporters || 0) > 0) {
+      return {
+        label: "人工确认",
+        detail: `${a.reporters} 人举报后，由管理员审核确认拉黑`,
+        tone: "human",
+      };
+    }
+    if (a.source === "block") {
+      return { label: "人工确认", detail: "用户主动屏蔽后，由管理员审核确认拉黑", tone: "human" };
+    }
+    return { label: "人工确认", detail: "管理员审核后确认加入黑名单", tone: "human" };
+  }
+  if (a.last_decided_by?.startsWith("agent:")) {
+    return { label: "AI 审查", detail: "AI 根据账号信号给出拉黑结论", tone: "agent" };
+  }
+  return {
+    label: "历史记录",
+    detail: "旧记录没有保存完整的加入方式，可结合判定依据复核",
+    tone: "muted",
+  };
+}
+
 /** Spam category taxonomy — mirrors SPAM_CATEGORIES in src/index.ts and the
  *  extension's CATEGORY_ZH (extension/lib/category.ts). Order = menu order. */
 export const CATEGORIES: { value: string; zh: string }[] = [

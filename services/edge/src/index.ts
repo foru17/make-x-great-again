@@ -3405,7 +3405,8 @@ app.get("/v1/admin/blacklist", async (c) => {
             a.x_user_id, a.handle, a.display_name, a.avatar_url,
             a.account_created_at, a.account_age_days, a.followers_count, a.following_count,
             a.verdict_label, a.confidence, a.category, a.reasons, a.evidence_text, a.last_scored,
-            a.published_at,
+            a.source, a.agent_id, a.agent_label,
+            a.published_at, a.published_tier,
             a.last_decided_by, a.last_decided_at,
             (SELECT count(DISTINCT r.reporter_fp) FROM reports r
               WHERE r.handle=a.handle
@@ -3431,7 +3432,11 @@ app.get("/v1/admin/blacklist", async (c) => {
       category: string | null;
       reasons: string;
       last_scored: number;
+      source: string;
+      agent_id: string | null;
+      agent_label: string | null;
       published_at: number;
+      published_tier: string | null;
       last_decided_by: string | null;
       last_decided_at: number | null;
       reporters: number;

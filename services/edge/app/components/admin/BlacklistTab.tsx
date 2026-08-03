@@ -8,7 +8,15 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { type Account, api, type Item, rowKey } from "@/lib/adminApi";
-import { ago, CATEGORIES, categoryZh, fmtN, verdictZh, VERDICTS } from "@/lib/format";
+import {
+  ago,
+  blacklistDecisionSource,
+  CATEGORIES,
+  categoryZh,
+  fmtN,
+  verdictZh,
+  VERDICTS,
+} from "@/lib/format";
 import { runBatch } from "@/lib/runBatch";
 import { useListData } from "@/lib/useListData";
 import { useSelection } from "@/lib/useSelection";
@@ -18,6 +26,13 @@ import { useConfirm } from "./confirm";
 import { EmptyState, ListShell, MoreFoot } from "./MoreFoot";
 import { SearchBar } from "./SearchBar";
 import { ViewHead } from "./ViewHead";
+
+const DECISION_TONE = {
+  human: "border-success/30 bg-success/10 text-success",
+  agent: "border-violet/30 bg-violet/10 text-violet",
+  rule: "border-warning/30 bg-warning/10 text-warning",
+  muted: "border-border bg-muted text-muted-foreground",
+} as const;
 
 export function BlacklistTab({ onAuth, onMutated }: { onAuth: () => void; onMutated: () => void }) {
   const confirm = useConfirm();
@@ -160,6 +175,7 @@ export function BlacklistTab({ onAuth, onMutated }: { onAuth: () => void; onMuta
         <ListShell>
           {list.map((a, i) => {
             const label = a.verdict_label || "spam";
+            const decision = blacklistDecisionSource(a);
             return (
               <AccountRow
                 key={rowKey(a)}
@@ -176,6 +192,16 @@ export function BlacklistTab({ onAuth, onMutated }: { onAuth: () => void; onMuta
                     </span>
                     {a.category && <span title={`分类：${a.category}`}> · {categoryZh(a.category)}</span>}
                   </>
+                }
+                below={
+                  <div className="mt-2 flex max-w-2xl flex-wrap items-center gap-x-2 gap-y-1 text-[12px]">
+                    <span
+                      className={`rounded-full border px-2 py-0.5 font-semibold ${DECISION_TONE[decision.tone]}`}
+                    >
+                      {decision.label}
+                    </span>
+                    <span className="text-foreground/80">{decision.detail}</span>
+                  </div>
                 }
                 actions={
                   <>
