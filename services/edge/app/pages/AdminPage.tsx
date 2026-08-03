@@ -64,9 +64,9 @@ const TABS = [
   { v: "blacklist", label: "黑名单", count: (s: Stats) => s.blacklist },
   { v: "whitelist", label: "白名单", count: (s: Stats) => s.whitelist },
   { v: "wlRequests", label: "白名单申请", count: null },
-  { v: "agentPending", label: "🤖 待定", count: (s: Stats) => s.agent_pending },
-  { v: "agentBL", label: "🤖 拟拉黑", count: (s: Stats) => s.agent_blacklist },
-  { v: "agentWL", label: "🤖 拟加白", count: (s: Stats) => s.agent_whitelist },
+  { v: "agentPending", label: "AI 待定", count: (s: Stats) => s.agent_pending },
+  { v: "agentBL", label: "AI 拟拉黑", count: (s: Stats) => s.agent_blacklist },
+  { v: "agentWL", label: "AI 拟加白", count: (s: Stats) => s.agent_whitelist },
   { v: "rules", label: "关键字规则", count: null },
   { v: "log", label: "审计日志", count: null },
 ];
