@@ -30,8 +30,8 @@
     {
       "id": "github-publish",
       "scope": "推送恢复分支并创建包含验证证据的 Draft PR",
-      "verification": "远端恢复分支 SHA 等于本地 HEAD；Draft PR 指向 main",
-      "passes": false
+      "verification": "2026-08-03 实测：恢复分支已推送；Draft PR #177 指向 main 且 GitHub 判定 MERGEABLE；PR 包含 112/26/34 项测试、构建、真实 Firefox 与敏感信息检查证据",
+      "passes": true
     },
     {
       "id": "worker-deploy",
