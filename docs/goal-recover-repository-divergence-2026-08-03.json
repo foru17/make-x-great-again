@@ -60,8 +60,8 @@
     {
       "id": "extension-online-detection",
       "scope": "恢复已登录用户的在线检测、并发/每页上限、缓存与正常结果静默展示",
-      "verification": "在线检测公开接口测试通过；未登录与已知账号不调用接口；每页和并发上限生效",
-      "passes": false
+      "verification": "2026-08-03 实测：扩展全量 31 项、compile 与 Chrome MV3 生产构建通过；未登录和本地已知账号不发在线请求；每页最多 40 次、默认并发 3；结果写缓存，legit 正常账号保持静默，其余待复核判定显示提示",
+      "passes": true
     },
     {
       "id": "firefox-runtime-recovery",
