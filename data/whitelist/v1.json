@@ -1,8 +1,13 @@
 {
   "schema": 1,
-  "generatedAt": 1785758438119,
-  "count": 2030,
+  "generatedAt": 1785844838921,
+  "count": 2031,
   "list": [
+    {
+      "handle": "gzhendless",
+      "x_user_id": "2058832813471023104",
+      "last_scored": 1785843319861
+    },
     {
       "handle": "airtouch97",
       "x_user_id": null,
