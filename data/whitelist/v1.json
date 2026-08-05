@@ -1,8 +1,13 @@
 {
   "schema": 1,
-  "generatedAt": 1785844838921,
-  "count": 2031,
+  "generatedAt": 1785952842939,
+  "count": 2032,
   "list": [
+    {
+      "handle": "luozxdotorg",
+      "x_user_id": "1452161491717656579",
+      "last_scored": 1785935475899
+    },
     {
       "handle": "gzhendless",
       "x_user_id": "2058832813471023104",
