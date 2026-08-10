@@ -32,7 +32,9 @@ export default defineConfig({
     // Requested at runtime (chrome.permissions.request) only when the user
     // turns on X mute/block mode — keeps the default install storage-only.
     // Chrome uses optional_host_permissions; Firefox only added that key in
-    // 127, so for our 109+ target the host patterns go in optional_permissions.
+    // 127, and our Firefox 140+/Android 142+ baselines support it. Keep host
+    // patterns in optional_permissions because Firefox accepts that portable
+    // representation on both platforms.
     // github.com: requested only when the user clicks 用 GitHub 登录 in the
     // whitelist section (Device Flow endpoints don't serve CORS). Safari
     // declares the same X origins, while website access is managed from its
@@ -74,8 +76,8 @@ export default defineConfig({
     options_ui: { open_in_tab: true },
     // Firefox / AMO requirements (ignored by the Chrome build):
     //  - gecko.id: stable add-on ID, keyed to a domain we control.
-    //  - strict_min_version 109.0: the first Firefox release with Manifest V3
-    //    support (we no longer ship any MAIN-world content script).
+    //  - strict_min_version 140.0: first desktop baseline that supports the
+    //    AMO data-collection taxonomy declared below. Android needs 142.0.
     //  - Routine protection transmits no personal data. The optional
     //    whitelist application sends GitHub authentication and the user's
     //    public X handle only after an explicit runtime opt-in. AMO requires
@@ -85,11 +87,17 @@ export default defineConfig({
           browser_specific_settings: {
             gecko: {
               id: "x-spam-sentinel@zuoluo.tv",
-              strict_min_version: "109.0",
+              strict_min_version: "140.0",
               data_collection_permissions: {
                 required: ["none"],
                 optional: ["authenticationInfo", "personallyIdentifyingInfo"],
               },
+            },
+            // Firefox for Android needs its own compatibility declaration on
+            // AMO. Version 142 is required by data_collection_permissions and
+            // gives web-ext a concrete baseline for Android API validation.
+            gecko_android: {
+              strict_min_version: "142.0",
             },
           },
         }

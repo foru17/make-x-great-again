@@ -41,7 +41,8 @@
 | 平台版本 | 安装渠道 | 状态 | 环境要求 |
 |---|---|---|---|
 | 🟦 **Chrome 版**（Chrome / Edge / Brave / Arc） | [Chrome 网上应用店](https://chromewebstore.google.com/detail/make-x-great-again/aeoldnecphbkkckeedfgfcdcekkljdea) | ✅ 已上架，自动更新 | Chromium 内核，MV3 |
-| 🦊 **Firefox 版** | [Firefox 附加组件商店](https://addons.mozilla.org/firefox/addon/make-x-great-again/) | ✅ 已上架，自动更新 | Firefox 109+ |
+| 🦊 **Firefox 版** | [Firefox 附加组件商店](https://addons.mozilla.org/firefox/addon/make-x-great-again/) | ✅ 已上架，自动更新 | Firefox 140+ |
+| 📱 **Firefox Android 版** | 源码构建 / AMO Android 渠道 | 🧪 已适配，待 Android 渠道发布 | Firefox Android 142+；见 [构建与真机测试](./docs/FIREFOX-ANDROID.md) |
 | 🧭 **Safari macOS 版** | [TestFlight](https://testflight.apple.com/join/SeH4raps) | 🧪 开放测试 | macOS 15+ |
 | 📱 **Safari iOS / iPadOS 版** | [TestFlight](https://testflight.apple.com/join/SeH4raps) | 🧪 开放测试 | iOS / iPadOS 18+，作用于 Safari 内的 x.com |
 
@@ -137,10 +138,17 @@ pnpm install
 # 1. 静态检查
 pnpm typecheck && pnpm test && pnpm lint
 
-# 2. 扩展（WXT + React 19 + Tailwind v4）
+# 2. 扩展（WXT + React 19 + Tailwind v4；独立 package-lock）
 cd extension
-pnpm dev          # Chromium：监听 + 自动重载，把 .output/chrome-mv3 加进 Chrome 即可
-pnpm dev:firefox  # Firefox：同上，产物在 .output/firefox-mv3
+npm ci
+npm run dev          # Chromium：监听 + 自动重载，把 .output/chrome-mv3 加进 Chrome 即可
+npm run dev:firefox  # Firefox：同上，产物在 .output/firefox-mv3
+
+# Firefox Android 142+：构建、兼容性检查、ADB 真机临时加载
+npm run build:firefox-android
+npm run lint:firefox-android
+npm run run:firefox-android -- --adb-device YOUR_DEVICE_ID --firefox-apk org.mozilla.fenix
+# 完整说明：docs/FIREFOX-ANDROID.md
 
 # 3. Safari 扩展（macOS 15+ / iOS 18+，MV3 + SwiftUI 容器）
 npm --prefix extension install

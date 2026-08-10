@@ -28,9 +28,12 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - run: npm install --no-audit --no-fund
-      - run: npx tsc --noEmit
-      - run: npx wxt build
+      - run: npm ci --no-audit --no-fund
+      - run: npm test
+      - run: npm run compile
+      - run: npm run build
+      - run: npm run build:firefox-android
+      - run: npm run lint:firefox-android
 
   edge:
     name: edge (Cloudflare Worker)
