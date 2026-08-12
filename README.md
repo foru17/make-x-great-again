@@ -202,12 +202,12 @@ CONTRIBUTING.md       贡献指南
 
 ## 公开数据集（审计入口）
 
-`data/whitelist/v1.json` 和 `data/blacklist/v1.json` 是这个项目最重要的透明度承诺 —— 它们是 D1 数据库的**只读快照**，每 6 小时由服务端自动同步到这里。**仓库的 git history 就是完整审计日志**：任何人 clone 一下就能复现"维护者在哪天加了/移除了哪个账号"。
+`data/whitelist/v1.json` 和 `data/blacklist/v1.json` 是这个项目最重要的透明度承诺 —— 它们是 D1 数据库的**只读快照**，每 6 小时由服务端自动同步到本仓库的 **`data-mirror` 分支**（2026-08-03 起独立成数据分支，避免自动数据提交与 `main` 上的代码开发相互覆盖；`main` 上的 `data/` 目录为当日冻结快照，不再更新）。**`data-mirror` 分支的 git history 就是完整审计日志**：任何人 clone 一下就能复现"维护者在哪天加了/移除了哪个账号"。
 
 每条 blacklist 记录都附 `evidence_text`（触发判定的那条公开 X 文本）、`reasons`（AI 给出的理由数组）、`reporters`（独立举报人数），让审计不止是"我说他是 spam"。
 
-→ 实时浏览：[github.com/foru17/make-x-great-again/tree/main/data](https://github.com/foru17/make-x-great-again/tree/main/data)
-→ 完整 schema 与使用说明：[data/README.md](./data/README.md)
+→ 实时浏览：[github.com/foru17/make-x-great-again/tree/data-mirror/data](https://github.com/foru17/make-x-great-again/tree/data-mirror/data)
+→ 完整 schema 与使用说明：[data/README.md](https://github.com/foru17/make-x-great-again/blob/data-mirror/data/README.md)
 
 ## 当前进度
 

@@ -222,7 +222,7 @@ const TRUST = `
   <div class="trust">
     <div class="row" style="--ic:#10b981"><span class="ic">${ICON_SHIELD}</span><div><h3>模型不定案</h3><p>模型只给理由；进名单要人工确认或多人上报。</p></div></div>
     <div class="row" style="--ic:#38bdf8"><span class="ic">${ICON_LOCK}</span><div><h3>不碰登录态</h3><p>不上传 Cookie、关注列表和浏览历史。</p></div></div>
-    <div class="row" style="--ic:#f59e0b"><span class="ic">${ICON_DB}</span><div><h3>操作留痕</h3><p>加入、移除、白名单、驳回都有记录；完整数据每 6h 同步到 <a href="${BRAND.repo}/tree/main/data" target="_blank" rel="noopener" style="color:var(--accent)">仓库 data/</a>，git history 可审计。</p></div></div>
+    <div class="row" style="--ic:#f59e0b"><span class="ic">${ICON_DB}</span><div><h3>操作留痕</h3><p>加入、移除、白名单、驳回都有记录；完整数据每 6h 同步到 <a href="${BRAND.repo}/tree/data-mirror/data" target="_blank" rel="noopener" style="color:var(--accent)">仓库 data/</a>，git history 可审计。</p></div></div>
     <div class="row" style="--ic:#a855f7"><span class="ic">${ICON_USER}</span><div><h3>GitHub 上报</h3><p>登录只用于防刷和追溯提交。</p></div></div>
   </div>
 </section>

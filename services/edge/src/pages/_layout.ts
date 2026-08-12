@@ -92,7 +92,7 @@ ${o.head ?? ""}
   <div class="right">
     <nav class="links" aria-label="主导航">
       ${navItem("list", "/list", `${LIST_SVG}<span>名单</span>`)}
-      ${navItem("data", `${BRAND.repo}/tree/main/data`, `${DB_SVG}<span>公开数据</span>`)}
+      ${navItem("data", `${BRAND.repo}/tree/data-mirror/data`, `${DB_SVG}<span>公开数据</span>`)}
       ${navItem("github", BRAND.repo, `${GH_SVG}<span>GitHub</span>`)}
     </nav>
     <button class="theme-btn" type="button" onclick="window.__mxgaTheme()" aria-label="切换亮/暗主题（auto → light → dark）" title="切换主题">${ICON_AUTO}${ICON_LIGHT}${ICON_DARK}</button>
