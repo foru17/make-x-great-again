@@ -143,7 +143,7 @@ export function ListPage() {
               issue
             </a>
             ，复核后撤下。完整快照每 6h 同步到{" "}
-            <a href={`${BRAND.repo}/tree/main/data`} target="_blank" rel="noreferrer noopener" className="text-info underline">
+            <a href={`${BRAND.repo}/tree/data-mirror/data`} target="_blank" rel="noreferrer noopener" className="text-info underline">
               仓库 data/
             </a>
             。

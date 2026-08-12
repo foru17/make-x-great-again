@@ -56,7 +56,7 @@ export function LogTab({ onAuth }: { onAuth: () => void }) {
         desc={
           <>
             每一次加入、移除、白名单、驳回都留痕。完整数据每 6h 镜像到仓库{" "}
-            <a href={`${REPO}/tree/main/data`} target="_blank" rel="noreferrer noopener">
+            <a href={`${REPO}/tree/data-mirror/data`} target="_blank" rel="noreferrer noopener">
               data/
             </a>
             ，git history 可审计。
