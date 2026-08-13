@@ -23,6 +23,10 @@ import {
   tweetUrl,
 } from "../../lib/store";
 import type { Label } from "../../lib/types";
+import {
+  ensureXPermission as ensureXHostPermission,
+  isFirefoxAndroid,
+} from "../../lib/x-permission";
 
 const REPO = BRAND.repo;
 const EDGE_DEFAULT = BRAND.edgeBase;
@@ -934,18 +938,17 @@ function isMobileApplePlatform(): boolean {
 
 /** Ensure X website access before enabling a native action.
  *
- * Safari grants website access for the content script from Safari Settings;
- * its permissions.request() result does not reliably reflect that grant. If
- * the content script can run on X, the native action is a same-site request
- * and needs no second Chrome-style runtime grant. */
+ * Safari grants website access from Safari Settings. Firefox Android grants
+ * it from add-on details and has no runtime host-permission prompt. Desktop
+ * browsers retain normal contains-then-request behavior. */
 async function ensureXPermission(): Promise<boolean> {
-  if (import.meta.env.SAFARI) return true;
-  try {
-    if (await chrome.permissions.contains({ origins: X_ORIGINS })) return true;
-    return await chrome.permissions.request({ origins: X_ORIGINS });
-  } catch {
-    return false;
-  }
+  return ensureXHostPermission({
+    browser: import.meta.env.BROWSER,
+    userAgent: navigator.userAgent,
+    isSafari: import.meta.env.SAFARI,
+    origins: X_ORIGINS,
+    permissions: chrome.permissions,
+  });
 }
 
 const CATEGORY_HINT: Record<SpamCategory, string> = {
@@ -1683,7 +1686,9 @@ function Settings() {
             )}
             {permDenied && (
               <p className="mt-2 text-[12px] text-danger">
-                未授权访问 x.com，已保持当前设置。X 静音 / 拉黑需要该权限才能调用 X 接口。
+                {isFirefoxAndroid(import.meta.env.BROWSER, navigator.userAgent)
+                  ? "未授权访问 x.com，已保持当前设置。请在 Firefox 附加组件详情页手动授予站点权限：菜单 → 附加组件 → Make X Great Again → 权限，开启 x.com 与 twitter.com 的访问后再试。"
+                  : "未授权访问 x.com，已保持当前设置。X 静音 / 拉黑需要该权限才能调用 X 接口。"}
               </p>
             )}
           </section>
@@ -1726,7 +1731,9 @@ function Settings() {
             </div>
             {permDenied && (
               <p className="mt-2 text-[12px] text-danger">
-                未授权访问 x.com，已保持当前处理方式。X 静音 / 拉黑需要该权限才能调用 X 接口。
+                {isFirefoxAndroid(import.meta.env.BROWSER, navigator.userAgent)
+                  ? "未授权访问 x.com，已保持当前处理方式。请在 Firefox 附加组件详情页手动授予站点权限：菜单 → 附加组件 → Make X Great Again → 权限，开启 x.com 与 twitter.com 的访问后再试。"
+                  : "未授权访问 x.com，已保持当前处理方式。X 静音 / 拉黑需要该权限才能调用 X 接口。"}
               </p>
             )}
           </section>
