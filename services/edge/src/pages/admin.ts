@@ -1312,7 +1312,7 @@ const SCRIPT = String.raw`
     if(!more){v.innerHTML=
       viewHead({
         title:'审计日志',
-        desc:'每一次加入、移除、白名单、驳回都留痕。完整数据每 6h 镜像到仓库 <a href="'+GH+'/tree/main/data" target="_blank">data/</a>，git history 可审计。'
+        desc:'每一次加入、移除、白名单、驳回都留痕。完整数据每 6h 镜像到仓库 <a href="'+GH+'/tree/data-mirror/data" target="_blank">data/</a>，git history 可审计。'
       })
       +'<div class="log" id="log">'
       +'<div class="lrow head"><span>时间</span><span>动作</span><span>角色</span><span>账号</span><span>备注</span></div>'

@@ -15,7 +15,7 @@ const SHELL = `
   <p class="lede" style="font-size:12.5px;color:var(--fg-3);margin-bottom:14px;text-transform:uppercase;letter-spacing:.12em">${BRAND.acronym} · 已确认的垃圾号</p>
   <p class="lede">AI 初筛，维护者复核。</p>
   <p class="lede">误伤？开 <a href="${BRAND.appealNewIssue}" style="color:var(--accent)">issue</a>，复核后撤下。</p>
-  <p class="lede">完整数据快照每 6h 同步到 <a href="${BRAND.repo}/tree/main/data" style="color:var(--accent)" target="_blank" rel="noopener">仓库 data/</a> 目录，git history 即审计日志。</p>
+  <p class="lede">完整数据快照每 6h 同步到 <a href="${BRAND.repo}/tree/data-mirror/data" style="color:var(--accent)" target="_blank" rel="noopener">仓库 data/</a> 目录，git history 即审计日志。</p>
   <div class="pulse"><span class="dot" aria-hidden="true"></span><span id="pulseLabel">连接中...</span></div>
 </section>
 

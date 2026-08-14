@@ -1,8 +1,14 @@
 # MXGA · 公开数据集
 
+> ⚠️ **`main` 分支上的本目录已于 2026-08-03 冻结，不再更新。**
+> 实时快照移至 [`data-mirror` 分支](https://github.com/foru17/make-x-great-again/tree/data-mirror/data)
+> （避免自动数据提交与 `main` 上的代码开发相互覆盖）。
+> 读取最新数据请使用：
+> `https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v1.json`
+
 > 这个目录是 MXGA 服务端**自动生成**的公开数据快照。
 > 通过 Cloudflare Worker 的定时任务（每 6 小时）从 D1 数据库导出 →
-> 用 GitHub Contents API 写入这里。git history 即审计日志。
+> 用 GitHub Contents API 写入 `data-mirror` 分支。git history 即审计日志。
 
 完整治理规则：[GOVERNANCE.md](../GOVERNANCE.md) · 隐私承诺：[docs/PRIVACY.md](../docs/PRIVACY.md)
 

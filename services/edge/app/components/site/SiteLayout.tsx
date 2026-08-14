@@ -52,7 +52,7 @@ export function SiteLayout({
             <NavLink to="/list" active={current === "list"} label="公共名单">
               <List className="size-3.5" /> <span className="hidden sm:inline">名单</span>
             </NavLink>
-            <NavLink to={`${BRAND.repo}/tree/main/data`} external label="公开数据">
+            <NavLink to={`${BRAND.repo}/tree/data-mirror/data`} external label="公开数据">
               <Database className="size-3.5" /> <span className="hidden sm:inline">公开数据</span>
             </NavLink>
             <NavLink to={BRAND.repo} external label="GitHub 源码">
