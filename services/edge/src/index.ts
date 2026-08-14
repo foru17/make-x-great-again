@@ -1333,6 +1333,7 @@ for (const route of [
   "/v1/classify",
   "/v1/confirm",
   "/v1/report",
+  "/v1/rule-hits",
   "/v1/appeal",
   "/v1/whitelist",
   "/v1/whitelist/apply",
@@ -1887,6 +1888,120 @@ async function submitReport(c: Ctx, source: string) {
 }
 app.post("/v1/confirm", (c) => submitReport(c, "block"));
 app.post("/v1/report", (c) => submitReport(c, "report"));
+
+// ---- Anonymous rule-hit telemetry (extension lib/rule-telemetry.ts) ----
+// The write path is ISOLATED from moderation: rows land in rule_hit_stats
+// and nowhere else — no accounts/reports/queue writes, no publish influence.
+// A maintainer reviews the stats in the admin panel and promotes handles into
+// the review queue explicitly (POST /v1/admin/rule-hits/promote below).
+const RULE_HITS_MAX_BATCH = 50;
+const RULE_HITS_MAX_PER_WINDOW = 12; // flushes/hour/IP — client flushes ≤2/h
+const RULE_HITS_DAILY_ROW_FUSE = 50_000; // hard cap on new rows/day (cost fuse)
+
+const RuleHitsBody = z.object({
+  hits: z
+    .array(
+      z.object({
+        pattern: z.string().min(1).max(200),
+        handle: z.string().regex(/^[A-Za-z0-9_]{1,15}$/),
+        xUserId: z
+          .string()
+          .regex(/^\d{1,32}$/)
+          .optional(),
+        // Advisory only — the stored category always comes from the matching
+        // rule row so a hostile client can't stamp arbitrary strings.
+        category: z.string().max(32).optional(),
+      }),
+    )
+    .min(1)
+    .max(RULE_HITS_MAX_BATCH),
+});
+
+app.post("/v1/rule-hits", async (c) => {
+  const now = Date.now();
+  // Same fail-closed salt contract as /v1/report: without REPORT_SALT there
+  // is no way to rate-limit anonymously (raw IPs must never reach rate_log).
+  const ip = c.req.header("cf-connecting-ip") ?? "0.0.0.0";
+  const ipFp = await reporterFingerprint(c.env, `rh-ip:${ip}`);
+  if (!ipFp) {
+    return c.json({ error: "report_salt_required", detail: "REPORT_SALT not configured" }, 503);
+  }
+  const fp = `rh:${ipFp.slice(4)}`;
+  const recent = await rateLogCount(c.env, [fp, fp], now - HOUR_MS);
+  if (recent >= RULE_HITS_MAX_PER_WINDOW) return c.json({ error: "rate_limited" }, 429);
+  await recordReportRate(c.env, fp, now);
+
+  const parsed = RuleHitsBody.safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) return c.json({ error: "invalid_body" }, 400);
+
+  // Cost fuse: a runaway/hostile client fleet must not grow the stats table
+  // unboundedly. Over the daily cap, requests are accepted and discarded.
+  const day = new Date(now).toISOString().slice(0, 10);
+  const dayRows = await c.env.DB.prepare("SELECT count(*) n FROM rule_hit_stats WHERE day=?")
+    .bind(day)
+    .first<{ n: number }>()
+    .catch(() => null);
+  if ((dayRows?.n ?? 0) >= RULE_HITS_DAILY_ROW_FUSE) {
+    return c.json({ ok: true, stored: 0, dropped: parsed.data.hits.length });
+  }
+
+  // Only hits matching a CURRENT enabled blacklist rule are stored — the
+  // endpoint must not be an arbitrary-write channel (custom/user rules and
+  // retired patterns are silently dropped).
+  const rules = await getKeywordRules(c.env);
+  const byPattern = new Map(
+    rules.filter((r) => r.action === "blacklist").map((r) => [r.pattern, r]),
+  );
+
+  const seen = new Set<string>();
+  const rows: { pattern: string; handle: string; uid: string | null; category: string | null }[] =
+    [];
+  let dropped = 0;
+  for (const h of parsed.data.hits) {
+    const rule = byPattern.get(h.pattern);
+    if (!rule) {
+      dropped++;
+      continue;
+    }
+    const handle = h.handle.toLowerCase();
+    const k = `${h.pattern}${handle}`;
+    if (seen.has(k)) {
+      dropped++;
+      continue;
+    }
+    seen.add(k);
+    rows.push({
+      pattern: h.pattern,
+      handle,
+      uid: h.xUserId ?? null,
+      category: categoryForRule(rule),
+    });
+  }
+
+  let stored = 0;
+  if (rows.length) {
+    // ≤50 rows by schema, well under the 100-statement D1 batch discipline;
+    // stored counts REAL changes (the silent-loss lesson).
+    const stmts = rows.map((r) =>
+      c.env.DB.prepare(
+        `INSERT INTO rule_hit_stats (day, pattern, handle, x_user_id, category, count, first_seen, last_seen)
+         VALUES (?,?,?,?,?,1,?,?)
+         ON CONFLICT(day, pattern, handle) DO UPDATE SET
+           count=count+1,
+           last_seen=excluded.last_seen,
+           x_user_id=COALESCE(rule_hit_stats.x_user_id, excluded.x_user_id)`,
+      ).bind(day, r.pattern, r.handle, r.uid, r.category, now, now),
+    );
+    const results = await c.env.DB.batch(stmts).catch((err) => {
+      logError("rule_hits.write_failed", err, { rows: rows.length });
+      return null;
+    });
+    stored = results
+      ? results.reduce((n, r) => n + (r.meta?.changes ? 1 : 0), 0)
+      : 0;
+  }
+  return c.json({ ok: true, stored, dropped });
+});
 
 const AppealBody = z.object({
   handle: z
@@ -3237,6 +3352,138 @@ app.delete("/v1/admin/keyword-rules/:id", async (c) => {
   await c.env.DB.prepare("DELETE FROM keyword_rules WHERE id=?").bind(id).run();
   invalidateRuleCache();
   return c.json({ ok: true });
+});
+
+// ---- Rule-hit telemetry stats (read + explicit promote) ----
+// Per-rule aggregate over the last N days of extension-reported local hits.
+app.get("/v1/admin/rule-hits", async (c) => {
+  if (!(await admin(c))) return c.json({ error: "forbidden" }, 403);
+  const days = Math.min(90, Math.max(1, Number(c.req.query("days")) || 30));
+  const sinceDay = new Date(Date.now() - days * DAY_MS).toISOString().slice(0, 10);
+  const rows = await c.env.DB.prepare(
+    `SELECT pattern,
+            max(category) category,
+            sum(count) hits,
+            count(DISTINCT handle) accounts,
+            max(last_seen) last_seen
+       FROM rule_hit_stats
+      WHERE day >= ?
+      GROUP BY pattern
+      ORDER BY hits DESC`,
+  )
+    .bind(sinceDay)
+    .all<{
+      pattern: string;
+      category: string | null;
+      hits: number;
+      accounts: number;
+      last_seen: number;
+    }>();
+  return c.json({ list: rows.results ?? [], days });
+});
+
+// Accounts a specific rule caught in the wild. `listed` tells the panel
+// whether the handle already has an accounts row (any status) so the
+// maintainer only promotes genuinely-unknown accounts.
+app.get("/v1/admin/rule-hits/accounts", async (c) => {
+  if (!(await admin(c))) return c.json({ error: "forbidden" }, 403);
+  const pattern = (c.req.query("pattern") || "").trim();
+  if (!pattern) return c.json({ error: "pattern_required" }, 400);
+  const days = Math.min(90, Math.max(1, Number(c.req.query("days")) || 30));
+  const limit = Math.min(200, Math.max(1, Number(c.req.query("limit")) || 100));
+  const sinceDay = new Date(Date.now() - days * DAY_MS).toISOString().slice(0, 10);
+  const rows = await c.env.DB.prepare(
+    `SELECT s.handle,
+            max(s.x_user_id) x_user_id,
+            max(s.category) category,
+            sum(s.count) hits,
+            max(s.last_seen) last_seen,
+            EXISTS(SELECT 1 FROM accounts a WHERE lower(a.handle)=s.handle) listed
+       FROM rule_hit_stats s
+      WHERE s.pattern = ? AND s.day >= ?
+      GROUP BY s.handle
+      ORDER BY hits DESC, last_seen DESC
+      LIMIT ?`,
+  )
+    .bind(pattern, sinceDay, limit)
+    .all<{
+      handle: string;
+      x_user_id: string | null;
+      category: string | null;
+      hits: number;
+      last_seen: number;
+      listed: number;
+    }>();
+  return c.json({ list: rows.results ?? [], pattern, days });
+});
+
+// EXPLICIT human action: move telemetry rows into the normal review queue
+// (auto_pending_review, reviewed like any report — never straight to the
+// published list). This is the only bridge from rule_hit_stats to the
+// moderation surface, and it only exists behind the admin token.
+const RuleHitsPromoteBody = z.object({
+  pattern: z.string().min(1).max(200),
+  items: z
+    .array(
+      z.object({
+        handle: z.string().regex(/^[A-Za-z0-9_]{1,15}$/),
+        xUserId: z
+          .string()
+          .regex(/^\d{1,32}$/)
+          .optional(),
+      }),
+    )
+    .min(1)
+    .max(100),
+});
+
+app.post("/v1/admin/rule-hits/promote", async (c) => {
+  if (!(await admin(c))) return c.json({ error: "forbidden" }, 403);
+  const parsed = RuleHitsPromoteBody.safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) return c.json({ error: "invalid_body" }, 400);
+  const { pattern, items } = parsed.data;
+  const rules = await getKeywordRules(c.env);
+  const rule = rules.find((r) => r.action === "blacklist" && r.pattern === pattern);
+  const now = Date.now();
+  let queued = 0;
+  let skipped = 0;
+  for (const item of items) {
+    const existing = await findAccount(c.env, item.handle, item.xUserId ?? null);
+    // Terminal/decided rows stay untouched — promote only fills true gaps.
+    if (existing) {
+      skipped++;
+      continue;
+    }
+    const written = await writeAccount(c.env, {
+      uid: item.xUserId ?? null,
+      handle: item.handle,
+      displayName: "",
+      verdictLabel: rule?.verdict_label ?? "spam",
+      confidence: 0.9,
+      reasons: JSON.stringify([`extension rule-hit telemetry: "${pattern}"`]),
+      category: rule ? categoryForRule(rule) : null,
+      status: "auto_pending_review",
+      source: "rule_hit_stats",
+      evidenceText: `promoted from rule-hit telemetry (rule "${pattern}")`,
+      now,
+    });
+    if (written) {
+      queued++;
+      await c.env.DB.prepare(
+        "INSERT INTO review_log (x_user_id, handle, action, actor, note, at) VALUES (?,?,?,?,?,?)",
+      )
+        .bind(
+          item.xUserId ?? null,
+          item.handle,
+          "rule_hit_promoted",
+          "admin",
+          `queued from telemetry · rule "${pattern}"`,
+          now,
+        )
+        .run();
+    }
+  }
+  return c.json({ ok: true, queued, skipped });
 });
 
 // Preview: how many *currently pending* queue rows would this rule catch?

@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { clearGh, getGhLogin, getGhToken, ghUser, setGh } from "../../lib/auth";
 import { BRAND } from "../../lib/brand";
-import { CATEGORY_ZH, SPAM_CATEGORIES, type SpamCategory } from "../../lib/category";
+import { CATEGORY_ZH, SPAM_CATEGORIES, type SpamCategory, categoryFromCode } from "../../lib/category";
+import {
+  type CustomRule,
+  MAX_CUSTOM_RULES,
+  type RuleField,
+  getCustomRules,
+  getDisabledPatterns,
+  saveCustomRules,
+  saveDisabledPatterns,
+} from "../../lib/local-rules";
 import { categorizeReason, categorizeReasons } from "../../lib/reason-category";
 import {
   type ActionMode,
@@ -1490,6 +1499,246 @@ function WhitelistApplySection({ edgeBase }: { edgeBase: string }) {
   );
 }
 
+const RULE_FIELD_ZH: Record<RuleField, string> = {
+  any: "任意字段",
+  handle: "用户名",
+  display_name: "昵称",
+  bio: "简介",
+  tweet: "推文",
+};
+const RULE_FIELD_BY_CODE: Record<string, RuleField> = {
+  h: "handle",
+  d: "display_name",
+  b: "bio",
+  t: "tweet",
+  a: "any",
+};
+
+const CatChip = ({ cat }: { cat: SpamCategory }) => (
+  <span className="inline-flex items-center gap-1.5 rounded-full border border-border-2 px-2 py-0.5 text-[11px] text-fg-2">
+    <span
+      className="h-1.5 w-1.5 rounded-full"
+      style={{ backgroundColor: CAT_COLOR[cat] ?? CAT_COLOR.other }}
+    />
+    {CATEGORY_ZH[cat]}
+  </span>
+);
+
+/** Compact switch for dense rule rows — same visual language as Toggle,
+ *  minus the label block. */
+function MiniSwitch({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      onClick={() => onChange(!on)}
+      className={`h-[18px] w-8 flex-none rounded-full border transition ${
+        on ? "bg-fg border-fg" : "bg-card-hi border-border-2"
+      }`}
+    >
+      <span
+        className={`block h-3.5 w-3.5 rounded-full shadow-sm transition ${
+          on ? "translate-x-[15px] bg-bg" : "translate-x-0.5 bg-fg-3"
+        }`}
+      />
+    </button>
+  );
+}
+
+/** 「检测规则」——同步的官方规则（总开关 / 单条停用 / 匿名回传）+ 本机自定义规则。 */
+function DetectionRulesSection({
+  st,
+  save,
+}: {
+  st: Settings;
+  save: <K extends keyof Settings>(k: K, v: Settings[K]) => Promise<void>;
+}) {
+  const [official, setOfficial] = useState<{ pattern: string; field: RuleField; cat: SpamCategory }[]>([]);
+  const [disabled, setDisabled] = useState<Set<string>>(new Set());
+  const [custom, setCustom] = useState<CustomRule[]>([]);
+  const [expanded, setExpanded] = useState(false);
+  const [draft, setDraft] = useState<{ pattern: string; field: RuleField; category: SpamCategory }>({
+    pattern: "",
+    field: "any",
+    category: "porn",
+  });
+  const [draftMsg, setDraftMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    void getStoredList().then((list) => {
+      const rows = (list?.rules ?? []).flatMap((r) => {
+        const field = RULE_FIELD_BY_CODE[String(r[1])];
+        return field
+          ? [{ pattern: r[0], field, cat: categoryFromCode(String(r[2])[1]) }]
+          : [];
+      });
+      setOfficial(rows);
+    });
+    void getDisabledPatterns().then((p) => setDisabled(new Set(p)));
+    void getCustomRules().then(setCustom);
+  }, []);
+
+  const toggleRule = async (pattern: string, enabledNow: boolean) => {
+    const next = new Set(disabled);
+    if (enabledNow) next.add(pattern);
+    else next.delete(pattern);
+    setDisabled(next);
+    await saveDisabledPatterns([...next]);
+  };
+
+  const addCustom = async () => {
+    const pattern = draft.pattern.trim();
+    if (!pattern) return;
+    if (custom.some((r) => r.pattern.toLowerCase() === pattern.toLowerCase() && r.field === draft.field)) {
+      setDraftMsg("已有相同规则");
+      return;
+    }
+    if (custom.length >= MAX_CUSTOM_RULES) {
+      setDraftMsg(`最多 ${MAX_CUSTOM_RULES} 条`);
+      return;
+    }
+    const next = await saveCustomRules([...custom, { pattern, field: draft.field, category: draft.category }]);
+    setCustom(next);
+    setDraft((d) => ({ ...d, pattern: "" }));
+    setDraftMsg(null);
+  };
+
+  const removeCustom = async (idx: number) => {
+    const next = custom.filter((_, i) => i !== idx);
+    setCustom(await saveCustomRules(next));
+  };
+
+  const disabledCount = official.filter((r) => disabled.has(r.pattern)).length;
+  const shown = expanded ? official : [];
+  const selectCls =
+    "rounded-md border border-border-2 bg-transparent px-2 py-1.5 text-[12px] text-fg outline-none transition focus:border-accent";
+
+  return (
+    <section>
+      <SectionH>检测规则</SectionH>
+      <p className="mb-3 text-[12px] leading-relaxed text-fg-3">
+        官方规则由维护者人工审定、随公共名单每 6 小时同步，全部在本机比对；命中后按上方「自动处理策略」执行（仅评论区自动执行）。
+      </p>
+      <Toggle
+        on={st.officialRulesEnabled}
+        onChange={(v) => save("officialRulesEnabled", v)}
+        label="启用官方规则"
+        hint="关闭后同步的官方规则全部不再生效；公共黑名单命中不受影响"
+      />
+      <Toggle
+        on={st.ruleTelemetry}
+        onChange={(v) => save("ruleTelemetry", v)}
+        label="匿名回传官方规则命中"
+        hint="仅上传命中账号的公开标识（用户名 / 数字 ID）与命中的规则，供维护者统计复核后决定是否收录公共名单；不含你的任何账号或浏览信息。自定义规则命中永不上传。"
+      />
+
+      <div className="mt-3 overflow-hidden rounded-lg border border-border">
+        <div className="flex items-center justify-between gap-3 bg-card-hi px-3 py-2.5">
+          <div className="text-[12px] text-fg-2">
+            已同步 <b className="font-mono tabular-nums text-fg">{official.length}</b> 条官方规则
+            {disabledCount > 0 && (
+              <span className="ml-2 text-fg-3">（已停用 {disabledCount} 条）</span>
+            )}
+          </div>
+          {official.length > 0 && (
+            <Btn onClick={() => setExpanded((v) => !v)}>{expanded ? "收起" : "查看规则"}</Btn>
+          )}
+        </div>
+        {expanded && (
+          <ul className="max-h-[320px] divide-y divide-border overflow-y-auto">
+            {shown.map((r) => {
+              const off = disabled.has(r.pattern);
+              return (
+                <li
+                  key={`${r.pattern}|${r.field}`}
+                  className={`flex items-center gap-3 px-3 py-2 ${off ? "opacity-45" : ""}`}
+                >
+                  <code className="min-w-0 flex-1 truncate font-mono text-[12.5px] text-fg">
+                    {r.pattern}
+                  </code>
+                  <span className="flex-none text-[11px] text-fg-3">{RULE_FIELD_ZH[r.field]}</span>
+                  <span className="flex-none">
+                    <CatChip cat={r.cat} />
+                  </span>
+                  <MiniSwitch
+                    on={!off && st.officialRulesEnabled}
+                    onChange={() => st.officialRulesEnabled && toggleRule(r.pattern, !off)}
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+
+      <div className="mt-5">
+        <div className="mb-1.5 text-[12px] font-semibold text-fg">自定义规则</div>
+        <p className="mb-2 text-[12px] leading-relaxed text-fg-3">
+          你自己的关键词规则：仅本机生效、不上传、不参与回传；命中处理方式与官方规则一致，白名单账号永不处理。
+        </p>
+        {custom.length > 0 && (
+          <ul className="mb-2 divide-y divide-border overflow-hidden rounded-lg border border-border">
+            {custom.map((r, i) => (
+              <li key={`${r.pattern}|${r.field}`} className="flex items-center gap-3 px-3 py-2">
+                <code className="min-w-0 flex-1 truncate font-mono text-[12.5px] text-fg">
+                  {r.pattern}
+                </code>
+                <span className="flex-none text-[11px] text-fg-3">{RULE_FIELD_ZH[r.field]}</span>
+                <span className="flex-none">
+                  <CatChip cat={r.category} />
+                </span>
+                <Btn tier="danger" onClick={() => removeCustom(i)}>
+                  删除
+                </Btn>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="custom-rule-form flex flex-wrap items-center gap-2">
+          <input
+            value={draft.pattern}
+            onChange={(e) => {
+              setDraft((d) => ({ ...d, pattern: e.target.value }));
+              setDraftMsg(null);
+            }}
+            onKeyDown={(e) => e.key === "Enter" && void addCustom()}
+            placeholder="关键词（包含即命中，不区分大小写）"
+            maxLength={200}
+            className="min-w-[200px] flex-1 rounded-md border border-border-2 bg-transparent px-3 py-1.5 text-[12.5px] outline-none transition focus:border-accent"
+          />
+          <select
+            value={draft.field}
+            onChange={(e) => setDraft((d) => ({ ...d, field: e.target.value as RuleField }))}
+            className={selectCls}
+          >
+            {(Object.keys(RULE_FIELD_ZH) as RuleField[]).map((f) => (
+              <option key={f} value={f}>
+                {RULE_FIELD_ZH[f]}
+              </option>
+            ))}
+          </select>
+          <select
+            value={draft.category}
+            onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value as SpamCategory }))}
+            className={selectCls}
+          >
+            {SPAM_CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {CATEGORY_ZH[c]}
+              </option>
+            ))}
+          </select>
+          <Btn onClick={() => void addCustom()} disabled={!draft.pattern.trim()}>
+            添加
+          </Btn>
+        </div>
+        {draftMsg && <p className="mt-1.5 text-[12px] text-danger">{draftMsg}</p>}
+      </div>
+    </section>
+  );
+}
+
 function Settings() {
   const [cleared, setCleared] = useState(false);
   const [clearOpen, setClearOpen] = useState(false);
@@ -1698,6 +1947,8 @@ function Settings() {
             )}
           </section>
         )}
+
+        {st && <DetectionRulesSection st={st} save={save} />}
 
         {st && (
           <section>

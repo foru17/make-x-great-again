@@ -17,7 +17,7 @@ import {
 import { CATEGORY_ZH } from "../lib/category";
 import { LIST_KEY, WL_KEY } from "../lib/list-sync";
 import { type IndexEntry, isWhitelisted, lookupLocal, warmLocalIndex } from "../lib/local-index";
-import { matchLocalRules } from "../lib/local-rules";
+import { matchLocalRules, warmRuleConfig } from "../lib/local-rules";
 import {
   OnlineClassificationLimiter,
   classifyAndCache,
@@ -302,6 +302,7 @@ export default defineContentScript({
     // Warm local data structures
     await warmBlocklist();
     await warmLocalIndex();
+    await warmRuleConfig();
 
     async function refreshOnlineAuth(): Promise<boolean> {
       const before = onlineAuthenticated;
@@ -925,12 +926,30 @@ export default defineContentScript({
           }
         }
 
-        // 4.5 Maintainer-curated keyword rules, shipped with the synced list.
+        // 4.5 Keyword rules: maintainer-curated ones shipped with the synced
+        // list (minus user disables), then the user's own custom rules.
         // Catches first-seen template accounts (brand-new porn-bot throwaways
-        // not yet on the public list) with zero upload. Whitelist already won
-        // at step 2.
+        // not yet on the public list). Whitelist already won at step 2.
         const ruleHit = matchLocalRules(sig);
         if (ruleHit) {
+          // OFFICIAL hits only: hand the spam account's identity + matched
+          // rule to the background's anonymous telemetry queue (gated on
+          // settings.ruleTelemetry there; custom rules are local-only).
+          if (ruleHit.origin === "official" && settings.ruleTelemetry) {
+            try {
+              void chrome.runtime.sendMessage({
+                type: "rule-hit",
+                hit: {
+                  pattern: ruleHit.pattern,
+                  handle: sig.handle,
+                  ...(sig.userId ? { xUserId: sig.userId } : {}),
+                  category: ruleHit.category,
+                },
+              });
+            } catch {
+              /* background asleep — telemetry is best-effort */
+            }
+          }
           renderLocalIndex(
             anchor,
             key,
@@ -944,7 +963,9 @@ export default defineContentScript({
                 // their own block screenshots, and a leaked keyword is a
                 // free evasion recipe. Category only.
                 confidence: 0.95,
-                reasons: [`命中官方规则 · ${CATEGORY_ZH[ruleHit.category]}`],
+                reasons: [
+                  `命中${ruleHit.origin === "custom" ? "自定义" : "官方"}规则 · ${CATEGORY_ZH[ruleHit.category]}`,
+                ],
               },
               category: ruleHit.category,
               tier: "auto", // rule hits are auto tier — reply-scope gated

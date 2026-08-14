@@ -180,3 +180,24 @@ CREATE TABLE IF NOT EXISTS reporter_bans (
 );
 CREATE INDEX IF NOT EXISTS idx_reporter_bans_fp_active
   ON reporter_bans(reporter_fp, expires_at);
+
+-- Anonymous extension rule-hit telemetry (POST /v1/rule-hits). ISOLATED BY
+-- DESIGN: nothing in the moderation surface (accounts / reports / queue /
+-- publish) reads this table, so ingest can never create list entries or
+-- queue rows — a human promotes rows into the review queue explicitly from
+-- the admin panel. One row per (UTC day, rule pattern, spam handle);
+-- repeated sightings bump count.
+CREATE TABLE IF NOT EXISTS rule_hit_stats (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  day         TEXT NOT NULL,               -- UTC YYYY-MM-DD bucket
+  pattern     TEXT NOT NULL,               -- matched keyword_rules.pattern (validated on ingest)
+  handle      TEXT NOT NULL,               -- spam account handle, lowercased
+  x_user_id   TEXT,                        -- spam account numeric id when the client had it
+  category    TEXT,                        -- category from the matching rule at ingest time
+  count       INTEGER NOT NULL DEFAULT 1,  -- sightings reported for this key
+  first_seen  INTEGER NOT NULL,            -- epoch ms
+  last_seen   INTEGER NOT NULL             -- epoch ms
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_rule_hit_stats_key
+  ON rule_hit_stats(day, pattern, handle);
+CREATE INDEX IF NOT EXISTS idx_rule_hit_stats_handle ON rule_hit_stats(handle);

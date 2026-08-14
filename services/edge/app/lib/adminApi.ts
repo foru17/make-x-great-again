@@ -110,6 +110,26 @@ export interface Rule {
   last_hit_at?: number;
 }
 
+/** Per-rule aggregate of extension-reported local hits (rule_hit_stats). */
+export interface RuleHitAgg {
+  pattern: string;
+  category: string | null;
+  hits: number;
+  accounts: number;
+  last_seen: number;
+}
+
+/** One account a rule caught in the wild. `listed` = already has an accounts
+ *  row (any status), so promoting it again would be a no-op. */
+export interface RuleHitAccount {
+  handle: string;
+  x_user_id: string | null;
+  category: string | null;
+  hits: number;
+  last_seen: number;
+  listed: number;
+}
+
 export interface WhitelistRequest {
   id: number;
   x_user_id?: string | null;
@@ -268,6 +288,23 @@ export const api = {
     }),
   ruleDelete: (id: number) =>
     req<{ ok: boolean }>(`/v1/admin/keyword-rules/${id}`, { method: "DELETE" }),
+  // Extension rule-hit telemetry (isolated stats table; explicit promote is
+  // the only bridge into the review queue).
+  ruleHits: (days = 30) =>
+    req<{ list: RuleHitAgg[]; days: number }>(`/v1/admin/rule-hits?days=${days}`),
+  ruleHitAccounts: (pattern: string, days = 30) =>
+    req<{ list: RuleHitAccount[]; pattern: string; days: number }>(
+      `/v1/admin/rule-hits/accounts?pattern=${encodeURIComponent(pattern)}&days=${days}`,
+    ),
+  ruleHitsPromote: (pattern: string, items: { handle: string; xUserId?: string }[]) =>
+    req<{ ok: boolean; queued: number; skipped: number; error?: string }>(
+      "/v1/admin/rule-hits/promote",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ pattern, items }),
+      },
+    ),
   rulesApply: (scope: "queue" | "all" = "queue") =>
     req<{
       ok: boolean;

@@ -47,6 +47,11 @@ async function ghPoll(deviceCode: string) {
 }
 
 const SYNC_ALARM = "xss:list-sync";
+// Anonymous official-rule-hit telemetry flush (lib/rule-telemetry.ts owns the
+// queue/dedup; this alarm just drains it). 30min keeps a lost eager-flush
+// from stranding rows for long while staying far from a request storm.
+const RULE_HITS_ALARM = "xss:rule-hits";
+const RULE_HITS_PERIOD_MIN = 30;
 // 6h cadence matches the server's mirror cron; the artifact itself only
 // changes when the confirmed set changes, and version-match syncs are a
 // single small meta GET.
@@ -58,6 +63,10 @@ export default defineBackground(() => {
       chrome.alarms.create(SYNC_ALARM, {
         periodInMinutes: SYNC_PERIOD_MIN,
         delayInMinutes: 1,
+      });
+      chrome.alarms.create(RULE_HITS_ALARM, {
+        periodInMinutes: RULE_HITS_PERIOD_MIN,
+        delayInMinutes: 5,
       });
     } catch {
       /* non-fatal */
@@ -74,6 +83,9 @@ export default defineBackground(() => {
   });
   chrome.alarms.onAlarm.addListener((a) => {
     if (a.name === SYNC_ALARM) void syncList();
+    if (a.name === RULE_HITS_ALARM) {
+      void import("../lib/rule-telemetry").then(({ flushRuleHits }) => flushRuleHits());
+    }
   });
 
   chrome.runtime.onMessage.addListener(
@@ -100,6 +112,11 @@ export default defineBackground(() => {
             sendResponse({ ok: true, data: await getStats() });
           } else if (msg.type === "records") {
             sendResponse({ ok: true, data: { records: [] } });
+          } else if (msg.type === "rule-hit") {
+            const { enqueueRuleHit, flushRuleHits } = await import("../lib/rule-telemetry");
+            const pressured = await enqueueRuleHit(msg.hit);
+            if (pressured) void flushRuleHits();
+            sendResponse({ ok: true });
           } else if (msg.type === "gh_start") {
             sendResponse({ ok: true, data: await ghStart() });
           } else if (msg.type === "gh_poll") {

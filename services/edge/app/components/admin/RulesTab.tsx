@@ -28,7 +28,13 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { api, AuthError, type Rule } from "@/lib/adminApi";
+import {
+  api,
+  AuthError,
+  type Rule,
+  type RuleHitAccount,
+  type RuleHitAgg,
+} from "@/lib/adminApi";
 import { agoZh, CATEGORIES, categoryZh, fmtN } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useConfirm } from "./confirm";
@@ -186,6 +192,197 @@ function RuleDialog({
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+/** 某条规则在用户端命中的账号明细 + 未收录账号的显式提审入口。 */
+function RuleHitAccountsDialog({
+  agg,
+  onOpenChange,
+  onPromoted,
+}: {
+  agg: RuleHitAgg | null;
+  onOpenChange: (v: boolean) => void;
+  onPromoted: () => void;
+}) {
+  const [rows, setRows] = useState<RuleHitAccount[] | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!agg) return;
+    setRows(null);
+    api
+      .ruleHitAccounts(agg.pattern)
+      .then((j) => setRows(j.list || []))
+      .catch(() => setRows([]));
+  }, [agg]);
+
+  const unlisted = (rows ?? []).filter((r) => !r.listed);
+
+  const promote = async () => {
+    if (!agg || unlisted.length === 0) return;
+    setBusy(true);
+    try {
+      const j = await api.ruleHitsPromote(
+        agg.pattern,
+        unlisted.slice(0, 100).map((r) => ({
+          handle: r.handle,
+          ...(r.x_user_id ? { xUserId: r.x_user_id } : {}),
+        })),
+      );
+      if (!j.ok) throw new Error(j.error);
+      toast.success(`已提审 ${j.queued} 个（跳过 ${j.skipped} 个已在库）`);
+      const refreshed = await api.ruleHitAccounts(agg.pattern);
+      setRows(refreshed.list || []);
+      onPromoted();
+    } catch {
+      toast.error("提审失败");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open={!!agg} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>
+            规则 <code className="rounded bg-muted px-1 font-mono">{agg?.pattern}</code> 的用户端命中
+          </DialogTitle>
+          <DialogDescription>
+            近 30 天扩展匿名回传的命中账号。提审只把「未收录」的账号送进待审队列，人工复核后才可能上榜——绝不直接发布。
+          </DialogDescription>
+        </DialogHeader>
+        {rows === null ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">加载中…</p>
+        ) : rows.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">暂无回传记录</p>
+        ) : (
+          <div className="max-h-[320px] overflow-y-auto rounded-lg border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>账号</TableHead>
+                  <TableHead className="w-16 text-right">命中</TableHead>
+                  <TableHead className="w-20">最近</TableHead>
+                  <TableHead className="w-20">状态</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((r) => (
+                  <TableRow key={r.handle}>
+                    <TableCell>
+                      <a
+                        href={`https://x.com/${r.handle}`}
+                        target="_blank"
+                        rel="noopener"
+                        className="font-mono text-sm hover:underline"
+                      >
+                        @{r.handle}
+                      </a>
+                    </TableCell>
+                    <TableCell className="text-right font-mono tabular-nums">{fmtN(r.hits)}</TableCell>
+                    <TableCell className="text-[11.5px] tabular-nums text-muted-foreground">
+                      {agoZh(r.last_seen)}
+                    </TableCell>
+                    <TableCell className="text-[11.5px]">
+                      {r.listed ? (
+                        <span className="text-muted-foreground">已在库</span>
+                      ) : (
+                        <span className="font-medium text-destructive">未收录</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+        <DialogFooter>
+          <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+            关闭
+          </Button>
+          <Button size="sm" disabled={busy || unlisted.length === 0} onClick={promote}>
+            {busy ? "提审中…" : `提审未收录（${unlisted.length}）`}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/** 用户端（扩展）匿名回传的规则命中统计。只读统计 + 显式提审，与正式库隔离。 */
+function RuleHitsSection({ onMutated }: { onMutated: () => void }) {
+  const [aggs, setAggs] = useState<RuleHitAgg[] | null>(null);
+  const [viewing, setViewing] = useState<RuleHitAgg | null>(null);
+
+  const load = useCallback(() => {
+    api
+      .ruleHits()
+      .then((j) => setAggs(j.list || []))
+      .catch(() => setAggs([]));
+  }, []);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  if (!aggs || aggs.length === 0) return null; // telemetry尚未积累时不占版面
+
+  return (
+    <div className="mt-8">
+      <div className="mb-3">
+        <h3 className="text-sm font-semibold">用户端命中回传（近 30 天）</h3>
+        <p className="mt-0.5 text-[12px] text-muted-foreground">
+          扩展本地规则命中的匿名回传，存在独立统计表，不影响队列与公榜。点「查看账号」可把未收录的账号手动提进待审队列。
+        </p>
+      </div>
+      <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>规则</TableHead>
+              <TableHead className="w-20 text-right">命中</TableHead>
+              <TableHead className="w-20 text-right">账号数</TableHead>
+              <TableHead className="w-24">最近</TableHead>
+              <TableHead className="w-28 text-right">操作</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {aggs.map((a) => (
+              <TableRow key={a.pattern}>
+                <TableCell>
+                  <span className="font-mono text-sm font-semibold">{a.pattern}</span>
+                  {a.category && (
+                    <span className="ml-2 text-[11.5px] text-muted-foreground">
+                      {categoryZh(a.category)}
+                    </span>
+                  )}
+                </TableCell>
+                <TableCell className="text-right font-mono tabular-nums">{fmtN(a.hits)}</TableCell>
+                <TableCell className="text-right font-mono tabular-nums">{fmtN(a.accounts)}</TableCell>
+                <TableCell className="text-[11.5px] tabular-nums text-muted-foreground">
+                  {agoZh(a.last_seen)}
+                </TableCell>
+                <TableCell className="text-right">
+                  <Button size="sm" variant="outline" onClick={() => setViewing(a)}>
+                    查看账号
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
+      <RuleHitAccountsDialog
+        agg={viewing}
+        onOpenChange={(v) => !v && setViewing(null)}
+        onPromoted={() => {
+          load();
+          onMutated();
+        }}
+      />
+    </div>
   );
 }
 
@@ -359,6 +556,7 @@ export function RulesTab({ onAuth, onMutated }: { onAuth: () => void; onMutated:
           </Table>
         </div>
       )}
+      <RuleHitsSection onMutated={onMutated} />
     </div>
   );
 }

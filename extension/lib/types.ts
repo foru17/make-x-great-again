@@ -56,6 +56,10 @@ export type BgRequest =
   // GitHub-authenticated online AI detection for accounts that missed the
   // local public list, persistent verdict cache, and local keyword rules.
   | { type: "classify"; sig: Signals }
+  // Official-rule hit telemetry (anonymous; see lib/rule-telemetry.ts). The
+  // content script only forwards the hit — queueing/dedup/flush live in the
+  // background so one spam wave never turns into a request storm.
+  | { type: "rule-hit"; hit: { pattern: string; handle: string; xUserId?: string; category?: string } }
   // 举报: the authenticated POST to /v1/report MUST run in the background —
   // a content-script fetch is bound by x.com's CORS/CSP, whereas the SW shares
   // the extension origin the whitelist-apply flow already reports from.
