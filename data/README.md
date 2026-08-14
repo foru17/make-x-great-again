@@ -1,10 +1,17 @@
 # MXGA · 公开数据集
 
-> ⚠️ **`main` 分支上的本目录已于 2026-08-03 冻结，不再更新。**
-> 实时快照移至 [`data-mirror` 分支](https://github.com/foru17/make-x-great-again/tree/data-mirror/data)
-> （避免自动数据提交与 `main` 上的代码开发相互覆盖）。
-> 读取最新数据请使用：
-> `https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v1.json`
+> 📍 **实时数据在 [`data-mirror` 分支](https://github.com/foru17/make-x-great-again/tree/data-mirror/data)，服务端每 6 小时自动同步，公开承诺不变。**
+>
+> `main` 上的本目录只保留这份指路 README：数据同步 2026-08-03 起独立到专用
+> 数据分支（自动数据提交每天几十次，和 `main` 上的代码开发相互覆盖、淹没代码
+> history），`main` 上残留的 2026-08-03 冻结快照又多次被误读成"名单停更了"，
+> 因此 2026-08-14 起把过期快照从 `main` 移除。**`data-mirror` 分支的 git
+> history 就是完整审计日志**，任何人 clone 即可复现每一次名单变更。
+>
+> 直接读取最新数据：
+> - 黑名单全量：`https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v1.json`
+> - 黑名单 lite（扩展同款产物）：`https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v2-lite.json`
+> - 白名单：`https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/whitelist/v1.json`
 
 > 这个目录是 MXGA 服务端**自动生成**的公开数据快照。
 > 通过 Cloudflare Worker 的定时任务（每 6 小时）从 D1 数据库导出 →
