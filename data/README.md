@@ -160,8 +160,8 @@ curl "https://cdn.jsdelivr.net/gh/foru17/make-x-great-again@latest/public-list/d
 
 ```bash
 # 最稳的入口（GitHub raw）
-curl https://raw.githubusercontent.com/foru17/make-x-great-again/main/data/blacklist/v1.json
-curl https://raw.githubusercontent.com/foru17/make-x-great-again/main/data/whitelist/v1.json
+curl https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v1.json
+curl https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/whitelist/v1.json
 ```
 
 ### 或者用我们的 Worker（带 CDN 缓存）
