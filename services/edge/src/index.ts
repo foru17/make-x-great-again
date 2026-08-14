@@ -643,6 +643,28 @@ async function activeReporterBan(
  *  Always salted (same fail-closed REPORT_SALT contract as reports): the
  *  caller must 503 when this returns null rather than fall back to storing
  *  a raw identity/IP in rate_log. */
+/** Bump today's (kind, fp) row in contrib_actives — the daily-active-
+ *  contributors ledger behind /v1/admin/contrib. fp is always an already-
+ *  salted fingerprint (throttle or reporter), never a raw identity/IP.
+ *  Best-effort: a failed metric write must never fail the request. */
+async function recordContribActive(
+  env: Bindings,
+  kind: string,
+  fp: string,
+  now: number,
+): Promise<void> {
+  const day = new Date(now).toISOString().slice(0, 10);
+  await env.DB.prepare(
+    `INSERT INTO contrib_actives (day, kind, fp, count, first_at, last_at)
+     VALUES (?,?,?,1,?,?)
+     ON CONFLICT(day, kind, fp) DO UPDATE SET
+       count=count+1, last_at=excluded.last_at`,
+  )
+    .bind(day, kind, fp, now, now)
+    .run()
+    .catch((err) => logError("contrib_actives.write_failed", err, { kind }));
+}
+
 async function throttleFingerprint(env: Bindings, scope: string, id: string): Promise<string | null> {
   return reporterFingerprint(env, `${scope}|${id}`);
 }
@@ -1519,6 +1541,12 @@ app.post("/v1/classify", async (c) => {
       return c.json({ error: "rate_limited", retryAfterMs: REPORT_WINDOW_MS }, 429);
     }
     await recordReportRate(c.env, ruleFp, now);
+    await recordContribActive(
+      c.env,
+      who.id === "anon" ? "rule_write_anon" : "rule_write",
+      ruleFp,
+      now,
+    );
     const status = ruleDest ?? statusForRuleAction(ruleHit.action);
     const reasons = [`matched keyword rule "${ruleHit.pattern}" on ${ruleHit.field}`];
     const verdict = {
@@ -1614,6 +1642,12 @@ app.post("/v1/classify", async (c) => {
   }
   await recordReportRate(c.env, rateFp, now);
   await recordReportRate(c.env, globalFp, now);
+  await recordContribActive(
+    c.env,
+    who.id === "anon" ? "classify_anon" : "classify",
+    rateFp,
+    now,
+  );
   const verdict = await classify(c.env, s);
   // Auto-publish high-confidence AI spam straight to the public list — the
   // mirror image of the auto_legit fast-accept below. Only the classify path
@@ -1756,6 +1790,7 @@ async function submitReport(c: Ctx, source: string) {
   const alreadyReported = !insertedReport;
   if (insertedReport) {
     await recordReportRate(c.env, fp, now);
+    await recordContribActive(c.env, "report", fp, now);
   }
 
   // Reporter count for auto-publish: only GH accounts older than
@@ -3352,6 +3387,26 @@ app.delete("/v1/admin/keyword-rules/:id", async (c) => {
   await c.env.DB.prepare("DELETE FROM keyword_rules WHERE id=?").bind(id).run();
   invalidateRuleCache();
   return c.json({ ok: true });
+});
+
+// ---- Contribution-funnel observability ----
+// Daily distinct contributing identities (see recordContribActive): how many
+// GitHub-authed users actually classify/report vs anonymous traffic. This is
+// the metric that tells whether the login-narrative work moves the needle.
+app.get("/v1/admin/contrib", async (c) => {
+  if (!(await admin(c))) return c.json({ error: "forbidden" }, 403);
+  const days = Math.min(90, Math.max(1, Number(c.req.query("days")) || 28));
+  const sinceDay = new Date(Date.now() - days * DAY_MS).toISOString().slice(0, 10);
+  const rows = await c.env.DB.prepare(
+    `SELECT day, kind, count(DISTINCT fp) actives, sum(count) events
+       FROM contrib_actives
+      WHERE day >= ?
+      GROUP BY day, kind
+      ORDER BY day DESC`,
+  )
+    .bind(sinceDay)
+    .all<{ day: string; kind: string; actives: number; events: number }>();
+  return c.json({ list: rows.results ?? [], days });
 });
 
 // ---- Rule-hit telemetry stats (read + explicit promote) ----

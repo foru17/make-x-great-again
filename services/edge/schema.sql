@@ -201,3 +201,20 @@ CREATE TABLE IF NOT EXISTS rule_hit_stats (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_rule_hit_stats_key
   ON rule_hit_stats(day, pattern, handle);
 CREATE INDEX IF NOT EXISTS idx_rule_hit_stats_handle ON rule_hit_stats(handle);
+
+-- Daily distinct contributing identities (salted fingerprints, NO PII) —
+-- powers /v1/admin/contrib, the login-rate / funnel observability added with
+-- the 2026-08 contribution-funnel work. One row per (UTC day, kind, fp);
+-- repeats bump count. kinds: classify|classify_anon (metered LLM calls),
+-- rule_write|rule_write_anon (keyword-rule publish path), report (manual).
+CREATE TABLE IF NOT EXISTS contrib_actives (
+  id        INTEGER PRIMARY KEY AUTOINCREMENT,
+  day       TEXT NOT NULL,
+  kind      TEXT NOT NULL,
+  fp        TEXT NOT NULL,
+  count     INTEGER NOT NULL DEFAULT 1,
+  first_at  INTEGER NOT NULL,
+  last_at   INTEGER NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_contrib_actives_key
+  ON contrib_actives(day, kind, fp);

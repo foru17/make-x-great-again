@@ -110,6 +110,15 @@ export interface Rule {
   last_hit_at?: number;
 }
 
+/** One (day, kind) bucket of distinct contributing identities.
+ *  kinds: classify|classify_anon|rule_write|rule_write_anon|report. */
+export interface ContribRow {
+  day: string;
+  kind: string;
+  actives: number;
+  events: number;
+}
+
 /** Per-rule aggregate of extension-reported local hits (rule_hit_stats). */
 export interface RuleHitAgg {
   pattern: string;
@@ -288,6 +297,9 @@ export const api = {
     }),
   ruleDelete: (id: number) =>
     req<{ ok: boolean }>(`/v1/admin/keyword-rules/${id}`, { method: "DELETE" }),
+  // Contribution-funnel observability: daily distinct contributing identities.
+  contrib: (days = 28) =>
+    req<{ list: ContribRow[]; days: number }>(`/v1/admin/contrib?days=${days}`),
   // Extension rule-hit telemetry (isolated stats table; explicit promote is
   // the only bridge into the review queue).
   ruleHits: (days = 30) =>

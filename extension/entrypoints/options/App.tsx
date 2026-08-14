@@ -413,12 +413,59 @@ function ListStatusCard({ ls, onRefreshed }: { ls: ListState; onRefreshed: () =>
   );
 }
 
+/** 共建状态卡：把「登录 GitHub」重新定位成参与公开收集的入口——未登录讲清
+ *  登录能开启什么（在线 AI 检测 + 上报），已登录展示贡献状态。 */
+function ContribCard({
+  login,
+  detections,
+  blocked,
+}: {
+  login: string | null;
+  detections: number;
+  blocked: number;
+}) {
+  if (!login) {
+    return (
+      <div className="contrib-card mb-6 flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-card-hi px-5 py-4">
+        <div className="min-w-[240px] flex-1">
+          <div className="text-[13.5px] font-semibold text-fg">参与共建 · 帮所有人拦住新垃圾号</div>
+          <p className="mt-1 text-[12px] leading-relaxed text-fg-3">
+            登录 GitHub 后：本地名单没命中的新账号会自动送在线 AI 检测，一键上报进入公共审核队列——
+            你刷到的每个新垃圾号，复核后全体用户受益。只提交垃圾账号的公开资料，不含你的 X 身份。
+          </p>
+        </div>
+        <a href="?tab=whitelist" className="flex-none">
+          <Btn tier="primary">用 GitHub 登录，开启共建</Btn>
+        </a>
+      </div>
+    );
+  }
+  return (
+    <div className="contrib-card mb-6 flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border px-5 py-4">
+      <div className="min-w-[240px] flex-1">
+        <div className="flex items-center gap-2 text-[13.5px] font-semibold text-fg">
+          <span className="inline-block h-2 w-2 rounded-full bg-ok" />
+          共建已开启 · @{login}
+        </div>
+        <p className="mt-1 text-[12px] leading-relaxed text-fg-3">
+          新账号在线 AI 检测运行中；本设备已检测 {detections.toLocaleString("zh-CN")} 次、处理{" "}
+          {blocked.toLocaleString("zh-CN")} 个账号。上报与误判申诉随时可用。
+        </p>
+      </div>
+      <a href="?tab=whitelist" className="flex-none text-[12px] text-fg-3 hover:text-fg">
+        管理登录 →
+      </a>
+    </div>
+  );
+}
+
 function Overview() {
   const [s, setS] = useState<Awaited<ReturnType<typeof getStats>> | null>(null);
   const [bl, setBl] = useState(0);
   const [autoBl, setAutoBl] = useState(0);
   const [ls, setLs] = useState<ListState | null>(null);
   const [st, setSt] = useState<Settings | null>(null);
+  const [ghLogin, setGhLogin] = useState<string | null>(null);
   const loadLists = () => readListState().then(setLs);
   useEffect(() => {
     getStats().then(setS);
@@ -427,6 +474,7 @@ function Overview() {
       setAutoBl(l.filter((r) => r.source === "auto").length);
     });
     getSettings().then(setSt);
+    getGhLogin().then((v) => setGhLogin(v ?? null));
     void loadLists();
   }, []);
   if (!s) return <Page title="概览" sub="加载中…" />;
@@ -460,6 +508,7 @@ function Overview() {
   ];
   return (
     <Page title="概览" sub="本地统计 · 数据仅存于本机，不含个人隐私信息">
+      <ContribCard login={ghLogin} detections={s.detections} blocked={bl} />
       {ls && <ListStatusCard ls={ls} onRefreshed={loadLists} />}
       <div className="overview-stats mb-8 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border lg:grid-cols-4">
         <Card n={s.detections} l="AI 检测总数" />
