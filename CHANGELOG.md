@@ -8,22 +8,102 @@ otherwise.
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [0.6.0] - 2026-08-14
+
+The contribution-funnel release. v0.5's passive zero-remote architecture
+quietly starved the shared spam-collection pipeline (users upgraded off the
+always-classify ≤0.4 builds while `/v1/classify` went GitHub-gated), so 0.6
+rebuilds the contribution loop through explicit, privacy-bounded channels —
+and fixes a silent whitelist truncation that had dropped false-positive
+protection for 3/4 of the whitelisted accounts.
+
 ### Added
 
-- iOS / iPadOS 18+ Safari Web Extension container with a SwiftUI setup guide,
-  Simulator build script, shared MV3 resources, and iPhone/iPad icons.
-- Touch-first badge popovers plus an iOS hamburger drawer, single-column dashboard cards,
-  and responsive Safari popup/options layouts for compact screens.
-- A shared optional Xcode signing configuration that injects local Team settings into all
-  Apple platform targets without committing developer credentials.
+- **Detection-rules panel** (设置 → 检测规则): inspect the synced official
+  keyword rules (pattern / matched field / category), flip a master switch,
+  or disable individual rules — rule behavior is finally visible and
+  controllable from the UI instead of being an invisible engine.
+- **Custom local rules**: author your own keyword rules (field + category)
+  that run with the same whitelist-first and translate-guard semantics as
+  official rules. Stored only on this machine; never uploaded, never part of
+  telemetry.
+- **Anonymous rule-hit telemetry** (default on, one switch to off, disclosed
+  in PRIVACY A.4b): when an official rule catches a spam account locally,
+  the extension reports only {matched pattern, spam account handle, its
+  public numeric id, category} — no user identity, no page content. Deduped
+  per (rule, account) for 7 days, batched ≤50 every 30 minutes. Server-side
+  the rows land in an isolated stats table that cannot create queue or list
+  entries; a maintainer explicitly reviews and promotes accounts into the
+  normal review queue from the admin console.
+- **Contribution status card** (概览): logged-out users see exactly what
+  GitHub login enables (online AI detection + one-click reporting) with a
+  direct login CTA; logged-in users see a live status line and their local
+  contribution counters.
+- **Online AI detection**: after GitHub login, accounts that miss the local
+  list, cache and rules are automatically submitted to `/v1/classify`
+  (≤40 per page, 3 concurrent, verdicts cached locally); clean results stay
+  visually silent instead of badging every checked account.
+- **举报为 spam**: one-click GitHub-authenticated report into the public
+  review queue, sent from the background worker so x.com's CSP/CORS can't
+  block it.
+- **Manual action ladder + prefilled appeal**: the badge popover exposes the
+  full 仅标记/本地隐藏/X 静音/X 拉黑 ladder per account, and 误判申诉 opens a
+  GitHub issue template prefilled with the account's identity.
+- iOS / iPadOS 18+ Safari Web Extension container with a SwiftUI setup
+  guide, Simulator build script, shared MV3 resources, and iPhone/iPad
+  icons; touch-first badge popovers, an iOS hamburger drawer and responsive
+  Safari popup/options layouts; a shared optional Xcode signing config that
+  keeps local Team settings out of the repo.
+
+### Fixed
+
+- **Whitelist truncation (critical)**: `/v1/whitelist` served a default page
+  of 500 rows while the whitelist had grown past 2000, and the client stored
+  that first page as the complete set — silently dropping false-positive
+  protection for every account whitelisted since late July. The server-side
+  default page now exceeds the full set (already-deployed clients heal on
+  their next 6h sync), and the client now walks the since/limit cursor to a
+  short page with a hard page fuse.
+- Interrupted auto-processing (tab close, SPA navigation mid-queue) no
+  longer records actions that never fired as 已处理; pending X actions are
+  re-attempted on the next load.
+- Auto-processing hides the real tweet instantly; the collapse animation
+  plays only in the bubble, not on the page DOM fighting X's virtualizer.
+- Profile-page badge hide-target resolution, pending-timer cleanup, and
+  badge-popover anchoring/closing fixes.
+- The whitelist self-service page renders the real membership state instead
+  of offering an application to already-whitelisted accounts.
+- Firefox: consent compatibility baselines, background sync receiver gaps,
+  absent content styles, live account surfaces, and online-detection
+  disclosure preserved through the data-permission flow.
 
 ### Changed
 
-- Consolidated the macOS and iOS containers and Safari extensions into one Xcode project with
-  four platform-specific targets; deployment baselines are now macOS 15 and iOS 18.
-- Safari's in-page blacklist index now retains compact lite rows and expands display data only
-  on a hit, reducing the measured retained heap for the current 134k snapshot from roughly
-  55 MB to 32 MB per page context.
+- 处理记录 persists across SPA navigations and hard reloads, scoped to the
+  session so a fresh visit to X no longer replays the previous session's
+  history into the bubble.
+- Options-panel terminology and layout pass: the four-action vocabulary
+  (仅标记 / 本地隐藏 / X 静音 / X 拉黑) is now identical between manual and
+  automatic settings, and official keyword-rule hits count toward the
+  autoTierMode cap exactly like auto-published list entries.
+- Safari's in-page blacklist index retains compact lite rows and expands
+  display data only on a hit (~55 MB → ~32 MB retained heap per page
+  context on the 134k snapshot); the macOS and iOS containers are one Xcode
+  project with four platform targets (baselines macOS 15 / iOS 18).
+
+### Service (deployed 2026-08-14, x.zuoluo.tv)
+
+- `POST /v1/rule-hits` telemetry ingest: pattern must match a currently
+  enabled blacklist rule, per-IP salted-fingerprint rate limit, 50k rows/day
+  fuse, and a hard wall between the stats table and the moderation surface.
+- Admin console: rule-hit review workbench (per-rule aggregates, per-account
+  drill-down, explicit 提审 into the review queue) and a 共建活跃 dashboard
+  (`/v1/admin/contrib`) tracking daily distinct contributors by channel —
+  the metric for whether the login-narrative work moves the needle.
+- `/v1/whitelist` gained the larger default page plus an explicit edge cache
+  keyed by query string.
 
 ## [0.5.0] - 2026-07-18
 

@@ -7,8 +7,9 @@
 > 本文档保留作为后续更新（新版本提交、字段调整、被驳回重提）的参考底稿。
 > 任何字段改动以 Chrome Web Store Developer Dashboard 的实际状态为准。
 >
-> **当前文案版本：v0.5.0**（2026-07-11，名单同步 + 本地匹配版）。v0.2–v0.4 的历史文案见
-> git history。每次新版上架前请同步更新本文档对应字段。
+> **当前文案版本：v0.6.0**（2026-08-14，共建回路版；商店在架为 v0.5.0，见第 12 节
+> 更新 checklist）。v0.2–v0.4 的历史文案见 git history。每次新版上架前请同步更新
+> 本文档对应字段。
 
 ---
 
@@ -217,3 +218,36 @@ https://github.com/foru17/make-x-great-again/blob/main/docs/PRIVACY.md
 - [ ] 出 v0.5 新截图（参考第 6 节注释）
 - [ ] 提交审核
 - [ ] GitHub Release `v0.5.0` 与 CWS zip 对齐
+
+## 12. v0.6.0 更新 checklist（2026-08-14，共建回路版）
+
+相对在架 v0.5.0 的用户可见变化：检测规则板块（查看官方规则/总开关/单条停用）、
+自定义本地规则、官方规则命中匿名回传（默认开、可关，PRIVACY A.4b）、概览共建
+状态卡、GitHub 登录后的在线 AI 检测与一键上报、白名单全量同步修复。权限集合
+**无变化**（仍为 storage / alarms / unlimitedStorage + 可选 X / GitHub host）。
+
+- [x] `extension/package.json` 版本号 → 0.6.0（Safari MARKETING_VERSION 同步 0.6.0）
+- [ ] `cd extension && pnpm zip` 产出 v0.6.0 zip（Firefox 用 `pnpm zip -b firefox`）
+- [ ] zip 内 `manifest.json` 确认：`version: 0.6.0`、权限集合与 v0.5.0 一致
+- [ ] Dashboard 同步：
+  - [ ] Description 追加下方「v0.6.0 文案增补」段落
+  - [ ] **Privacy practices 必须更新**：新增「官方规则命中匿名回传」的数据收集披露——
+        仅收集垃圾账号的公开标识（handle / 数字 ID）与命中的规则关键词，不含用户身份、
+        浏览历史或页面内容；默认开启、设置页可一键关闭。这属于 CWS 问卷里的
+        「User activity → 否 / Website content → 否」范畴之外的第三方账号公开数据，
+        照实在 disclosure 文本里写明即可，勿勾选收集用户个人数据
+  - [ ] Single purpose 无需变化（仍是「标注 + 本地隐藏」）
+- [ ] 真机冒烟：规则板块开关/停用/自定义规则、回传开关（关闭后无 /v1/rule-hits 请求）、
+      共建卡登录跳转、白名单同步后 count ≥ 2000（options 概览白名单计数）
+- [ ] 出 v0.6 新增截图：设置页检测规则板块、概览共建卡
+- [ ] 提交审核；AMO（Firefox）同步提交
+- [ ] GitHub Release `v0.6.0` 与 CWS zip 对齐
+
+**v0.6.0 文案增补**（追加到 Description 功能列表后）：
+
+```
+新增（v0.6.0）：
+- 检测规则透明化:在设置页直接查看同步的官方关键词规则,可整体停用或逐条停用
+- 自定义规则:添加你自己的关键词规则(仅本机生效,不上传)
+- 共建回路:GitHub 登录后,本地名单未命中的新账号可自动送在线 AI 检测,一键上报进入公共人工审核队列;官方规则命中默认匿名回传「命中规则+垃圾账号公开标识」帮助社区收录新垃圾号(不含你的任何身份信息,设置页可一键关闭,详见隐私声明)
+```
