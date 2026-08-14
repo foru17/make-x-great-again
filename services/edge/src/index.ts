@@ -4295,7 +4295,25 @@ app.get("/v1/admin/blacklist", async (c) => {
 // no avatars — just (handle, xUserId, sinceMs). Cached at the edge.
 app.get("/v1/whitelist", async (c) => {
   const since = Number(c.req.query("since")) || 0;
-  const limit = Math.min(2000, Math.max(1, Number(c.req.query("limit")) || 500));
+  // 2026-08-14: the default page was 500 while the whitelist had grown past
+  // 2000 — every deployed client fetches with NO params and stored only the
+  // OLDEST 500 rows, silently dropping false-positive protection for every
+  // account whitelisted since (the extension's sync predates pagination).
+  // Default now comfortably exceeds the full set so existing clients heal on
+  // their next sync; newer clients page with since/limit past the cap.
+  const limit = Math.min(20_000, Math.max(1, Number(c.req.query("limit")) || 5000));
+  // The whitelist is small but this endpoint is hit by every client every
+  // sync cycle — serve repeats from the edge cache instead of re-scanning
+  // D1 (custom domains don't honor Cache-Control on their own; use the
+  // Cache API explicitly, keyed WITH the query string since since/limit
+  // change the payload). `caches` is absent in the node test harness.
+  const cacheKey = c.req.url;
+  try {
+    const cached = await caches.default.match(cacheKey);
+    if (cached) return cached;
+  } catch {
+    /* no cache in tests */
+  }
   const rows = await c.env.DB.prepare(
     `SELECT x_user_id, handle, last_scored
        FROM accounts WHERE status='whitelisted' AND last_scored > ?
@@ -4306,7 +4324,13 @@ app.get("/v1/whitelist", async (c) => {
   const list = rows.results ?? [];
   const latestAt = list.length ? list[list.length - 1].last_scored : since;
   c.header("Cache-Control", "public, max-age=300, s-maxage=600");
-  return c.json({ list, latestAt, count: list.length });
+  const resp = c.json({ list, latestAt, count: list.length });
+  try {
+    c.executionCtx.waitUntil(caches.default.put(cacheKey, resp.clone()));
+  } catch {
+    /* no cache in tests */
+  }
+  return resp;
 });
 
 app.get("/v1/artifacts/:key", async (c) => {

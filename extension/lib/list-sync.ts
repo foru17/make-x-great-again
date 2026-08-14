@@ -259,13 +259,38 @@ export function syncList(force = false) {
   return syncing;
 }
 
+// /v1/whitelist is a since/limit cursor API. Page through it until a short
+// page — a bare no-param fetch once stored only the server's DEFAULT page
+// (500 rows) as the whole whitelist while the real set had grown past 2000,
+// silently dropping FP protection for everyone whitelisted since (2026-08-14).
+const WL_PAGE_LIMIT = 2000;
+const WL_MAX_PAGES = 20; // hard fuse: 40k rows is far beyond any plausible set
+
 async function syncWhitelist(base: string): Promise<number | undefined> {
   try {
-    const res = await fetch(`${base}/v1/whitelist`, { cache: "no-cache" });
-    if (!res.ok) return undefined;
-    const validated = validateWhitelist(await readJsonBounded(res, MAX_WHITELIST_BYTES));
-    if (!validated.ok) return undefined;
-    const entries = validated.value;
+    const entries: [string, string][] = [];
+    let since = 0;
+    for (let page = 0; page < WL_MAX_PAGES; page++) {
+      const res = await fetch(`${base}/v1/whitelist?since=${since}&limit=${WL_PAGE_LIMIT}`, {
+        cache: "no-cache",
+      });
+      if (!res.ok) return undefined;
+      const raw = await readJsonBounded(res, MAX_WHITELIST_BYTES);
+      const validated = validateWhitelist(raw);
+      if (!validated.ok) return undefined;
+      entries.push(...validated.value);
+      const meta = raw as { latestAt?: number };
+      // Short page → done. Cursor not advancing → server can't page; stop
+      // rather than loop on identical requests.
+      if (
+        validated.value.length < WL_PAGE_LIMIT ||
+        typeof meta.latestAt !== "number" ||
+        meta.latestAt <= since
+      ) {
+        break;
+      }
+      since = meta.latestAt;
+    }
     // Shrink-to-empty guard (the whitelist twin of MIN_SANE_ENTRIES): the
     // whitelist is the last line of defense against blacklist false
     // positives, so a server bug returning [] must not wipe a working cache.
