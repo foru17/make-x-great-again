@@ -1,8 +1,23 @@
 {
   "schema": 1,
-  "generatedAt": 1786730457363,
-  "count": 2136,
+  "generatedAt": 1786773648040,
+  "count": 2139,
   "list": [
+    {
+      "handle": "lee267079566213",
+      "x_user_id": null,
+      "last_scored": 1786769537408
+    },
+    {
+      "handle": "sisyphuscola",
+      "x_user_id": null,
+      "last_scored": 1786769527192
+    },
+    {
+      "handle": "wensqi",
+      "x_user_id": "1471781157650022408",
+      "last_scored": 1786769520764
+    },
     {
       "handle": "darcyhwa315",
       "x_user_id": null,
