@@ -1,8 +1,28 @@
 {
   "schema": 1,
-  "generatedAt": 1786773648040,
-  "count": 2139,
+  "generatedAt": 1786816849732,
+  "count": 2143,
   "list": [
+    {
+      "handle": "solisolsoli",
+      "x_user_id": "4166425527",
+      "last_scored": 1786810436528
+    },
+    {
+      "handle": "toly",
+      "x_user_id": "2327407569",
+      "last_scored": 1786810432999
+    },
+    {
+      "handle": "bricsinfo",
+      "x_user_id": "1449140157903482882",
+      "last_scored": 1786810426128
+    },
+    {
+      "handle": "krakenfx",
+      "x_user_id": "1399148563",
+      "last_scored": 1786810400114
+    },
     {
       "handle": "lee267079566213",
       "x_user_id": null,
