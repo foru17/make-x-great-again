@@ -1,8 +1,73 @@
 {
   "schema": 1,
-  "generatedAt": 1786881647301,
-  "count": 2153,
+  "generatedAt": 1786903250128,
+  "count": 2166,
   "list": [
+    {
+      "handle": "cryptoraytrader",
+      "x_user_id": "402962164",
+      "last_scored": 1786894626692
+    },
+    {
+      "handle": "0xsweep",
+      "x_user_id": "1375396777348698115",
+      "last_scored": 1786894621235
+    },
+    {
+      "handle": "thenbacentel",
+      "x_user_id": "1547232242073849856",
+      "last_scored": 1786894606984
+    },
+    {
+      "handle": "stockmktnewz",
+      "x_user_id": "1250830691824283648",
+      "last_scored": 1786894604884
+    },
+    {
+      "handle": "premium",
+      "x_user_id": "1399766153053061121",
+      "last_scored": 1786894595895
+    },
+    {
+      "handle": "remu19971203",
+      "x_user_id": "1097803709470302208",
+      "last_scored": 1786894592255
+    },
+    {
+      "handle": "ajenews",
+      "x_user_id": "18424289",
+      "last_scored": 1786894579034
+    },
+    {
+      "handle": "nocontextmemes",
+      "x_user_id": "1492677599390322689",
+      "last_scored": 1786894577090
+    },
+    {
+      "handle": "realdogshouse",
+      "x_user_id": "1811411126409990144",
+      "last_scored": 1786894571741
+    },
+    {
+      "handle": "solana",
+      "x_user_id": "951329744804392960",
+      "last_scored": 1786894570176
+    },
+    {
+      "handle": "psg_inside",
+      "x_user_id": null,
+      "last_scored": 1786894568203
+    },
+    {
+      "handle": "zlibrary_china",
+      "x_user_id": null,
+      "last_scored": 1786894552611
+    },
+    {
+      "handle": "kawa_tsura",
+      "x_user_id": "3267939739",
+      "last_scored": 1786892130656
+    },
     {
       "handle": "jhalittlefaith",
       "x_user_id": "1223837659497291776",
