@@ -1,8 +1,28 @@
 {
   "schema": 1,
-  "generatedAt": 1786903250128,
-  "count": 2166,
+  "generatedAt": 1786946449937,
+  "count": 2170,
   "list": [
+    {
+      "handle": "zetacola17",
+      "x_user_id": "4873604643",
+      "last_scored": 1786928693014
+    },
+    {
+      "handle": "reooguk",
+      "x_user_id": "68135151",
+      "last_scored": 1786928685591
+    },
+    {
+      "handle": "mzhaovo",
+      "x_user_id": null,
+      "last_scored": 1786928671084
+    },
+    {
+      "handle": "fanshifu",
+      "x_user_id": "2040058982258057218",
+      "last_scored": 1786928662280
+    },
     {
       "handle": "cryptoraytrader",
       "x_user_id": "402962164",
