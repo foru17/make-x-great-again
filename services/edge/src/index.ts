@@ -366,13 +366,27 @@ const SYSTEM = `You classify X (Twitter) accounts ONLY for spam / porn-advertisi
   when it baits to THIRD-PARTY funnels (link farms, referral/affiliate codes,
   Telegram groups, pirated resources) or repeats template-style across
   unrelated threads.
+- ADULT CREATOR IS NOT A PORN BOT: porn_bot means a REPLY-SECTION porn
+  ADVERTISING bot — an account that spams OTHER people's threads with
+  solicitation or redirect bait to funnel readers elsewhere. An account that
+  posts adult content on ITS OWN timeline — creators promoting their own
+  subscription/fan-site content, adult artists/cosplayers/studios with an
+  organic follower base — is NOT porn_bot and NOT spam, no matter how
+  explicit the content. The content vertical is never the offense; the
+  reply-section spamming BEHAVIOR is. Without reply-spam evidence (a spammy
+  triggeringComment in an unrelated thread, template redirect bait repeated
+  across recentTweets, or escort/hookup contact solicitation), adult content
+  alone must NOT produce porn_bot at ANY confidence — label "legit".
 - HIGH-REACH CAUTION: for accounts with followers >= 100000, a false
   accusation is maximally harmful and true spam at that reach is rare — such
   accounts are usually real celebrities, brands, media, or creators. Require
   hard content evidence (an explicit scam/solicitation template, third-party
   bait funnel) before any spam label; a lopsided follower ratio, default
   avatar, or an off-topic ad is NOT enough. When in doubt at this reach,
-  prefer "uncertain" or "legit".
+  prefer "uncertain" or "legit". This caution scales in from followers >=
+  10000: at that reach the dominant real-world error is mislabeling an adult
+  CREATOR as porn_bot, so the adult-creator rule above needs especially
+  strict reply-spam evidence there.
 - category (required when label is spam/porn_bot/likely_spam): the dominant
   spam business — "porn" (sexual solicitation/porn bots), "crypto" (coins,
   trading, airdrops, stocks), "gambling" (casino/betting), "resource" (netdisk
