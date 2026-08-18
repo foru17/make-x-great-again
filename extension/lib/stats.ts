@@ -6,6 +6,8 @@
 //   - lookup hit → "命中本地名单（零成本）"
 //   - hide       → "你亲手隐藏了一个"
 
+import { withKeyLock } from "./store";
+
 export interface LocalStats {
   /** Legacy counter from the AI era — kept for storage compatibility. */
   scanned: number;
@@ -37,11 +39,13 @@ export async function bumpStatBy(
   key: keyof Omit<LocalStats, "firstUsedAt">,
   n = 1,
 ): Promise<void> {
-  const cur = await getStats();
-  cur[key] = (cur[key] ?? 0) + Math.max(0, Math.floor(n));
-  // Set firstUsedAt the first time we bump anything from a fresh install.
-  if (!cur.firstUsedAt) cur.firstUsedAt = Date.now();
-  await new Promise<void>((r) => chrome.storage.local.set({ [KEY]: cur }, () => r()));
+  await withKeyLock(KEY, async () => {
+    const cur = await getStats();
+    cur[key] = (cur[key] ?? 0) + Math.max(0, Math.floor(n));
+    // Set firstUsedAt the first time we bump anything from a fresh install.
+    if (!cur.firstUsedAt) cur.firstUsedAt = Date.now();
+    await new Promise<void>((r) => chrome.storage.local.set({ [KEY]: cur }, () => r()));
+  });
 }
 
 export async function bumpStat(key: keyof Omit<LocalStats, "firstUsedAt">): Promise<void> {
