@@ -1572,6 +1572,36 @@ export function createBubble(
       if (st === "done") scheduleAbsorb(key); // linger, then fly into the chip
       if (autoOpened && open && stats().running === 0) scheduleAutoCollapse();
     },
+    /** AUTO local-hide path: settle a gathered batch in one render and one
+     * flock animation instead of scheduling N serial solo flights. */
+    markAutoBatchDone(keys: string[], verbLabel: string) {
+      if (!keys.length) return;
+      clearTimeout(collapseTimer);
+      // Match startBatch: keep the batch's first key highest in the feed.
+      for (const key of [...keys].reverse()) bump(key);
+      for (const key of keys) {
+        autoRows.add(key);
+        autoVerbs.set(key, verbLabel);
+        rowState.set(key, "done");
+        const existing = absorbTimers.get(key);
+        if (existing) clearTimeout(existing);
+        absorbTimers.delete(key);
+      }
+      renderPill();
+      if (open) renderCard();
+
+      const timerKey = keys[0];
+      if (timerKey) {
+        absorbTimers.set(
+          timerKey,
+          setTimeout(() => {
+            absorbTimers.delete(timerKey);
+            void flyKeys([...keys]);
+          }, DONE_LINGER_MS),
+        );
+      }
+      if (autoOpened && open && stats().running === 0) scheduleAutoCollapse();
+    },
     /** Manual popover hide of a listed account: drive the live bubble row to
      *  "done" so it stops showing an actionable 隐藏 button (the tweet is
      *  already gone) and joins the 已处理 record — matching the auto path.

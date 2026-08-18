@@ -1,6 +1,11 @@
 import { hideAccountSurface } from "../lib/account-surface";
 import { autoEligible, capAutoTierAction } from "../lib/auto-policy";
-import { addBlocked, isBlockedSync, warm as warmBlocklist } from "../lib/blocklist";
+import {
+  addBlocked,
+  addBlockedMany,
+  isBlockedSync,
+  warm as warmBlocklist,
+} from "../lib/blocklist";
 import { BRAND } from "../lib/brand";
 import { type Cached, cacheGet, signalsHash } from "../lib/cache";
 import {
@@ -21,10 +26,12 @@ import {
   onSettingsChange,
   setSetting,
 } from "../lib/settings";
-import { bumpStat } from "../lib/stats";
+import { bumpStat, bumpStatBy } from "../lib/stats";
 import {
+  type BlockRecord,
   type PendingXAction,
   addBlockRecord,
+  addBlockRecords,
   addPendingAction,
   bumpStats,
   clearPendingAction,
@@ -421,12 +428,9 @@ export default defineContentScript({
     }
 
     // ---- Visible auto-processing queue (the v0.4 爽感 path) ----
-    // Auto hits do NOT vanish silently: each account is queued and worked
-    // ONE AT A TIME — in-place pulsing "拉黑中" badge on the tweet, live
-    // queued→processing→done row states in the bubble (which auto-opens),
-    // then an animated collapse of the cell. The decision itself is recorded
-    // up-front, so only the theater is deferred, never the protection.
-    const AUTO_MIN_ACT_MS = 900; // every item is visibly "worked" this long
+    // Auto hits do NOT vanish silently. Local hides settle as one gathered
+    // batch; X mute/block actions keep the visible one-at-a-time queue.
+    const AUTO_MIN_ACT_MS = 900; // every X action is visibly "worked" this long
     const AUTO_SETTLE_MS = 240; // beat between items (v0.4: 180ms)
     // Roster-first: the page scan surfaces hits one by one, so the sweep
     // waits out a short gather window — the bubble fills with 排队中 rows
@@ -444,6 +448,7 @@ export default defineContentScript({
       verdict: Verdict;
       categoryZh: string;
       tweetId?: string;
+      record: BlockRecord;
     }
     const autoQueue: AutoItem[] = [];
     // Keys owned by the queue — step 0's insta-hide must spare the cell the
@@ -468,45 +473,27 @@ export default defineContentScript({
       );
     }
 
-    function enqueueAuto(it: AutoItem) {
-      if (autoActing.has(it.key)) return;
-      autoActing.add(it.key);
-      // Record FIRST — the protection survives navigation even if the
-      // animation never gets to play.
-      void addBlocked(it.key);
-      if (it.sig.userId) void addBlocked(it.sig.userId);
-      // The 处理记录 row too: the id lands in xss:blocked above, and a record
-      // is the only UI path back (恢复显示). Writing it after the paced X
-      // action left a window (tab close mid-queue) that produced permanently
-      // hidden accounts with no recover entry. The X-failure annotation is
-      // patched in later by the drain loop.
-      const tweetText = it.sig.triggeringComment || it.sig.recentTweets[0];
-      void addBlockRecord({
-        id: it.key,
-        handle: it.sig.handle,
-        ...(it.sig.displayName ? { displayName: it.sig.displayName } : {}),
-        ...(it.sig.avatarUrl ? { avatarUrl: it.sig.avatarUrl } : {}),
-        ...(it.tweetId ? { tweetId: it.tweetId } : {}),
-        ...(tweetText ? { tweetText } : {}),
-        verdict: it.verdict,
-        reason: `${it.categoryZh} · 自动${it.verb}`,
-        source: "auto",
-        ts: Date.now(),
-      });
-      // Track the not-yet-fired X action separately (see PendingXAction): a
-      // mid-queue reload can then tell a queued account apart from a completed
-      // one — resuming it instead of falsely counting it as 已处理. Local-only
-      // hides need no X call, so nothing to track.
-      if (it.action === "mute" || it.action === "block") {
-        void addPendingAction({
-          id: it.key,
-          handle: it.sig.handle,
-          action: it.action,
+    function enqueueAuto(item: Omit<AutoItem, "record">) {
+      if (autoActing.has(item.key)) return;
+      autoActing.add(item.key);
+      // Snapshot the audit row at enqueue time (especially ts/tweet text),
+      // then commit it at the front of the drain iteration before any action.
+      const tweetText = item.sig.triggeringComment || item.sig.recentTweets[0];
+      const it: AutoItem = {
+        ...item,
+        record: {
+          id: item.key,
+          handle: item.sig.handle,
+          ...(item.sig.displayName ? { displayName: item.sig.displayName } : {}),
+          ...(item.sig.avatarUrl ? { avatarUrl: item.sig.avatarUrl } : {}),
+          ...(item.tweetId ? { tweetId: item.tweetId } : {}),
+          ...(tweetText ? { tweetText } : {}),
+          verdict: item.verdict,
+          reason: `${item.categoryZh} · 自动${item.verb}`,
+          source: "auto",
           ts: Date.now(),
-        });
-      }
-      void bumpStats({ blocks: 1 });
-      void bumpStat("blocked");
+        },
+      };
       anchorByKey.set(it.key, it.anchor);
       articleOf(it.anchor)?.setAttribute("data-xss-key", it.key);
       mountActing(it.anchor, it.verb, true);
@@ -547,22 +534,83 @@ export default defineContentScript({
 
     async function drainAutoLoop() {
       while (autoQueue.length) {
+        const localBatch: AutoItem[] = [];
+        for (let i = 0; i < autoQueue.length; ) {
+          const queued = autoQueue[i];
+          if (queued && queued.action !== "mute" && queued.action !== "block") {
+            localBatch.push(...autoQueue.splice(i, 1));
+          } else {
+            i++;
+          }
+        }
+
+        if (localBatch.length) {
+          const keys = localBatch.map((item) => item.key);
+          let recordsCommitted = true;
+          try {
+            await addBlockRecords(localBatch.map((item) => item.record));
+          } catch (e) {
+            recordsCommitted = false;
+            console.warn("[MXGA] 自动隐藏：处理记录批量写入失败", e);
+          }
+
+          if (recordsCommitted) {
+            try {
+              await addBlockedMany(
+                localBatch.flatMap((item) =>
+                  item.sig.userId ? [item.key, item.sig.userId] : [item.key],
+                ),
+              );
+              await Promise.all([
+                bumpStats({ blocks: localBatch.length }),
+                bumpStatBy("blocked", localBatch.length),
+              ]);
+            } catch (e) {
+              console.warn("[MXGA] 自动隐藏：屏蔽 ID 批量写入失败", e);
+            }
+          }
+
+          for (const item of localBatch) {
+            try {
+              hideAccountSurface(autoTarget(item));
+            } catch (e) {
+              console.warn("[MXGA] 自动隐藏 DOM 处理异常", item.sig.handle, e);
+            } finally {
+              autoActing.delete(item.key);
+            }
+          }
+          try {
+            bubbleApi?.markAutoBatchDone(keys, "隐藏");
+          } catch (e) {
+            console.warn("[MXGA] 自动隐藏批量反馈异常", e);
+          }
+          continue;
+        }
+
         const it = autoQueue.shift();
         if (!it) break;
         // One broken item (dead DOM node, render error) must not strand the
         // rest of the queue — fail it and move on.
         try {
+          // Commit in recoverable order before firing the irreversible X
+          // action: audit record → fast-path id set → resume marker.
+          await addBlockRecords([it.record]);
+          await addBlockedMany(it.sig.userId ? [it.key, it.sig.userId] : [it.key]);
+          await addPendingAction({
+            id: it.key,
+            handle: it.sig.handle,
+            action: it.action as "mute" | "block",
+            ts: Date.now(),
+          });
+          await Promise.all([bumpStats({ blocks: 1 }), bumpStatBy("blocked", 1)]);
+
           const t0 = Date.now();
           const acting = autoTarget(it);
           if (acting) mountActing(acting, it.verb, false);
           bubbleApi?.markAuto(it.key, "processing", it.verb);
-          const xOk =
-            it.action === "mute" || it.action === "block"
-              ? await applyXAction(it.action, it.sig)
-              : true;
+          const xOk = await applyXAction(it.action as "mute" | "block", it.sig);
           if (!xOk)
             console.warn(`[MXGA] 自动${it.verb}：X 原生动作失败`, it.sig.handle, it.sig.userId);
-          // Even the instant local-hide mode dwells long enough to be SEEN.
           const dwell = AUTO_MIN_ACT_MS - (Date.now() - t0);
           if (dwell > 0) await sleep(dwell);
           // Hide the real tweet INSTANTLY — the processing theater (fade /
@@ -573,13 +621,11 @@ export default defineContentScript({
           // The action has now SETTLED (attempted) — drop its pending marker so
           // it stops being a resume candidate; only items whose queue died
           // before this point stay pending. On X failure, annotate the record.
-          if (it.action === "mute" || it.action === "block") {
-            void clearPendingAction(it.key);
-            if (!xOk) {
-              void updateBlockRecord(it.key, {
-                reason: `${it.categoryZh} · 自动${it.verb}（X 动作失败，仅本地隐藏）`,
-              });
-            }
+          void clearPendingAction(it.key);
+          if (!xOk) {
+            void updateBlockRecord(it.key, {
+              reason: `${it.categoryZh} · 自动${it.verb}（X 动作失败，仅本地隐藏）`,
+            });
           }
           bubbleApi?.markAuto(it.key, xOk ? "done" : "failed", it.verb);
         } catch (e) {
@@ -765,10 +811,8 @@ export default defineContentScript({
         ...(badgeSource === "list" ? { tier: entry.tier } : {}),
       });
       const verb = action === "mute" ? "静音" : action === "block" ? "拉黑" : "隐藏";
-      // The visible queue owns everything from here: records up-front, then
-      // in-place badge → paced X action → animated collapse → bubble row
-      // states. The 处理记录 line is written after the X action settles so it
-      // can state honestly whether the native mute/block actually landed.
+      // The visible queue owns everything from here: local actions settle as
+      // one batch; X actions retain their in-place badge and paced sequence.
       enqueueAuto({
         key,
         sig,
