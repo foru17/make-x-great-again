@@ -1,8 +1,18 @@
 {
   "schema": 1,
-  "generatedAt": 1787011252874,
-  "count": 2180,
+  "generatedAt": 1787032851122,
+  "count": 2182,
   "list": [
+    {
+      "handle": "jin111026jin",
+      "x_user_id": "2084206103446077440",
+      "last_scored": 1787026361023
+    },
+    {
+      "handle": "dwminima",
+      "x_user_id": null,
+      "last_scored": 1787026344398
+    },
     {
       "handle": "wangwihd",
       "x_user_id": null,
