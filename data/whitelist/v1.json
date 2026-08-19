@@ -1,8 +1,18 @@
 {
   "schema": 1,
-  "generatedAt": 1787119248848,
-  "count": 2190,
+  "generatedAt": 1787162450172,
+  "count": 2192,
   "list": [
+    {
+      "handle": "leontang_net",
+      "x_user_id": null,
+      "last_scored": 1787154851712
+    },
+    {
+      "handle": "daosu_tian",
+      "x_user_id": null,
+      "last_scored": 1787154706344
+    },
     {
       "handle": "zhanghecheng72",
       "x_user_id": null,
