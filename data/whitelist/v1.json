@@ -1,8 +1,28 @@
 {
   "schema": 1,
-  "generatedAt": 1787162450172,
-  "count": 2192,
+  "generatedAt": 1787248854121,
+  "count": 2196,
   "list": [
+    {
+      "handle": "appleneko2001",
+      "x_user_id": "1224020250733268995",
+      "last_scored": 1787247898938
+    },
+    {
+      "handle": "ethan_yyg",
+      "x_user_id": null,
+      "last_scored": 1787247892325
+    },
+    {
+      "handle": "hovz0217",
+      "x_user_id": "1692012628636471296",
+      "last_scored": 1787231468737
+    },
+    {
+      "handle": "leemars",
+      "x_user_id": "25260863",
+      "last_scored": 1787231453549
+    },
     {
       "handle": "leontang_net",
       "x_user_id": null,
