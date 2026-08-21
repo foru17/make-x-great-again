@@ -1,4 +1,5 @@
 import { hideAccountSurface } from "../lib/account-surface";
+import { findCurrentAuthorAnchor } from "../lib/current-author-anchor";
 import { autoEligible, capAutoTierAction } from "../lib/auto-policy";
 import { addBlocked, isBlockedSync, warm as warmBlocklist } from "../lib/blocklist";
 import { BRAND } from "../lib/brand";
@@ -364,8 +365,13 @@ export default defineContentScript({
       // X recycles article nodes: only hide via the captured anchor if it
       // still belongs to this account; otherwise use the tagged row, else
       // abort the DOM hide (the block itself is already recorded).
-      const anchor =
-        pendingActions.get(key)?.anchor ?? anchorByKey.get(key) ?? null;
+      // X virtualizes/recycles timeline rows. The cached scan anchor may still
+      // be connected but now represent a different author after an earlier
+      // item in a batch was hidden. Re-resolve by handle at execution time so
+      // progress/records cannot report success while hiding the wrong row (or
+      // no row at all).
+      const captured = pendingActions.get(key)?.anchor ?? anchorByKey.get(key) ?? null;
+      const anchor = findCurrentAuthorAnchor(document, sig.handle, captured) ?? captured;
       const art = articleOf(anchor);
       const sameAuthor =
         !!art && handleFromArticle(art)?.toLowerCase() === sig.handle.toLowerCase();
