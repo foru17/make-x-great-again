@@ -1,8 +1,18 @@
 {
   "schema": 1,
-  "generatedAt": 1787248854121,
-  "count": 2196,
+  "generatedAt": 1787292047670,
+  "count": 2198,
   "list": [
+    {
+      "handle": "wdknews",
+      "x_user_id": "1666378921250807814",
+      "last_scored": 1787290467933
+    },
+    {
+      "handle": "yisemly",
+      "x_user_id": null,
+      "last_scored": 1787280132537
+    },
     {
       "handle": "appleneko2001",
       "x_user_id": "1224020250733268995",
