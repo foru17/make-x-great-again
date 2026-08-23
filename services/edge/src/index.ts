@@ -43,6 +43,11 @@ interface Secrets {
   // Optional override for the global hourly LLM-call ceiling (see
   // LLM_GLOBAL_MAX_PER_WINDOW below).
   LLM_GLOBAL_MAX_PER_WINDOW?: string;
+  // Distinct corroborating identities required before a handle-only payload
+  // may auto-publish (see AUTO_PUBLISH_MIN_WITNESSES). Env-tunable on purpose:
+  // if the lane turns out to publish too loosely, raising this is a secret
+  // change, not a code deploy.
+  AUTO_PUBLISH_MIN_WITNESSES?: string;
 }
 
 type Bindings = Env & Secrets;
@@ -91,6 +96,13 @@ const AUTO_AI_PUBLISH_CONF = 0.92;
 // one caller still cannot publish anyone; corroboration has to come from
 // separate accounts that each saw the handle on X themselves.
 const AUTO_PUBLISH_MIN_WITNESSES = 2;
+/** Env override for the bar above; falls back to the constant when unset or
+ *  unparseable. Never below 2 — 1 would mean "any single caller publishes",
+ *  which is precisely the forgery the uid gate existed to prevent. */
+function minWitnesses(env: Bindings): number {
+  const n = Number(env.AUTO_PUBLISH_MIN_WITNESSES ?? "");
+  return Number.isFinite(n) && n >= 2 ? Math.floor(n) : AUTO_PUBLISH_MIN_WITNESSES;
+}
 // Retention for the corroboration ledger — witnesses older than this are
 // pruned by the 10-minute cron so the table cannot grow without bound.
 const WITNESS_RETENTION_MS = 30 * 24 * 60 * 60_000;
@@ -1557,7 +1569,7 @@ async function accrueWitnessAndMaybePublish(
   if (!fp) return null;
   const now = Date.now();
   const witnesses = await recordClassifyWitness(c.env, s.handle, fp, now);
-  if (witnesses < AUTO_PUBLISH_MIN_WITNESSES) return null;
+  if (witnesses < minWitnesses(c.env)) return null;
   // High-reach guard, using the follower count the row already knows: the live
   // payload usually has none (that field comes from the same fiber read that
   // failed to produce a uid), and writeAccount COALESCEs the column so an
@@ -1851,7 +1863,7 @@ app.post("/v1/classify", async (c) => {
   const aiAutoPublish =
     publishCandidate &&
     agedCaller &&
-    (uid !== null || witnesses >= AUTO_PUBLISH_MIN_WITNESSES) &&
+    (uid !== null || witnesses >= minWitnesses(c.env)) &&
     // High-reach guard: a known ≥100k-follower account never auto-publishes,
     // whatever the confidence — it queues for a human instead (2026-07-24
     // audit found real creators/brands in this band mislabeled porn_bot).
