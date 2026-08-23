@@ -1,8 +1,23 @@
 {
   "schema": 1,
-  "generatedAt": 1787292047670,
-  "count": 2198,
+  "generatedAt": 1787508063877,
+  "count": 2201,
   "list": [
+    {
+      "handle": "mingtian2022",
+      "x_user_id": null,
+      "last_scored": 1787491158149
+    },
+    {
+      "handle": "idealist1105",
+      "x_user_id": "1878080448833925120",
+      "last_scored": 1787491102984
+    },
+    {
+      "handle": "t369h",
+      "x_user_id": null,
+      "last_scored": 1787491096669
+    },
     {
       "handle": "wdknews",
       "x_user_id": "1666378921250807814",
