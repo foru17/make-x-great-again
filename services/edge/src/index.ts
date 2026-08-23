@@ -69,11 +69,31 @@ const AUTO_REPORTERS = 3; // distinct GitHub reporters required for auto-publish
 // Confidence floor for AI-only auto-publish on the /v1/classify path (no
 // reporter corroboration needed). Validated 2026-06-12 against 100 random
 // pending candidates: fresh-classify spam/porn_bot verdicts were ~93% precise
-// with zero clear false positives at conf>=0.9; the bar is set at 0.95 for
-// extra public-list safety. Lower to 0.9 to widen coverage. This path is the
-// mirror of the auto_legit fast-accept and is DELIBERATELY separate from the
-// report path, whose inherited verdicts are the noisy ones (kept manual-only).
-const AUTO_AI_PUBLISH_CONF = 0.95;
+// with zero clear false positives at conf>=0.9. This path is the mirror of the
+// auto_legit fast-accept and is DELIBERATELY separate from the report path,
+// whose inherited verdicts are the noisy ones (kept manual-only).
+//
+// CALIBRATION (2026-08-23): the bar sat at 0.95 from 2026-06-13, which is
+// ABOVE what the model actually emits — it quantizes its high tier at 0.92.
+// Measured over 24h of queued porn_bot verdicts: 0.92 → 953 rows, 0.95 → 5.
+// The lane was therefore closed in practice (1 'ai' publish in 72h against
+// ~1000 confident porn_bot verdicts/day). 0.92 is the model's real
+// high-confidence tier and still sits above the 0.9 floor that the precision
+// audit validated. Re-measure the histogram before moving this again.
+const AUTO_AI_PUBLISH_CONF = 0.92;
+// Handle-only corroboration bar. The AI lane normally demands a numeric uid
+// (see aiAutoPublish) because a bare handle is trivial to weaponize against a
+// chosen victim. But ~98% of live payloads are handle-only (the client cannot
+// read X's React fiber from an isolated-world content script), so requiring a
+// uid closes the lane for almost all real traffic. Instead: a handle may
+// auto-publish once this many DISTINCT aged GitHub identities have
+// independently landed on the same spam verdict for it. A forged payload from
+// one caller still cannot publish anyone; corroboration has to come from
+// separate accounts that each saw the handle on X themselves.
+const AUTO_PUBLISH_MIN_WITNESSES = 2;
+// Retention for the corroboration ledger — witnesses older than this are
+// pruned by the 10-minute cron so the table cannot grow without bound.
+const WITNESS_RETENTION_MS = 30 * 24 * 60 * 60_000;
 // High-reach guard for EVERY auto-publish path (ai / rule / mention /
 // apply-to-queue). Accounts at this follower count are overwhelmingly real
 // humans/brands/creators (2026-07-24 audit: 23% of queued ≥100k spam verdicts
@@ -679,6 +699,48 @@ async function recordContribActive(
     .catch((err) => logError("contrib_actives.write_failed", err, { kind }));
 }
 
+/** Record that this caller independently observed `handle` as high-confidence
+ *  spam, and return how many DISTINCT callers have now done so.
+ *
+ *  This is the corroboration signal that lets a handle-only payload reach the
+ *  public list (see AUTO_PUBLISH_MIN_WITNESSES). `fp` is an already-salted
+ *  throttle fingerprint — no raw identity or IP is stored.
+ *
+ *  Write volume is self-limiting: callers only reach here for an undecided
+ *  account carrying a spam label at/above the auto-publish confidence, so a
+ *  handle stops accruing witnesses the moment it publishes (or is rejected /
+ *  whitelisted by a maintainer). The COUNT is skipped entirely when the
+ *  INSERT was a no-op — a repeat view by the same caller changes nothing.
+ *
+ *  Best-effort: a failed ledger write must never fail the classify request,
+ *  so it returns 0 (= "no corroboration") rather than throwing. */
+async function recordClassifyWitness(
+  env: Bindings,
+  handle: string,
+  fp: string,
+  now: number,
+): Promise<number> {
+  const key = normalizeHandle(handle).toLowerCase();
+  try {
+    const ins = await env.DB.prepare(
+      `INSERT INTO classify_witness (handle_norm, fp, first_at)
+       VALUES (?,?,?) ON CONFLICT(handle_norm, fp) DO NOTHING`,
+    )
+      .bind(key, fp, now)
+      .run();
+    if (!ins.meta?.changes) return 0;
+    const row = await env.DB.prepare(
+      "SELECT COUNT(*) AS n FROM classify_witness WHERE handle_norm=?",
+    )
+      .bind(key)
+      .first<{ n: number }>();
+    return row?.n ?? 0;
+  } catch (err) {
+    logError("classify_witness.write_failed", err as Error, { handle: key });
+    return 0;
+  }
+}
+
 async function throttleFingerprint(env: Bindings, scope: string, id: string): Promise<string | null> {
   return reporterFingerprint(env, `${scope}|${id}`);
 }
@@ -739,6 +801,12 @@ interface AccountRow {
   // though your handle is new" (used by the rename-detection log line).
   handle: string;
   x_user_id: string | null;
+  // Last known follower count. Carried on the row (writeAccount COALESCEs it,
+  // so a later handle-only payload never erases it) because the high-reach
+  // auto-publish guard has to work even when the live payload has no follower
+  // count — which is the normal case now that ~98% of payloads are
+  // handle-only. NULL = never observed.
+  followers_count: number | null;
 }
 
 async function findAccount(
@@ -755,7 +823,7 @@ async function findAccount(
   if (uid) {
     const byUid =
       (await env.DB.prepare(
-        `SELECT rowid, verdict_label, confidence, reasons, model, signals_hash, status, last_scored, handle, x_user_id
+        `SELECT rowid, verdict_label, confidence, reasons, model, signals_hash, status, last_scored, handle, x_user_id, followers_count
            FROM accounts
           WHERE x_user_id=?
           ORDER BY CASE WHEN status='whitelisted' THEN 0 ELSE 1 END,
@@ -775,7 +843,7 @@ async function findAccount(
   // Whitelisted wins; among the rest, matching uid wins over handle-only.
   return (
     (await env.DB.prepare(
-      `SELECT rowid, verdict_label, confidence, reasons, model, signals_hash, status, last_scored, handle, x_user_id
+      `SELECT rowid, verdict_label, confidence, reasons, model, signals_hash, status, last_scored, handle, x_user_id, followers_count
          FROM accounts
         WHERE lower(handle)=?
           AND (? IS NULL OR x_user_id IS NULL OR x_user_id=?)
@@ -1443,6 +1511,92 @@ app.get("/v1/check", async (c) => {
   return resp;
 });
 
+/** Label/confidence bar for the AI auto-publish lane, applied identically on
+ *  the fresh-LLM path and the cache path. Identity corroboration and the
+ *  high-reach guard are layered on top by the callers.
+ *
+ *  porn_bot ONLY: that's the template-flood class where the AI is reliably
+ *  precise. Generic "spam" verdicts (marketing/procurement/crypto chatter)
+ *  produced real false positives on normal accounts, so they always queue. */
+function aiPublishCandidate(label: string, confidence: number): boolean {
+  return label === "porn_bot" && confidence >= AUTO_AI_PUBLISH_CONF;
+}
+
+/** Fingerprint used to count corroborating witnesses. MUST be one shared scope
+ *  across the fresh-LLM path and the cache path: a caller who hits both would
+ *  otherwise land two rows in the ledger under two different scoped hashes and
+ *  corroborate themselves — which is exactly the forgery the uid gate existed
+ *  to prevent. */
+function witnessFingerprint(c: Ctx, who: Reporter): Promise<string | null> {
+  const id = who.id === "anon" ? `ip:${c.req.header("cf-connecting-ip") ?? "unknown"}` : who.id;
+  return throttleFingerprint(c.env, "classify-witness", id);
+}
+
+/** Cache-path half of the corroboration lane.
+ *
+ *  Called when a cached verdict is returned without spending an LLM call. If
+ *  the cached row is still undecided AND carries a publish-grade porn_bot
+ *  verdict, this caller counts as an independent witness; once
+ *  AUTO_PUBLISH_MIN_WITNESSES distinct aged identities have seen it, the row
+ *  publishes at tier 'ai'.
+ *
+ *  Returns the new status when it published, else null. Never throws — a
+ *  corroboration failure must not break a cache read. */
+async function accrueWitnessAndMaybePublish(
+  c: Ctx,
+  s: Signals,
+  prev: AccountRow,
+  who: Reporter,
+): Promise<string | null> {
+  if (prev.status !== "auto_pending_review") return null;
+  if (!aiPublishCandidate(prev.verdict_label, prev.confidence)) return null;
+  // A uid-bearing payload doesn't need corroboration — the fresh-classify
+  // path already published it, or will on the next rescore.
+  if (who.ageDays < REPORTER_MIN_AGE_DAYS) return null;
+  const fp = await witnessFingerprint(c, who);
+  if (!fp) return null;
+  const now = Date.now();
+  const witnesses = await recordClassifyWitness(c.env, s.handle, fp, now);
+  if (witnesses < AUTO_PUBLISH_MIN_WITNESSES) return null;
+  // High-reach guard, using the follower count the row already knows: the live
+  // payload usually has none (that field comes from the same fiber read that
+  // failed to produce a uid), and writeAccount COALESCEs the column so an
+  // earlier richer payload's value survives.
+  if (!autoPublishEligible(prev.verdict_label, s.followersCount ?? prev.followers_count)) {
+    return null;
+  }
+  // Guarded UPDATE: a maintainer decision that landed between the read and
+  // this write (reject / whitelist / confirm) wins — we only ever flip a row
+  // that is STILL sitting in the queue.
+  const res = await c.env.DB.prepare(
+    `UPDATE accounts
+        SET status='human_confirmed', published_at=?, published_tier='ai'
+      WHERE rowid=? AND status='auto_pending_review'`,
+  )
+    .bind(now, prev.rowid)
+    .run()
+    .catch((err) => {
+      logError("classify_witness.publish_failed", err as Error, { handle: prev.handle });
+      return null;
+    });
+  if (!res?.meta?.changes) return null;
+  await c.env.DB.prepare(
+    "INSERT INTO review_log (x_user_id,handle,action,actor,note,at) VALUES (?,?,?,?,?,?)",
+  )
+    .bind(
+      prev.x_user_id ?? null,
+      prev.handle,
+      "ai_blacklist",
+      "ai:witness",
+      `corroborated ${prev.verdict_label} @ ${prev.confidence} · witnesses=${witnesses}`,
+      now,
+    )
+    .run()
+    .catch((err) => logError("classify_witness.log_failed", err as Error));
+  logInfo("classify.witness_publish", { handle: prev.handle, witnesses });
+  return "human_confirmed";
+}
+
 app.post("/v1/classify", async (c) => {
   // Cost endpoint — GitHub identity required (when enforcement is on).
   const who = await requireReporter(c);
@@ -1511,6 +1665,13 @@ app.post("/v1/classify", async (c) => {
         ruleDest !== null && RULE_OVERRIDABLE_STATUSES.has(prev.status) && ruleDest !== prev.status;
       if (!ruleOverrides) {
         await updateAccountSignalSnapshot(c.env, prev.rowid, signalSnapshot(s));
+        // Corroboration accrues on the CACHE path, not just on fresh LLM
+        // calls. The second and third viewers of the same spam bot are served
+        // from cache — if we only counted witnesses when the LLM ran, a handle
+        // could never reach AUTO_PUBLISH_MIN_WITNESSES and the handle-only
+        // lane would stay closed. This is free corroboration harvested from
+        // traffic we were already serving.
+        const promotedStatus = await accrueWitnessAndMaybePublish(c, s, prev, who);
         return c.json({
           cached: true,
           record: {
@@ -1519,7 +1680,7 @@ app.post("/v1/classify", async (c) => {
               confidence: prev.confidence,
               reasons: safeReasons(prev.reasons),
             },
-            status: prev.status,
+            status: promotedStatus ?? prev.status,
           },
         });
       }
@@ -1671,25 +1832,32 @@ app.post("/v1/classify", async (c) => {
   // override a maintainer, and /v1/appeal remains the fallback.
   // Corroboration gate: classify signals are entirely client-supplied and are
   // never verified against the real X account, so a fabricated payload could
-  // otherwise publish an arbitrary victim to the public list. Require BOTH a
-  // numeric uid (a bare handle is trivial to target; a uid is the account's
-  // immutable id, far harder to weaponize against a chosen victim) AND an aged
-  // GitHub identity. When the gate fails the verdict still lands in the
-  // maintainer review queue (writeStatus below) instead of auto-publishing.
-  // porn_bot ONLY: that's the template-flood class where the AI is reliably
-  // precise. Generic "spam" verdicts (marketing/procurement/crypto chatter)
-  // produced real false positives on normal accounts (e.g. @Jackywine, a
-  // normal AI-content account auto-published off one GPU-procurement post),
-  // so they always queue for human review now.
+  // otherwise publish an arbitrary victim to the public list. An aged GitHub
+  // identity is always required. On top of that the caller must supply ONE of:
+  //   - a numeric uid (the account's immutable id — far harder to weaponize
+  //     against a chosen victim than a handle you can simply type), or
+  //   - AUTO_PUBLISH_MIN_WITNESSES distinct aged identities that independently
+  //     landed on the same verdict for this handle.
+  // The second lane exists because ~98% of live payloads are handle-only, so a
+  // uid-only gate closes the lane against almost all real traffic. When the
+  // gate fails the verdict still lands in the maintainer review queue
+  // (writeStatus below) instead of auto-publishing.
+  const publishCandidate = aiPublishCandidate(verdict.label, verdict.confidence);
+  const agedCaller = who.ageDays >= REPORTER_MIN_AGE_DAYS;
+  // Only spend the ledger write on rows that could actually publish.
+  const witnessFp =
+    publishCandidate && agedCaller && uid === null ? await witnessFingerprint(c, who) : null;
+  const witnesses = witnessFp ? await recordClassifyWitness(c.env, s.handle, witnessFp, now) : 0;
   const aiAutoPublish =
-    verdict.label === "porn_bot" &&
-    verdict.confidence >= AUTO_AI_PUBLISH_CONF &&
-    uid !== null &&
-    who.ageDays >= REPORTER_MIN_AGE_DAYS &&
+    publishCandidate &&
+    agedCaller &&
+    (uid !== null || witnesses >= AUTO_PUBLISH_MIN_WITNESSES) &&
     // High-reach guard: a known ≥100k-follower account never auto-publishes,
     // whatever the confidence — it queues for a human instead (2026-07-24
     // audit found real creators/brands in this band mislabeled porn_bot).
-    autoPublishEligible(verdict.label, s.followersCount ?? null);
+    // Falls back to the count stored on the row, because a handle-only payload
+    // carries no follower count of its own.
+    autoPublishEligible(verdict.label, s.followersCount ?? prev?.followers_count ?? null);
   // High-confidence legit verdicts are cached but kept out of the maintainer
   // queue. /admin/queue still only selects status='auto_pending_review', so
   // auto_legit rows are invisible there but the next /v1/classify hit still
@@ -1741,8 +1909,10 @@ app.post("/v1/classify", async (c) => {
         uid ?? null,
         s.handle,
         "ai_blacklist",
-        "ai:auto",
-        `auto-published ${verdict.label} @ ${verdict.confidence}`,
+        uid !== null ? "ai:auto" : "ai:witness",
+        `auto-published ${verdict.label} @ ${verdict.confidence}${
+          uid !== null ? " · uid" : ` · witnesses=${witnesses}`
+        }`,
         now,
       )
       .run();
@@ -2816,10 +2986,33 @@ app.get("/v1/admin/stats", async (c) => {
   const wlReqRow = await c.env.DB.prepare(
     "SELECT count(*) AS n FROM whitelist_requests WHERE status='pending'",
   ).first<{ n: number }>();
+  // Auto-publish lane health. The AI lane silently closed for ~2 months
+  // (2026-06-13 → 2026-08-23) because its confidence bar sat above what the
+  // model actually emits, and nothing surfaced the gap: the queue just grew.
+  // These two numbers make the failure mode legible — `auto_lane_published_24h`
+  // collapsing toward zero while `auto_lane_blocked_24h` climbs means the gate
+  // has drifted away from reality again. Rides idx_accounts_status_last_scored.
+  const since = Date.now() - 24 * 60 * 60_000;
+  const laneRow = await c.env.DB.prepare(
+    `SELECT
+       sum(CASE WHEN status='auto_pending_review' THEN 1 ELSE 0 END) AS blocked,
+       sum(CASE WHEN status='human_confirmed' AND published_tier='ai' THEN 1 ELSE 0 END) AS published
+     FROM accounts
+      WHERE last_scored > ?
+        AND verdict_label='porn_bot'
+        AND confidence >= ?`,
+  )
+    .bind(since, AUTO_AI_PUBLISH_CONF)
+    .first<{ blocked: number | null; published: number | null }>();
   const byStatus: Record<string, number> = {};
   for (const r of statusRows.results ?? []) byStatus[r.status] = r.n;
   return c.json({
     queue: queueRow?.n ?? 0,
+    // Publish-grade porn_bot verdicts in the last 24h that auto-published
+    // vs. that fell back to the review queue (missing uid AND not yet
+    // corroborated, or caught by the high-reach guard).
+    auto_lane_published_24h: laneRow?.published ?? 0,
+    auto_lane_blocked_24h: laneRow?.blocked ?? 0,
     blacklist: byStatus.human_confirmed ?? 0,
     whitelist: byStatus.whitelisted ?? 0,
     rejected: byStatus.rejected ?? 0,
@@ -5920,6 +6113,22 @@ async function backfillCategories(env: Bindings): Promise<void> {
   }
 }
 
+/** Drop corroboration rows past WITNESS_RETENTION_MS. Bounded per tick (the
+ *  cron fires every 10 minutes, so a backlog drains quickly) — an unbounded
+ *  DELETE over a large partition is exactly the shape that has bitten this
+ *  worker before. */
+const WITNESS_PRUNE_PER_TICK = 2_000;
+async function pruneClassifyWitness(env: Bindings): Promise<void> {
+  const cutoff = Date.now() - WITNESS_RETENTION_MS;
+  const res = await env.DB.prepare(
+    `DELETE FROM classify_witness
+      WHERE rowid IN (SELECT rowid FROM classify_witness WHERE first_at < ? LIMIT ?)`,
+  )
+    .bind(cutoff, WITNESS_PRUNE_PER_TICK)
+    .run();
+  if (res.meta?.changes) logInfo("classify_witness.pruned", { rows: res.meta.changes });
+}
+
 export default {
   fetch: app.fetch,
   scheduled(event: ScheduledController, env: Bindings, ctx: ExecutionContext): void {
@@ -5942,6 +6151,12 @@ export default {
       // once every published spam row carries a category).
       ctx.waitUntil(
         backfillCategories(env).catch((e) => logError("category_backfill.failed", e)),
+      );
+      // Retention sweep for the corroboration ledger. Bounded DELETE so one
+      // tick can never turn into a long invocation; the backlog drains over
+      // consecutive ticks.
+      ctx.waitUntil(
+        pruneClassifyWitness(env).catch((e) => logError("classify_witness.prune_failed", e)),
       );
     }
   },

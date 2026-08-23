@@ -26,6 +26,11 @@ export interface Signals {
   recentTweets: string[];
   triggeringComment?: string;
   threadTopic?: string;
+  /** X's own registration timestamp, ISO-8601. Only the profile object in
+   *  X's React state carries this — the rendered DOM shows a coarse join
+   *  month — so its presence is a reliable tell for whether the MAIN-world
+   *  bridge (lib/x-user-bridge.ts) is delivering profile signals at all. */
+  accountCreatedAt?: string;
   accountAgeDays?: number;
   followersCount?: number;
   followingCount?: number;

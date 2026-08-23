@@ -218,3 +218,22 @@ CREATE TABLE IF NOT EXISTS contrib_actives (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_contrib_actives_key
   ON contrib_actives(day, kind, fp);
+
+-- Corroboration ledger for the handle-only auto-publish lane (2026-08-23).
+-- One row per (handle, distinct salted caller fingerprint) that independently
+-- landed on a publish-grade spam verdict for that handle. The AI lane will
+-- publish a handle-only payload once AUTO_PUBLISH_MIN_WITNESSES distinct aged
+-- identities appear here — the substitute for the numeric-uid gate, which
+-- ~98% of live payloads cannot satisfy (the client cannot read X's React
+-- fiber from an isolated-world content script).
+--
+-- NO PII: fp is the same salted throttle fingerprint used by rate_log.
+-- Pruned to WITNESS_RETENTION_MS by the 10-minute cron.
+CREATE TABLE IF NOT EXISTS classify_witness (
+  handle_norm TEXT NOT NULL,               -- lower(handle), no leading '@'
+  fp          TEXT NOT NULL,               -- salted caller fingerprint
+  first_at    INTEGER NOT NULL,            -- epoch ms of first observation
+  PRIMARY KEY (handle_norm, fp)
+);
+-- Retention sweep filter; the COUNT(*) per handle rides the PRIMARY KEY.
+CREATE INDEX IF NOT EXISTS idx_classify_witness_first_at ON classify_witness(first_at);

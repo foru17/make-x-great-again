@@ -1,6 +1,7 @@
 // Passive DOM extraction. Reads only what X already rendered — no scraping,
 // no navigation, no extra requests to X.
 import type { Signals } from "./types";
+import { type BridgeUser, readBridgeUser } from "./x-user-bridge";
 
 /** Everything the passive extractors could learn about an author, merged
  *  from React fiber, action-button metadata and page JSON-LD. */
@@ -335,6 +336,29 @@ function findUser(
   return null;
 }
 
+/** The handle whose profile page we are on, or undefined anywhere else.
+ *  Exported so the MAIN-world bridge scopes its profile stamp to the same
+ *  account extractProfile() will ask about. */
+export function profileHandle(): string | undefined {
+  const seg = location.pathname.split("/").filter(Boolean);
+  if (seg.length !== 1) return undefined;
+  const h = seg[0] ?? "";
+  return NON_PROFILE.has(h) || !/^[A-Za-z0-9_]{1,15}$/.test(h) ? undefined : h;
+}
+
+/** Author handle of a timeline article, read from the byline permalink.
+ *  Shared by the scan loop and the MAIN-world bridge so both agree on which
+ *  account an <article> currently belongs to (X recycles these nodes). */
+export function handleFromArticle(art: HTMLElement): string | undefined {
+  const nameBlock = art.querySelector<HTMLElement>('[data-testid="User-Name"]');
+  if (!nameBlock) return undefined;
+  for (const a of nameBlock.querySelectorAll<HTMLAnchorElement>('a[href^="/"]')) {
+    const s = (a.getAttribute("href") ?? "").split("/").filter(Boolean);
+    if (s.length === 1 && /^[A-Za-z0-9_]{1,15}$/.test(s[0] ?? "")) return s[0];
+  }
+  return undefined;
+}
+
 export function extractProfile(): Signals | null {
   const seg = location.pathname.split("/").filter(Boolean);
   if (seg.length !== 1 || NON_PROFILE.has(seg[0] ?? "")) return null;
@@ -364,6 +388,7 @@ export function extractProfile(): Signals | null {
   const actionUser = actionUserInfo(profileScope, handle);
   const fu: KnownUser = {
     ...readFiberUser(profileScope, handle),
+    ...readBridgeUser(profileScope, handle),
     ...(actionUser.userId ? { userId: actionUser.userId } : {}),
     ...(actionUser.viewerFollowing ? { viewerFollowing: true as const } : {}),
     ...(isViewerHandle(handle) || profileScope.querySelector('[data-testid="editProfileButton"]')
@@ -453,11 +478,21 @@ export function extractFromArticle(article: HTMLElement): Signals | null {
   const tweetEl = article.querySelector<HTMLElement>('[data-testid="tweetText"]');
   const tweetText = tweetEl ? tweetEl.innerText.trim() : "";
   const tweetsTranslated = articleShowsTranslation(article, tweetEl);
+  // Profile signals, best source first:
+  //  1. the MAIN-world bridge, which CAN read X's React fiber (see
+  //     lib/x-user-bridge.ts — the isolated world cannot, so without this the
+  //     next line yields nothing and the payload goes out handle-only),
+  //  2. the direct fiber read, which still works in tests and in any context
+  //     where this module runs in the page world,
+  //  3. the follow-button's data-testid, which carries a bare uid.
+  const bridgeUser = readBridgeUser(article, handle);
   const fiberUser = readFiberUser(article, handle);
   const actionUser = actionUserInfo(article, handle);
+  const known: BridgeUser = { ...fiberUser, ...bridgeUser };
   const fu: KnownUser = {
     ...fiberUser,
-    ...(!fiberUser.userId && actionUser.userId
+    ...bridgeUser,
+    ...(!known.userId && actionUser.userId
       ? { userId: actionUser.userId }
       : {}),
     ...(actionUser.viewerFollowing ? { viewerFollowing: true as const } : {}),

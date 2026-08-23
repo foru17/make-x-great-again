@@ -12,6 +12,7 @@ import {
   extractFromArticle,
   extractProfile,
   extractThreadTopic,
+  handleFromArticle,
   viewerHandle,
 } from "../lib/detect";
 import { CATEGORY_ZH } from "../lib/category";
@@ -178,16 +179,6 @@ async function applyXAction(mode: ActionMode, sig: Signals): Promise<boolean> {
 /** Cheap author handle from the User-Name link href — no fiber walk, no
  *  innerText. Used both as the scan() skip key and to re-verify a captured
  *  anchor before a delayed hide fires (X recycles article nodes). */
-function handleFromArticle(art: HTMLElement): string | undefined {
-  const nameBlock = art.querySelector<HTMLElement>('[data-testid="User-Name"]');
-  if (!nameBlock) return undefined;
-  for (const a of nameBlock.querySelectorAll<HTMLAnchorElement>('a[href^="/"]')) {
-    const s = (a.getAttribute("href") ?? "").split("/").filter(Boolean);
-    if (s.length === 1 && /^[A-Za-z0-9_]{1,15}$/.test(s[0] ?? "")) return s[0];
-  }
-  return undefined;
-}
-
 /** Where a scanned account was seen. Auto actions are scoped by this:
  *  - "reply"   — a NON-focal article on a status page: someone replying under
  *                a tweet. This is where the spam wave lives → auto-actable.
