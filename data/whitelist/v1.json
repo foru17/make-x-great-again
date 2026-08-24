@@ -1,8 +1,13 @@
 {
   "schema": 1,
-  "generatedAt": 1787508063877,
-  "count": 2201,
+  "generatedAt": 1787572861071,
+  "count": 2202,
   "list": [
+    {
+      "handle": "bennix82474962",
+      "x_user_id": null,
+      "last_scored": 1787554658466
+    },
     {
       "handle": "mingtian2022",
       "x_user_id": null,
