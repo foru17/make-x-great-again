@@ -1,8 +1,43 @@
 {
   "schema": 1,
-  "generatedAt": 1787853663484,
-  "count": 2297,
+  "generatedAt": 1787940066591,
+  "count": 2304,
   "list": [
+    {
+      "handle": "thanksutrump",
+      "x_user_id": "1862825645824507904",
+      "last_scored": 1787920327175
+    },
+    {
+      "handle": "marrrrrrrrrrs",
+      "x_user_id": "1099560150283673605",
+      "last_scored": 1787920326419
+    },
+    {
+      "handle": "hsm6231",
+      "x_user_id": null,
+      "last_scored": 1787920325694
+    },
+    {
+      "handle": "dothisbit12278",
+      "x_user_id": null,
+      "last_scored": 1787920324974
+    },
+    {
+      "handle": "jarman_tian",
+      "x_user_id": null,
+      "last_scored": 1787920324218
+    },
+    {
+      "handle": "h1andyc",
+      "x_user_id": null,
+      "last_scored": 1787920323491
+    },
+    {
+      "handle": "0xkimx",
+      "x_user_id": null,
+      "last_scored": 1787920316106
+    },
     {
       "handle": "xiaoyinote",
       "x_user_id": "966199712796872706",
