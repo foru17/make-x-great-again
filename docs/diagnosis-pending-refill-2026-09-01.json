@@ -31,7 +31,17 @@
       "id": "T3",
       "task": "验证待审生成、服务端终态与浏览器展示缓存链路",
       "verify": "用现行代码、运行态反馈环和提交历史解释为何清空后回填、为何正常账号持续显示红标",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "紧反馈环实跑返回 RED pending_queue_contains_legit=747：它直接查询当前 auto_pending_review 中 verdict=legit 的精确数量；待修复并清理后应变为 0",
+        "首要回归已定位：2026-05-25 的 cee577a 曾处理同一 queue-noise 事故（当时 560 条中 461 条、约 82% 为 legit），通过账号年龄/启发式 L1 闸门避免普通回复进入 AI；2026-07-31 的 229e62a 恢复在线检测时改成“登录用户遇到任意未知账号就分类”，没有恢复该闸门，每页最多 40 个",
+        "服务端 L2 仍只把 legit 且 confidence>=0.85 写入 auto_legit，其余所有标签均写入 auto_pending_review；当前模型的正常结果大量集中在 0.70/0.75，导致模型已经判正常的账号仍全部进入待审",
+        "分类输入继续放大误判：评论正文同时作为 triggeringComment 和 recentTweets[0]，资料字段大面积缺失；长文页根内容没有 tweetText 时，extractThreadTopic 会把后续回复当主题，造成错误 off-topic 证据",
+        "清理与浏览器状态脱节：rejected/removed 服务端 verdict 永不重判，客户端忽略 reviewStatus 后仍写入账号级缓存；likely_spam 缓存 14 天、spam/porn_bot 缓存 30 天，并跨帖子复用",
+        "当前 Chrome 只读复核：@itsrealyutian 的公开接口 hits={}，资料页 7 条可见帖子仍全部显示“垃圾 90% · 本地缓存命中”；这直接复现了名单已清、浏览器误伤未消失",
+        "自动动作边界已核对：现行代码明确 cache/fresh verdict 不会自动执行 X 拉黑，只会显示徽标；附件中“色情招揽→X 拉黑”会作用于公开名单或规则命中，因此待审/缓存误判与公开名单自动动作应分开治理",
+        "定向测试实跑：扩展 14/14、边缘服务 22/22 通过；测试明确确认当前设计会自动分类登录用户遇到的未知账号、持久化账号 verdict，并复用新鲜旧判定"
+      ]
     },
     {
       "id": "T4",
