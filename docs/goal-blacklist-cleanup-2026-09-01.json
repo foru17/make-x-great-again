@@ -18,7 +18,13 @@
       "id": "T2",
       "task": "生成清理预览并记录可回滚锚点",
       "verify": "清理目标数、保留数与总数对账；记录 D1 Time Travel 清理前时间点；白名单基线固定",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "POST /v1/admin/decide-by-filter dryRun：tier=ai 命中 21827，单次执行上限 2000",
+        "清理前黑名单 223670、白名单 2337、removed 762、直接规则命中 156432",
+        "D1 Time Travel 清理前恢复锚点：2026-09-01T04:52:46Z（Cloudflare 官方文档确认该能力始终开启）",
+        "清理前公开产物元数据 count=223666，generatedAt=1788238262342"
+      ]
     },
     {
       "id": "T3",
