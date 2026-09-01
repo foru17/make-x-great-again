@@ -3941,6 +3941,8 @@ app.post("/v1/admin/rule-only-blacklist-cleanup", async (c) => {
   const page = result.results ?? [];
   const removable: RuleOnlyCleanupRow[] = [];
   const retainedByRule: Record<string, number> = {};
+  const retainedByPublishedTier: Record<string, number> = {};
+  const removableByPublishedTier: Record<string, number> = {};
   const retainedSamples: Array<{ rowid: number; handle: string; ruleId: number }> = [];
   const removableSamples: Array<{ rowid: number; handle: string; publishedTier: string | null }> = [];
   const planLines: string[] = [];
@@ -3949,11 +3951,15 @@ app.post("/v1/admin/rule-only-blacklist-cleanup", async (c) => {
     planLines.push(`${row.rowid}:${row.last_scored ?? "null"}:${hit?.id ?? 0}`);
     if (hit) {
       retainedByRule[String(hit.id)] = (retainedByRule[String(hit.id)] ?? 0) + 1;
+      const tier = row.published_tier ?? "null";
+      retainedByPublishedTier[tier] = (retainedByPublishedTier[tier] ?? 0) + 1;
       if (retainedSamples.length < 5) {
         retainedSamples.push({ rowid: row.rowid, handle: row.handle, ruleId: hit.id });
       }
     } else {
       removable.push(row);
+      const tier = row.published_tier ?? "null";
+      removableByPublishedTier[tier] = (removableByPublishedTier[tier] ?? 0) + 1;
       if (removableSamples.length < 5) {
         removableSamples.push({
           rowid: row.rowid,
@@ -4022,6 +4028,8 @@ app.post("/v1/admin/rule-only-blacklist-cleanup", async (c) => {
     ruleFingerprint,
     planHash,
     retainedByRule,
+    retainedByPublishedTier,
+    removableByPublishedTier,
     samples: { retained: retainedSamples, removable: removableSamples },
     cap: RULE_ONLY_CLEANUP_PAGE_MAX,
   });

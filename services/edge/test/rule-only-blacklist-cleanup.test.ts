@@ -302,6 +302,8 @@ test("rule-only cleanup defaults to a read-only exact stored-row rescan", async 
   assert.equal(body.removable, 2);
   assert.equal(body.processed, 0);
   assert.equal(body.ruleCount, 3);
+  assert.deepEqual(body.retainedByPublishedTier, { rule: 1, human: 1, null: 1 });
+  assert.deepEqual(body.removableByPublishedTier, { human: 2 });
   assert.match(String(body.ruleFingerprint), /^[a-f0-9]{64}$/);
   assert.match(String(body.planHash), /^[a-f0-9]{64}$/);
   assert.deepEqual(db.accounts.map((account) => account.status), [

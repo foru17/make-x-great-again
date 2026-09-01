@@ -46,6 +46,8 @@ let removable = 0;
 let processed = 0;
 let ruleFingerprint = null;
 const retainedByRule = {};
+const retainedByPublishedTier = {};
+const removableByPublishedTier = {};
 const planDigest = createHash("sha256");
 const retainedSamples = [];
 const removableSamples = [];
@@ -68,6 +70,12 @@ for (let pageIndex = 0; pageIndex < MAX_PAGES; pageIndex++) {
   removable += preview.removable;
   for (const [ruleId, count] of Object.entries(preview.retainedByRule || {})) {
     retainedByRule[ruleId] = (retainedByRule[ruleId] || 0) + Number(count);
+  }
+  for (const [tier, count] of Object.entries(preview.retainedByPublishedTier || {})) {
+    retainedByPublishedTier[tier] = (retainedByPublishedTier[tier] || 0) + Number(count);
+  }
+  for (const [tier, count] of Object.entries(preview.removableByPublishedTier || {})) {
+    removableByPublishedTier[tier] = (removableByPublishedTier[tier] || 0) + Number(count);
   }
   for (const sample of preview.samples?.retained || []) {
     if (retainedSamples.length < 20) retainedSamples.push(sample);
@@ -137,6 +145,8 @@ console.log(
       ruleFingerprint,
       aggregatePlanHash: planDigest.digest("hex"),
       retainedByRule,
+      retainedByPublishedTier,
+      removableByPublishedTier,
       samples: { retained: retainedSamples, removable: removableSamples },
     },
     null,
