@@ -52,7 +52,18 @@
       "id": "T4",
       "task": "刷新并证伪式验证线上公开结果",
       "verify": "确认黑名单剩余集合与规则命中集合完全一致、白名单计数和身份集合不变、公开接口/制品不再暴露已移除账号，并保留回滚证据",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "写后全量复扫已证明 D1 当前 171754 条黑名单全部命中规则、removable=0；白名单 count=2338 且 identity SHA-256 与清理前完全一致",
+        "R2 已发布最终版本 v-_____f_______f_-171752，meta count=171752、lite entries=171752、rules=72、generatedAt=1788253846243；比 D1 少 2 条是 publishArtifacts 既有的无效身份过滤",
+        "公开 R2 lite 与 data-mirror v2-lite 双重抽查：一条本次 removed 样本均已不存在，一条规则保留样本均仍存在；/v1/health 返回 ok=true、published=171752",
+        "data-mirror 已手动同步：远端 HEAD=339789f116a5b7463b8eeb150dc78d0ed209ee28，v2-lite count/entries=171754、rules=72，whitelist count/listLength=2338",
+        "公开 data/README.md 和 DATA_USAGE.md 已说明两阶段误伤清理背景、30158 条移除、28560 条人工批量记录、规则唯一保留口径、白名单保护和 AI 只进待审；文档 commit f47f4cc 已通过 raw.githubusercontent.com 实测可读",
+        "临时写入口已移除并部署最终 Worker 版本 2f0d731c-4f09-4ed7-8681-f7ec2cb64d5d；线上 POST /v1/admin/rule-only-blacklist-cleanup 实测返回 404",
+        "最终 Edge 测试 130/130、根目录测试 23/23、Worker/App/根目录类型检查、配置类型检查、定向 lint、App 构建和 wrangler dry-run 全部通过",
+        "相对任务起点 a43f14a 的净产品代码改动为 0，仅保留公开文档与验证清单；git diff --check 和任务 diff 凭据模式扫描通过，原有 .audit-* 未跟踪文件未动",
+        "可恢复证据：D1 Time Travel 清理前 UTC 锚点 2026-09-01T08:57:58Z，账号行未物理删除，200 条批次审计日志仍在"
+      ]
     }
   ]
 }
