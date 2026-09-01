@@ -31,7 +31,14 @@
       "id": "T3",
       "task": "将全部待审记录移出待审队列",
       "verify": "生产查询 pending_raw=0 且 dedup queue=0；写入保留审计轨迹而非物理删除",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "受限清空接口已部署为 Worker 版本 2187cfab-49f5-4d1e-a4ee-12c95453a4b4；线上 dryRun 返回 pendingBefore=238031、cap=5000",
+        "正式执行 48 批：前 47 批各处理 5000 行，最后一批处理 3047 行，共处理 238047 行；未触及 60 批硬上限",
+        "2026-09-01T05:50:15Z 写后生产复核：pending_raw=0、去重 queue=0；接口 dryRun 同样返回 pendingBefore=0、done=true",
+        "rejected 14866→252913，差值 238047；removed 仍为 22589，说明待审行被保留为 rejected 而非物理删除或混入黑名单移除状态",
+        "管理员日志接口验证本次 cleanupId 下存在 48 条 reject_pending_batch 聚合审计记录"
+      ]
     },
     {
       "id": "T4",
