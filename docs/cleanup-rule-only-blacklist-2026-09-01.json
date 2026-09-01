@@ -36,7 +36,17 @@
       "id": "T3",
       "task": "执行可恢复的非规则黑名单迁移",
       "verify": "仅将预演中未命中 blacklist 规则的当前黑名单状态改为 removed，保留行与审计；不修改白名单和待审",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "D1 Time Travel 清理前恢复时间戳固定为 2026-09-01T08:57:58Z；wrangler bookmark 查询因 Cloudflare OAuth code 10000 失败，保留官方支持的 RFC3339 时间恢复锚点",
+        "正式执行 cleanupId=rule-only-2026-09-01-v2：202 页、404 次调用，低于 600 次硬上限；每页均先即时 dryRun 再校验同一规则指纹与 planHash",
+        "执行总账与预演完全一致：scanned=201912、retained=171754、removable=30158、processed=30158、skipped=0；规则指纹和全量计划 SHA-256 均未变化",
+        "生产状态精确对账：blacklist 201912→171754、removed 22592→52750，两侧差值均为 30158；迁移只改为 removed，账号行和原证据仍保留",
+        "实际移除来源：human=28560、rule=1474、NULL=120、mention=4；历史人工批量确认不再被来源标签豁免，只以当前规则是否命中决定",
+        "写后再次全量 dryRun 172 页：scanned=171754、retained=171754、removable=0，证明当前黑名单中不存在未命中规则的剩余行",
+        "白名单仍为 2338，公开 identity SHA-256 仍为 bc1a0b0755df343dfc57ce72f04a0db3fab9d7adffe16b06ac7f67b45adb5dc5；更新 SQL 只允许 status='human_confirmed'，白名单和待审不在写入范围",
+        "管理员日志在 3 次有上限的分页查询内找到本 cleanupId 的 200 条 rule_only_cleanup_batch 审计记录；/v1/health 实测 ok=true"
+      ]
     },
     {
       "id": "T4",
