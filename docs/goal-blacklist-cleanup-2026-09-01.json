@@ -30,7 +30,14 @@
       "id": "T3",
       "task": "将 AI 自动发布账号移出当前黑名单",
       "verify": "生产查询 tier ai=0；规则命中数量不减；白名单前后均为 2337；公开名单数量同步下降",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "生产黑名单 223670→201843、removed 762→22589，差值均为 21827",
+        "清理后 dryRun tier=ai matched=0；直接规则命中仍为 156432；白名单仍为 2337",
+        "AI_AUTO_PUBLISH_ENABLED=0 已部署为 Worker 版本 3f6083c7-a62a-4734-befe-c1aea2c4f45a；线上 stats 返回 ai_auto_publish_enabled=false",
+        "Edge 测试 130/130 通过；Worker 与 App 类型检查、配置类型检查、App 构建和 wrangler dry-run 通过",
+        "data-mirror v2-lite 已发布 201843 条（commit b6309dd）；R2 元数据已从 223666 降至 201839，generatedAt=1788239458985（发布窗口后实时新增 4 条规则记录）"
+      ]
     },
     {
       "id": "T4",
