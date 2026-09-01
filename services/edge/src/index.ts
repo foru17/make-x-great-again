@@ -86,6 +86,14 @@ const AUTO_REPORTERS = 3; // distinct GitHub reporters required for auto-publish
 // high-confidence tier and still sits above the 0.9 floor that the precision
 // audit validated. Re-measure the histogram before moving this again.
 const AUTO_AI_PUBLISH_CONF = 0.92;
+
+/** AI verdicts are advisory by default: they may populate the review queue,
+ *  but never the public blacklist. The explicit config gate keeps the dormant
+ *  corroboration machinery testable without allowing an absent/malformed
+ *  value to reopen the lane after the 2026-09-01 false-positive cleanup. */
+function aiAutoPublishEnabled(env: Bindings): boolean {
+  return String(env.AI_AUTO_PUBLISH_ENABLED) === "1";
+}
 // Handle-only corroboration bar. The AI lane normally demands a numeric uid
 // (see aiAutoPublish) because a bare handle is trivial to weaponize against a
 // chosen victim. But ~98% of live payloads are handle-only (the client cannot
@@ -1560,6 +1568,7 @@ async function accrueWitnessAndMaybePublish(
   prev: AccountRow,
   who: Reporter,
 ): Promise<string | null> {
+  if (!aiAutoPublishEnabled(c.env)) return null;
   if (prev.status !== "auto_pending_review") return null;
   if (!aiPublishCandidate(prev.verdict_label, prev.confidence)) return null;
   // A uid-bearing payload doesn't need corroboration — the fresh-classify
@@ -1854,7 +1863,8 @@ app.post("/v1/classify", async (c) => {
   // uid-only gate closes the lane against almost all real traffic. When the
   // gate fails the verdict still lands in the maintainer review queue
   // (writeStatus below) instead of auto-publishing.
-  const publishCandidate = aiPublishCandidate(verdict.label, verdict.confidence);
+  const publishCandidate =
+    aiAutoPublishEnabled(c.env) && aiPublishCandidate(verdict.label, verdict.confidence);
   const agedCaller = who.ageDays >= REPORTER_MIN_AGE_DAYS;
   // Only spend the ledger write on rows that could actually publish.
   const witnessFp =
@@ -3025,6 +3035,7 @@ app.get("/v1/admin/stats", async (c) => {
     // corroborated, or caught by the high-reach guard).
     auto_lane_published_24h: laneRow?.published ?? 0,
     auto_lane_blocked_24h: laneRow?.blocked ?? 0,
+    ai_auto_publish_enabled: aiAutoPublishEnabled(c.env),
     blacklist: byStatus.human_confirmed ?? 0,
     whitelist: byStatus.whitelisted ?? 0,
     rejected: byStatus.rejected ?? 0,

@@ -210,6 +210,7 @@ beforeEach(() => {
     DB: db,
     REPORT_SALT: "test-report-salt",
     REQUIRE_AUTH: "1",
+    AI_AUTO_PUBLISH_ENABLED: "1",
     LLM_API_BASE: "https://llm.invalid",
     LLM_API_KEY: "test",
     LLM_API_MODEL: "test-model",
@@ -298,4 +299,18 @@ test("the cache path accrues witnesses and can publish", async () => {
   assert.equal(json.record.status, "human_confirmed");
   assert.equal(db.accounts[0]?.status, "human_confirmed");
   assert.equal(db.accounts[0]?.published_tier, "ai");
+});
+
+test("disabled policy never records witnesses or publishes from cache", async () => {
+  env.AI_AUTO_PUBLISH_ENABLED = "0";
+  const body = payload(9);
+  await worker.fetch(classify(body, 1), env);
+  const res = await worker.fetch(classify(body, 2), env);
+  const json = (await res.json()) as { cached: boolean; record: { status: string } };
+  assert.equal(json.cached, true);
+  assert.equal(json.record.status, "auto_pending_review");
+  assert.equal(db.accounts[0]?.status, "auto_pending_review");
+  assert.equal(db.accounts[0]?.published_tier, null);
+  assert.equal(db.witnesses.length, 0);
+  assert.equal(db.reviewLog.some((r) => r.action === "ai_blacklist"), false);
 });
