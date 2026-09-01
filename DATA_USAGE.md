@@ -10,6 +10,22 @@ This is **not** a general-purpose reputation system, political tool, or
 arbitrary blacklist. It is narrowly scoped to the exact threat model defined
 in [GOVERNANCE.md](./GOVERNANCE.md).
 
+## September 1, 2026 blacklist cleanup
+
+By September 1, the live blacklist had grown to 223,670 entries. False
+positives among accounts published automatically from AI verdicts were
+degrading normal browsing, so we performed a provenance-scoped cleanup:
+
+- removed all 21,827 current entries whose publication tier was `ai`;
+- retained direct keyword-rule matches and existing human decisions;
+- left the 2,337-entry whitelist unchanged; and
+- disabled direct AI publication. New AI verdicts now stay in the maintainer
+  review queue unless a rule or a human decision independently publishes them.
+
+The current blacklist contained 201,843 entries immediately after the cleanup.
+Historical mirror commits remain available as the audit trail; current API,
+R2 and `data-mirror` artifacts represent the cleaned list.
+
 ## Where the data lives
 
 | Source | Path / endpoint | Freshness |
