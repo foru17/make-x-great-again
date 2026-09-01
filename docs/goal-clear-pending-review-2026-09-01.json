@@ -6,7 +6,14 @@
       "id": "T1",
       "task": "固定待审口径、保护对象、生产基线和恢复锚点",
       "verify": "确认仅处理 accounts.status='auto_pending_review'；记录 raw/dedup 数量、受保护状态数量和 D1 Time Travel 时间点",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "本次待审严格限定为 accounts.status='auto_pending_review'；不处理 agent_pending、whitelist_requests 或任何已发布状态",
+        "2026-09-01T05:44:48Z 生产基线：pending_raw=238020、去重 queue=237980、blacklist=201843、whitelist=2337、removed=22589、rejected=14866",
+        "受保护基线：agent_blacklist=0、agent_whitelist=3742、agent_pending=10275、whitelist_requests=11",
+        "D1 Time Travel 恢复时间戳固定为 2026-09-01T05:44:48Z；Cloudflare 官方文档确认 Time Travel 始终开启且支持按 RFC3339 时间恢复",
+        "本次会话已在 Cloudflare 账单页验证 Budget alerts (1)；wrangler bookmark 查询因 OAuth code 10000 失败，因此使用官方支持的时间戳恢复锚点"
+      ]
     },
     {
       "id": "T2",
