@@ -33,7 +33,17 @@
       "id": "T3",
       "task": "逐项验证假设并量化影响范围",
       "verify": "用代码、线上只读数据、日志或历史 diff 排除替代解释并确认根因",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "已证实 H2（输入错误）：长文状态页的根内容没有 tweetText 节点，而 extractThreadTopic() 只取页面第一个 tweetText，实际会把第一条回复当主题；@maomao1943hk 的线上理由称主题是 C1 Platinum/ITIN，但当前根内容实际是 Wise 长文，因此“跑题”依据来自错误上下文",
+        "已证实 H2（字段语义错误）：extractFromArticle() 把当前 triggeringComment 同时写入 recentTweets[0]；模型随后把这份重复输入解释为账号“只有一条近期推文/低活跃”，并非真实账号历史",
+        "清空待审约一小时后的线上只读统计再次出现 1381 个待审账号；最近 1000 个样本全部 source=auto_scan，其中 33 个为 likely_spam@0.75，21 个理由依赖 off-topic，27 个缺 followers/following/账号年龄字段，说明错误输入正在持续进入在线分类",
+        "已证实 H3（客户端放大）：账号级缓存把 spam/porn_bot 保留 30 天、likely_spam 保留 14 天，且垃圾类结果无视 signalsHash 变化跨帖子复用；浏览器复核得到 @Peter35605726 1 个在线 75% 后复用到 8 条帖子，@itsrealyutian 在 7 条帖子上均显示同一 90% 本地缓存",
+        "已证实 H3（清理后仍回放）：服务器把 rejected/removed 设为 NEVER_RESCORE，/v1/classify 会原样返回旧 verdict；客户端虽然读到 reviewStatus，却仍缓存并显示 verdict，因此从黑名单/待审移出不会撤销用户浏览器中的旧红标",
+        "已排除 H4：三个截图账号的 GET /v1/check 均返回 hits={}，页面来源也分别显示在线 AI 或本地缓存，不是规则或公开名单命中",
+        "H5 未发现近期分类提示词或采集逻辑变更；可定位的暴露面变化是 2026-07-31 恢复登录用户对未知账号的自动在线分类（每页最多 40 个），它把既有输入缺陷扩大到普通时间线，并解释待审队列清空后快速回填",
+        "相关现有测试实跑通过：扩展 14/14、边缘服务 22/22；测试同时确认当前设计会让所有非 legit 在线 verdict 可见、持久化账号 verdict，并在信号漂移时复用旧 verdict"
+      ]
     },
     {
       "id": "T4",
