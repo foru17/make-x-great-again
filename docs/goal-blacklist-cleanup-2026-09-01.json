@@ -36,7 +36,13 @@
       "id": "T4",
       "task": "在公开数据文档中说明本次清理背景、范围和白名单保护",
       "verify": "文档 diff 明确日期、原因、保留/移除口径和申诉机制",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "DATA_USAGE.md 与 data/README.md 已写明误伤背景、21827 条移除口径、规则/人工保留、白名单不变和 AI 仅进待审的新策略；commit 8129b89",
+        "专用 data-mirror 公共分支已发布 data/README.md；commit b8506f2b87dd1981cd7d21762aa7d1526046b4ef",
+        "curl 读取 raw.githubusercontent.com/data-mirror/data/README.md 已返回 2026-09-01 清理说明",
+        "同一公开文档原有“数据删除 / 修改流程”继续提供误判申诉入口和处理流程"
+      ]
     },
     {
       "id": "T5",
