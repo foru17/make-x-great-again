@@ -6,7 +6,15 @@
       "id": "T1",
       "task": "快照线上黑白名单、启用规则与公开面状态",
       "verify": "记录清理前 blacklisted/whitelisted 数量、规则集合及公开制品版本；确认目标状态使用 removed 而非删除",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "2026-09-01T08:44:45Z 生产基线：blacklist=201912、whitelist=2338、removed=22592、pending_raw=3428；AI 自动发布开关为 false",
+        "当前启用 blacklist 规则共 72 条（display_name=38、tweet=22、any=12）；快照 SHA-256=eb6ff0c0def6372e62a49fe0bf47fa3b0babc6fd9e6a022f3ddeaab8fb4aeeb5",
+        "公开白名单 identity 快照 count=2338、SHA-256=bc1a0b0755df343dfc57ce72f04a0db3fab9d7adffe16b06ac7f67b45adb5dc5",
+        "公开制品基线：version=v-_____f_________-201902、count=201902、generatedAt=1788252032641；/v1/health 实测 ok=true",
+        "目标操作只将未命中规则的 accounts.status='human_confirmed' 行改为 status='removed'，不物理删除；同日同生产环境已在 Cloudflare 账单页确认 Budget alerts (1)",
+        "上线前已核对最新 @cloudflare/workers-types 版本 5.20260901.1"
+      ]
     },
     {
       "id": "T2",
