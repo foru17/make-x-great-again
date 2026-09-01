@@ -13,18 +13,23 @@ in [GOVERNANCE.md](./GOVERNANCE.md).
 ## September 1, 2026 blacklist cleanup
 
 By September 1, the live blacklist had grown to 223,670 entries. False
-positives among accounts published automatically from AI verdicts were
-degrading normal browsing, so we performed a provenance-scoped cleanup:
+positives from AI verdicts and later bulk human confirmations were degrading
+normal browsing, so we performed a two-stage, auditable cleanup:
 
-- removed all 21,827 current entries whose publication tier was `ai`;
-- retained direct keyword-rule matches and existing human decisions;
-- left the 2,337-entry whitelist unchanged; and
-- disabled direct AI publication. New AI verdicts now stay in the maintainer
-  review queue unless a rule or a human decision independently publishes them.
+1. We moved all 21,827 entries whose publication tier was `ai` out of the
+   current blacklist and disabled direct AI publication.
+2. We then rescanned all 201,912 current blacklist rows with the 72 blacklist
+   rules enabled at the time. We retained only the 171,754 rows that still
+   matched a rule in their persisted handle, display name, or evidence text,
+   and moved the other 30,158 rows—including 28,560 historical human/bulk
+   confirmations—to the recoverable `removed` state.
 
-The current blacklist contained 201,843 entries immediately after the cleanup.
-Historical mirror commits remain available as the audit trail; current API,
-R2 and `data-mirror` artifacts represent the cleaned list.
+A second full scan after the operation found zero non-rule matches among the
+171,754 remaining rows. Neither stage modified the whitelist; it contained
+2,338 entries immediately before and after stage two. Historical account rows,
+evidence, and mirror commits remain available as the audit trail. Current API,
+R2, and `data-mirror` artifacts represent the cleaned list. New AI verdicts
+remain review-only and cannot publish directly.
 
 ## Where the data lives
 
