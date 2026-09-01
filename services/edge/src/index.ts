@@ -1291,36 +1291,6 @@ function keywordHit(pattern: string, v: string | undefined | null): boolean {
   return re.test(t);
 }
 
-interface StoredKeywordRuleRow {
-  handle: string;
-  display_name: string | null;
-  evidence_text: string | null;
-}
-
-// Historical account rows do not retain the original Signals.bio and
-// Signals.recentTweets fields separately. This is the canonical stored-row
-// projection used by every administrative rescan: persisted evidence_text is
-// the closest available source for both bio and tweet rules, and AI-authored
-// reasons are intentionally excluded because negated prose can contain a
-// keyword without the account itself ever having matched it.
-function storedRowMatchesKeywordRule(row: StoredKeywordRuleRow, rule: KeywordRule): boolean {
-  if (!rule.pattern) return false;
-  const has = (v: string | null) => keywordHit(rule.pattern, v);
-  switch (rule.field) {
-    case "handle":
-      return has(row.handle);
-    case "display_name":
-      return has(row.display_name);
-    case "bio":
-    case "tweet":
-      return has(row.evidence_text);
-    case "any":
-      return has(row.handle) || has(row.display_name) || has(row.evidence_text);
-    default:
-      return false;
-  }
-}
-
 function ruleMatchesText(rule: KeywordRule, s: Signals): boolean {
   if (!rule.pattern) return false;
   const has = (v: string | undefined | null) => keywordHit(rule.pattern, v);
@@ -3838,203 +3808,6 @@ app.post("/v1/admin/keyword-rules/preview", async (c) => {
   });
 });
 
-// One-time operational convergence for the 2026-09-01 false-positive cleanup.
-// A page is always recomputed with the same stored-row matcher used by the
-// production keyword sweep. Dry-run is the default; execution additionally
-// requires the exact rule fingerprint and page-plan hash returned by an
-// immediately preceding dry-run, so a rule edit or concurrent row rewrite
-// fails closed instead of silently changing the removal set.
-const RULE_ONLY_CLEANUP_PAGE_MAX = 1_000;
-const RULE_ONLY_CLEANUP_UPDATE_ROWS = 45; // 1 timestamp + 2 binds/row < D1's 100-bind cap
-const RULE_ONLY_CLEANUP_CONFIRM = "REMOVE_NON_RULE_BLACKLIST";
-const RuleOnlyCleanupBody = z.object({
-  dryRun: z.boolean().default(true),
-  cursor: z.number().int().nonnegative().default(0),
-  limit: z
-    .number()
-    .int()
-    .min(1)
-    .max(RULE_ONLY_CLEANUP_PAGE_MAX)
-    .default(RULE_ONLY_CLEANUP_PAGE_MAX),
-  cleanupId: z.string().regex(/^[a-z0-9][a-z0-9-]{0,63}$/).optional(),
-  expectedRuleFingerprint: z.string().regex(/^[a-f0-9]{64}$/).optional(),
-  expectedPlanHash: z.string().regex(/^[a-f0-9]{64}$/).optional(),
-  confirm: z.string().optional(),
-});
-
-interface RuleOnlyCleanupRow extends StoredKeywordRuleRow {
-  rowid: number;
-  x_user_id: string | null;
-  last_scored: number | null;
-  published_tier: string | null;
-}
-
-async function sha256Hex(value: string): Promise<string> {
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-async function keywordRuleFingerprint(rules: KeywordRule[]): Promise<string> {
-  const canonical = rules
-    .map((rule) => ({
-      id: rule.id,
-      pattern: rule.pattern,
-      field: rule.field,
-      action: rule.action,
-      verdict_label: rule.verdict_label,
-      category: rule.category,
-      enabled: rule.enabled,
-    }))
-    .sort((a, b) => a.id - b.id);
-  return sha256Hex(JSON.stringify(canonical));
-}
-
-app.post("/v1/admin/rule-only-blacklist-cleanup", async (c) => {
-  if (!(await admin(c))) return c.json({ error: "forbidden" }, 403);
-  let body: z.infer<typeof RuleOnlyCleanupBody>;
-  try {
-    body = RuleOnlyCleanupBody.parse(await c.req.json().catch(() => ({})));
-  } catch (err) {
-    return c.json({ error: "bad_request", detail: (err as Error).message }, 400);
-  }
-  if (
-    !body.dryRun &&
-    (body.confirm !== RULE_ONLY_CLEANUP_CONFIRM ||
-      !body.cleanupId ||
-      !body.expectedRuleFingerprint ||
-      !body.expectedPlanHash)
-  ) {
-    return c.json(
-      {
-        error: "confirmation_required",
-        detail:
-          "execution requires cleanupId, expectedRuleFingerprint, expectedPlanHash, and confirm=REMOVE_NON_RULE_BLACKLIST",
-      },
-      400,
-    );
-  }
-
-  const rules = (await getKeywordRules(c.env)).filter((rule) => rule.action === "blacklist");
-  if (!rules.length) {
-    return c.json({ error: "no_blacklist_rules", detail: "refusing an empty-rule cleanup" }, 409);
-  }
-  const ruleFingerprint = await keywordRuleFingerprint(rules);
-  if (!body.dryRun && body.expectedRuleFingerprint !== ruleFingerprint) {
-    return c.json(
-      {
-        error: "rule_fingerprint_mismatch",
-        expected: body.expectedRuleFingerprint,
-        actual: ruleFingerprint,
-      },
-      409,
-    );
-  }
-
-  const result = await c.env.DB.prepare(
-    `SELECT rowid, x_user_id, handle, display_name, evidence_text, last_scored, published_tier
-       FROM accounts
-      WHERE status='human_confirmed' AND rowid>?
-      ORDER BY rowid LIMIT ?`,
-  )
-    .bind(body.cursor, body.limit)
-    .all<RuleOnlyCleanupRow>();
-  const page = result.results ?? [];
-  const removable: RuleOnlyCleanupRow[] = [];
-  const retainedByRule: Record<string, number> = {};
-  const retainedByPublishedTier: Record<string, number> = {};
-  const removableByPublishedTier: Record<string, number> = {};
-  const retainedSamples: Array<{ rowid: number; handle: string; ruleId: number }> = [];
-  const removableSamples: Array<{ rowid: number; handle: string; publishedTier: string | null }> = [];
-  const planLines: string[] = [];
-  for (const row of page) {
-    const hit = rules.find((rule) => storedRowMatchesKeywordRule(row, rule));
-    planLines.push(`${row.rowid}:${row.last_scored ?? "null"}:${hit?.id ?? 0}`);
-    if (hit) {
-      retainedByRule[String(hit.id)] = (retainedByRule[String(hit.id)] ?? 0) + 1;
-      const tier = row.published_tier ?? "null";
-      retainedByPublishedTier[tier] = (retainedByPublishedTier[tier] ?? 0) + 1;
-      if (retainedSamples.length < 5) {
-        retainedSamples.push({ rowid: row.rowid, handle: row.handle, ruleId: hit.id });
-      }
-    } else {
-      removable.push(row);
-      const tier = row.published_tier ?? "null";
-      removableByPublishedTier[tier] = (removableByPublishedTier[tier] ?? 0) + 1;
-      if (removableSamples.length < 5) {
-        removableSamples.push({
-          rowid: row.rowid,
-          handle: row.handle,
-          publishedTier: row.published_tier,
-        });
-      }
-    }
-  }
-  const planHash = await sha256Hex(planLines.join("\n"));
-  if (!body.dryRun && body.expectedPlanHash !== planHash) {
-    return c.json(
-      {
-        error: "page_plan_mismatch",
-        cursor: body.cursor,
-        expected: body.expectedPlanHash,
-        actual: planHash,
-      },
-      409,
-    );
-  }
-
-  let processed = 0;
-  if (!body.dryRun && removable.length) {
-    const now = Date.now();
-    const updates: D1PreparedStatement[] = [];
-    for (let i = 0; i < removable.length; i += RULE_ONLY_CLEANUP_UPDATE_ROWS) {
-      const chunk = removable.slice(i, i + RULE_ONLY_CLEANUP_UPDATE_ROWS);
-      const where = chunk.map(() => "(rowid=? AND last_scored IS ?)").join(" OR ");
-      updates.push(
-        c.env.DB.prepare(
-          `UPDATE accounts
-              SET status='removed', published_at=NULL, published_tier=NULL,
-                  last_decided_by='human:rule-only-cleanup', last_decided_at=?
-            WHERE status='human_confirmed' AND (${where})`,
-        ).bind(now, ...chunk.flatMap((row) => [row.rowid, row.last_scored])),
-      );
-    }
-    const audit = reviewLogStmt(
-      c.env,
-      null,
-      "*",
-      "rule_only_cleanup_batch",
-      `cleanup=${body.cleanupId} cursor=${body.cursor} scanned=${page.length} retained=${page.length - removable.length} removable=${removable.length} rules=${ruleFingerprint} plan=${planHash}`,
-      now,
-    );
-    const results = await c.env.DB.batch([...updates, audit]);
-    processed = results
-      .slice(0, updates.length)
-      .reduce((sum, update) => sum + (update.meta?.changes ?? 0), 0);
-  }
-
-  const nextCursor = page.length ? page[page.length - 1].rowid : null;
-  return c.json({
-    ok: body.dryRun || processed === removable.length,
-    dryRun: body.dryRun,
-    cursor: body.cursor,
-    nextCursor,
-    done: page.length < body.limit,
-    scanned: page.length,
-    retained: page.length - removable.length,
-    removable: removable.length,
-    processed,
-    skipped: body.dryRun ? 0 : removable.length - processed,
-    ruleCount: rules.length,
-    ruleFingerprint,
-    planHash,
-    retainedByRule,
-    retainedByPublishedTier,
-    removableByPublishedTier,
-    samples: { retained: retainedSamples, removable: removableSamples },
-    cap: RULE_ONLY_CLEANUP_PAGE_MAX,
-  });
-});
-
 // Apply all enabled rules to existing rows. Default sweeps
 // status='auto_pending_review' only; body {scope:'all'} additionally rescans
 // auto_legit rows (an account the AI once cleared never re-enters the live
@@ -4169,11 +3942,35 @@ app.post("/v1/admin/keyword-rules/apply-to-queue", async (c) => {
   const perRule: Record<number, number> = {};
   for (const r of rules) perRule[r.id] = 0;
 
+  // We can't reuse ruleMatchesText here because the row layout differs from
+  // the Signals payload. Build a row-shaped matcher:
+  function rowMatches(row: (typeof candidates)[number], rule: KeywordRule): boolean {
+    if (!rule.pattern) return false;
+    const has = (v: string | null) => keywordHit(rule.pattern, v);
+    switch (rule.field) {
+      case "handle":
+        return has(row.handle);
+      case "display_name":
+        return has(row.display_name);
+      case "bio":
+      case "tweet":
+        return has(row.evidence_text);
+      case "any":
+        // NB: never match row.reasons — that is the AI's own prose and would
+        // fire on negated mentions ("no 约 solicitation found"). Mirror the
+        // live ruleMatchesText field set as closely as the row layout allows.
+        return has(row.handle) || has(row.display_name) || has(row.evidence_text);
+      default:
+        // Unknown field — do not silently widen to match everything.
+        return false;
+    }
+  }
+
   const stmts: D1PreparedStatement[] = [];
   let totalHit = 0;
   let legitHit = 0;
   for (const row of [...candidates, ...legitCandidates]) {
-    const hit = rules.find((r) => storedRowMatchesKeywordRule(row, r));
+    const hit = rules.find((r) => rowMatches(row, r));
     if (!hit) continue;
     const fromLegit = row.status === "auto_legit";
     // Same auto-publish gate as the live fast-path: a 'blacklist' rule can't
