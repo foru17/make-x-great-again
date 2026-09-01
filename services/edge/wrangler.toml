@@ -3,13 +3,6 @@ main = "src/index.ts"
 compatibility_date = "2026-05-01"
 compatibility_flags = ["nodejs_compat"]
 
-# Public moderation policy: AI verdicts may populate the review queue but may
-# not publish directly to the blacklist. Only an explicit value of "1" enables
-# the dormant auto-publish lane; production stays fail-closed after the
-# 2026-09-01 false-positive cleanup.
-[vars]
-AI_AUTO_PUBLISH_ENABLED = "0"
-
 # Cloudflare account for the public Worker deployment.
 account_id = "cfab318ffd80d3f933cb6742534e88f3"
 
@@ -24,6 +17,13 @@ routes = [
 # an old `edgeBase` setting continue to work during the migration window.
 # Can be flipped to `false` once the extension has rolled out widely.
 workers_dev = true
+
+# Public moderation policy: AI verdicts may populate the review queue but may
+# not publish directly to the blacklist. Only an explicit value of "1" enables
+# the dormant auto-publish lane; production stays fail-closed after the
+# 2026-09-01 false-positive cleanup.
+[vars]
+AI_AUTO_PUBLISH_ENABLED = "0"
 
 # Static assets — favicon set, mascot artwork, og:image. Cloudflare Workers
 # Assets serves files from this directory first; unmatched paths fall through
