@@ -6,7 +6,13 @@
       "id": "T1",
       "task": "建立可重复、能捕获截图症状的诊断反馈环",
       "verify": "用截图账号或等价真实输入驱动实际判定链路，稳定得到普通对话被判为 spam/likely_spam 的红色结果",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "用户截图显示同一对话页 4 个账号全部命中，其中 maomao1943hk、Peter35605726 的普通问答被标为 likely_spam 75%，itsrealyutian 被标为 spam 90%",
+        "只读检查当前 Chrome 中 @itsrealyutian 资料页：认证账号、2356 关注者、521 帖子；页面包含多种不同主题和长度的帖子",
+        "反馈环直接查询扩展注入的 aria-label：7 个可见标记全部为“垃圾 90% · 本地缓存命中”，markerCount=7、sameCachedVerdict=true、reproduced=true",
+        "该反馈环在已加载页面上耗时小于 1 秒、无需人工点击，能在判定不再被账户级缓存错误复用时转绿"
+      ]
     },
     {
       "id": "T2",
