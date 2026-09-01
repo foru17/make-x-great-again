@@ -1,0 +1,30 @@
+{
+  "goal": "清空线上待审队列；不动当前黑名单、白名单、AI Agent 队列和白名单申请，并保留可恢复的审计状态",
+  "created": "2026-09-01",
+  "tasks": [
+    {
+      "id": "T1",
+      "task": "固定待审口径、保护对象、生产基线和恢复锚点",
+      "verify": "确认仅处理 accounts.status='auto_pending_review'；记录 raw/dedup 数量、受保护状态数量和 D1 Time Travel 时间点",
+      "passes": false
+    },
+    {
+      "id": "T2",
+      "task": "生成清空预览并确定有硬性上限的执行方案",
+      "verify": "预览命中数与基线对账；方案不会触碰其他 status，循环次数有明确上限",
+      "passes": false
+    },
+    {
+      "id": "T3",
+      "task": "将全部待审记录移出待审队列",
+      "verify": "生产查询 pending_raw=0 且 dedup queue=0；写入保留审计轨迹而非物理删除",
+      "passes": false
+    },
+    {
+      "id": "T4",
+      "task": "以证伪立场复核受保护数据、公开产物和仓库边界",
+      "verify": "黑名单、白名单、Agent 队列和白名单申请均未被本次操作修改；健康检查通过；diff 与敏感信息扫描通过",
+      "passes": false
+    }
+  ]
+}
