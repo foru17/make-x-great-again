@@ -1,0 +1,42 @@
+{
+  "goal": "清理线上黑名单：保留确定由规则匹配命中的账号，移除 AI 自动判定账号，白名单不变；公开说明清理背景",
+  "created": "2026-09-01",
+  "tasks": [
+    {
+      "id": "T1",
+      "task": "定位线上数据源、黑白名单状态和规则/AI 判定来源字段",
+      "verify": "代码、迁移和生产只读查询对同一口径达成一致",
+      "passes": true,
+      "evidence": [
+        "services/edge/wrangler.toml 将生产数据绑定到 D1 xss-db",
+        "accounts.status='human_confirmed' 是当前黑名单，status='whitelisted' 是白名单",
+        "published_tier='ai' 表示 AI 自动发布，published_tier='rule' 表示直接规则命中",
+        "2026-09-01 生产只读基线：blacklist=223670，whitelist=2337，tier ai=21827，tier rule=156432"
+      ]
+    },
+    {
+      "id": "T2",
+      "task": "生成清理预览并记录可回滚锚点",
+      "verify": "清理目标数、保留数与总数对账；记录 D1 Time Travel 清理前时间点；白名单基线固定",
+      "passes": false
+    },
+    {
+      "id": "T3",
+      "task": "将 AI 自动发布账号移出当前黑名单",
+      "verify": "生产查询 tier ai=0；规则命中数量不减；白名单前后均为 2337；公开名单数量同步下降",
+      "passes": false
+    },
+    {
+      "id": "T4",
+      "task": "在公开数据文档中说明本次清理背景、范围和白名单保护",
+      "verify": "文档 diff 明确日期、原因、保留/移除口径和申诉机制",
+      "passes": false
+    },
+    {
+      "id": "T5",
+      "task": "以证伪立场逐项复核并交付",
+      "verify": "测试、线上 API、公开产物、git diff 与敏感信息扫描均通过",
+      "passes": false
+    }
+  ]
+}
