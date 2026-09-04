@@ -6,7 +6,12 @@
       "id": "T1",
       "task": "核对全部当前未关闭 issue、现行申诉规则和生产状态，建立逐账号证据表",
       "verify": "GitHub 实时清单与每个账号的黑名单、白名单、待审及公开资料交叉核对；不把无证据或错误查询参数当作排除误伤的证据",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "GitHub 实查 11 个 open issue；25 次有界 API 只读查询确认均不在黑/白/待审分区",
+        "Wrangler 生产只读 SQL 返回 14 行，rows_read=50、rows_written=0、changed_db=false",
+        "逐账号原始文本、标签、身份冲突与拟处置已记录于 docs/issues-report-audit-2026-09-04.md；X 403 和旧查询缺陷明确披露"
+      ]
     },
     {
       "id": "T2",
