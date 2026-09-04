@@ -60,3 +60,65 @@
 - 已关闭并加白名单：[363](https://github.com/foru17/make-x-great-again/issues/363#issuecomment-5533994808)、[364](https://github.com/foru17/make-x-great-again/issues/364#issuecomment-5533995547)、[365](https://github.com/foru17/make-x-great-again/issues/365#issuecomment-5533996404)、[367](https://github.com/foru17/make-x-great-again/issues/367#issuecomment-5533997867)、[369](https://github.com/foru17/make-x-great-again/issues/369#issuecomment-5533999316)、[371](https://github.com/foru17/make-x-great-again/issues/371#issuecomment-5534000778)、[372](https://github.com/foru17/make-x-great-again/issues/372#issuecomment-5534001604)、[373](https://github.com/foru17/make-x-great-again/issues/373#issuecomment-5534002425)。
 - 保持打开并请求证据：[366](https://github.com/foru17/make-x-great-again/issues/366#issuecomment-5533997198)、[368](https://github.com/foru17/make-x-great-again/issues/368#issuecomment-5533998708)、[370](https://github.com/foru17/make-x-great-again/issues/370#issuecomment-5534000128)。等待的是申诉人补充原帖、来源截图、版本与时间，而不是把这些账号认定为垃圾。
 - 回帖均明确区分“本次新增白名单”和“处置前就已移出”；说明实时主页核验限制、客户端刷新与既有 X 拉黑/静音不能自动撤销。不宣称浏览器旧标记已经消失。
+
+## 最新上报：仍有大量低质量判定，但不能报一个虚假的“误伤率”
+
+统计锚点 **2026-09-04 00:41:38 UTC / 08:41:38 UTC+8**；24 小时窗口起点为前一天同一时间。`scripts/diagnostics/latest-report-audit.mjs` 实跑 8 个固定只读查询，全部 `rows_written=0`；另做两次各 1 条的只读核验（补全 50 个样本显示名、核对公开发布来源）。各查询不是同一事务快照，持续流量可能使全量队列计数相差几条。原始查询没有调用 LLM 或生产 classify 接口。
+
+| 口径 | 实测结果 |
+|---|---|
+| 当前待审快照 | 43,871 条记录、43,870 个不同 handle，约 4.39 万 |
+| 近 24 小时收到的用户举报 | 86 条，86 个 handle，21 个举报身份；近 1 小时仅 1 条 |
+| 近 72 小时收到的用户举报 | 208 条，206 个 handle，47 个举报身份 |
+| 近 24 小时评分、目前仍待审 | 17,395 条，其中 auto_scan 17,348 条（99.73%） |
+| 上述待审中的原始模型标签 | legit 8,546；uncertain 5,521；其余 3,328 |
+| 上述非垃圾标签占比 | 14,067 / 17,395 = **80.87%**；这是排队噪声，不是误伤率 |
+| 首次入库在近 24 小时、目前仍待审 | 15,237 条；不包含已进入其他审核状态的记录 |
+| 最新连续 1,000 条待审 | legit 508、uncertain 337、spam 58、porn_bot 88、likely_spam 9 |
+| 这 1,000 条的采样时间跨度 | 2026-09-03 20:03:25 至 2026-09-04 00:41:35 UTC |
+| 这 1,000 条的资料缺失 | 918 条无粉丝数，881 条无注册时间/年龄，21 条无留存文本 |
+| 近 24 小时公开黑名单新增 | 104 条直接规则 + 3 条规则提及关联；AI tier **0 条** |
+
+因此，待审快速回填主要不是用户集中举报，而是自动扫描持续把普通/不确定内容送进队列。关闭 AI 自动发布只挡住公开名单写入，没有关闭在线标签展示。后台另有 60 次 `agent_blacklist` 审核日志，不等同于公开黑名单新增。
+
+### 50 条最新垃圾标签样本
+
+对同一锚点之前最新连续 50 条 spam / porn_bot / likely_spam 待审记录逐条审阅原文本、理由与显示名。以下 10 条的留存证据不能支撑其广告/色情理由，属于可复核的明显判定质量问题；**不将它们外推为全站 20% 误伤率，也不声称已验证这些账号的全部历史行为**。
+
+| Handle | 留存文本（短摘录/概述） | 原标签 | 证据问题 |
+|---|---|---|---|
+| cmmm1244 | 我头晕得站都站不稳。 | porn_bot 0.92 | 普通身体感受被称为色情招揽，没有导流证据 |
+| rongchunh2whj | 我还以为被封号了 | spam 0.90 | 普通回应被称为色情/垃圾放大器 |
+| romanrichshing | 刚刚开始 | spam 0.92 | 一句短回复不足以证明重复导流 |
+| yuzhiqiang1993 | 请更新 Antigravity IDE，谢谢 | spam 0.92 | 产品更新请求被推断为反复刷广告 |
+| jy85234509 | 為啥?拍片嗎? | porn_bot 0.92 | “拍片”被直接解释为色情广告 |
+| qiyueqiriqing77 | 杨幂？ | porn_bot 0.92 | 单个公众人物姓名被称为色情广告模板 |
+| slhiyu247185 | 36岁！！！ | porn_bot 0.92 | 年龄感叹被当成招嫖模板 |
+| travelallchina | @getxbot | porn_bot 0.92 | 普通单独 mention 被推断为色情招揽 |
+| fressshhh2 | 政治性粗口 | porn_bot 0.92 | 粗口/政治立场不等于色情广告 |
+| bmzxdchgqz | 对公共资金使用的讽刺 | likely_spam 0.75 | 政治讽刺和重复输入字段被当作刷广告证据 |
+
+样本里同时有明确色情诱饵和向其他账号/平台导流的内容，不能把这 50 条一并判定为正常。本轮只是审计，未批量变更这些新样本的审核状态。
+
+### 20 条最新用户举报样本
+
+逐条查看最新 20 条举报的原始 snippet：13 条为日常交流、技术讨论、政治观点或争吵，未展示本项目范围内的广告；5 条包含色情诱饵/导流模板；2 条仅标点或短乱码，信息不足。举报确有范围外噪声，但样本不是随机抽样，举报也不代表已经列黑。2 条无法按安全的 UID/handle 规则关联到账号记录，未将其强行匹配。
+
+## 根因与排除项
+
+1. **排队条件仍把低置信度正常结果送待审。** Worker 仅对 `legit && confidence >= 0.85` 使用 `auto_legit`，其余进入 `auto_pending_review`。因此 80.87% 非垃圾标签是当前逻辑产生的队列噪声，不代表 80.87% 都被显示为垃圾。
+2. **输入语义错误仍在放大模型误判。** `extractFromArticle()` 同时把当前文本填入 `triggeringComment` 和 `recentTweets[0]`，不是独立历史帖子。本轮 #371 与最新 `bmzxdchgqz` 等模型理由明确把两字段相同解释为“重复发布”。主题采集仍取页面第一个 tweetText；先前长文章误取第一条回复的路径尚未修复，但本轮没有重新打开申诉人的页面确认具体根主题。
+3. **模型没有可靠遵守现有边界。** 当前提示词本来要求“性招揽 + mention 导流”等组合，也明确排除政治立场、翻译语言和成人内容本身；新样本却把普通 mention、演员名字、年龄、粗口、翻译中文泛化为色情/垃圾模板。能确认的是输出与证据/提示约束不一致，不能据此断言近期供应商或模型配置发生漂移。
+4. **撤回状态没有撤回客户端判定。** 实际 Worker `/v1/classify` 对 removed/rejected 沿用无限期旧 verdict；实际客户端 `classifyAndCache()` 收到 reviewStatus 后仍保存旧垃圾标签，展示函数也只看 label。原有垃圾缓存还能跨文本复用 14/30 天。清理云端名单不能独自消除红标。
+5. **排除“AI 自动发布重新打开”作为本轮新增公开名单原因。** 实查开关为 false，固定窗口公开新增仅 rule 104 + mention 3，没有 AI tier。规则与提及关联并不因此获得 100% 正确保证；本轮没有对全部新增规则条目作完整账号审查。
+
+### 可重复的失败证据
+
+运行 `node_modules/.bin/tsx scripts/diagnostics/terminal-verdict-replay.ts`，直接串联实际 Worker 路由与实际客户端缓存/展示函数，外部请求和数据库写入均禁止；合成输入只保留本轮生产观察到的“撤回状态 + 旧垃圾 verdict”形状，不会重新上报真实账号。
+
+- removed → spam 0.90 → `cacheWrites=1, visible=true, storedSpam=true`
+- rejected → spam 0.90 → `cacheWrites=1, visible=true, storedSpam=true`
+- 唯一改变状态为 whitelisted 的对照 → legit 1.0 → `visible=false, storedSpam=false`
+- 两次最小复跑与加入对照的第三次均稳定捕获前两项；断言退出码 **1**，单次小于 0.4 秒。此为**故意保留的红色诊断**，不是修复完成或整套测试通过。
+
+本轮未修复产品代码。后续优先级应为：撤回状态/旧缓存失效 → 拆清当前文本与独立历史证据 → 把无充分证据的在线判定降为不展示、不自动处理 → 正常/不确定结果分流。仅继续清空待审不能解决这些原因。
