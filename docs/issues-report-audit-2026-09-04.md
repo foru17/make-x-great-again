@@ -32,4 +32,31 @@
 - 11 个申诉不是随机样本，不能直接计算全站真实误伤率。
 - 云端移出不等于浏览器旧缓存已经撤销；本轮尚未验证各申诉人的实际客户端。
 - `GET /v1/check` 只接受数字 `ids`，且仅查 `published_tier=human`。此前 2026-09-01 诊断中用 `?handle=...` 返回空命中排除所有公开名单的证据不成立；本轮使用管理分区和生产库查询，不复用该错误推断。
-- 所有白名单/issue 处置尚需在后续步骤执行与复验，本节目前只是取证和拟处置记录。
+- 上表保留处置前证据。已执行动作与客户端未验证事项以下文为准。
+
+## 白名单执行记录
+
+2026-09-04 00:37 UTC，使用现有管理接口，逐项加入并回读 8 个账号；18 次请求，硬上限 20。公开白名单由 2,338 增至 2,346；将原有每条记录的 handle、UID、last_scored 与处置后集合逐条比较，2,338 条全部未变。
+
+| Issue | 已保护身份 | review_log |
+|---|---|---|
+| #363 | yyeonmihy，handle-only | 740577 |
+| #364 | felix51829805，handle-only；未采用未经核实的申诉 UID | 740578 |
+| #365 | acai_sec，handle-only | 740579 |
+| #367 | _marulka，handle-only | 740580 |
+| #369 | kevinhung2，handle-only | 740581 |
+| #371 | pluvio9yte，保留现有 UID 1667439202357899267 | 740582 |
+| #372 | wallen97754394，handle-only | 740583 |
+| #373 | fly51fly，handle-only | 740584 |
+
+没有合并 #366、#370 的冲突身份，没有将 #368 重新列黑或加入白名单，没有修改其他既有白名单。
+
+验证：生产审计只读查询返回上述 8 行，`rows_written=0`；白名单相关服务端测试 **26/26**，扩展完整白名单分页测试 **1/1**。这些测试证明身份隔离、幂等与名单分页行为，不代表每位申诉人的客户端已经刷新。
+
+## GitHub 回帖结果
+
+共 52 次 GitHub API 请求，硬上限 55；每条先确认没有新回复，回帖后逐条验证正文与状态，未重试写请求。
+
+- 已关闭并加白名单：[363](https://github.com/foru17/make-x-great-again/issues/363#issuecomment-5533994808)、[364](https://github.com/foru17/make-x-great-again/issues/364#issuecomment-5533995547)、[365](https://github.com/foru17/make-x-great-again/issues/365#issuecomment-5533996404)、[367](https://github.com/foru17/make-x-great-again/issues/367#issuecomment-5533997867)、[369](https://github.com/foru17/make-x-great-again/issues/369#issuecomment-5533999316)、[371](https://github.com/foru17/make-x-great-again/issues/371#issuecomment-5534000778)、[372](https://github.com/foru17/make-x-great-again/issues/372#issuecomment-5534001604)、[373](https://github.com/foru17/make-x-great-again/issues/373#issuecomment-5534002425)。
+- 保持打开并请求证据：[366](https://github.com/foru17/make-x-great-again/issues/366#issuecomment-5533997198)、[368](https://github.com/foru17/make-x-great-again/issues/368#issuecomment-5533998708)、[370](https://github.com/foru17/make-x-great-again/issues/370#issuecomment-5534000128)。等待的是申诉人补充原帖、来源截图、版本与时间，而不是把这些账号认定为垃圾。
+- 回帖均明确区分“本次新增白名单”和“处置前就已移出”；说明实时主页核验限制、客户端刷新与既有 X 拉黑/静音不能自动撤销。不宣称浏览器旧标记已经消失。
