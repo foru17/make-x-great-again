@@ -22,6 +22,15 @@ import {
 } from "../../lib/settings";
 import { getStoredList, getStoredWhitelist } from "../../lib/list-sync";
 import {
+  LOCAL_WL_KEY,
+  type LocalWhitelistEntry,
+  MAX_LOCAL_WHITELIST,
+  addLocalWhitelist,
+  listLocalWhitelist,
+  normalizeWhitelistHandle,
+  removeLocalWhitelist,
+} from "../../lib/local-whitelist";
+import {
   type BlockRecord,
   type CacheRow,
   clearAllLocal,
@@ -2163,15 +2172,186 @@ function BrandLockup() {
   );
 }
 
-/** 白名单自助申请 — its own nav page so the entry isn't buried in 设置. */
+const WL_SOURCE_ZH: Record<LocalWhitelistEntry["source"], { label: string; hint: string }> = {
+  manual: { label: "手动添加", hint: "你在角标弹层或本页手动加入" },
+  following: { label: "我关注的", hint: "检测到你关注了该账号后自动加入" },
+};
+
+/** 本地白名单 — the user's own never-touch list (highest priority of the
+ *  whole chain). Followed accounts join automatically; anything can be added
+ *  by handle. Local-only storage, never uploaded. */
+function LocalWhitelistSection({
+  st,
+  save,
+}: {
+  st: Settings;
+  save: <K extends keyof Settings>(k: K, v: Settings[K]) => Promise<void>;
+}) {
+  const [rows, setRows] = useState<LocalWhitelistEntry[]>([]);
+  const [draft, setDraft] = useState("");
+  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [q, setQ] = useState("");
+  const reload = () => void listLocalWhitelist().then(setRows);
+  useEffect(() => {
+    reload();
+    const h = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
+      if (area === "local" && changes[LOCAL_WL_KEY]) reload();
+    };
+    try {
+      chrome.storage.onChanged.addListener(h);
+      return () => chrome.storage.onChanged.removeListener(h);
+    } catch {
+      return undefined;
+    }
+  }, []);
+  const add = async () => {
+    const handle = normalizeWhitelistHandle(draft);
+    if (!handle) {
+      setMsg({ text: "请输入有效的 X 用户名（1–15 位字母、数字或下划线）", ok: false });
+      return;
+    }
+    const added = await addLocalWhitelist({ handle, source: "manual" });
+    setMsg({ text: added ? `已加入 @${handle}` : `@${handle} 已在白名单中`, ok: true });
+    setDraft("");
+    reload();
+  };
+  const remove = async (handle: string) => {
+    await removeLocalWhitelist(handle);
+    reload();
+  };
+  const following = rows.filter((r) => r.source === "following").length;
+  const shown = q.trim()
+    ? rows.filter((r) => {
+        const s = q.trim().toLowerCase().replace(/^@+/, "");
+        return r.handle.toLowerCase().includes(s) || (r.displayName ?? "").toLowerCase().includes(s);
+      })
+    : rows;
+  return (
+    <section className="mb-10">
+      <SectionH>本地白名单</SectionH>
+      <p className="mb-3 text-[12px] leading-relaxed text-fg-3">
+        优先级最高：名单内账号<b className="text-fg-2">不检测、不标记、不自动处理</b>，即使公共名单或关键词规则命中。仅保存在本机，不上传、不参与回传。
+      </p>
+      <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2.5">
+        <span>
+          <span className="block text-[13px] font-medium text-fg">自动加入我关注的账号</span>
+          <span className="block text-[12px] leading-5 text-fg-3">
+            在时间线、主页或你的「正在关注」列表里识别到已关注的账号时自动加入
+            {following > 0 ? `（已收录 ${following.toLocaleString("zh-CN")} 个）` : ""}
+          </span>
+        </span>
+        <MiniSwitch on={st.followingWhitelist} onChange={(v) => save("followingWhitelist", v)} />
+      </div>
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <input
+          value={draft}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            setMsg(null);
+          }}
+          onKeyDown={(e) => e.key === "Enter" && void add()}
+          placeholder="@用户名 — 手动加入白名单"
+          maxLength={20}
+          className="min-w-[200px] flex-1 rounded-md border border-border-2 bg-transparent px-3 py-1.5 text-[12.5px] outline-none transition focus:border-accent"
+        />
+        <Btn tier="primary" onClick={() => void add()} disabled={rows.length >= MAX_LOCAL_WHITELIST}>
+          加入
+        </Btn>
+        {msg && (
+          <span className={`text-[12px] ${msg.ok ? "text-fg-2" : "text-danger"}`}>{msg.text}</span>
+        )}
+      </div>
+      {rows.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-[12.5px] text-fg-3">
+          还没有本地白名单账号。在 X 上悬停角标 → 「加入白名单」，或在上方输入用户名。
+        </div>
+      ) : (
+        <>
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <span className="text-[12px] text-fg-3">共 {rows.length.toLocaleString("zh-CN")} 个账号</span>
+            {rows.length > 8 && (
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="筛选"
+                className="w-40 rounded-md border border-border-2 bg-transparent px-2.5 py-1 text-[12px] outline-none transition focus:border-accent"
+              />
+            )}
+          </div>
+          <div className="overflow-x-auto rounded-lg border border-border">
+            <table className="w-full border-collapse text-[13px]">
+              <thead>
+                <tr>
+                  <th className={th}>账号</th>
+                  <th className={th}>来源</th>
+                  <th className={th}>加入时间</th>
+                  <th className={`${th} text-right`}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {shown.slice(0, 300).map((r) => (
+                  <tr key={r.handle} className={trHover}>
+                    <td className={td}>
+                      <a
+                        href={`https://x.com/${r.handle}`}
+                        target="_blank"
+                        rel="noopener"
+                        className="text-fg hover:underline"
+                        title={`去 @${r.handle} 的 X 主页`}
+                      >
+                        {r.displayName ? (
+                          <>
+                            <span className="font-medium">{r.displayName}</span>
+                            <span className="ml-1.5 text-fg-3">@{r.handle}</span>
+                          </>
+                        ) : (
+                          <>@{r.handle}</>
+                        )}
+                      </a>
+                    </td>
+                    <td className={`${td} text-[12px] text-fg-2`} title={WL_SOURCE_ZH[r.source].hint}>
+                      {WL_SOURCE_ZH[r.source].label}
+                    </td>
+                    <td className={`${td} font-mono text-[12px] text-fg-3`}>
+                      {r.addedAt ? relTime(r.addedAt) : "—"}
+                    </td>
+                    <td className={`${td} text-right`}>
+                      <Btn tier="ghost" size="sm" onClick={() => void remove(r.handle)}>
+                        移出
+                      </Btn>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {shown.length > 300 && (
+            <p className="mt-2 text-[12px] text-fg-3">仅显示前 300 条，请用筛选缩小范围。</p>
+          )}
+        </>
+      )}
+    </section>
+  );
+}
+
+/** 白名单 — the user's local list first (highest priority), then the
+ *  official-whitelist self-service application. */
 function WhitelistPage() {
   const [st, setSt] = useState<Settings | null>(null);
   useEffect(() => {
     getSettings().then(setSt);
   }, []);
+  const save = async <K extends keyof Settings>(k: K, v: Settings[K]) => {
+    await setSetting(k, v);
+    setSt((s) => (s ? { ...s, [k]: v } : s));
+  };
   return (
-    <Page title="保护我的账号" sub="官方白名单 · 名单内账号永不被检测、标记或上榜">
-      <div className="max-w-[680px]">{st && <WhitelistApplySection edgeBase={st.edgeBase} />}</div>
+    <Page title="白名单" sub="本地白名单优先级最高 · 官方白名单保护你自己的账号不被误列">
+      <div className="max-w-[760px]">
+        {st && <LocalWhitelistSection st={st} save={save} />}
+        <SectionH>保护我的账号（官方白名单）</SectionH>
+        {st && <WhitelistApplySection edgeBase={st.edgeBase} />}
+      </div>
     </Page>
   );
 }
@@ -2181,7 +2361,7 @@ const TABS = [
   ["blocklist", "处理记录", Blocklist],
   ["cache", "检测缓存", Cache],
   ["settings", "设置", Settings],
-  ["whitelist", "保护我的账号", WhitelistPage],
+  ["whitelist", "白名单", WhitelistPage],
   ["about", "关于", About],
 ] as const;
 type TabId = (typeof TABS)[number][0];

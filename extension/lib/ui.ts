@@ -369,6 +369,18 @@ svg { display: block; }
   border-color: var(--border); background: transparent; box-shadow: none;
 }
 .xss-badge.ghost:hover { color: var(--text); }
+/* Local-whitelist member: green = "safe by your own choice" (the only place
+ * green is allowed besides legit/empty states). */
+.xss-badge.ghost.wl {
+  color: var(--safe);
+  border-color: color-mix(in srgb, var(--safe) 42%, var(--border));
+  background: color-mix(in srgb, var(--safe) 8%, transparent);
+}
+.xss-badge.ghost.wl:hover { color: var(--safe); filter: brightness(1.1); }
+.acts button[data-wl] {
+  color: var(--safe);
+  border-color: color-mix(in srgb, var(--safe) 45%, var(--border));
+}
 /* v0.4 popover: soft 12px radius, deep layered shadow, pop-in scale. */
 .pop {
   position: fixed; z-index: 2147482001; width: 280px; padding: 12px;
@@ -1658,6 +1670,12 @@ export interface BadgeActions {
    *  a short user-facing result the popover shows inline; the network call,
    *  GitHub-auth gating and abuse feedback all live in the caller. */
   onReport?: () => Promise<{ ok: boolean; message: string }>;
+  /** Account is on the user's LOCAL whitelist → the badge renders as the
+   *  neutral 白名单 marker and the popover offers 移出 instead of actions. */
+  whitelisted?: boolean;
+  /** Toggle local-whitelist membership for this account (add when not
+   *  whitelisted, remove when it is). Local-only; the caller re-renders. */
+  onWhitelist?: () => void | Promise<void>;
 }
 
 /** The manual action ladder shown in the popover, weakest → strongest.
@@ -1706,7 +1724,13 @@ export function createBadge(
   // amber likely_spam pill read as washed-out next to v0.4's badges.
   const spammy = !!v && (v.label === "spam" || v.label === "porn_bot" || v.label === "likely_spam");
   const color = !v ? "var(--muted)" : spammy ? "var(--danger)" : `var(${LABEL[v.label].varName})`;
-  if (!v) {
+  if (a.whitelisted) {
+    // Local-whitelist member: a quiet green-tinted ghost so the user can see
+    // WHY nothing happens to this account, and reach 移出 from the popover.
+    el.className = "xss-badge ghost wl";
+    el.setAttribute("aria-label", "MXGA：本地白名单 · 不检测、不处理");
+    el.innerHTML = `${icon("shield", "currentColor", 13)}<span>白名单</span>`;
+  } else if (!v) {
     // Unhit ghost — still INTERACTIVE: hover/focus opens the 手动处理
     // popover (v0.4 behavior the v0.5 rewrite dropped). "Not on the list"
     // is exactly when the user needs a manual handle on an obvious spammer.
@@ -1795,7 +1819,20 @@ export function createBadge(
     const reportBtn = canReport
       ? `<button data-report title="举报给公共名单人工审核（需 GitHub 授权）">举报为spam</button>`
       : "";
-    pop.innerHTML = v
+    // 本地白名单: the user's own never-touch list. Offered on every popover
+    // (hit or not); on a whitelisted account it is the ONLY action.
+    const wlBtn = a.onWhitelist
+      ? a.whitelisted
+        ? `<button data-wl title="移出本地白名单后，该账号重新参与检测">移出白名单</button>`
+        : `<button data-wl title="加入本地白名单：永不标记、永不自动处理（仅本机，不上传）">加入白名单</button>`
+      : "";
+    pop.innerHTML = a.whitelisted
+      ? `
+      <h4 style="color:var(--safe)">本地白名单</h4>
+      <div style="color:var(--muted);line-height:1.55">
+        该账号在你的本地白名单中：不检测、不标记、不自动处理，即使公共名单或规则命中。</div>
+      <div class="acts">${wlBtn}</div>`
+      : v
       ? `
       <h4 style="color:${color}">${LABEL[v.label].zh} · ${(v.confidence * 100).toFixed(0)}%</h4>
       <ul>${v.reasons.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>
@@ -1803,6 +1840,7 @@ export function createBadge(
       <div class="acts">
         ${spammy ? ladder : ""}
         ${reportBtn}
+        ${wlBtn}
         <button data-a title="打开 GitHub 提交误判申诉 issue（已预填账号信息）">误判申诉</button>
       </div>
       <div class="pop-status" data-report-status hidden></div>`
@@ -1810,11 +1848,16 @@ export function createBadge(
       <h4>手动处理</h4>
       <div style="color:var(--muted);line-height:1.55">
         未命中公共名单与官方规则。确认是垃圾/骚扰账号时，可手动处理（5 秒内可撤销），或举报给公共名单。</div>
-      <div class="acts">${ladder}${reportBtn}</div>
+      <div class="acts">${ladder}${reportBtn}${wlBtn}</div>
       <div class="pop-status" data-report-status hidden></div>`;
     for (const b of pop.querySelectorAll<HTMLElement>("[data-act]"))
       b.addEventListener("click", () => a.onAct(b.dataset.act as ActionMode));
     pop.querySelector("[data-a]")?.addEventListener("click", a.onAppeal);
+    const wlEl = pop.querySelector<HTMLElement>("[data-wl]");
+    if (wlEl && a.onWhitelist) {
+      const onWhitelist = a.onWhitelist;
+      wlEl.addEventListener("click", () => void onWhitelist());
+    }
     // 举报: stays open to show the inline result, so it is NOT wired to close.
     const reportEl = pop.querySelector<HTMLButtonElement>("[data-report]");
     if (reportEl && a.onReport) {

@@ -4,6 +4,7 @@ import {
   BLOCKED_KEY,
   addBlocked,
   isBlockedSync,
+  removeBlocked,
   warm as warmBlocklist,
 } from "../lib/blocklist";
 import { BRAND } from "../lib/brand";
@@ -19,6 +20,14 @@ import { CATEGORY_ZH } from "../lib/category";
 import { LIST_KEY, WL_KEY } from "../lib/list-sync";
 import { type IndexEntry, isWhitelisted, lookupLocal, warmLocalIndex } from "../lib/local-index";
 import { matchLocalRules, warmRuleConfig } from "../lib/local-rules";
+import {
+  LOCAL_WL_KEY,
+  addLocalWhitelist,
+  isLocallyWhitelisted,
+  noteFollowing,
+  removeLocalWhitelist,
+  warmLocalWhitelist,
+} from "../lib/local-whitelist";
 import {
   OnlineClassificationLimiter,
   classifyAndCache,
@@ -294,6 +303,7 @@ export default defineContentScript({
     await warmBlocklist();
     await warmLocalIndex();
     await warmRuleConfig();
+    await warmLocalWhitelist();
 
     async function refreshOnlineAuth(): Promise<boolean> {
       const before = onlineAuthenticated;
@@ -495,6 +505,9 @@ export default defineContentScript({
 
     function enqueueAuto(it: AutoItem) {
       if (autoActing.has(it.key)) return;
+      // The user's own whitelist outranks every list/rule verdict: never
+      // auto-act on an account they chose to protect (or follow).
+      if (isLocallyWhitelisted(it.sig.userId, it.sig.handle)) return;
       autoActing.add(it.key);
       // Record FIRST — the protection survives navigation even if the
       // animation never gets to play.
@@ -577,6 +590,16 @@ export default defineContentScript({
         // One broken item (dead DOM node, render error) must not strand the
         // rest of the queue — fail it and move on.
         try {
+          // Whitelisted while queued (popover / options page during the
+          // gather window): undo the up-front record and let the row stand.
+          if (isLocallyWhitelisted(it.sig.userId, it.sig.handle)) {
+            void removeBlocked(it.key);
+            if (it.sig.userId) void removeBlocked(it.sig.userId);
+            void clearPendingAction(it.key);
+            const row = autoTarget(it);
+            if (row) badgeFor(row, it.key, it.sig, null);
+            continue;
+          }
           const t0 = Date.now();
           const acting = autoTarget(it);
           if (acting) mountActing(acting, it.verb, false);
@@ -702,9 +725,10 @@ export default defineContentScript({
       // ghost badge's manual flow captures its own anchor via scheduleHide.
       if (v) anchorByKey.set(key, anchor);
       clearMounts(anchor);
+      const whitelisted = isLocallyWhitelisted(sig.userId, sig.handle);
       mountBadge(anchor, () =>
         createBadge(
-          v,
+          whitelisted ? null : v,
           {
             // The popover exposes the full ladder; the clicked mode overrides
             // settings.actionMode for this one account (default = configured).
@@ -712,6 +736,33 @@ export default defineContentScript({
             onAppeal: () =>
               openAppeal({ handle: sig.handle, ...(sig.userId ? { userId: sig.userId } : {}) }),
             onReport: () => reportSpam(sig),
+            whitelisted,
+            // 本地白名单 toggle. Adding also undoes any local hide already
+            // recorded for the account (every id form) and cancels a pending
+            // undo-window action, so the row visibly comes back at once.
+            onWhitelist: async () => {
+              if (whitelisted) {
+                await removeLocalWhitelist(sig.handle);
+              } else {
+                const p = pendingActions.get(key);
+                if (p) {
+                  clearTimeout(p.timer);
+                  pendingActions.delete(key);
+                }
+                await addLocalWhitelist({
+                  handle: sig.handle,
+                  ...(sig.userId ? { userId: sig.userId } : {}),
+                  ...(sig.displayName ? { displayName: sig.displayName } : {}),
+                  source: "manual",
+                });
+                for (const id of [key, sig.userId, `h:${sig.handle}`]) {
+                  if (id) void removeBlocked(id);
+                }
+              }
+              // Re-render this row now; the storage event re-evaluates the rest.
+              clearMounts(anchor);
+              void process(sig, anchor);
+            },
           },
           note,
           source,
@@ -884,6 +935,17 @@ export default defineContentScript({
         // 1. Check pending undo queue — skip if already scheduled.
         if (pendingActions.has(key)) return;
 
+        // 1.5 LOCAL whitelist — the user's own list, highest priority of all:
+        //     no list/rule/cache/online check, no badge beyond the neutral
+        //     manual handle, and (via enqueueAuto's guard) never auto-acted.
+        //     A followed account seen with the viewer-follows relationship
+        //     joins the list here (settings.followingWhitelist).
+        noteFollowing(sig, settings.followingWhitelist);
+        if (isLocallyWhitelisted(sig.userId, sig.handle)) {
+          badgeFor(anchor, key, sig, null);
+          return;
+        }
+
         // 2. Whitelist wins over EVERYTHING below — lookupLocal excludes
         //    whitelisted accounts itself, but a v0.4-era cached spam verdict
         //    would otherwise keep red-badging an appealed account for up to
@@ -1005,8 +1067,38 @@ export default defineContentScript({
       }
     }
 
+    /** On the viewer's own /following page every UserCell carries an
+     *  "<uid>-unfollow" button — harvest them into the local whitelist so a
+     *  followed account is protected before it is ever seen in a thread.
+     *  Bounded per pass; cells already whitelisted cost one Set lookup. */
+    function harvestFollowing() {
+      if (!settings.followingWhitelist) return;
+      const me = viewerHandle();
+      if (!me) return;
+      const m = location.pathname.match(/^\/([A-Za-z0-9_]{1,15})\/following\/?$/);
+      if (!m || m[1]?.toLowerCase() !== me.toLowerCase()) return;
+      let budget = 120;
+      for (const cell of document.querySelectorAll<HTMLElement>('[data-testid="UserCell"]')) {
+        if (budget-- <= 0) break;
+        const btn = cell.querySelector<HTMLElement>('[data-testid$="-unfollow"]');
+        if (!btn) continue;
+        const uid = btn.getAttribute("data-testid")?.match(/^(\d+)-unfollow$/)?.[1];
+        let handle: string | undefined;
+        for (const a of cell.querySelectorAll<HTMLAnchorElement>('a[href^="/"]')) {
+          const s = (a.getAttribute("href") ?? "").split("/").filter(Boolean);
+          if (s.length === 1 && /^[A-Za-z0-9_]{1,15}$/.test(s[0] ?? "")) {
+            handle = s[0];
+            break;
+          }
+        }
+        if (!handle || isLocallyWhitelisted(uid, handle)) continue;
+        void addLocalWhitelist({ handle, ...(uid ? { userId: uid } : {}), source: "following" });
+      }
+    }
+
     function scan() {
       captureViewer();
+      harvestFollowing();
       const p = extractProfile();
       if (p) {
         const el = document.querySelector<HTMLElement>('[data-testid="UserName"]');
@@ -1199,7 +1291,7 @@ export default defineContentScript({
           );
           shouldScan = restoreAccountSurfaces(next) > 0;
         }
-        if (changes[LIST_KEY] || changes[WL_KEY]) {
+        if (changes[LIST_KEY] || changes[WL_KEY] || changes[LOCAL_WL_KEY]) {
           for (const host of document.querySelectorAll<HTMLElement>(".xss-mount")) {
             // Badges live in the host's shadow root; keep pending-undo flows.
             if (host.shadowRoot?.querySelector(".xss-badge.pending")) continue;

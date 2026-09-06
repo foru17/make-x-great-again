@@ -1,0 +1,117 @@
+{
+  "goal": "进一步降低误杀：撤回闭环、载荷语义修正、低置信静默与队列分流、补齐页面内现成信号、规则回传可见并封顶、评测集、页内 UI 全面检查，并发布 0.6.1",
+  "created": "2026-09-06",
+  "baseline": {
+    "store_chrome": "0.6.0 (1cf16c5, 2026-08-14)",
+    "local_head": "ca2d624 on feat/rules-visibility-telemetry",
+    "audit": "docs/issues-report-audit-2026-09-04.md"
+  },
+  "manual_items": [
+    "Chrome Web Store 上传 0.6.1 zip 并更新 Privacy practices 文案（规则回传新增字段+原文片段）",
+    "AMO 提交 0.6.1（Firefox 线上仍是 0.4.0）",
+    "确认 docs/PRIVACY.md A.4b 新披露文案后再发布",
+    "页内 UI 检查需要已登录 x.com 的 Chrome（用本机 Chrome + 加载 .output/chrome-mv3）"
+  ],
+  "tasks": [
+    {
+      "id": "T0",
+      "task": "本地白名单（最高优先级）：关注的账号自动加入；弹层/设置页可手动加入与移出；名单内账号不检测、不标记、不自动处理，即使公共名单/规则命中",
+      "verify": "local-whitelist 单测（增删/双索引/关注自动加入/跨页同步）；tsc + wxt build 通过；content 决策链在名单/规则之前短路；enqueueAuto 与 drain 双重守卫",
+      "passes": true,
+      "evidence": [
+        "extension/lib/local-whitelist.ts 新模块；content 决策链 1.5 步短路 + enqueueAuto/drain 双守卫；弹层 加入/移出白名单；设置页「白名单」tab 本地名单区块",
+        "local-whitelist 单测 5/5，全量 53/53；tsc 0 错误；wxt build 通过"
+      ]
+    },
+    {
+      "id": "T1",
+      "task": "A1 撤回闭环：边缘对 removed/rejected/whitelisted 账号返回 legit + 状态；客户端遇这三种状态一律静默、不写 spam 缓存并清掉旧缓存",
+      "verify": "scripts/diagnostics/terminal-verdict-replay.ts 由红转绿（exit 0）；edge/extension 单测全过",
+      "passes": false
+    },
+    {
+      "id": "T2",
+      "task": "A2 载荷去重：article 路径 recentTweets 不再复制 triggeringComment；边缘 prompt 说明 recentTweets 为独立历史帖",
+      "verify": "detect 单测：extractFromArticle 输出 recentTweets 为空或不含 triggeringComment；signalsHash 兼容",
+      "passes": false
+    },
+    {
+      "id": "T3",
+      "task": "A3 低置信静默 + 队列分流：客户端 uncertain / likely_spam<0.8 不打徽章；边缘 legit(任意置信) → auto_legit，uncertain → auto_unsure（3 天 TTL，不进待审）",
+      "verify": "online-detection 单测覆盖三种 label 的可见性；edge 单测覆盖 writeStatus 分流；/admin/queue 查询不包含 auto_unsure",
+      "passes": false
+    },
+    {
+      "id": "T4",
+      "task": "Data-2 上下文信号：surface(home/thread/profile/search/other)、isReply、replyToHandle、rootAuthorHandle；边缘 schema 接受并写入 prompt",
+      "verify": "detect 单测覆盖回复/根帖两种 DOM；edge Signals.parse 接受新字段；prompt 含 surface 说明",
+      "passes": false
+    },
+    {
+      "id": "T5",
+      "task": "Data-3 profile 页抓取可见推文（≤10 条）填 recentTweets",
+      "verify": "detect 单测：profile fixture 输出 recentTweets 长度>0 且不含 triggeringComment",
+      "passes": false
+    },
+    {
+      "id": "T6",
+      "task": "Data-5 fiber 现成字段：isVerified/isBlueVerified、statusesCount、mediaCount、location、default_profile_image→hasDefaultAvatar 改为可靠来源；桥接 stamp 与 edge schema 同步",
+      "verify": "x-user-bridge 单测覆盖新字段往返；edge schema 接受；prompt AVATAR CAVEAT 改为“仅当 avatarSource=profile 时可信”",
+      "passes": false
+    },
+    {
+      "id": "T7",
+      "task": "Data-4 模板重复计数：本地按 handle 记最近 triggeringComment 的 hash，只上传 templateRepeats 数字",
+      "verify": "单测：同 handle 同文本第 2 次 → templateRepeats=1；不同文本 → 0；存储只含 hash",
+      "passes": false
+    },
+    {
+      "id": "T8",
+      "task": "A4 规则回传可见：载荷加 field + matchedText(≤200)；rule_hit_stats 加列（迁移+回滚）；admin 账号列表显示；PRIVACY A.4b、设置页文案同步",
+      "verify": "rule-telemetry 单测覆盖新字段；/v1/rule-hits 单测写入列；admin 接口返回 sample_text；PRIVACY.md/设置页文案 grep 可见",
+      "passes": false
+    },
+    {
+      "id": "T9",
+      "task": "A5 规则命中自动动作封顶为本地隐藏（X 静音/拉黑只留人工确认条目）",
+      "verify": "auto-policy 单测：source=rule 且 action=block/mute → hide；list confirmed 不变",
+      "passes": false
+    },
+    {
+      "id": "T10",
+      "task": "A6 本地 spam 缓存：signalsHash 变化即重判，spam TTL 30→7 天",
+      "verify": "cache 单测覆盖 TTL 与 hash 变化行为；content 决策路径不再无条件复用 spam",
+      "passes": false
+    },
+    {
+      "id": "T11",
+      "task": "Data-6 举报加类别选择（色情导流/网盘资源/赌博/营销/其他），边缘 /v1/report 接受 reportCategory 并入库",
+      "verify": "ui 单测/DOM 断言弹层含类别选择；edge 单测 report 写入 category",
+      "passes": false
+    },
+    {
+      "id": "T12",
+      "task": "评测集：docs/eval/cases.json（8 条申诉成立 + 10 条审计误判 + ≥20 条真阳性），runner 脚本带硬上限（默认 dry-run，不打真实 LLM）",
+      "verify": "node runner --dry-run 输出用例统计；带 EVAL_ENDPOINT 时调用数 ≤ 上限",
+      "passes": false
+    },
+    {
+      "id": "T13",
+      "task": "页内 UI 全面检查：徽章/弹层/气泡在 X 亮/暗(dim)/纯黑 三主题 × 桌面/移动，修复发现的样式问题",
+      "verify": "截图集 .ui-acceptance/2026-09-06-inpage/ 六张以上；问题清单与修复逐项对应",
+      "passes": false
+    },
+    {
+      "id": "T14",
+      "task": "边缘部署：从 feat/rules-visibility-telemetry 部署（勿从 main），先跑迁移，再冒烟 /v1/classify /v1/rule-hits",
+      "verify": "wrangler deploy 输出版本；curl 冒烟 200；D1 只读核对新列存在",
+      "passes": false
+    },
+    {
+      "id": "T15",
+      "task": "0.6.1 发布：版本号、CHANGELOG（含 MAIN-world 桥披露）、README Firefox 状态更正、zip 三平台、CWS_LISTING 清单",
+      "verify": "extension/.output/mxga-extension-0.6.1-*.zip 存在且 manifest 版本 0.6.1；CHANGELOG [0.6.1] 段落；测试全过",
+      "passes": false
+    }
+  ]
+}

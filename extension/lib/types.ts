@@ -38,6 +38,15 @@ export interface Signals {
    *  words (original unavailable in the DOM). Consumers must not treat the
    *  surface language as an author signal. */
   tweetsTranslated?: boolean;
+  /** Viewer ↔ author relationship, read from X's own user object (fiber /
+   *  MAIN-world bridge) or the follow button. The edge ignores any account
+   *  the viewer already has a relationship with; the client uses
+   *  viewerFollowing to feed the local whitelist (settings.followingWhitelist). */
+  viewerFollowing?: true;
+  viewerBlocking?: true;
+  viewerMuting?: true;
+  viewerFollowRequestSent?: true;
+  viewerIsSelf?: true;
 }
 
 /** Background messages. "list-sync" triggers the public blocklist download
