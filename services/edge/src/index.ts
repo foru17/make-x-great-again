@@ -1339,6 +1339,9 @@ function statusForRuleAction(action: string): "human_confirmed" | "whitelisted" 
 // Only machine-made, non-terminal verdicts may be overturned by a newly-added
 // keyword rule. Human decisions and Agent staging remain authoritative.
 const RULE_OVERRIDABLE_STATUSES = new Set(["auto_pending_review", "auto_legit"]);
+/** Terminal human decisions that RETRACT an earlier spam verdict. /v1/classify
+ *  must never echo the retracted verdict back to a client. */
+const WITHDRAWN_STATUSES = new Set(["removed", "rejected"]);
 
 // Mention-promotion allowlist — handles that must NEVER be auto-blacklisted via
 // the @-mention path below, even if a spam tweet @-mentions them. These are
@@ -1657,6 +1660,25 @@ app.post("/v1/classify", async (c) => {
       record: {
         verdict: { label: "legit", confidence: 1, reasons: ["whitelisted"] },
         status: "whitelisted",
+      },
+    });
+  }
+  // Withdrawn verdicts (a moderator removed the account from the list, or
+  // rejected the report) are terminal too — but the row still carries the
+  // ORIGINAL spam verdict, and serving that back re-badged appealed accounts
+  // on every client that asked (2026-09-04 audit, root cause #4). Serve the
+  // withdrawal itself: legit, with the status so clients can flush caches.
+  if (prev && WITHDRAWN_STATUSES.has(prev.status)) {
+    await updateAccountSignalSnapshot(c.env, prev.rowid, signalSnapshot(s));
+    return c.json({
+      cached: true,
+      record: {
+        verdict: {
+          label: "legit",
+          confidence: 1,
+          reasons: [prev.status === "removed" ? "withdrawn: removed from list" : "withdrawn: report rejected"],
+        },
+        status: prev.status,
       },
     });
   }

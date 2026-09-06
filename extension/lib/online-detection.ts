@@ -59,6 +59,40 @@ export function onlineVerdictVisibility(verdict: Verdict): "silent" | "badge" {
   return verdict.label === "legit" ? "silent" : "badge";
 }
 
+/** Review states under which the edge's verdict has been RETRACTED by a
+ * human (or never applied): whatever label rides along, the account must be
+ * treated as clean and any stale spam cache replaced. Belt-and-braces with
+ * the edge, which already serves legit for these — an older edge build (or a
+ * proxy) echoing the original verdict must not re-badge an appealed account. */
+export const WITHDRAWN_REVIEW_STATUSES: ReadonlySet<string> = new Set([
+  "removed",
+  "rejected",
+  "whitelisted",
+  "viewer_ignored",
+]);
+
+/** Fold the review status into the verdict the client acts on. */
+export function effectiveVerdict(verdict: Verdict, reviewStatus?: string): Verdict {
+  if (!reviewStatus || !WITHDRAWN_REVIEW_STATUSES.has(reviewStatus)) return verdict;
+  if (verdict.label === "legit") return verdict;
+  return {
+    label: "legit",
+    confidence: 1,
+    reasons: [
+      reviewStatus === "whitelisted"
+        ? "官方白名单保护"
+        : reviewStatus === "viewer_ignored"
+          ? "你与该账号有关注/屏蔽关系，不检测"
+          : "判定已被人工撤回",
+    ],
+  };
+}
+
+/** A cached SPAM verdict this old gets re-checked with the edge (cheap: a
+ * cached edge row, no LLM) so a moderation withdrawal reaches the client
+ * without waiting for the local TTL. */
+export const CACHE_REVALIDATE_AFTER_MS = 24 * 3_600_000;
+
 interface ClassificationBody {
   cached?: boolean;
   record?: {
@@ -128,10 +162,11 @@ export async function classifyAndCache(
   if (httpStatus === 401) return { status: "unauthenticated" };
   if (httpStatus < 200 || httpStatus >= 300) return { status: "failed", httpStatus };
 
-  const verdict = asVerdict(data?.body?.record?.verdict);
-  if (!verdict) return { status: "failed", httpStatus };
+  const raw = asVerdict(data?.body?.record?.verdict);
+  if (!raw) return { status: "failed", httpStatus };
   const reviewStatus =
     typeof data?.body?.record?.status === "string" ? data.body.record.status : undefined;
+  const verdict = effectiveVerdict(raw, reviewStatus);
   const model =
     typeof data?.body?.record?.model === "string" ? data.body.record.model : "edge";
   await writeCache(key, {

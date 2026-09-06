@@ -29,6 +29,8 @@ import {
   warmLocalWhitelist,
 } from "../lib/local-whitelist";
 import {
+  CACHE_REVALIDATE_AFTER_MS,
+  MAX_AUTO_CLASSIFICATIONS_PER_PAGE,
   OnlineClassificationLimiter,
   classifyAndCache,
   onlineVerdictVisibility,
@@ -776,10 +778,32 @@ export default defineContentScript({
       mountBadge(anchor, createCheckedMarker);
     }
 
-    function renderCached(anchor: HTMLElement, key: string, sig: Signals, c: Cached) {
+    async function renderCached(anchor: HTMLElement, key: string, sig: Signals, c: Cached) {
       if (onlineVerdictVisibility(c.verdict) === "silent") {
         markChecked(anchor);
         return;
+      }
+      // A day-old cached SPAM verdict is re-checked against the edge before
+      // it badges again: if a moderator has since withdrawn it (appeal
+      // upheld, report rejected, whitelisted) the edge answers legit from its
+      // own row — no LLM call — and the stale local entry is overwritten.
+      // Bounded by the same per-page cap as fresh detection.
+      if (
+        onlineAuthenticated &&
+        Date.now() - c.ts > CACHE_REVALIDATE_AFTER_MS &&
+        autoClassificationsStarted < MAX_AUTO_CLASSIFICATIONS_PER_PAGE
+      ) {
+        autoClassificationsStarted += 1;
+        const result = await onlineClassificationLimiter.run(() => classifyAndCache(key, sig));
+        if (result.status === "classified") {
+          if (onlineVerdictVisibility(result.verdict) === "silent") {
+            markChecked(anchor);
+            return;
+          }
+          badgeFor(anchor, key, sig, result.verdict, undefined, "cache");
+          pushFinding(sig, result.verdict, "cache");
+          return;
+        }
       }
       badgeFor(anchor, key, sig, c.verdict, undefined, "cache");
       pushFinding(sig, c.verdict, "cache");
@@ -973,7 +997,7 @@ export default defineContentScript({
         if (cached) {
           const spammy = ["spam", "porn_bot", "likely_spam"].includes(cached.verdict.label);
           if (spammy || cached.signalsHash === signalsHash(sig)) {
-            renderCached(anchor, key, sig, cached);
+            await renderCached(anchor, key, sig, cached);
             void bumpStats({ cacheHits: 1 });
             return;
           }

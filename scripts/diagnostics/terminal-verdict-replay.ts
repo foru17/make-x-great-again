@@ -1,4 +1,8 @@
-// Read-only diagnostic, deliberately red until withdrawn verdicts stop resurfacing.
+// Regression guard: withdrawn verdicts (removed / rejected / whitelisted) must
+// never resurface as a fresh client warning. Was deliberately red from the
+// 2026-09-04 audit until the 2026-09-06 fix (edge serves the withdrawal as
+// legit; client folds the review status into the verdict and overwrites the
+// stale cache entry). Exit 0 = closed.
 // Run: node_modules/.bin/tsx scripts/diagnostics/terminal-verdict-replay.ts
 // Uses the real Worker route and client classifier; all I/O is local and mocked.
 import assert from "node:assert/strict";

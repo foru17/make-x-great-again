@@ -4,6 +4,7 @@ import {
   MAX_AUTO_CLASSIFICATIONS_PER_PAGE,
   OnlineClassificationLimiter,
   classifyAndCache,
+  effectiveVerdict,
   onlineVerdictVisibility,
   postOnlineClassification,
   shouldAutoClassify,
@@ -112,6 +113,51 @@ test("classification sends once and persists a reusable account verdict", async 
   assert.equal(result.status, "classified");
   assert.deepEqual(result.verdict, verdict);
   assert.deepEqual(writes, [{ key: "uid:123", verdict }]);
+});
+
+test("withdrawn review states neutralize the verdict and overwrite the cache", async () => {
+  for (const status of ["removed", "rejected", "whitelisted", "viewer_ignored"]) {
+    assert.equal(
+      effectiveVerdict({ label: "spam", confidence: 0.9, reasons: ["old"] }, status).label,
+      "legit",
+      status,
+    );
+  }
+  assert.equal(
+    effectiveVerdict({ label: "spam", confidence: 0.9, reasons: ["old"] }, "auto_pending_review")
+      .label,
+    "spam",
+  );
+  assert.equal(effectiveVerdict(verdict, "removed"), verdict, "legit passes through untouched");
+
+  // An edge that still echoes the retracted spam label alongside the status.
+  const writes: Array<{ key: string; verdict: Verdict }> = [];
+  const result = await classifyAndCache("uid:123", signals, {
+    send: async () => ({
+      ok: true,
+      data: {
+        status: 200,
+        body: {
+          cached: true,
+          record: {
+            verdict: { label: "spam", confidence: 0.9, reasons: ["historical"] },
+            status: "removed",
+          },
+        },
+      },
+    }),
+    writeCache: async (key, entry) => {
+      writes.push({ key, verdict: entry.verdict });
+    },
+    now: () => 1_700_000_000_000,
+  });
+  assert.equal(result.status, "classified");
+  if (result.status !== "classified") return;
+  assert.equal(result.verdict.label, "legit");
+  assert.equal(result.reviewStatus, "removed");
+  assert.equal(onlineVerdictVisibility(result.verdict), "silent");
+  assert.equal(writes.length, 1, "the stale spam entry is replaced, not left alone");
+  assert.equal(writes[0]?.verdict.label, "legit");
 });
 
 test("background classification requires GitHub auth and posts to /v1/classify", async () => {

@@ -27,7 +27,12 @@
       "id": "T1",
       "task": "A1 撤回闭环：边缘对 removed/rejected/whitelisted 账号返回 legit + 状态；客户端遇这三种状态一律静默、不写 spam 缓存并清掉旧缓存",
       "verify": "scripts/diagnostics/terminal-verdict-replay.ts 由红转绿（exit 0）；edge/extension 单测全过",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "edge: removed/rejected 在 /v1/classify 返回 legit+status（WITHDRAWN_STATUSES），不打 LLM、不改写行；test/withdrawn-verdicts.test.ts 4/4",
+        "client: effectiveVerdict 折叠 removed/rejected/whitelisted/viewer_ignored → legit 并覆盖旧缓存；一天以上旧 spam 缓存在线复核（受每页上限约束）",
+        "scripts/diagnostics/terminal-verdict-replay.ts 由红转绿 exit 0；edge 134/134，extension 54/54"
+      ]
     },
     {
       "id": "T2",
