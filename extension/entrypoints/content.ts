@@ -1103,6 +1103,16 @@ export default defineContentScript({
     // Persist the logged-in viewer's own handle for the options page's
     // whitelist self-service flow (apply for YOUR account only).
     let lastViewer: string | undefined;
+    // Seed from the previous session's capture so the /following harvest and
+    // whitelist self-service know the viewer even before the nav renders.
+    try {
+      void chrome.storage.local.get("xss:viewer").then((g) => {
+        const v = (g["xss:viewer"] as { handle?: string } | undefined)?.handle;
+        if (v && !lastViewer) lastViewer = v;
+      });
+    } catch {
+      /* non-fatal */
+    }
     function captureViewer() {
       const v = viewerHandle();
       if (v && v !== lastViewer) {
@@ -1119,15 +1129,29 @@ export default defineContentScript({
      *  "<uid>-unfollow" button — harvest them into the local whitelist so a
      *  followed account is protected before it is ever seen in a thread.
      *  Bounded per pass; cells already whitelisted cost one Set lookup. */
+    let harvestLogged = "";
     function harvestFollowing() {
       if (!settings.followingWhitelist) return;
-      const me = viewerHandle();
-      if (!me) return;
       const m = location.pathname.match(/^\/([A-Za-z0-9_]{1,15})\/following\/?$/);
-      if (!m || m[1]?.toLowerCase() !== me.toLowerCase()) return;
+      if (!m) return;
+      // The nav profile link is absent in narrow / mobile layouts — fall back
+      // to the viewer handle captured earlier this session (xss:viewer).
+      const me = viewerHandle() ?? lastViewer;
+      const owner = m[1] ?? "";
+      if (!me || owner.toLowerCase() !== me.toLowerCase()) {
+        const why = me ? `page owner @${owner} is not the viewer @${me}` : "viewer handle unknown";
+        if (harvestLogged !== why) {
+          harvestLogged = why;
+          console.info(`[MXGA] following harvest skipped: ${why}`);
+        }
+        return;
+      }
       let budget = 120;
+      let cells = 0;
+      let added = 0;
       for (const cell of document.querySelectorAll<HTMLElement>('[data-testid="UserCell"]')) {
         if (budget-- <= 0) break;
+        cells += 1;
         const btn = cell.querySelector<HTMLElement>('[data-testid$="-unfollow"]');
         if (!btn) continue;
         const uid = btn.getAttribute("data-testid")?.match(/^(\d+)-unfollow$/)?.[1];
@@ -1140,7 +1164,13 @@ export default defineContentScript({
           }
         }
         if (!handle || isLocallyWhitelisted(uid, handle)) continue;
+        added += 1;
         void addLocalWhitelist({ handle, ...(uid ? { userId: uid } : {}), source: "following" });
+      }
+      const line = `[MXGA] following harvest: ${cells} cells, +${added} to local whitelist`;
+      if (added > 0 || harvestLogged !== line) {
+        harvestLogged = line;
+        console.info(line);
       }
     }
 

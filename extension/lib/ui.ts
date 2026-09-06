@@ -601,12 +601,22 @@ export type XTheme = "dark" | "light";
  *  Falls back to the OS scheme when the page has not painted yet. */
 export function detectXTheme(): XTheme {
   try {
-    const bg = getComputedStyle(document.body).backgroundColor;
-    const m = bg.match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\)/);
-    if (m && (m[4] === undefined || Number(m[4]) > 0.5)) {
-      const lum = 0.2126 * Number(m[1]) + 0.7152 * Number(m[2]) + 0.0722 * Number(m[3]);
-      return lum < 128 ? "dark" : "light";
+    // X paints the theme as an inline body background; fall back to the
+    // root element and then to the root's declared color-scheme, so a future
+    // X markup change degrades to "still right most of the time" rather
+    // than to the OS scheme.
+    for (const el of [document.body, document.documentElement]) {
+      if (!el) continue;
+      const bg = getComputedStyle(el).backgroundColor;
+      const m = bg.match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\)/);
+      if (m && (m[4] === undefined || Number(m[4]) > 0.5)) {
+        const lum = 0.2126 * Number(m[1]) + 0.7152 * Number(m[2]) + 0.0722 * Number(m[3]);
+        return lum < 128 ? "dark" : "light";
+      }
     }
+    const scheme = getComputedStyle(document.documentElement).colorScheme;
+    if (/dark/.test(scheme)) return "dark";
+    if (/light/.test(scheme)) return "light";
   } catch {
     /* no layout yet */
   }
