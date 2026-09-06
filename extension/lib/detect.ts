@@ -14,6 +14,12 @@ export interface KnownUser {
   accountAgeDays?: number;
   displayName?: string;
   avatarUrl?: string;
+  isVerified?: boolean;
+  statusesCount?: number;
+  mediaCount?: number;
+  favouritesCount?: number;
+  location?: string;
+  profileDefaultImage?: boolean;
   viewerFollowing?: true;
   viewerBlocking?: true;
   viewerMuting?: true;
@@ -134,6 +140,13 @@ export interface FiberUser {
   followingCount?: number;
   accountCreatedAt?: string;
   accountAgeDays?: number;
+  isVerified?: boolean;
+  statusesCount?: number;
+  mediaCount?: number;
+  favouritesCount?: number;
+  location?: string;
+  /** X's own default_profile_image flag — the reliable avatar signal. */
+  profileDefaultImage?: boolean;
   viewerFollowing?: true;
   viewerBlocking?: true;
   viewerMuting?: true;
@@ -242,6 +255,23 @@ function readFiberUserUncached(el: Element, expectedHandle?: string): FiberUser 
           const accountCreatedAt = Number.isNaN(created)
             ? undefined
             : new Date(created).toISOString();
+          const count = (v: unknown) =>
+            typeof v === "number" && Number.isFinite(v) ? v : undefined;
+          const statusesCount = count(legacy.statuses_count);
+          const mediaCount = count(legacy.media_count);
+          const favouritesCount = count(legacy.favourites_count);
+          const isVerified =
+            trueFlag(u.is_blue_verified) || trueFlag(legacy.verified) || trueFlag(legacy.is_blue_verified)
+              ? true
+              : undefined;
+          const location =
+            typeof legacy.location === "string" && legacy.location.trim()
+              ? legacy.location.trim().slice(0, 100)
+              : undefined;
+          const profileDefaultImage =
+            typeof legacy.default_profile_image === "boolean"
+              ? legacy.default_profile_image
+              : undefined;
           return {
             bio: typeof legacy.description === "string" ? legacy.description : "",
             ...(userId ? { userId } : {}),
@@ -249,6 +279,12 @@ function readFiberUserUncached(el: Element, expectedHandle?: string): FiberUser 
             followingCount: legacy.friends_count,
             ...(accountCreatedAt ? { accountCreatedAt } : {}),
             ...(accountAgeDays !== undefined ? { accountAgeDays } : {}),
+            ...(isVerified ? { isVerified } : {}),
+            ...(statusesCount !== undefined ? { statusesCount } : {}),
+            ...(mediaCount !== undefined ? { mediaCount } : {}),
+            ...(favouritesCount !== undefined ? { favouritesCount } : {}),
+            ...(location ? { location } : {}),
+            ...(profileDefaultImage !== undefined ? { profileDefaultImage } : {}),
             ...(trueFlag(legacy.following) ? { viewerFollowing: true as const } : {}),
             ...(trueFlag(legacy.blocking) ? { viewerBlocking: true as const } : {}),
             ...(trueFlag(legacy.muting) ? { viewerMuting: true as const } : {}),
@@ -411,10 +447,15 @@ export function extractProfile(): Signals | null {
     handle,
     displayName,
     bio: bioEl ? bioEl.innerText.trim() : "",
-    hasDefaultAvatar,
-    recentTweets: [],
+    ...avatarSignal(hasDefaultAvatar, fu),
+    // The profile page renders the account's own recent posts — until now the
+    // profile path sent NO text at all (upheld appeal #367: "no posts, no
+    // bio, no comment"). Own posts only (reposts carry the original author's
+    // handle), deduped, bounded.
+    recentTweets: profileTweets(profileScope, handle),
     ...(avatarUrl ? { avatarUrl } : {}),
     ...(userId ? { userId } : {}),
+    ...profileFacts(fu),
     ...(fu.viewerFollowing ? { viewerFollowing: true as const } : {}),
     ...(fu.viewerBlocking ? { viewerBlocking: true as const } : {}),
     ...(fu.viewerMuting ? { viewerMuting: true as const } : {}),
@@ -426,6 +467,54 @@ export function extractProfile(): Signals | null {
       : {}),
     ...(followers !== undefined ? { followersCount: followers } : {}),
     ...(following !== undefined ? { followingCount: following } : {}),
+  };
+}
+
+/** Up to this many of the account's own visible posts ride along from a
+ *  profile page. The edge schema accepts 20; ten is plenty of history. */
+const PROFILE_TWEETS_MAX = 10;
+
+export function profileTweets(scope: Element | Document, handle: string): string[] {
+  const want = handle.toLowerCase();
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const art of scope.querySelectorAll<HTMLElement>('article[data-testid="tweet"]')) {
+    if (out.length >= PROFILE_TWEETS_MAX) break;
+    if (handleFromArticle(art)?.toLowerCase() !== want) continue; // repost of someone else
+    if (isPromoted(art)) continue;
+    const text = art.querySelector<HTMLElement>('[data-testid="tweetText"]')?.innerText.trim();
+    if (!text) continue;
+    const t = text.slice(0, 500);
+    if (seen.has(t)) continue;
+    seen.add(t);
+    out.push(t);
+  }
+  return out;
+}
+
+/** hasDefaultAvatar with provenance: X's own default_profile_image flag when
+ *  the fiber/bridge delivered it (reliable), else the DOM heuristic (an
+ *  <img> that failed to lazy-load reads as "default" — unreliable, and the
+ *  classifier is told so). */
+function avatarSignal(
+  domDefault: boolean,
+  fu: { profileDefaultImage?: boolean },
+): Pick<Signals, "hasDefaultAvatar" | "avatarSource"> {
+  return fu.profileDefaultImage !== undefined
+    ? { hasDefaultAvatar: fu.profileDefaultImage, avatarSource: "profile" }
+    : { hasDefaultAvatar: domDefault, avatarSource: "dom" };
+}
+
+/** The extra profile facts X already holds in the page. */
+function profileFacts(
+  fu: Pick<FiberUser, "isVerified" | "statusesCount" | "mediaCount" | "favouritesCount" | "location">,
+): Pick<Signals, "isVerified" | "statusesCount" | "mediaCount" | "favouritesCount" | "location"> {
+  return {
+    ...(fu.isVerified ? { isVerified: true } : {}),
+    ...(fu.statusesCount !== undefined ? { statusesCount: fu.statusesCount } : {}),
+    ...(fu.mediaCount !== undefined ? { mediaCount: fu.mediaCount } : {}),
+    ...(fu.favouritesCount !== undefined ? { favouritesCount: fu.favouritesCount } : {}),
+    ...(fu.location ? { location: fu.location } : {}),
   };
 }
 
@@ -538,7 +627,8 @@ export function extractFromArticle(article: HTMLElement): Signals | null {
     handle,
     displayName,
     bio: fu.bio ?? "",
-    hasDefaultAvatar,
+    ...avatarSignal(hasDefaultAvatar, fu),
+    ...profileFacts(fu),
     // The article's own text is the TRIGGERING comment and nothing else.
     // Copying it into recentTweets[0] as well made the classifier read
     // "two identical texts" as "posts the same thing repeatedly" — a fake

@@ -7,8 +7,12 @@
 //
 // Privacy contract (mirrors the settings-page copy — keep them in sync):
 //   - payload rows are ONLY {matched official pattern, spam account handle,
-//     spam account numeric id, category} — the spam account's public identity,
-//     never the reporting user's (no auth, no fingerprint, no page context);
+//     spam account numeric id, category, which field matched, a ≤200-char
+//     excerpt of that field around the match} — the spam account's public
+//     identity and its own public text, never the reporting user's (no auth,
+//     no fingerprint, no page context beyond that excerpt). The excerpt was
+//     added 2026-09-06 so a maintainer can review a hit before promoting it,
+//     instead of promoting blind;
 //   - gated by settings.ruleTelemetry (visible switch, on by default);
 //   - custom rules NEVER report (enforced at the content-script call site AND
 //     server-side, where unknown patterns are dropped);
@@ -27,7 +31,14 @@ export interface RuleHitReport {
   handle: string;
   xUserId?: string;
   category?: string;
+  /** handle | display_name | bio | tweet — where the pattern matched. */
+  field?: string;
+  /** ≤200-char excerpt of the matched field (the spam account's own text). */
+  matchedText?: string;
 }
+
+const FIELDS = new Set(["handle", "display_name", "bio", "tweet"]);
+const MATCHED_TEXT_MAX = 200;
 
 export const RULE_HITS_STORE_KEY = "xss:rulehits:v1";
 const MAX_QUEUE = 500;
@@ -45,6 +56,8 @@ interface QueueRow {
   h: string; // handle (original case)
   u: string; // x_user_id ("" unknown)
   c: string; // category ("" unknown)
+  f?: string; // matched field
+  t?: string; // matched-text excerpt
   ts: number;
 }
 
@@ -110,7 +123,17 @@ export function enqueueRuleHit(hit: RuleHitReport): Promise<boolean> {
     const k = keyOf(pattern, handle);
     if (store.sent[k] !== undefined) return false;
     if (store.queue.some((r) => keyOf(r.p, r.h) === k)) return false;
-    store.queue.push({ p: pattern, h: handle, u: uid, c: hit.category ?? "", ts: now });
+    const field = hit.field && FIELDS.has(hit.field) ? hit.field : undefined;
+    const text = hit.matchedText?.trim().slice(0, MATCHED_TEXT_MAX);
+    store.queue.push({
+      p: pattern,
+      h: handle,
+      u: uid,
+      c: hit.category ?? "",
+      ...(field ? { f: field } : {}),
+      ...(text ? { t: text } : {}),
+      ts: now,
+    });
     if (store.queue.length > MAX_QUEUE) store.queue = store.queue.slice(-MAX_QUEUE);
     await writeStore(store);
     return store.queue.length >= FLUSH_PRESSURE;
@@ -138,6 +161,8 @@ export function flushRuleHits(): Promise<void> {
             handle: r.h,
             ...(r.u ? { xUserId: r.u } : {}),
             ...(r.c ? { category: r.c } : {}),
+            ...(r.f ? { field: r.f } : {}),
+            ...(r.t ? { matchedText: r.t } : {}),
           })),
         }),
       });

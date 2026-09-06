@@ -1688,7 +1688,7 @@ function DetectionRulesSection({
         on={st.ruleTelemetry}
         onChange={(v) => save("ruleTelemetry", v)}
         label="匿名回传官方规则命中"
-        hint="仅上传命中账号的公开标识（用户名 / 数字 ID）与命中的规则，供维护者统计复核后决定是否收录公共名单；不含你的任何账号或浏览信息。自定义规则命中永不上传。"
+        hint="仅上传命中账号的公开标识（用户名 / 数字 ID）、命中的规则与字段，以及该账号自己公开发布的命中处原文片段（≤200 字），供维护者复核后决定是否收录公共名单；不含你的任何账号或浏览信息。自定义规则命中永不上传。"
       />
 
       <div className="mt-3 overflow-hidden rounded-lg border border-border">

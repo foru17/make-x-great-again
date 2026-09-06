@@ -61,6 +61,13 @@ const VERDICT = [
   { value: "legit", label: "正常账号" },
 ];
 const NO_CATEGORY = "__infer__";
+/** Short label for the field a telemetry hit matched in. */
+const RULE_FIELD_SHORT: Record<string, string> = {
+  handle: "用户名",
+  display_name: "昵称",
+  bio: "简介",
+  tweet: "推文",
+};
 const labelOf = (arr: { value: string; label: string }[], v: string) =>
   arr.find((o) => o.value === v)?.label || v;
 
@@ -263,6 +270,7 @@ function RuleHitAccountsDialog({
               <TableHeader>
                 <TableRow>
                   <TableHead>账号</TableHead>
+                  <TableHead>命中证据</TableHead>
                   <TableHead className="w-16 text-right">命中</TableHead>
                   <TableHead className="w-20">最近</TableHead>
                   <TableHead className="w-20">状态</TableHead>
@@ -280,6 +288,20 @@ function RuleHitAccountsDialog({
                       >
                         @{r.handle}
                       </a>
+                    </TableCell>
+                    <TableCell className="max-w-[320px]">
+                      {r.sample_text ? (
+                        <span className="block truncate text-[12px]" title={r.sample_text}>
+                          {r.field && (
+                            <span className="mr-1.5 rounded bg-muted px-1 py-px font-mono text-[10px] text-muted-foreground">
+                              {RULE_FIELD_SHORT[r.field] ?? r.field}
+                            </span>
+                          )}
+                          {r.sample_text}
+                        </span>
+                      ) : (
+                        <span className="text-[11.5px] text-muted-foreground">旧客户端，无原文</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right font-mono tabular-nums">{fmtN(r.hits)}</TableCell>
                     <TableCell className="text-[11.5px] tabular-nums text-muted-foreground">

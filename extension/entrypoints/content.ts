@@ -45,6 +45,7 @@ import {
   setSetting,
 } from "../lib/settings";
 import { bumpStat } from "../lib/stats";
+import { noteTemplate } from "../lib/template-memory";
 import {
   type PendingXAction,
   addBlockRecord,
@@ -1021,6 +1022,8 @@ export default defineContentScript({
                   handle: sig.handle,
                   ...(sig.userId ? { xUserId: sig.userId } : {}),
                   category: ruleHit.category,
+                  field: ruleHit.field,
+                  matchedText: ruleHit.matchedText,
                 },
               });
             } catch {
@@ -1067,6 +1070,10 @@ export default defineContentScript({
           })
         ) {
           autoClassificationsStarted += 1;
+          // Cross-thread repetition is the strongest bot corroboration the
+          // prompt asks for and the one thing a single page can't show —
+          // the local template memory supplies it as a bare count.
+          sig.templateRepeats = await noteTemplate(sig);
           await renderOnlineDetection(anchor, key, sig);
           return;
         }

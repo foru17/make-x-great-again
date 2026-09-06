@@ -34,6 +34,22 @@ export interface LocalRuleHit {
   label: Label;
   category: SpamCategory;
   origin: RuleOrigin;
+  /** Which field the pattern matched in. */
+  field: RuleField;
+  /** Excerpt (≤200 chars, original case) of the matched field around the
+   *  match — the evidence a maintainer reviews before promoting a hit. */
+  matchedText: string;
+}
+
+const MATCHED_TEXT_MAX = 200;
+
+/** Window of the original text around the (lower-cased) match position. */
+export function matchExcerpt(original: string, lowerIndex: number, patternLength: number): string {
+  if (original.length <= MATCHED_TEXT_MAX) return original;
+  const half = Math.floor((MATCHED_TEXT_MAX - patternLength) / 2);
+  const start = Math.max(0, lowerIndex - half);
+  const end = Math.min(original.length, start + MATCHED_TEXT_MAX);
+  return `${start > 0 ? "…" : ""}${original.slice(start, end)}${end < original.length ? "…" : ""}`;
 }
 
 /** User-authored rule as stored in xss:rules:custom. */
@@ -239,7 +255,8 @@ function matchAgainst(rules: CompiledRule[], s: Signals): LocalRuleHit | null {
   const handle = s.handle.toLowerCase();
   const name = s.displayName.toLowerCase();
   const bio = s.bio.toLowerCase();
-  const tweets = [...s.recentTweets, s.triggeringComment ?? ""].map((t) => t.toLowerCase());
+  const tweetsRaw = [...s.recentTweets, s.triggeringComment ?? ""];
+  const tweets = tweetsRaw.map((t) => t.toLowerCase());
 
   for (const r of rules) {
     if (r.origin === "official" && disabledPatterns.has(r.pattern)) continue;
@@ -253,18 +270,40 @@ function matchAgainst(rules: CompiledRule[], s: Signals): LocalRuleHit | null {
     // non-CJK tweet can never contain a CJK pattern anyway, so the marker
     // check alone carries no extra false-positive surface for originals.
     const tweetTrusted = !r.patternCJK || !s.tweetsTranslated;
-    const tweetHit = () => tweetTrusted && tweets.some((t) => t.includes(p));
-    const hit =
-      r.field === "handle"
-        ? handle.includes(p)
-        : r.field === "display_name"
-          ? name.includes(p)
-          : r.field === "bio"
-            ? bio.includes(p)
-            : r.field === "tweet"
-              ? tweetHit()
-              : handle.includes(p) || name.includes(p) || bio.includes(p) || tweetHit();
-    if (hit) return { pattern: r.pattern, label: r.label, category: r.category, origin: r.origin };
+    const any = r.field === "any";
+    // Field-aware match so the hit can carry WHERE it matched and an excerpt
+    // (the maintainer's evidence when reviewing telemetry). Same precedence
+    // as the old boolean chain: handle → display name → bio → tweets.
+    let field: RuleField | undefined;
+    let text = "";
+    let at = -1;
+    if ((any || r.field === "handle") && (at = handle.indexOf(p)) >= 0) {
+      field = "handle";
+      text = s.handle;
+    } else if ((any || r.field === "display_name") && (at = name.indexOf(p)) >= 0) {
+      field = "display_name";
+      text = s.displayName;
+    } else if ((any || r.field === "bio") && (at = bio.indexOf(p)) >= 0) {
+      field = "bio";
+      text = s.bio;
+    } else if ((any || r.field === "tweet") && tweetTrusted) {
+      const i = tweets.findIndex((t) => t.includes(p));
+      if (i >= 0) {
+        field = "tweet";
+        text = tweetsRaw[i] ?? "";
+        at = tweets[i]?.indexOf(p) ?? 0;
+      }
+    }
+    if (field) {
+      return {
+        pattern: r.pattern,
+        label: r.label,
+        category: r.category,
+        origin: r.origin,
+        field,
+        matchedText: matchExcerpt(text, Math.max(0, at), p.length),
+      };
+    }
   }
   return null;
 }

@@ -62,6 +62,39 @@ const FULL = {
   accountAgeDays: 53,
 };
 
+test("the extra profile facts and X's own avatar flag ride the bridge (2026-09-06)", () => {
+  const art = mount();
+  art.setAttribute(
+    BRIDGE_ATTR,
+    encodeBridgeUser({
+      ...FULL,
+      isVerified: true,
+      statusesCount: 12_345,
+      mediaCount: 800,
+      favouritesCount: 9_000,
+      location: "Tokyo",
+      profileDefaultImage: false,
+    }),
+  );
+  art.setAttribute(BRIDGE_HANDLE_ATTR, "sexbot9911");
+  const sig = extractFromArticle(art);
+  assert.equal(sig?.isVerified, true);
+  assert.equal(sig?.statusesCount, 12_345);
+  assert.equal(sig?.mediaCount, 800);
+  assert.equal(sig?.favouritesCount, 9_000);
+  assert.equal(sig?.location, "Tokyo");
+  // The fixture has no <img>, so the DOM heuristic would say "default";
+  // X's own flag wins and is labelled as the reliable source.
+  assert.equal(sig?.hasDefaultAvatar, false);
+  assert.equal(sig?.avatarSource, "profile");
+
+  const bare = mount();
+  const plain = extractFromArticle(bare);
+  assert.equal(plain?.hasDefaultAvatar, true, "DOM heuristic without the flag");
+  assert.equal(plain?.avatarSource, "dom");
+  assert.equal(plain?.isVerified, undefined);
+});
+
 test("a stamped article surfaces the bridged profile signals on Signals", () => {
   const art = mount();
   art.setAttribute(BRIDGE_ATTR, encodeBridgeUser(FULL));

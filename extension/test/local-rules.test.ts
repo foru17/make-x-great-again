@@ -38,6 +38,8 @@ test("CJK tweet rules hit spam from non-CJK-profile authors", () => {
     const hit = matchLocalRules(sig({ triggeringComment: text, recentTweets: [text] }));
     assert.ok(hit, `should hit: ${text}`);
     assert.equal(hit?.label, "porn_bot");
+    assert.equal(hit?.field, "tweet", "hit reports where it matched");
+    assert.ok(hit?.matchedText.includes(hit.pattern), "excerpt carries the evidence");
   }
 });
 

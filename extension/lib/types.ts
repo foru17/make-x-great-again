@@ -22,7 +22,17 @@ export interface Signals {
   displayName: string;
   bio: string;
   hasDefaultAvatar: boolean;
+  /** Where hasDefaultAvatar came from: "profile" = X's own
+   *  default_profile_image flag (reliable); "dom" = no <img> found in the
+   *  rendered row (unreliable — lazy-loading fails on real avatars). */
+  avatarSource?: "profile" | "dom";
   avatarUrl?: string;
+  /** Extra profile facts X already holds in the page (fiber / bridge). */
+  isVerified?: boolean;
+  statusesCount?: number;
+  mediaCount?: number;
+  favouritesCount?: number;
+  location?: string;
   recentTweets: string[];
   triggeringComment?: string;
   threadTopic?: string;
@@ -58,6 +68,9 @@ export interface Signals {
   replyToHandle?: string;
   /** Author of the focal (root) tweet on a /status/ page. */
   rootAuthorHandle?: string;
+  /** How many EARLIER times this browser saw this exact comment text from
+   *  this author (lib/template-memory.ts). Only the count leaves the device. */
+  templateRepeats?: number;
 }
 
 export type Surface = "home" | "thread" | "profile" | "search" | "notifications" | "other";

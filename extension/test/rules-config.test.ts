@@ -133,7 +133,14 @@ test("telemetry: enqueue dedups, respects the setting, flush posts one batch and
     assert.equal(store.get(RULE_HITS_STORE_KEY), undefined);
 
     store.set("xss:settings", {});
-    await enqueueRuleHit({ pattern: "约炮", handle: "SpamBot1", xUserId: "123", category: "porn" });
+    await enqueueRuleHit({
+      pattern: "约炮",
+      handle: "SpamBot1",
+      xUserId: "123",
+      category: "porn",
+      field: "tweet",
+      matchedText: `约炮 看主页 ${"x".repeat(300)}`, // over the cap → truncated
+    });
     await enqueueRuleHit({ pattern: "约炮", handle: "spambot1" }); // dupe
     await enqueueRuleHit({ pattern: "约炮", handle: "bad handle!" }); // invalid
     let st = store.get(RULE_HITS_STORE_KEY) as { queue: unknown[] };
@@ -143,7 +150,16 @@ test("telemetry: enqueue dedups, respects the setting, flush posts one batch and
     assert.equal(posts.length, 1);
     assert.match(posts[0]!.url, /\/v1\/rule-hits$/);
     assert.deepEqual(posts[0]!.body, {
-      hits: [{ pattern: "约炮", handle: "SpamBot1", xUserId: "123", category: "porn" }],
+      hits: [
+        {
+          pattern: "约炮",
+          handle: "SpamBot1",
+          xUserId: "123",
+          category: "porn",
+          field: "tweet",
+          matchedText: `约炮 看主页 ${"x".repeat(300)}`.slice(0, 200),
+        },
+      ],
     });
     st = store.get(RULE_HITS_STORE_KEY) as { queue: unknown[]; sent: Record<string, number> };
     assert.equal(st.queue.length, 0);

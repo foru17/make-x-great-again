@@ -134,6 +134,10 @@ export interface RuleHitAccount {
   handle: string;
   x_user_id: string | null;
   category: string | null;
+  /** Which field the rule matched (handle|display_name|bio|tweet), when the client reported it. */
+  field?: string | null;
+  /** ≤200-char excerpt of the matched field — the evidence to review before promoting. */
+  sample_text?: string | null;
   hits: number;
   last_seen: number;
   listed: number;

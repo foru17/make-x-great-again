@@ -303,7 +303,16 @@ const Signals = z.object({
   followersCount: z.number().optional(),
   followingCount: z.number().optional(),
   hasDefaultAvatar: z.boolean().optional(),
+  // Provenance of hasDefaultAvatar (2026-09-06): "profile" = X's own
+  // default_profile_image flag, "dom" = the row had no loaded <img>.
+  avatarSource: z.enum(["profile", "dom"]).optional(),
   avatarUrl: z.string().optional(),
+  // Extra profile facts X already holds in the page (fiber / bridge).
+  isVerified: z.boolean().optional(),
+  statusesCount: z.number().optional(),
+  mediaCount: z.number().optional(),
+  favouritesCount: z.number().optional(),
+  location: z.string().transform((s) => s.slice(0, 100)).optional(),
   viewerFollowing: z.boolean().optional(),
   viewerBlocking: z.boolean().optional(),
   viewerMuting: z.boolean().optional(),
@@ -331,6 +340,9 @@ const Signals = z.object({
     .trim()
     .regex(/^@?[A-Za-z0-9_]{1,15}$/)
     .optional(),
+  // Earlier sightings of this exact comment text by this author in the
+  // reporting browser (client-side template memory; only the count is sent).
+  templateRepeats: z.number().int().min(0).max(1000).optional(),
 });
 type Signals = z.infer<typeof Signals>;
 
@@ -422,10 +434,18 @@ const SYSTEM = `You classify X (Twitter) accounts ONLY for spam / porn-advertisi
   Chinese wording as a spam signal in that case. This holds EVEN WITHOUT the
   flag (older clients don't send it): never infer "hijacked account", "language
   mismatch" or "farm account" from the tweet language alone.
-- AVATAR CAVEAT: hasDefaultAvatar is unreliable — the scraper frequently fails
-  to load real avatars (verified official accounts have arrived flagged as
-  default-avatar). NEVER cite a default avatar as evidence of a hijacked,
-  bought, or fake account, and never let it raise confidence.
+- AVATAR CAVEAT: hasDefaultAvatar is only trustworthy with "(source=profile)"
+  — X's own flag. Without that marker (or with source=dom) it comes from a
+  row whose avatar simply failed to load (verified official accounts have
+  arrived flagged as default-avatar): NEVER cite it as evidence of a
+  hijacked, bought, or fake account, and never let it raise confidence. Even
+  a genuine default avatar is a weak prior, not proof.
+- PROFILE FACTS (when present): posts= is the lifetime post count, media=
+  the media post count, likesGiven= likes the account has given, verified=
+  the blue check. A tiny posts count with a brand-new account and a redirect
+  bait comment corroborates a throwaway; a verified account or one with a
+  long organic history (thousands of posts, likes given, media of its own)
+  needs hard content evidence before any spam label.
 - LEGIT COMMERCE IS NOT SPAM: an account promoting ITS OWN products, content,
   or services is not spam — official brand/company accounts posting their own
   campaigns or giveaways, creators posting disclosed sponsorships (【PR】, #ad,
@@ -456,6 +476,10 @@ const SYSTEM = `You classify X (Twitter) accounts ONLY for spam / porn-advertisi
   brand case above — never porn_bot, and spam only for third-party funnels or
   cross-thread template repetition. When the context fields are absent, do
   not assume the post was a reply.
+- templateRepeats (when present) = how many EARLIER times the reporting
+  client saw this exact comment text from this author elsewhere. >= 2 is
+  hard evidence of template posting and corroborates a bait pattern; 0 means
+  "first sighting", which is neutral — it is NOT evidence against spam.
 - HIGH-REACH CAUTION: for accounts with followers >= 100000, a false
   accusation is maximally harmful and true spam at that reach is rare — such
   accounts are usually real celebrities, brands, media, or creators. Require
@@ -527,7 +551,14 @@ function userPrompt(s: Signals): string {
     s.accountAgeDays !== undefined ? `accountAgeDays=${s.accountAgeDays}` : "",
     s.followersCount !== undefined ? `followers=${s.followersCount}` : "",
     s.followingCount !== undefined ? `following=${s.followingCount}` : "",
-    s.hasDefaultAvatar !== undefined ? `hasDefaultAvatar=${s.hasDefaultAvatar}` : "",
+    s.statusesCount !== undefined ? `posts=${s.statusesCount}` : "",
+    s.mediaCount !== undefined ? `media=${s.mediaCount}` : "",
+    s.favouritesCount !== undefined ? `likesGiven=${s.favouritesCount}` : "",
+    s.isVerified ? "verified=true" : "",
+    s.location ? `location=${JSON.stringify(s.location)}` : "",
+    s.hasDefaultAvatar !== undefined
+      ? `hasDefaultAvatar=${s.hasDefaultAvatar}${s.avatarSource ? ` (source=${s.avatarSource})` : ""}`
+      : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -541,6 +572,7 @@ function userPrompt(s: Signals): string {
     s.rootAuthorHandle
       ? `rootAuthor=@${s.rootAuthorHandle}${s.rootAuthorHandle.toLowerCase() === own ? " (self)" : ""}`
       : "",
+    s.templateRepeats !== undefined ? `templateRepeats=${s.templateRepeats}` : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -2238,6 +2270,14 @@ const RuleHitsBody = z.object({
         // Advisory only — the stored category always comes from the matching
         // rule row so a hostile client can't stamp arbitrary strings.
         category: z.string().max(32).optional(),
+        // Evidence (2026-09-06): where the pattern matched and an excerpt of
+        // that field, so a maintainer reviews the hit instead of promoting
+        // blind. Excerpt is the spam account's own public text; truncated.
+        field: z.enum(["handle", "display_name", "bio", "tweet"]).optional(),
+        matchedText: z
+          .string()
+          .transform((s) => s.trim().slice(0, 200))
+          .optional(),
       }),
     )
     .min(1)
@@ -2281,8 +2321,14 @@ app.post("/v1/rule-hits", async (c) => {
   );
 
   const seen = new Set<string>();
-  const rows: { pattern: string; handle: string; uid: string | null; category: string | null }[] =
-    [];
+  const rows: {
+    pattern: string;
+    handle: string;
+    uid: string | null;
+    category: string | null;
+    field: string | null;
+    sample: string | null;
+  }[] = [];
   let dropped = 0;
   for (const h of parsed.data.hits) {
     const rule = byPattern.get(h.pattern);
@@ -2297,11 +2343,17 @@ app.post("/v1/rule-hits", async (c) => {
       continue;
     }
     seen.add(k);
+    // The excerpt must actually contain the pattern it claims to evidence —
+    // otherwise the field is an arbitrary-text channel into the admin UI.
+    const sample =
+      h.matchedText && keywordHit(h.pattern, h.matchedText) ? h.matchedText : null;
     rows.push({
       pattern: h.pattern,
       handle,
       uid: h.xUserId ?? null,
       category: categoryForRule(rule),
+      field: h.field ?? null,
+      sample,
     });
   }
 
@@ -2311,13 +2363,15 @@ app.post("/v1/rule-hits", async (c) => {
     // stored counts REAL changes (the silent-loss lesson).
     const stmts = rows.map((r) =>
       c.env.DB.prepare(
-        `INSERT INTO rule_hit_stats (day, pattern, handle, x_user_id, category, count, first_seen, last_seen)
-         VALUES (?,?,?,?,?,1,?,?)
+        `INSERT INTO rule_hit_stats (day, pattern, handle, x_user_id, category, field, sample_text, count, first_seen, last_seen)
+         VALUES (?,?,?,?,?,?,?,1,?,?)
          ON CONFLICT(day, pattern, handle) DO UPDATE SET
            count=count+1,
            last_seen=excluded.last_seen,
-           x_user_id=COALESCE(rule_hit_stats.x_user_id, excluded.x_user_id)`,
-      ).bind(day, r.pattern, r.handle, r.uid, r.category, now, now),
+           x_user_id=COALESCE(rule_hit_stats.x_user_id, excluded.x_user_id),
+           field=COALESCE(rule_hit_stats.field, excluded.field),
+           sample_text=COALESCE(rule_hit_stats.sample_text, excluded.sample_text)`,
+      ).bind(day, r.pattern, r.handle, r.uid, r.category, r.field, r.sample, now, now),
     );
     const results = await c.env.DB.batch(stmts).catch((err) => {
       logError("rule_hits.write_failed", err, { rows: rows.length });
@@ -3768,6 +3822,8 @@ app.get("/v1/admin/rule-hits/accounts", async (c) => {
     `SELECT s.handle,
             max(s.x_user_id) x_user_id,
             max(s.category) category,
+            max(s.field) field,
+            max(s.sample_text) sample_text,
             sum(s.count) hits,
             max(s.last_seen) last_seen,
             EXISTS(SELECT 1 FROM accounts a WHERE lower(a.handle)=s.handle) listed
@@ -3782,6 +3838,8 @@ app.get("/v1/admin/rule-hits/accounts", async (c) => {
       handle: string;
       x_user_id: string | null;
       category: string | null;
+      field: string | null;
+      sample_text: string | null;
       hits: number;
       last_seen: number;
       listed: number;

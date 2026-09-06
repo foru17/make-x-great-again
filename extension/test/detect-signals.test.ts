@@ -28,12 +28,13 @@ Object.assign(globalThis, {
   HTMLElement: base.window.HTMLElement,
   Element: base.window.Element,
   Node: base.window.Node,
+  HTMLImageElement: base.window.HTMLImageElement,
   Window: class WindowStub {},
   document: base.window.document,
   location: { pathname: "/someone/status/1" },
 });
 
-const { extractFromArticle, pageSurface } = await import("../lib/detect");
+const { extractFromArticle, extractProfile, pageSurface } = await import("../lib/detect");
 
 test("the article's own text is the triggering comment only — never mirrored into recentTweets", () => {
   const art = base.window.document.querySelector("article") as unknown as HTMLElement;
@@ -77,6 +78,41 @@ test("surface comes from the page path and X's 'Replying to' line marks a feed r
     assert.equal(pageSurface(), surface, path);
   }
   Object.assign(globalThis, { location: { pathname: "/someone/status/1" } });
+});
+
+test("a profile page sends the account's own visible posts as recentTweets", () => {
+  const { document } = parseHTML(`<!doctype html><html><body>
+    <div data-testid="primaryColumn">
+      <div data-testid="UserName">Marulka\n@_marulka</div>
+      <div data-testid="UserDescription">illustrator</div>
+      <article data-testid="tweet">
+        <div data-testid="User-Name"><a href="/_marulka"><span>Marulka</span></a><span>@_marulka</span></div>
+        <div data-testid="tweetText">new painting, oil on canvas</div>
+      </article>
+      <article data-testid="tweet">
+        <div data-testid="User-Name"><a href="/someoneelse"><span>Else</span></a><span>@someoneelse</span></div>
+        <div data-testid="tweetText">a repost of someone else</div>
+      </article>
+      <article data-testid="tweet">
+        <div data-testid="User-Name"><a href="/_marulka"><span>Marulka</span></a><span>@_marulka</span></div>
+        <div data-testid="tweetText">new painting, oil on canvas</div>
+      </article>
+      <article data-testid="tweet">
+        <div data-testid="User-Name"><a href="/_marulka"><span>Marulka</span></a><span>@_marulka</span></div>
+        <div data-testid="tweetText">commissions open this month</div>
+      </article>
+    </div>
+  </body></html>`);
+  Object.assign(globalThis, { document, location: { pathname: "/_marulka" } });
+  const sig = extractProfile();
+  assert.ok(sig);
+  assert.equal(sig?.surface, "profile");
+  assert.deepEqual(sig?.recentTweets, ["new painting, oil on canvas", "commissions open this month"]);
+  assert.equal(sig?.triggeringComment, undefined);
+  Object.assign(globalThis, {
+    document: base.window.document,
+    location: { pathname: "/someone/status/1" },
+  });
 });
 
 test("a new triggering comment changes the cache hash even with empty recentTweets", () => {

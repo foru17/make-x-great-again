@@ -39,6 +39,12 @@ function pick(u: ReturnType<typeof readFiberUser>): BridgeUser | null {
   if (typeof u.followingCount === "number") out.followingCount = u.followingCount;
   if (u.accountCreatedAt) out.accountCreatedAt = u.accountCreatedAt;
   if (typeof u.accountAgeDays === "number") out.accountAgeDays = u.accountAgeDays;
+  if (u.isVerified) out.isVerified = true;
+  if (typeof u.statusesCount === "number") out.statusesCount = u.statusesCount;
+  if (typeof u.mediaCount === "number") out.mediaCount = u.mediaCount;
+  if (typeof u.favouritesCount === "number") out.favouritesCount = u.favouritesCount;
+  if (u.location) out.location = u.location;
+  if (typeof u.profileDefaultImage === "boolean") out.profileDefaultImage = u.profileDefaultImage;
   if (u.viewerFollowing) out.viewerFollowing = true;
   if (u.viewerBlocking) out.viewerBlocking = true;
   if (u.viewerMuting) out.viewerMuting = true;

@@ -71,25 +71,38 @@
       "id": "T5",
       "task": "Data-3 profile 页抓取可见推文（≤10 条）填 recentTweets",
       "verify": "detect 单测：profile fixture 输出 recentTweets 长度>0 且不含 triggeringComment",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "extractProfile 抓取本人可见推文（≤10，去重，排除转发/广告）填 recentTweets；detect-signals 单测 profile fixture 通过"
+      ]
     },
     {
       "id": "T6",
       "task": "Data-5 fiber 现成字段：isVerified/isBlueVerified、statusesCount、mediaCount、location、default_profile_image→hasDefaultAvatar 改为可靠来源；桥接 stamp 与 edge schema 同步",
       "verify": "x-user-bridge 单测覆盖新字段往返；edge schema 接受；prompt AVATAR CAVEAT 改为“仅当 avatarSource=profile 时可信”",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "fiber/bridge 新增 isVerified/statusesCount/mediaCount/favouritesCount/location/profileDefaultImage；hasDefaultAvatar 带 avatarSource(profile|dom)；edge zod 接受、prompt AVATAR CAVEAT 改为仅 source=profile 可信 + PROFILE FACTS；x-user-bridge 单测往返通过"
+      ]
     },
     {
       "id": "T7",
       "task": "Data-4 模板重复计数：本地按 handle 记最近 triggeringComment 的 hash，只上传 templateRepeats 数字",
       "verify": "单测：同 handle 同文本第 2 次 → templateRepeats=1；不同文本 → 0；存储只含 hash",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "lib/template-memory.ts：按 handle 记 triggeringComment 哈希环（本机、14 天、只传计数）；content 在线检测前写入 templateRepeats；edge zod + prompt；template-memory 单测 2/2（断言存储不含原文）"
+      ]
     },
     {
       "id": "T8",
       "task": "A4 规则回传可见：载荷加 field + matchedText(≤200)；rule_hit_stats 加列（迁移+回滚）；admin 账号列表显示；PRIVACY A.4b、设置页文案同步",
       "verify": "rule-telemetry 单测覆盖新字段；/v1/rule-hits 单测写入列；admin 接口返回 sample_text；PRIVACY.md/设置页文案 grep 可见",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "规则命中携带 field + matchedText(≤200)；rule-telemetry 队列/载荷加字段；edge RuleHitsBody 校验片段含 pattern 才入库；rule_hit_stats 加 field/sample_text（迁移+回滚，schema.sql 同步）；admin accounts 返回并在 RulesTab 显示「命中证据」列；PRIVACY A.4b 与设置页文案同步",
+        "edge rule-hit-telemetry 新增证据用例；extension 61/61；edge 140/140；SPA build 通过"
+      ]
     },
     {
       "id": "T9",

@@ -43,6 +43,12 @@ export interface BridgeUser {
   followingCount?: number;
   accountCreatedAt?: string;
   accountAgeDays?: number;
+  isVerified?: boolean;
+  statusesCount?: number;
+  mediaCount?: number;
+  favouritesCount?: number;
+  location?: string;
+  profileDefaultImage?: boolean;
   viewerFollowing?: true;
   viewerBlocking?: true;
   viewerMuting?: true;

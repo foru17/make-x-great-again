@@ -194,6 +194,8 @@ CREATE TABLE IF NOT EXISTS rule_hit_stats (
   handle      TEXT NOT NULL,               -- spam account handle, lowercased
   x_user_id   TEXT,                        -- spam account numeric id when the client had it
   category    TEXT,                        -- category from the matching rule at ingest time
+  field       TEXT,                        -- which field matched (handle|display_name|bio|tweet), 2026-09-06
+  sample_text TEXT,                        -- ≤200-char excerpt of the matched field (spam account's own text)
   count       INTEGER NOT NULL DEFAULT 1,  -- sightings reported for this key
   first_seen  INTEGER NOT NULL,            -- epoch ms
   last_seen   INTEGER NOT NULL             -- epoch ms

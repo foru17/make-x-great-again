@@ -287,3 +287,48 @@ test("admin rule-hits: aggregate + per-rule accounts + explicit promote", async 
     .get() as Record<string, unknown>;
   assert.equal(confirmed.status, "human_confirmed");
 });
+
+test("rule-hits: evidence (field + excerpt) is stored, kept on upsert, and must contain the pattern", async () => {
+  const { db, env } = makeEnv();
+  const first = await postHits(env, [
+    {
+      pattern: "约炮",
+      handle: "SpamBot9",
+      field: "display_name",
+      matchedText: "同城约炮 看主页",
+    },
+    // Excerpt that does not contain the pattern → not an evidence channel.
+    { pattern: "quark.cn", handle: "SpamBot8", field: "tweet", matchedText: "unrelated text" },
+  ]);
+  assert.equal(((await first.json()) as { stored: number }).stored, 2);
+  const a = db
+    .prepare("SELECT field, sample_text FROM rule_hit_stats WHERE handle='spambot9'")
+    .get() as Record<string, unknown>;
+  assert.equal(a.field, "display_name");
+  assert.equal(a.sample_text, "同城约炮 看主页");
+  const b = db
+    .prepare("SELECT field, sample_text FROM rule_hit_stats WHERE handle='spambot8'")
+    .get() as Record<string, unknown>;
+  assert.equal(b.field, "tweet");
+  assert.equal(b.sample_text, null, "excerpt without the pattern is dropped");
+
+  // A later legacy sighting (no evidence) must not erase the stored excerpt.
+  await postHits(env, [{ pattern: "约炮", handle: "SPAMBOT9" }]);
+  const again = db
+    .prepare("SELECT count, field, sample_text FROM rule_hit_stats WHERE handle='spambot9'")
+    .get() as Record<string, unknown>;
+  assert.equal(again.count, 2);
+  assert.equal(again.sample_text, "同城约炮 看主页");
+
+  // The admin drill-down surfaces the evidence.
+  const accounts = await worker.fetch(
+    new Request("https://edge.test/v1/admin/rule-hits/accounts?pattern=%E7%BA%A6%E7%82%AE", {
+      headers: { "x-admin-token": ADMIN_TOKEN },
+    }),
+    env,
+  );
+  const list = ((await accounts.json()) as { list: Record<string, unknown>[] }).list;
+  const row = list.find((r) => r.handle === "spambot9");
+  assert.equal(row?.field, "display_name");
+  assert.equal(row?.sample_text, "同城约炮 看主页");
+});
