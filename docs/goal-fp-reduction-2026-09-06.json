@@ -108,19 +108,28 @@
       "id": "T9",
       "task": "A5 规则命中自动动作封顶为本地隐藏（X 静音/拉黑只留人工确认条目）",
       "verify": "auto-policy 单测：source=rule 且 action=block/mute → hide；list confirmed 不变",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "auto-policy.capAutoTierAction：source=rule 在任何 autoTierMode 下封顶 hide；设置页「完整执行」文案同步；auto-policy 单测更新通过"
+      ]
     },
     {
       "id": "T10",
       "task": "A6 本地 spam 缓存：signalsHash 变化即重判，spam TTL 30→7 天",
       "verify": "cache 单测覆盖 TTL 与 hash 变化行为；content 决策路径不再无条件复用 spam",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "cache.ts spam/likely_spam TTL 30/14→7 天；content 步骤 4 复用条件：hash 相同，或 spam 且（未登录 或 <24h）；否则走规则/在线复核"
+      ]
     },
     {
       "id": "T11",
       "task": "Data-6 举报加类别选择（色情导流/网盘资源/赌博/营销/其他），边缘 /v1/report 接受 reportCategory 并入库",
       "verify": "ui 单测/DOM 断言弹层含类别选择；edge 单测 report 写入 category",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "弹层「举报为spam」→ 类别 chip（色情/币圈/赌博/网盘/营销/其他）二步提交；BgRequest/background 透传 reportCategory；edge ReportBody 校验枚举、写入 report evidence、新行无类别时作为兜底类别；edge 单测 141/141，extension 61/61，wxt build 通过"
+      ]
     },
     {
       "id": "T12",

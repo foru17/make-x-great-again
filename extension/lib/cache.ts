@@ -7,11 +7,14 @@ import type { Verdict } from "./types";
 const PREFIX = "xss:v1:";
 const DAY = 86_400_000;
 
-// TTL by outcome: spam doesn't reform quickly; uncertain should re-evaluate
-// sooner in case more signal appears.
+// TTL by outcome. Spam used to be kept for 30 days: one wrong verdict then
+// fixed a red mark on an account for a month, across every later tweet, with
+// no re-look (2026-09-04 audit). A week is long enough to spare the LLM call
+// on a bot that keeps showing up, short enough that a mistake heals; day-old
+// spam entries are also re-checked against the edge (content.ts renderCached).
 function ttl(label: Verdict["label"]): number {
-  if (label === "spam" || label === "porn_bot") return 30 * DAY;
-  if (label === "likely_spam") return 14 * DAY;
+  if (label === "spam" || label === "porn_bot") return 7 * DAY;
+  if (label === "likely_spam") return 7 * DAY;
   if (label === "legit") return 14 * DAY;
   return 3 * DAY; // uncertain
 }

@@ -155,7 +155,13 @@ export default defineBackground(() => {
                   authorization: `Bearer ${token}`,
                   "content-type": "application/json",
                 },
-                body: JSON.stringify(msg.sig),
+                // The reporter's own category claim rides along as
+                // reportCategory (edge: stored in the report evidence and
+                // used as the queued row's category when nothing else set one).
+                body: JSON.stringify({
+                  ...msg.sig,
+                  ...(msg.category ? { reportCategory: msg.category } : {}),
+                }),
               });
               let body: unknown = {};
               try {

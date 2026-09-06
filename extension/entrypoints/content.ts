@@ -16,7 +16,7 @@ import {
   handleFromArticle,
   viewerHandle,
 } from "../lib/detect";
-import { CATEGORY_ZH } from "../lib/category";
+import { CATEGORY_ZH, type SpamCategory } from "../lib/category";
 import { LIST_KEY, WL_KEY } from "../lib/list-sync";
 import { type IndexEntry, isWhitelisted, lookupLocal, warmLocalIndex } from "../lib/local-index";
 import { matchLocalRules, warmRuleConfig } from "../lib/local-rules";
@@ -94,7 +94,10 @@ const RESUME_MAX = 50;
  *  bans, and — auto-publish being off — every report just queues for a
  *  maintainer to confirm). The extension only surfaces the outcome; it never
  *  auto-lists anything. Returns a short line for the popover to show inline. */
-async function reportSpam(sig: Signals): Promise<{ ok: boolean; message: string }> {
+async function reportSpam(
+  sig: Signals,
+  category: SpamCategory,
+): Promise<{ ok: boolean; message: string }> {
   // The POST runs in the BACKGROUND (see BgRequest "report"): a content-script
   // fetch to the edge Worker is bound by x.com's CORS/CSP; the SW shares the
   // extension origin the whitelist-apply flow already reports from.
@@ -102,7 +105,7 @@ async function reportSpam(sig: Signals): Promise<{ ok: boolean; message: string 
     | { ok: boolean; error?: string; data?: { status: number; body: ReportBody } }
     | undefined;
   try {
-    resp = await chrome.runtime.sendMessage({ type: "report", sig });
+    resp = await chrome.runtime.sendMessage({ type: "report", sig, category });
   } catch {
     return { ok: false, message: "网络错误，举报未提交" };
   }
@@ -738,7 +741,7 @@ export default defineContentScript({
             onAct: (mode) => scheduleHide(key, sig, anchor, mode),
             onAppeal: () =>
               openAppeal({ handle: sig.handle, ...(sig.userId ? { userId: sig.userId } : {}) }),
-            onReport: () => reportSpam(sig),
+            onReport: (category) => reportSpam(sig, category),
             whitelisted,
             // 本地白名单 toggle. Adding also undoes any local hide already
             // recorded for the account (every id form) and cancels a pending
@@ -997,7 +1000,17 @@ export default defineContentScript({
         const cached = await cacheGet(key);
         if (cached) {
           const spammy = ["spam", "porn_bot", "likely_spam"].includes(cached.verdict.label);
-          if (spammy || cached.signalsHash === signalsHash(sig)) {
+          // Reuse rules (2026-09-06): a verdict is reused when the signals are
+          // unchanged; a SPAM verdict is additionally reused while fresh
+          // (< 1 day) or when this client cannot re-check anyway (logged
+          // out). Otherwise new evidence / an older mark falls through to
+          // rules and the online path, where the edge answers from its own
+          // row (no LLM) and a since-withdrawn verdict is corrected.
+          const reuse =
+            cached.signalsHash === signalsHash(sig) ||
+            (spammy &&
+              (!onlineAuthenticated || Date.now() - cached.ts < CACHE_REVALIDATE_AFTER_MS));
+          if (reuse) {
             await renderCached(anchor, key, sig, cached);
             void bumpStats({ cacheHits: 1 });
             return;

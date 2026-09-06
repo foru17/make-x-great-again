@@ -381,6 +381,39 @@ test("report endpoint stores HMAC fingerprint and minimized evidence without raw
   assert.notEqual(db.reviewLog[0]?.actor, "gh:42");
 });
 
+test("report carries the reporter's category claim into the evidence (2026-09-06)", async () => {
+  const db = new MockDB();
+  const res = await worker.fetch(
+    new Request("https://x.test/v1/report", {
+      method: "POST",
+      headers: { authorization: "Bearer ok-token", "content-type": "application/json" },
+      body: JSON.stringify({
+        userId: "101",
+        handle: "netdisk_bait",
+        displayName: "资源分享",
+        recentTweets: ["夸克网盘 链接见主页"],
+        reportCategory: "resource",
+      }),
+    }),
+    env(db),
+  );
+  assert.equal(res.status, 200);
+  const report = db.reports[0];
+  assert.ok(report);
+  assert.equal(JSON.parse(report.evidence).reportCategory, "resource");
+
+  // An unknown category is a schema error, not silently accepted.
+  const bad = await worker.fetch(
+    new Request("https://x.test/v1/report", {
+      method: "POST",
+      headers: { authorization: "Bearer ok-token", "content-type": "application/json" },
+      body: JSON.stringify({ handle: "someone", reportCategory: "politics" }),
+    }),
+    env(db),
+  );
+  assert.equal(bad.status, 400);
+});
+
 test("legacy gh:<id> report aliases to the HMAC fingerprint and is not double-counted", async () => {
   const db = new MockDB();
   db.reports.push({

@@ -1,3 +1,5 @@
+import type { SpamCategory } from "./category";
+
 export type Label = "spam" | "porn_bot" | "likely_spam" | "uncertain" | "legit";
 
 export interface Verdict {
@@ -103,7 +105,7 @@ export type BgRequest =
   // 举报: the authenticated POST to /v1/report MUST run in the background —
   // a content-script fetch is bound by x.com's CORS/CSP, whereas the SW shares
   // the extension origin the whitelist-apply flow already reports from.
-  | { type: "report"; sig: Signals };
+  | { type: "report"; sig: Signals; category?: SpamCategory };
 
 export interface BgResponse {
   ok: boolean;

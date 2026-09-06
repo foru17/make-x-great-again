@@ -702,10 +702,11 @@ function evidenceText(s: Signals): string | null {
   return (s.triggeringComment ?? s.recentTweets[0] ?? s.bio ?? "").trim().slice(0, 240) || null;
 }
 
-function reportEvidence(s: Signals): string {
+function reportEvidence(s: Signals, reportCategory: string | null = null): string {
   return JSON.stringify({
     signalsHash: sigHash(s),
     snippet: evidenceText(s),
+    ...(reportCategory ? { reportCategory } : {}),
     accountAgeDays: metricInt(s.accountAgeDays),
     followersCount: metricInt(s.followersCount),
     followingCount: metricInt(s.followingCount),
@@ -1261,6 +1262,7 @@ async function insertReportIfNew(
   fp: string,
   aliases: [string, string],
   now: number,
+  reportCategory: string | null = null,
 ): Promise<boolean> {
   const res = await env.DB.prepare(
     `INSERT INTO reports
@@ -1279,7 +1281,7 @@ async function insertReportIfNew(
       handle,
       fp,
       reporter.ageDays,
-      reportEvidence(s),
+      reportEvidence(s, reportCategory),
       now,
       handle,
       aliases[0],
@@ -2066,16 +2068,22 @@ app.post("/v1/classify", async (c) => {
  * (the human signal — governance red line intact). Otherwise it queues for
  * admin review.
  */
+// A report is the classify payload plus the reporter's own category claim
+// (2026-09-06): stored with the report evidence, and used as the queued row's
+// category when neither a rule nor the model set one.
+const ReportBody = Signals.extend({ reportCategory: z.enum(SPAM_CATEGORIES).optional() });
+
 async function submitReport(c: Ctx, source: string) {
   const who = await requireReporter(c);
   if (!who) return c.json({ error: "github_login_required" }, 401);
-  let parsed: Signals;
+  let parsed: z.infer<typeof ReportBody>;
   try {
-    parsed = Signals.parse(await c.req.json());
+    parsed = ReportBody.parse(await c.req.json());
   } catch (err) {
     return c.json({ error: "bad_request", detail: (err as Error).message }, 400);
   }
-  const s: Signals = { ...parsed, handle: normalizeHandle(parsed.handle) };
+  const { reportCategory = null, ...sigOnly } = parsed;
+  const s: Signals = { ...sigOnly, handle: normalizeHandle(parsed.handle) };
   if (viewerScopedIgnore(s)) {
     return c.json({ ok: true, status: "viewer_ignored", reporters: 0, auto: false, ignored: true });
   }
@@ -2110,7 +2118,17 @@ async function submitReport(c: Ctx, source: string) {
 
   // one report per (target, reporter); always store, even for "young" GH
   // accounts — they just don't count toward AUTO_REPORTERS.
-  const insertedReport = await insertReportIfNew(c.env, s, s.handle, uid, who, fp, aliases, now);
+  const insertedReport = await insertReportIfNew(
+    c.env,
+    s,
+    s.handle,
+    uid,
+    who,
+    fp,
+    aliases,
+    now,
+    reportCategory,
+  );
   const alreadyReported = !insertedReport;
   if (insertedReport) {
     await recordReportRate(c.env, fp, now);
@@ -2181,6 +2199,9 @@ async function submitReport(c: Ctx, source: string) {
   // push a target onto the public board before a maintainer notices. Every
   // report now queues for manual confirmation; AUTO_CONF / AUTO_REPORTERS are
   // kept as constants so the path can be re-enabled in one line later.
+  // Reporter's category claim: only a fallback (rule/model categories win),
+  // and only for a fresh row — writeAccount COALESCEs onto existing rows.
+  if (!vCategory && reportCategory && !prev) vCategory = reportCategory;
   const aiSpam = (vLabel === "spam" || vLabel === "porn_bot") && vConf >= AUTO_CONF;
   const wouldAutoIfEnabled = aiSpam && reporters >= AUTO_REPORTERS;
   const auto = false; // manual-confirmation-only for now

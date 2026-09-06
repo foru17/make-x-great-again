@@ -2,6 +2,7 @@
 // cannot bleed in and ours cannot leak out. Vanilla DOM — no framework
 // weight injected into the page. Tokens per docs/UX.md.
 import { BRAND } from "./brand";
+import { CATEGORY_ZH, SPAM_CATEGORIES, type SpamCategory } from "./category";
 import type { ActionMode } from "./settings";
 import type { Label, Verdict } from "./types";
 
@@ -381,6 +382,15 @@ svg { display: block; }
   color: var(--safe);
   border-color: color-mix(in srgb, var(--safe) 45%, var(--border));
 }
+/* 举报 category chips — replace the 举报 button in place on first click. */
+.rep-cats { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; width: 100%; }
+.rep-cats-label { flex: 0 0 100%; font-size: 11px; color: var(--muted); margin: 2px 0 1px; }
+.rep-cats button {
+  border: 1px solid color-mix(in srgb, var(--warn) 48%, var(--border));
+  background: color-mix(in srgb, var(--warn) 9%, transparent); color: var(--warn);
+  border-radius: 999px; padding: 4px 9px; font-size: 11px; font-weight: 650; cursor: pointer;
+}
+.rep-cats button:hover { filter: brightness(1.08); transform: translateY(-1px); }
 /* v0.4 popover: soft 12px radius, deep layered shadow, pop-in scale. */
 .pop {
   position: fixed; z-index: 2147482001; width: 280px; padding: 12px;
@@ -1666,10 +1676,14 @@ export interface BadgeActions {
   onAct: (mode: ActionMode) => void;
   onAppeal: () => void;
   /** Report this account to the public queue (GitHub-authed contribution).
-   *  Only offered for accounts NOT already on the community list. Resolves to
-   *  a short user-facing result the popover shows inline; the network call,
-   *  GitHub-auth gating and abuse feedback all live in the caller. */
-  onReport?: () => Promise<{ ok: boolean; message: string }>;
+   *  Only offered for accounts NOT already on the community list. The
+   *  popover first asks WHICH kind of spam (a category chip row) — 13 of the
+   *  last 20 reports in the 2026-09-04 audit were out-of-scope arguments,
+   *  and a forced choice both filters those and gives the reviewer a claim
+   *  to check. Resolves to a short user-facing result the popover shows
+   *  inline; the network call, GitHub-auth gating and abuse feedback all
+   *  live in the caller. */
+  onReport?: (category: SpamCategory) => Promise<{ ok: boolean; message: string }>;
   /** Account is on the user's LOCAL whitelist → the badge renders as the
    *  neutral 白名单 marker and the popover offers 移出 instead of actions. */
   whitelisted?: boolean;
@@ -1862,16 +1876,16 @@ export function createBadge(
     const reportEl = pop.querySelector<HTMLButtonElement>("[data-report]");
     if (reportEl && a.onReport) {
       const onReport = a.onReport;
-      reportEl.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        cancelHide();
+      const submit = async (category: SpamCategory) => {
         const statusEl = pop?.querySelector<HTMLElement>("[data-report-status]");
+        pop?.querySelector("[data-report-cats]")?.remove();
+        reportEl.hidden = false;
         reportEl.disabled = true;
         reportEl.textContent = "举报中…";
-        setPopStatus(statusEl, "正在提交举报…", "info");
+        setPopStatus(statusEl, `正在提交举报（${CATEGORY_ZH[category]}）…`, "info");
         let res: { ok: boolean; message: string };
         try {
-          res = await onReport();
+          res = await onReport(category);
         } catch {
           res = { ok: false, message: "举报失败，请稍后重试" };
         }
@@ -1882,6 +1896,32 @@ export function createBadge(
         // Let the result read, then fold.
         clearTimeout(hideTimer);
         hideTimer = setTimeout(close, res.ok ? 2600 : 3600);
+      };
+      // First click: ask which kind of spam. The chips replace the button
+      // in place; picking one submits. Two taps, no free text.
+      reportEl.addEventListener("click", (e) => {
+        e.stopPropagation();
+        cancelHide();
+        if (pop?.querySelector("[data-report-cats]")) return;
+        const cats = document.createElement("div");
+        cats.className = "rep-cats";
+        cats.setAttribute("data-report-cats", "");
+        cats.innerHTML = `<span class="rep-cats-label">这是哪类垃圾？</span>${SPAM_CATEGORIES.map(
+          (c) => `<button type="button" data-cat="${c}">${esc(CATEGORY_ZH[c])}</button>`,
+        ).join("")}`;
+        for (const b of cats.querySelectorAll<HTMLElement>("[data-cat]")) {
+          b.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            void submit(b.dataset.cat as SpamCategory);
+          });
+        }
+        reportEl.hidden = true;
+        reportEl.insertAdjacentElement("afterend", cats);
+        setPopStatus(
+          pop?.querySelector<HTMLElement>("[data-report-status]"),
+          "选择类型后提交；不属于这些类型的争吵/观点不在治理范围",
+          "info",
+        );
       });
     }
     // Any OTHER action click ends the popover's job: the flow continues in the
