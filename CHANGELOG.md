@@ -10,6 +10,97 @@ otherwise.
 
 _Nothing yet._
 
+## [0.6.1] - 2026-09-06
+
+The false-positive release. The 2026-09-04 audit (eight upheld appeals,
+ten audited mislabels among the latest fifty spam verdicts, an 80%-noise
+review queue) traced most misfires to input the classifier never received,
+verdicts that outlived their withdrawal, and rule hits promoted blind. 0.6.1
+closes each of those paths, adds a user-owned whitelist that outranks
+everything, and ships the MAIN-world profile bridge that 0.6.0 missed.
+
+### Added
+
+- **Local whitelist** (设置 → 白名单): the user's own never-touch list,
+  highest priority of the whole chain — accounts on it are never badged,
+  rule-matched, sent for online detection or auto-processed, even when the
+  public list or an official rule says spam. Followed accounts join
+  automatically (`followingWhitelist`, default on) when seen with the
+  viewer-follows relationship or on the viewer's own /following page; any
+  handle can be added from the badge popover (加入白名单) or the options tab.
+  Local storage only, never uploaded.
+- **MAIN-world profile bridge** (`x-bridge.content.ts`): a page-world script
+  reads the author profile X already holds in its React state and stamps it
+  onto the article as a DOM attribute, so the isolated content script can
+  send uid / bio / follower counts / account age (92% of live payloads had
+  none of them). Read-and-annotate only — no network requests, no page
+  globals touched. Disclosed in PRIVACY A.4.
+- **Rendering context** sent with every online check: `surface`
+  (home/thread/profile/search), `isReply`, `replyToHandle`,
+  `rootAuthorHandle` — the classifier's reply-section-bot vs own-timeline
+  boundary was undecidable from a bare tweet.
+- **Profile facts** X already holds: verified, post / media / like counts,
+  location, and X's own default-avatar flag (the DOM heuristic flagged real
+  avatars that failed to lazy-load; the prompt now trusts only the profile
+  source).
+- **Template repeats**: a local, hash-only, 14-day memory of each author's
+  recent comments reports how many earlier times this browser saw the same
+  text — the cross-thread repetition the prompt asks for and never got.
+  Only the count leaves the device.
+- **Profile pages** now send the account's own visible posts as history
+  (the profile path used to send no text at all).
+- **举报 asks which kind of spam first** (category chips, two taps); the
+  claim travels with the report and seeds the queued row's category.
+- **Rule-hit telemetry carries evidence**: which field matched and a
+  ≤200-char excerpt of the spam account's own text (server-verified to
+  contain the pattern), shown in the admin drill-down before promotion.
+  Disclosed in PRIVACY A.4b and the settings copy.
+- **Frozen classifier eval set** (`docs/eval/cases.json`, 42 cases) and an
+  offline runner with a hard call cap; the 0.6.1 prompt scores 42/42.
+- **In-page UI acceptance harness** (`scripts/ui-acceptance/inpage`): real
+  build on simulated X pages, three X themes × two viewports.
+
+### Fixed
+
+- **Withdrawn verdicts resurfaced**: `/v1/classify` served the original spam
+  verdict for accounts a moderator had removed or whose report was rejected,
+  and the client re-cached it for 30 days — every appeal you won stayed red
+  in your own browser. The edge now serves the withdrawal as legit; the
+  client folds removed / rejected / whitelisted into a clean verdict,
+  overwrites the stale cache entry, and re-checks day-old cached spam.
+- **Fabricated repetition**: the article path copied the tweet text into
+  both `triggeringComment` and `recentTweets[0]`; the model read two
+  identical strings as "posts the same thing repeatedly" (#371).
+- **Uncertain verdicts badged**: an "uncertain 40%" red mark was a
+  user-visible false positive (#367); uncertain and low-confidence
+  likely_spam now stay silent.
+- **Rule hits could fire X mute/block**: local keyword-rule hits (a
+  substring match with zero review) are now capped at the reversible local
+  hide in every autoTierMode; X mute/block stays for published list entries.
+- **Spam cache lived 30 days across all later tweets**: 7 days now, and
+  reused across new tweets only while fresh or when the client cannot
+  re-check.
+- **UI followed the OS scheme, not X's theme**: X's Default / Dim / Lights
+  out are chosen in-app; a light OS with X in Lights out got grey ghost
+  badges and slate popover text on black. The page's real background now
+  decides, restamped when X switches theme.
+- Desktop bubble pill sat on the right end of X's pinned search box; the
+  two-character 误判 link in bubble rows could split across lines.
+
+### Service (deployed 2026-09-06, x.zuoluo.tv, version 943b8b34)
+
+- Review-queue split: legit at any confidence → `auto_legit`, uncertain →
+  new `auto_unsure` (3-day TTL, never listed, rule-overridable, rescanned
+  by scope:'all' sweeps); only spam-family labels queue. 80% of the queue
+  was non-spam labels burying the real false positives.
+- Prompt: repetition means distinct posts; one ordinary sentence with
+  missing profile data is not spam; context and profile-fact semantics;
+  avatar caveat keyed to provenance.
+- `rule_hit_stats` gained `field` / `sample_text` (migration
+  `2026-09-06-rule-hit-evidence.sql`); `/v1/report` accepts
+  `reportCategory`; `/v1/classify` accepts the new context / profile /
+  template-repeat fields.
+
 ## [0.6.0] - 2026-08-14
 
 The contribution-funnel release. v0.5's passive zero-remote architecture

@@ -166,7 +166,12 @@
       "id": "T15",
       "task": "0.6.1 发布：版本号、CHANGELOG（含 MAIN-world 桥披露）、README Firefox 状态更正、zip 三平台、CWS_LISTING 清单",
       "verify": "extension/.output/mxga-extension-0.6.1-*.zip 存在且 manifest 版本 0.6.1；CHANGELOG [0.6.1] 段落；测试全过",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "extension/package.json 与 apple pbxproj 版本 0.6.1；content 构建标记 2026-09-06 (fp-reduction)",
+        "CHANGELOG [0.6.1] 段落（含 MAIN-world 桥披露、服务端 943b8b34）；README 版本说明与 Firefox 商店状态更正；PRIVACY A.2/A.4/A.4b 更新；CWS_LISTING v0.6.1 清单",
+        "zip：mxga-extension-0.6.1-{chrome,firefox,safari,sources}.zip，manifest version 0.6.1、含 world:MAIN 桥；extension 61/61，edge 141/141"
+      ]
     }
   ]
 }

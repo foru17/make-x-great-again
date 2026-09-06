@@ -1,6 +1,6 @@
 {
   "name": "mxga-extension",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "private": true,
   "description": "Make X Great Again (MXGA) — local-first X spam protection (WXT, MV3).",
   "license": "AGPL-3.0-only",
