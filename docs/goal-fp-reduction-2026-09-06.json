@@ -60,7 +60,12 @@
       "id": "T4",
       "task": "Data-2 上下文信号：surface(home/thread/profile/search/other)、isReply、replyToHandle、rootAuthorHandle；边缘 schema 接受并写入 prompt",
       "verify": "detect 单测覆盖回复/根帖两种 DOM；edge Signals.parse 接受新字段；prompt 含 surface 说明",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "Signals 新增 surface/isReply/replyToHandle/rootAuthorHandle；detect.pageSurface + replyTarget（多语言 Replying to 行）；scan() 在 /status/ 页按 focal id 标 isReply 并附 rootAuthor",
+        "edge zod 接受四字段；userPrompt 输出 context: 行（self 标注）；system prompt 新增 CONTEXT FIELDS 边界",
+        "detect-signals 单测 3/3；extension 57/57；edge 139/139"
+      ]
     },
     {
       "id": "T5",

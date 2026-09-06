@@ -1,6 +1,6 @@
 // Passive DOM extraction. Reads only what X already rendered — no scraping,
 // no navigation, no extra requests to X.
-import type { Signals } from "./types";
+import type { Signals, Surface } from "./types";
 import { type BridgeUser, readBridgeUser } from "./x-user-bridge";
 
 /** Everything the passive extractors could learn about an author, merged
@@ -407,6 +407,7 @@ export function extractProfile(): Signals | null {
 
   return {
     isProfile: true,
+    surface: "profile",
     handle,
     displayName,
     bio: bioEl ? bioEl.innerText.trim() : "",
@@ -457,6 +458,39 @@ function articleShowsTranslation(article: HTMLElement, tweetEl: HTMLElement | nu
   return TRANSLATION_MARKER_RE.test(article.textContent ?? "");
 }
 
+/** Which X surface the current page is. Cheap (pathname only). */
+export function pageSurface(): Surface {
+  const p = location.pathname;
+  if (p === "/home" || p === "/" || p.startsWith("/i/lists/") || p === "/explore") return "home";
+  if (/^\/[^/]+\/status\/\d+/.test(p)) return "thread";
+  if (p.startsWith("/search")) return "search";
+  if (p.startsWith("/notifications")) return "notifications";
+  if (/^\/[A-Za-z0-9_]{1,15}(\/(with_replies|media|likes|highlights|articles))?\/?$/.test(p)) {
+    return "profile";
+  }
+  return "other";
+}
+
+// X's "Replying to @a @b" line above the body (home / search / profile
+// feeds; not shown for replies inside the conversation view — those are
+// recognised by the caller via the focal status id). Wording per X locale.
+const REPLYING_TO_RE =
+  /^(replying to|回复|回覆|返信先|답글|antwort an|en réponse à|respondiendo a|em resposta a|in risposta a|antwoord aan)\b/i;
+
+/** Handle a feed article replies to, from X's own "Replying to" line. */
+export function replyTarget(article: HTMLElement, tweetEl: HTMLElement | null): string | undefined {
+  for (const el of article.querySelectorAll<HTMLElement>("div, span")) {
+    if (tweetEl?.contains(el)) continue;
+    const t = (el.textContent ?? "").trim();
+    if (!t || t.length > 200 || !REPLYING_TO_RE.test(t)) continue;
+    for (const a of el.querySelectorAll<HTMLAnchorElement>('a[href^="/"]')) {
+      const s = (a.getAttribute("href") ?? "").split("/").filter(Boolean);
+      if (s.length === 1 && /^[A-Za-z0-9_]{1,15}$/.test(s[0] ?? "")) return s[0];
+    }
+  }
+  return undefined;
+}
+
 export function extractFromArticle(article: HTMLElement): Signals | null {
   if (isPromoted(article)) return null; // official X ad → not spam
   const { hasDefaultAvatar, avatarUrl } = avatarInfo(article);
@@ -478,6 +512,7 @@ export function extractFromArticle(article: HTMLElement): Signals | null {
   const tweetEl = article.querySelector<HTMLElement>('[data-testid="tweetText"]');
   const tweetText = tweetEl ? tweetEl.innerText.trim() : "";
   const tweetsTranslated = articleShowsTranslation(article, tweetEl);
+  const replyTo = replyTarget(article, tweetEl);
   // Profile signals, best source first:
   //  1. the MAIN-world bridge, which CAN read X's React fiber (see
   //     lib/x-user-bridge.ts — the isolated world cannot, so without this the
@@ -515,6 +550,11 @@ export function extractFromArticle(article: HTMLElement): Signals | null {
     ...(fu.userId ? { userId: fu.userId } : {}),
     ...(tweetText ? { triggeringComment: tweetText } : {}),
     ...(tweetsTranslated ? { tweetsTranslated: true as const } : {}),
+    // Context the classifier's reply-section-vs-own-timeline boundary needs.
+    // The scan loop refines isReply / rootAuthorHandle on /status/ pages,
+    // where in-conversation replies carry no "Replying to" line.
+    surface: pageSurface(),
+    ...(replyTo ? { isReply: true, replyToHandle: replyTo } : {}),
     ...(fu.accountCreatedAt ? { accountCreatedAt: fu.accountCreatedAt } : {}),
     ...(fu.accountAgeDays !== undefined ? { accountAgeDays: fu.accountAgeDays } : {}),
     ...(fu.followersCount !== undefined ? { followersCount: fu.followersCount } : {}),

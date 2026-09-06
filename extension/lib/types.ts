@@ -47,7 +47,20 @@ export interface Signals {
   viewerMuting?: true;
   viewerFollowRequestSent?: true;
   viewerIsSelf?: true;
+  /** Where on X the article was rendered. The classifier's core boundary —
+   *  reply-section advertising bot vs. an account posting on its own
+   *  timeline — is undecidable without it. */
+  surface?: Surface;
+  /** The article is a reply (X's "Replying to @…" line, or a non-focal
+   *  article on a /status/ page). */
+  isReply?: boolean;
+  /** Handle the reply is addressed to, when X shows it. */
+  replyToHandle?: string;
+  /** Author of the focal (root) tweet on a /status/ page. */
+  rootAuthorHandle?: string;
 }
+
+export type Surface = "home" | "thread" | "profile" | "search" | "notifications" | "other";
 
 /** Background messages. "list-sync" triggers the public blocklist download
  *  (read-only GET of the official artifact; nothing is uploaded). */

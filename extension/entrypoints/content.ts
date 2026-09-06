@@ -1148,9 +1148,20 @@ export default defineContentScript({
       // context where auto actions are allowed by default. Everything else
       // (home/list/search feeds, the focal tweet itself) is "feed".
       const focal = focalStatusId();
-      for (const art of document.querySelectorAll<HTMLElement>(
-        'article[data-testid="tweet"]',
-      )) {
+      const articles = document.querySelectorAll<HTMLElement>('article[data-testid="tweet"]');
+      // Root author of the conversation: the article whose permalink IS the
+      // focal id. Handed to the classifier with every in-thread reply so it
+      // can tell "replying in someone else's thread" from "own timeline".
+      let rootAuthor: string | undefined;
+      if (focal) {
+        for (const art of articles) {
+          if (articleStatusId(art) === focal) {
+            rootAuthor = handleFromArticle(art);
+            break;
+          }
+        }
+      }
+      for (const art of articles) {
         const handle = handleFromArticle(art);
         const nameBlock = art.querySelector<HTMLElement>('[data-testid="User-Name"]');
         if (!handle || !nameBlock) continue;
@@ -1162,7 +1173,14 @@ export default defineContentScript({
         if (nodeHandle.get(art) !== handle) clearMounts(nameBlock); // recycled node
         nodeHandle.set(art, handle);
         const sid = focal ? articleStatusId(art) : null;
-        const ctx: ScanContext = focal && sid && sid !== focal ? "reply" : "feed";
+        const inThreadReply = !!(focal && sid && sid !== focal);
+        const ctx: ScanContext = inThreadReply ? "reply" : "feed";
+        if (inThreadReply) {
+          info.isReply = true;
+          if (rootAuthor) info.rootAuthorHandle = rootAuthor;
+        } else if (rootAuthor && info.isReply && !info.rootAuthorHandle) {
+          info.rootAuthorHandle = rootAuthor;
+        }
         void process(info, nameBlock, ctx);
       }
     }

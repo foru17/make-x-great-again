@@ -315,6 +315,22 @@ const Signals = z.object({
   // not match CJK patterns against the tweet text and the LLM is told the
   // text is a translation. Optional — legacy clients never send it.
   tweetsTranslated: z.boolean().optional(),
+  // Rendering context (2026-09-06). The core boundary in the system prompt —
+  // reply-section advertising bot vs. an account posting on its own
+  // timeline — was undecidable from a bare tweet; clients now say where the
+  // article sat and whether it was a reply. All optional (older clients).
+  surface: z.enum(["home", "thread", "profile", "search", "notifications", "other"]).optional(),
+  isReply: z.boolean().optional(),
+  replyToHandle: z
+    .string()
+    .trim()
+    .regex(/^@?[A-Za-z0-9_]{1,15}$/)
+    .optional(),
+  rootAuthorHandle: z
+    .string()
+    .trim()
+    .regex(/^@?[A-Za-z0-9_]{1,15}$/)
+    .optional(),
 });
 type Signals = z.infer<typeof Signals>;
 
@@ -430,6 +446,16 @@ const SYSTEM = `You classify X (Twitter) accounts ONLY for spam / porn-advertisi
   triggeringComment in an unrelated thread, template redirect bait repeated
   across recentTweets, or escort/hookup contact solicitation), adult content
   alone must NOT produce porn_bot at ANY confidence — label "legit".
+- CONTEXT FIELDS (when present): "surface" is where the client saw the post
+  (home/search feed, thread = a conversation page, profile = the author's own
+  page); "isReply" says whether the post is a reply; "replyTo"/"rootAuthor"
+  name whose thread it sits in, marked "(self)" when that is the author.
+  Reply-section spam REQUIRES isReply=true in someone ELSE's thread. A post
+  with isReply=false, or a reply/root marked (self), is the account's OWN
+  timeline content: adult or promotional material there is the creator /
+  brand case above — never porn_bot, and spam only for third-party funnels or
+  cross-thread template repetition. When the context fields are absent, do
+  not assume the post was a reply.
 - HIGH-REACH CAUTION: for accounts with followers >= 100000, a false
   accusation is maximally harmful and true spam at that reach is rare — such
   accounts are usually real celebrities, brands, media, or creators. Require
@@ -505,10 +531,23 @@ function userPrompt(s: Signals): string {
   ]
     .filter(Boolean)
     .join(" ");
+  const own = s.handle.toLowerCase();
+  const context = [
+    s.surface ? `surface=${s.surface}` : "",
+    s.isReply !== undefined ? `isReply=${s.isReply}` : "",
+    s.replyToHandle
+      ? `replyTo=@${s.replyToHandle}${s.replyToHandle.toLowerCase() === own ? " (self)" : ""}`
+      : "",
+    s.rootAuthorHandle
+      ? `rootAuthor=@${s.rootAuthorHandle}${s.rootAuthorHandle.toLowerCase() === own ? " (self)" : ""}`
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
   return `handle: @${s.handle}
 displayName: ${s.displayName || "(empty)"}
 bio: ${s.bio || "(empty)"}
-${meta ? `signals: ${meta}\n` : ""}${s.tweetsTranslated ? "note: tweet texts are machine-translated by X auto-translate; the original language text was not available\n" : ""}threadTopic: ${s.threadTopic ?? "(none)"}
+${meta ? `signals: ${meta}\n` : ""}${context ? `context: ${context}\n` : ""}${s.tweetsTranslated ? "note: tweet texts are machine-translated by X auto-translate; the original language text was not available\n" : ""}threadTopic: ${s.threadTopic ?? "(none)"}
 triggeringComment: ${s.triggeringComment ?? "(none)"}
 recentTweets (OTHER posts by this account, captured separately; "(none)" = no history was available, which is NOT evidence of anything):
 ${s.recentTweets.map((t, i) => `  ${i + 1}. ${t}`).join("\n") || "  (none)"}`;

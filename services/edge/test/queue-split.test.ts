@@ -88,6 +88,11 @@ function classify(handle: string): Request {
       displayName: "Someone",
       triggeringComment: "请更新 Antigravity IDE，谢谢",
       recentTweets: [],
+      // Context fields (2026-09-06) must be accepted by the schema.
+      surface: "thread",
+      isReply: true,
+      replyToHandle: "GoogleAI",
+      rootAuthorHandle: "GoogleAI",
     }),
   });
 }
