@@ -88,6 +88,7 @@ const STATUS_ZH: Record<string, string> = {
   human_confirmed: "已在公榜",
   auto_pending_review: "待审队列中",
   auto_legit: "AI 判为正常",
+  auto_unsure: "AI 无法判断",
   whitelisted: "已是白名单",
   rejected: "已驳回",
   removed: "已移除",

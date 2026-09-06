@@ -194,6 +194,7 @@ const RESCORE_TTL_MS: Record<string, number> = {
   agent_blacklist: NEVER_RESCORE,
   auto_legit: 30 * 86_400_000, // legit rarely flips; re-check monthly at most
   auto_pending_review: 24 * 3_600_000, // still ambiguous — allow a daily re-look
+  auto_unsure: 3 * 86_400_000, // model could not tell: not queue material, re-look in a few days
   agent_pending: 7 * 86_400_000,
 };
 const BLOOM_SHARD_SIZE = 500; // accounts per logical shard in the JSON artifact
@@ -1155,7 +1156,7 @@ async function cleanupHandleOnlyAccountDuplicates(
                                AND lower(s.handle)=?
                              LIMIT 1)
       WHERE rowid=?
-        AND status IN ('auto_pending_review','auto_legit')
+        AND status IN ('auto_pending_review','auto_legit','auto_unsure')
         AND EXISTS (SELECT 1 FROM accounts s
                      WHERE s.x_user_id IS NULL
                        AND s.status='human_confirmed'
@@ -1354,7 +1355,7 @@ function statusForRuleAction(action: string): "human_confirmed" | "whitelisted" 
 
 // Only machine-made, non-terminal verdicts may be overturned by a newly-added
 // keyword rule. Human decisions and Agent staging remain authoritative.
-const RULE_OVERRIDABLE_STATUSES = new Set(["auto_pending_review", "auto_legit"]);
+const RULE_OVERRIDABLE_STATUSES = new Set(["auto_pending_review", "auto_legit", "auto_unsure"]);
 /** Terminal human decisions that RETRACT an earlier spam verdict. /v1/classify
  *  must never echo the retracted verdict back to a client. */
 const WITHDRAWN_STATUSES = new Set(["removed", "rejected"]);
@@ -1425,7 +1426,7 @@ async function autoBlacklistMentions(
     // Only auto-promote when there's nothing to step on: a brand-new handle, or
     // one still in an auto_* limbo. Any human decision or an existing public
     // listing is left untouched.
-    if (prev && prev.status !== "auto_pending_review" && prev.status !== "auto_legit") {
+    if (prev && !RULE_OVERRIDABLE_STATUSES.has(prev.status)) {
       continue;
     }
     const reasons = [
@@ -1922,11 +1923,19 @@ app.post("/v1/classify", async (c) => {
   // queue. /admin/queue still only selects status='auto_pending_review', so
   // auto_legit rows are invisible there but the next /v1/classify hit still
   // gets a free cache return.
+  // Queue split (2026-09-06): the review queue is for SUSPECTED spam. A legit
+  // verdict at any confidence and an "uncertain" verdict are not suspicion —
+  // routing them to auto_pending_review made 80% of the queue non-spam
+  // labels (2026-09-04 audit) and buried the real false positives. legit →
+  // auto_legit; uncertain → auto_unsure (short TTL, re-looked at soon, never
+  // listed, rule-overridable); only spam-family labels queue.
   const writeStatus = aiAutoPublish
     ? "human_confirmed"
-    : verdict.label === "legit" && verdict.confidence >= 0.85
+    : verdict.label === "legit"
       ? "auto_legit"
-      : "auto_pending_review";
+      : verdict.label === "uncertain"
+        ? "auto_unsure"
+        : "auto_pending_review";
   // Pick the most-relevant public X snippet that triggered this verdict so
   // the public list can be audited without retaining unrelated context.
   // Category: the LLM's explicit pick, else the label-level mapping
@@ -3079,6 +3088,7 @@ app.get("/v1/admin/stats", async (c) => {
     rejected: byStatus.rejected ?? 0,
     removed: byStatus.removed ?? 0,
     auto_legit: byStatus.auto_legit ?? 0,
+    auto_unsure: byStatus.auto_unsure ?? 0,
     pending_raw: byStatus.auto_pending_review ?? 0,
     reports: reportsRow?.n ?? 0,
     whitelist_requests: wlReqRow?.n ?? 0,
@@ -3936,7 +3946,7 @@ app.post("/v1/admin/keyword-rules/apply-to-queue", async (c) => {
   // `status` is a code-controlled literal (never user input) so it is inlined
   // rather than bound — one more bind slot for patterns, and the status stays
   // visible to the query planner's partial indexes.
-  async function prefilter(status: "auto_pending_review" | "auto_legit") {
+  async function prefilter(status: "auto_pending_review" | "auto_legit" | "auto_unsure") {
     const found = new Map<number, SweepRow>();
     let truncated = false;
     if (!terms.length) return { rows: [] as SweepRow[], truncated };
@@ -3967,12 +3977,19 @@ app.post("/v1/admin/keyword-rules/apply-to-queue", async (c) => {
 
   const queueScan = await prefilter("auto_pending_review");
   const candidates = queueScan.rows;
+  // scope:'all' also rescans the two "AI did not flag it" partitions —
+  // auto_legit and auto_unsure — so a new rule can still catch an account
+  // the model once waved through.
   const legitScan =
     scope === "all"
       ? await prefilter("auto_legit")
       : { rows: [] as SweepRow[], truncated: false };
-  const legitCandidates = legitScan.rows;
-  const legitTruncated = legitScan.truncated;
+  const unsureScan =
+    scope === "all"
+      ? await prefilter("auto_unsure")
+      : { rows: [] as SweepRow[], truncated: false };
+  const legitCandidates = [...legitScan.rows, ...unsureScan.rows];
+  const legitTruncated = legitScan.truncated || unsureScan.truncated;
   const now = Date.now();
 
   // Per-rule hit count, returned to the UI so the maintainer can see which
@@ -4010,7 +4027,7 @@ app.post("/v1/admin/keyword-rules/apply-to-queue", async (c) => {
   for (const row of [...candidates, ...legitCandidates]) {
     const hit = rules.find((r) => rowMatches(row, r));
     if (!hit) continue;
-    const fromLegit = row.status === "auto_legit";
+    const fromLegit = row.status === "auto_legit" || row.status === "auto_unsure";
     // Same auto-publish gate as the live fast-path: a 'blacklist' rule can't
     // publish a non-spam-labeled or known-high-follower row from the sweep —
     // the row is already exactly where it should be (the queue), so skip it.

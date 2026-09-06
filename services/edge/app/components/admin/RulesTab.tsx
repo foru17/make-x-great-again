@@ -438,7 +438,7 @@ export function RulesTab({ onAuth, onMutated }: { onAuth: () => void; onMutated:
       body:
         scope === "all" ? (
           <p>
-            用全部启用规则扫一遍待审队列 <b>和已判正常（auto_legit）的账号</b>。
+            用全部启用规则扫一遍待审队列 <b>和 AI 已判正常 / 无法判断（auto_legit / auto_unsure）的账号</b>。
             已判正常的命中不直接上榜，回到待审队列由你复核；队列命中按各自 action 落地。
           </p>
         ) : (

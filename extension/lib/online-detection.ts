@@ -53,10 +53,21 @@ export function shouldAutoClassify(input: {
   );
 }
 
+/** likely_spam below this confidence is remembered but not shown: the model
+ * itself is saying "maybe", and a maybe is not worth a red mark on someone's
+ * name. */
+export const LIKELY_SPAM_BADGE_MIN_CONFIDENCE = 0.8;
+
 /** A clean online result is remembered as a scan sentinel but stays visually
- * silent. Only verdicts that may need review should occupy the author row. */
+ * silent. Only verdicts that carry real suspicion occupy the author row:
+ * legit and uncertain never badge (an "uncertain 40%" red mark was a
+ * user-visible false positive in the 2026-09-04 audit, #367), and a
+ * low-confidence likely_spam stays quiet too. */
 export function onlineVerdictVisibility(verdict: Verdict): "silent" | "badge" {
-  return verdict.label === "legit" ? "silent" : "badge";
+  if (verdict.label === "legit" || verdict.label === "uncertain") return "silent";
+  if (verdict.label === "likely_spam" && verdict.confidence < LIKELY_SPAM_BADGE_MIN_CONFIDENCE)
+    return "silent";
+  return "badge";
 }
 
 /** Review states under which the edge's verdict has been RETRACTED by a

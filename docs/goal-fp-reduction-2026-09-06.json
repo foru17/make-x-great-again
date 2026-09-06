@@ -49,7 +49,12 @@
       "id": "T3",
       "task": "A3 低置信静默 + 队列分流：客户端 uncertain / likely_spam<0.8 不打徽章；边缘 legit(任意置信) → auto_legit，uncertain → auto_unsure（3 天 TTL，不进待审）",
       "verify": "online-detection 单测覆盖三种 label 的可见性；edge 单测覆盖 writeStatus 分流；/admin/queue 查询不包含 auto_unsure",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "client onlineVerdictVisibility：legit/uncertain 静默，likely_spam<0.8 静默；单测更新",
+        "edge writeStatus：legit(任意置信)→auto_legit，uncertain→auto_unsure(3d TTL，rule-overridable，sweep scope:all 纳入，stats 计数，SPA 文案)；test/queue-split.test.ts 5/5",
+        "edge 139/139，extension 56/56，admin SPA vite build 通过"
+      ]
     },
     {
       "id": "T4",

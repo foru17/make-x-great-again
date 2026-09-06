@@ -27,9 +27,18 @@ const verdict: Verdict = {
   reasons: ["normal account history"],
 };
 
-test("legit online verdicts stay silent while reviewable verdicts remain visible", () => {
+test("only real suspicion badges: legit/uncertain and low-confidence likely_spam stay silent", () => {
   assert.equal(onlineVerdictVisibility(verdict), "silent");
-  for (const label of ["spam", "porn_bot", "likely_spam", "uncertain"] as const) {
+  assert.equal(
+    onlineVerdictVisibility({ label: "uncertain", confidence: 0.4, reasons: ["test"] }),
+    "silent",
+    "an 'uncertain 40%' must not be a red mark (audit #367)",
+  );
+  assert.equal(
+    onlineVerdictVisibility({ label: "likely_spam", confidence: 0.75, reasons: ["test"] }),
+    "silent",
+  );
+  for (const label of ["spam", "porn_bot", "likely_spam"] as const) {
     assert.equal(
       onlineVerdictVisibility({ label, confidence: 0.8, reasons: ["test"] }),
       "badge",
