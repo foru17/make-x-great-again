@@ -135,7 +135,11 @@
       "id": "T12",
       "task": "评测集：docs/eval/cases.json（8 条申诉成立 + 10 条审计误判 + ≥20 条真阳性），runner 脚本带硬上限（默认 dry-run，不打真实 LLM）",
       "verify": "node runner --dry-run 输出用例统计；带 EVAL_ENDPOINT 时调用数 ≤ 上限",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "docs/eval/cases.json 42 例（clean 21 / spam 21，含 8 条申诉、10 条审计误判、3 条豁免、21 条真阳性；8 条标注 reconstructed）",
+        "scripts/eval/classify-eval.ts：dry-run 校验通过（exit 0）；EVAL_LIVE=1 时直连模型用 Worker 同一 prompt 打分，EVAL_MAX_CALLS 默认 60 硬上限，不写生产库；index.ts 导出 classifyForEval/CLASSIFY_SYSTEM_PROMPT"
+      ]
     },
     {
       "id": "T13",

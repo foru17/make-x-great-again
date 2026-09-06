@@ -6325,6 +6325,12 @@ async function pruneClassifyWitness(env: Bindings): Promise<void> {
   if (res.meta?.changes) logInfo("classify_witness.pruned", { rows: res.meta.changes });
 }
 
+// Offline evaluation hooks (scripts/eval/classify-eval.ts): the exact prompt
+// and classifier the Worker runs, so a prompt/threshold change can be scored
+// against docs/eval/cases.json BEFORE it is deployed. No runtime caller.
+export { classify as classifyForEval, SYSTEM as CLASSIFY_SYSTEM_PROMPT, userPrompt as classifyUserPrompt };
+export type { Signals as ClassifySignals, Verdict as ClassifyVerdict };
+
 export default {
   fetch: app.fetch,
   scheduled(event: ScheduledController, env: Bindings, ctx: ExecutionContext): void {
