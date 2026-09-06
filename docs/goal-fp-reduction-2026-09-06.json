@@ -155,7 +155,12 @@
       "id": "T14",
       "task": "边缘部署：从 feat/rules-visibility-telemetry 部署（勿从 main），先跑迁移，再冒烟 /v1/classify /v1/rule-hits",
       "verify": "wrangler deploy 输出版本；curl 冒烟 200；D1 只读核对新列存在",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "从 feat/rules-visibility-telemetry 部署（lineage 探针 /v1/rule-hits=400 确认），版本 943b8b34-deea-4010-ac8e-3bec8e47b82c，2026-09-06",
+        "D1 迁移 2026-09-06-rule-hit-evidence.sql 已应用（rows_written=2），PRAGMA 确认 field/sample_text 列存在",
+        "冒烟：/v1/list/meta 200；/v1/rule-hits 未知规则→{stored:0,dropped:1}；/v1/admin/stats 含 auto_unsure(=3，部署后即有写入)；/v1/admin/rule-hits/accounts 行含 field/sample_text；待审 82,149（较 09-04 的 43,902 继续膨胀，分流后应止涨）"
+      ]
     },
     {
       "id": "T15",
