@@ -27,12 +27,37 @@ export const STYLE = `
     --safe: #15803D; --hover: rgba(15,23,42,.06);
   }
 }
+/* X's OWN theme wins over the OS scheme (2026-09-06). X has three themes
+ * (Default / Dim / Lights out) chosen in-app, independent of the OS: a user
+ * on a light OS with X in Lights out got the light palette above — grey
+ * ghost badges and slate popover text on a black page. detectXTheme() reads
+ * the page's real background and stamps data-xss-theme on every shadow host
+ * and the popover/bubble roots; these blocks come AFTER the media query so
+ * they win either way. */
+:host([data-xss-theme="dark"]), .xss[data-xss-theme="dark"] {
+  --surface: rgba(13,17,23,.92); --border: rgba(255,255,255,.10);
+  --shadow: 0 8px 28px rgba(0,0,0,.45); --text: #E6EDF3; --muted: #8B949E;
+  --brand: #0EA5E9; --danger: #EF4444; --warn: #F59E0B; --neutral: #8B949E;
+  --safe: #16A34A; --hover: rgba(255,255,255,.06);
+}
+:host([data-xss-theme="light"]), .xss[data-xss-theme="light"] {
+  --surface: rgba(255,255,255,.96); --border: rgba(15,23,42,.12);
+  --shadow: 0 8px 28px rgba(15,23,42,.18); --text: #0F172A; --muted: #475569;
+  --brand: #0369A1; --danger: #DC2626; --warn: #B45309; --neutral: #475569;
+  --safe: #15803D; --hover: rgba(15,23,42,.06);
+}
 .xss-bubble {
   position: fixed;
   right: max(12px, env(safe-area-inset-right));
   top: max(12px, env(safe-area-inset-top));
   z-index: 2147483000;
   color: var(--text); -webkit-font-smoothing: antialiased;
+}
+/* Desktop X keeps its search box pinned to the top of the right sidebar
+ * (≈0–53px); a pill at 12px sat right on top of its right end. Drop below
+ * it where the sidebar shows (X renders the sidebar from ~1000px). */
+@media (min-width: 1000px) {
+  .xss-bubble:not(.br) { top: max(64px, env(safe-area-inset-top)); }
 }
 .xss-bubble.br {
   top: auto;
@@ -317,6 +342,8 @@ export const STYLE = `
 .qappeal {
   margin-left: 6px; color: var(--muted); cursor: pointer;
   text-decoration: none; font-weight: 600; opacity: .7;
+  /* Two-character link must never split across lines ("误" / "判"). */
+  display: inline-block; white-space: nowrap;
 }
 .qappeal:hover { color: var(--warn); opacity: 1; text-decoration: underline; }
 .qsnip {
@@ -566,6 +593,41 @@ const esc = (s: string) =>
 const safeAvatarUrl = (url: string | undefined): string | undefined =>
   url && /^https:\/\/pbs\.twimg\.com\//.test(url) ? url : undefined;
 
+export type XTheme = "dark" | "light";
+
+/** X's active theme, read from the page itself: X paints its theme as the
+ *  body background (Default = white, Dim = #15202B, Lights out = black), so
+ *  the background's luminance is the truth regardless of the OS scheme.
+ *  Falls back to the OS scheme when the page has not painted yet. */
+export function detectXTheme(): XTheme {
+  try {
+    const bg = getComputedStyle(document.body).backgroundColor;
+    const m = bg.match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\)/);
+    if (m && (m[4] === undefined || Number(m[4]) > 0.5)) {
+      const lum = 0.2126 * Number(m[1]) + 0.7152 * Number(m[2]) + 0.0722 * Number(m[3]);
+      return lum < 128 ? "dark" : "light";
+    }
+  } catch {
+    /* no layout yet */
+  }
+  try {
+    return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  } catch {
+    return "dark"; // X's default for the extension's audience; tests have no matchMedia
+  }
+}
+
+/** Stamp the current X theme on every shadow host / root we own. Called at
+ *  mount time and again when X switches theme (content.ts observes body). */
+export function applyXTheme(theme: XTheme = detectXTheme()): XTheme {
+  for (const host of document.querySelectorAll<HTMLElement>(
+    ".xss-mount, [data-xss-overlay], .xss-bubble, .xss.pop",
+  )) {
+    host.setAttribute("data-xss-theme", theme);
+  }
+  return theme;
+}
+
 /** Inline status line inside a popover (举报 result). Text-only, no HTML. */
 function setPopStatus(el: HTMLElement | null | undefined, msg: string, kind: "info" | "ok" | "err") {
   if (!el) return;
@@ -662,6 +724,7 @@ export function createBubble(
 ) {
   const root = document.createElement("div");
   root.className = `xss xss-bubble${pos === "br" ? " br" : ""}`;
+  root.setAttribute("data-xss-theme", detectXTheme());
   root.setAttribute("role", "status");
   root.setAttribute("aria-live", "polite");
 
@@ -1716,6 +1779,7 @@ function overlay(): ShadowRoot {
   if (overlayShadow?.host.isConnected) return overlayShadow;
   const host = document.createElement("div");
   host.setAttribute("data-xss-overlay", "");
+  host.setAttribute("data-xss-theme", detectXTheme());
   host.style.cssText = "position:fixed;left:0;top:0;width:0;height:0;z-index:2147483001;";
   document.documentElement.appendChild(host);
   overlayShadow = host.attachShadow({ mode: "open" });
@@ -1816,6 +1880,7 @@ export function createBadge(
     if (pop) return;
     pop = document.createElement("div");
     pop.className = "xss pop card";
+    pop.setAttribute("data-xss-theme", detectXTheme());
     pop.style.display = "block";
     // Action ladder: 隐藏 / 静音 / 拉黑, the configured mode as primary
     // (data-b), the rest as secondary chips. A one-off 拉黑 is reachable

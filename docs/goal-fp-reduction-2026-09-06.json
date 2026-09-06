@@ -145,7 +145,11 @@
       "id": "T13",
       "task": "页内 UI 全面检查：徽章/弹层/气泡在 X 亮/暗(dim)/纯黑 三主题 × 桌面/移动，修复发现的样式问题",
       "verify": "截图集 .ui-acceptance/2026-09-06-inpage/ 六张以上；问题清单与修复逐项对应",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "scripts/ui-acceptance/inpage/（Playwright + 真实构建 + 仿真 X 页）三主题×两视口 38 张截图，.ui-acceptance/2026-09-06-inpage/VERDICT.md PASS",
+        "修复 3 项：X 主题跟随（data-xss-theme 覆盖 prefers-color-scheme）、桌面 pill 下移避开右栏搜索框、气泡行「误判」不拆行；extension 61/61，wxt build 通过"
+      ]
     },
     {
       "id": "T14",

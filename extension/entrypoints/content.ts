@@ -60,11 +60,13 @@ import {
   type BadgeSource,
   type Finding,
   STYLE,
+  applyXTheme,
   createActingBadge,
   createAnalyzingBadge,
   createBadge,
   createBubble,
   createCheckedMarker,
+  detectXTheme,
 } from "../lib/ui";
 
 /** "误判申诉" — opens the GitHub appeal issue template, PRE-FILLED with the
@@ -230,6 +232,8 @@ function mountBadge(anchor: HTMLElement, build: () => HTMLElement) {
   // renders as a giant capsule. Pin both axes to content size.
   host.style.cssText =
     "display:inline-flex;align-items:center;align-self:center;vertical-align:middle;flex:none;";
+  // X's own theme (Default / Dim / Lights out), not the OS scheme — see STYLE.
+  host.setAttribute("data-xss-theme", detectXTheme());
   const sr = host.attachShadow({ mode: "open" });
   const st = document.createElement("style");
   st.textContent = STYLE;
@@ -1329,6 +1333,21 @@ export default defineContentScript({
     // user stops scrolling (no new DOM mutations). ctx-bound: stops when
     // the content script is invalidated.
     ctx.setInterval(scan, 4000);
+    // X theme switch (Display settings → Default / Dim / Lights out) repaints
+    // the body background in place; restamp every host we own so badges,
+    // popovers and the bubble follow without a reload.
+    let lastTheme = detectXTheme();
+    const themeObserver = new MutationObserver(() => {
+      const t = detectXTheme();
+      if (t !== lastTheme) {
+        lastTheme = t;
+        applyXTheme(t);
+      }
+    });
+    if (document.body) {
+      themeObserver.observe(document.body, { attributes: true, attributeFilter: ["style", "class"] });
+    }
+    ctx.onInvalidated(() => themeObserver.disconnect());
     // List / whitelist hot-swap (background sync or 立即更新): the lookup
     // maps already rebuilt via local-index's own onChanged hook, but rows
     // rendered with the OLD data keep their badge (scan skips mounted
