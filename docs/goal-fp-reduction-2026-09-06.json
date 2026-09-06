@@ -38,7 +38,12 @@
       "id": "T2",
       "task": "A2 载荷去重：article 路径 recentTweets 不再复制 triggeringComment；边缘 prompt 说明 recentTweets 为独立历史帖",
       "verify": "detect 单测：extractFromArticle 输出 recentTweets 为空或不含 triggeringComment；signalsHash 兼容",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "detect.ts article 路径 recentTweets 固定为 []，triggeringComment 独立；client signalsHash 与 edge sigHash 均单独纳入 triggeringComment",
+        "prompt 新增 REPETITION MEANS SEPARATE POSTS / ONE ORDINARY SENTENCE IS NOT SPAM 两条边界；recentTweets 标注为独立历史帖",
+        "test/detect-signals.test.ts 2/2；extension 56/56；edge 134/134"
+      ]
     },
     {
       "id": "T3",

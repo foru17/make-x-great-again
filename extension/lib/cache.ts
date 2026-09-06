@@ -32,14 +32,19 @@ export function signalsHash(parts: {
   displayName: string;
   bio: string;
   recentTweets: string[];
+  triggeringComment?: string;
   hasDefaultAvatar: boolean;
   accountAgeDays?: number;
 }): string {
+  // triggeringComment is hashed on its own: the article path no longer
+  // mirrors it into recentTweets, and a new tweet must still count as new
+  // evidence for a cached legit/uncertain verdict.
   const s = JSON.stringify([
     parts.handle,
     parts.displayName,
     parts.bio,
     parts.recentTweets,
+    parts.triggeringComment ?? "",
     parts.hasDefaultAvatar,
     parts.accountAgeDays ?? null,
   ]);

@@ -383,6 +383,18 @@ const SYSTEM = `You classify X (Twitter) accounts ONLY for spam / porn-advertisi
   and unrelated to the thread topic, is a porn/spam amplifier bot even with NO
   link and NO platform name → label porn_bot or spam, confidence >= 0.85.
   Repetition of the same template or same @target across replies corroborates.
+- REPETITION MEANS SEPARATE POSTS: recentTweets are OTHER posts by the
+  account. Only count "repeats the same template" when two or more DISTINCT
+  entries there (or entries plus the triggeringComment) share the template.
+  A single triggeringComment with recentTweets "(none)", or a recentTweets
+  entry identical to the triggeringComment (older clients mirror it), is ONE
+  post — never call that "repeated", "spamming the same text" or "template".
+- ONE ORDINARY SENTENCE IS NOT SPAM: a short benign reply (a reaction, a
+  question, a product request, a name, an age, an opinion, a joke) with no
+  solicitation, no redirect and no funnel is "legit" or "uncertain" — the
+  absence of profile data (no bio, no counts) is missing input, not a
+  hijack/bot signal. Do not infer "porn template" from a single mention,
+  a celebrity name, an age, or profanity.
 - When genuinely unsure prefer "uncertain" over a false accusation — but the
   linkless-redirect-bait pattern above is NOT "unsure", it is spam.
 - TRANSLATION TRAP: X auto-translates tweets, so tweet text may be a machine
@@ -446,6 +458,10 @@ const sigHash = (s: Signals) =>
       s.displayName,
       s.bio,
       s.recentTweets,
+      // Hashed separately since 2026-09-06: clients no longer mirror the
+      // triggering text into recentTweets, and a new comment must still be
+      // new evidence.
+      s.triggeringComment ?? "",
       s.hasDefaultAvatar ?? 0,
       s.accountAgeDays ?? -1,
     ]),
@@ -493,7 +509,7 @@ displayName: ${s.displayName || "(empty)"}
 bio: ${s.bio || "(empty)"}
 ${meta ? `signals: ${meta}\n` : ""}${s.tweetsTranslated ? "note: tweet texts are machine-translated by X auto-translate; the original language text was not available\n" : ""}threadTopic: ${s.threadTopic ?? "(none)"}
 triggeringComment: ${s.triggeringComment ?? "(none)"}
-recentTweets:
+recentTweets (OTHER posts by this account, captured separately; "(none)" = no history was available, which is NOT evidence of anything):
 ${s.recentTweets.map((t, i) => `  ${i + 1}. ${t}`).join("\n") || "  (none)"}`;
 }
 

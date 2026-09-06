@@ -504,7 +504,13 @@ export function extractFromArticle(article: HTMLElement): Signals | null {
     displayName,
     bio: fu.bio ?? "",
     hasDefaultAvatar,
-    recentTweets: tweetText ? [tweetText] : [],
+    // The article's own text is the TRIGGERING comment and nothing else.
+    // Copying it into recentTweets[0] as well made the classifier read
+    // "two identical texts" as "posts the same thing repeatedly" — a fake
+    // repetition signal behind several upheld appeals (2026-09-04 audit,
+    // root cause #2). recentTweets is reserved for genuinely separate posts
+    // (the profile path collects them).
+    recentTweets: [],
     ...(avatarUrl ? { avatarUrl } : {}),
     ...(fu.userId ? { userId: fu.userId } : {}),
     ...(tweetText ? { triggeringComment: tweetText } : {}),
