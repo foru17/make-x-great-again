@@ -225,6 +225,7 @@ async function ghIdentity(req: Request): Promise<Reporter | null> {
   if (!tok) return null;
   try {
     const r = await fetch("https://api.github.com/user", {
+      signal: AbortSignal.timeout(15_000),
       headers: {
         authorization: `Bearer ${tok}`,
         "user-agent": "mxga",
@@ -648,6 +649,7 @@ async function classify(env: Bindings, s: Signals): Promise<Verdict> {
   for (let attempt = 0; attempt < 2; attempt++) {
     const res = await fetch(`${env.LLM_API_BASE}/chat/completions`, {
       method: "POST",
+      signal: AbortSignal.timeout(45_000),
       headers: { authorization: `Bearer ${env.LLM_API_KEY}`, "content-type": "application/json" },
       body: JSON.stringify({
         model: env.LLM_API_MODEL,

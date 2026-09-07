@@ -154,6 +154,7 @@ export function flushRuleHits(): Promise<void> {
       const base = await edgeBase();
       const res = await fetch(`${base}/v1/rule-hits`, {
         method: "POST",
+        signal: AbortSignal.timeout(15_000),
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           hits: batch.map((r) => ({

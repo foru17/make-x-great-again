@@ -209,6 +209,19 @@
         ".review-2026-09-07/classify-quota-red.log",
         ".review-2026-09-07/classify-quota-green.log"
       ]
+    },
+    {
+      "id": "network-deadlines",
+      "severity": "medium",
+      "status": "fixed",
+      "finding": "List sync, telemetry and online classification had no request deadline, so a stalled fetch could monopolize their shared queue or limiter.",
+      "fix": "Add finite transport deadlines; retain failed telemetry for later retry and release sync state; bound GitHub identity and model requests too.",
+      "verify": "Timeout/recovery regression and extension/Worker typechecks passed",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/network-timeouts-red.log",
+        ".review-2026-09-07/network-timeouts-green.log"
+      ]
     }
   ],
   "manual_items": []
