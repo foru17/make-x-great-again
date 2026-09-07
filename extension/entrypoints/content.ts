@@ -53,7 +53,9 @@ import {
   addPendingAction,
   bumpStats,
   clearPendingAction,
+  getBlocklist,
   getPendingActions,
+  isBareRecord,
   removeBlock,
   updateBlockRecord,
 } from "../lib/store";
@@ -263,13 +265,38 @@ function mountBadge(anchor: HTMLElement, build: () => HTMLElement) {
   const st = document.createElement("style");
   st.textContent = STYLE;
   sr.append(st, build());
-  anchor.appendChild(host);
+  mountTarget(anchor).appendChild(host);
+}
+
+/** Where inside the User-Name block the badge goes. Feed rows lay the name
+ *  block out as a ROW (name · @handle · time) and the badge simply trails
+ *  it. The focal tweet on a /status/ page and the profile header stack name
+ *  and handle as a COLUMN — appending there made the badge a third, centred
+ *  line under the handle. Put it on the name row instead, so it reads the
+ *  same everywhere: right after the display name. */
+function mountTarget(anchor: HTMLElement): HTMLElement {
+  try {
+    if (getComputedStyle(anchor).flexDirection !== "column") return anchor;
+    // The name row: the direct child holding the profile link, else simply
+    // the first row (the profile header renders the name as plain text).
+    const link = anchor.querySelector('a[href^="/"]');
+    let row: Element | null = link;
+    while (row && row.parentElement !== anchor) row = row.parentElement;
+    const target = row ?? anchor.firstElementChild;
+    return target instanceof HTMLElement ? target : anchor;
+  } catch {
+    return anchor;
+  }
+}
+
+/** Our mounts, wherever mountTarget placed them (the name block never
+ *  contains another account's article, so a descendant search is safe). */
+function mountsIn(anchor: HTMLElement): NodeListOf<HTMLElement> {
+  return anchor.querySelectorAll<HTMLElement>(".xss-mount, .xss-pending");
 }
 
 function clearMounts(anchor: HTMLElement) {
-  anchor
-    .querySelectorAll(":scope > .xss-mount, :scope > .xss-pending")
-    .forEach((n) => n.remove());
+  mountsIn(anchor).forEach((n) => n.remove());
 }
 
 // ---- 5-second preview undo queue (PENDING_MS) ----
@@ -303,6 +330,17 @@ export default defineContentScript({
     let findings: Finding[] = [];
     const pendingActions = new Map<string, PendingAction>();
     const inFlight = new Set<string>(); // keys currently in process()
+    const repaired = new Set<string>(); // bare 处理记录 rows already re-labelled this page
+    async function repairBareRecord(id: string, sig: Signals) {
+      if (/^\d+$/.test(sig.handle)) return;
+      const rec = (await getBlocklist()).find((r) => r.id === id);
+      if (!rec || !isBareRecord(rec)) return;
+      await updateBlockRecord(id, {
+        handle: sig.handle,
+        ...(sig.displayName ? { displayName: sig.displayName } : {}),
+        ...(sig.avatarUrl ? { avatarUrl: sig.avatarUrl } : {}),
+      });
+    }
     const hitPublicSeen = new Set<string>(); // hitPublic stat: once per account
     const onlineClassificationLimiter = new OnlineClassificationLimiter();
     let autoClassificationsStarted = 0;
@@ -995,6 +1033,12 @@ export default defineContentScript({
             articleOf(anchor)?.getAttribute("data-xss-key") === key
           )
             return;
+          // A record minted from a bare id (see store.isBareRecord) gets its
+          // real name / handle / avatar the next time the account is seen.
+          if (!repaired.has(activeBlockedKey)) {
+            repaired.add(activeBlockedKey);
+            void repairBareRecord(activeBlockedKey, sig);
+          }
           hideAccountSurface(anchor, activeBlockedKey);
           return;
         }
@@ -1232,7 +1276,7 @@ export default defineContentScript({
         const el = document.querySelector<HTMLElement>('[data-testid="UserName"]');
         if (el) {
           // Same skip rule as articles: untouched account + live mount → done.
-          const hasMount = !!el.querySelector(":scope > .xss-mount");
+          const hasMount = !!el.querySelector(".xss-mount");
           if (nodeHandle.get(el) !== p.handle || !hasMount) {
             if (nodeHandle.get(el) !== p.handle) clearMounts(el);
             nodeHandle.set(el, p.handle);
@@ -1273,7 +1317,7 @@ export default defineContentScript({
         const handle = handleFromArticle(art);
         const nameBlock = art.querySelector<HTMLElement>('[data-testid="User-Name"]');
         if (!handle || !nameBlock) continue;
-        const hasMount = !!nameBlock.querySelector(":scope > .xss-mount");
+        const hasMount = !!nameBlock.querySelector(".xss-mount");
         if (nodeHandle.get(art) === handle && hasMount) continue;
         const info = extractFromArticle(art);
         if (!info) continue;

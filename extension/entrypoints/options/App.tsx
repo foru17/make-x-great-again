@@ -702,12 +702,29 @@ function Blocklist() {
                           >
                             {r.displayName}
                           </a>
+                        ) : /^\d+$/.test(r.handle) ? (
+                          // Bare id row (no name captured yet): X resolves
+                          // /i/user/<id> to the profile; the name fills in
+                          // the next time the account is seen on X.
+                          <a
+                            href={`https://x.com/i/user/${r.handle}`}
+                            target="_blank"
+                            rel="noopener"
+                            className="text-fg transition hover:text-accent"
+                            title="仅记录了账号 ID；下次在 X 上遇到会补全名称"
+                          >
+                            账号 ID {r.handle}
+                          </a>
                         ) : (
                           <HandleLink handle={r.handle} className="text-fg" />
                         )}
                       </div>
                       <div className="max-w-[220px] truncate text-[12px] text-fg-3">
-                        <HandleLink handle={r.handle} className="text-fg-3" />
+                        {/^\d+$/.test(r.handle) ? (
+                          <span>用户名待补全</span>
+                        ) : (
+                          <HandleLink handle={r.handle} className="text-fg-3" />
+                        )}
                         {idTail(r.id, r.handle)}
                       </div>
                     </div>
