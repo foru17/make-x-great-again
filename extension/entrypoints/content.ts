@@ -205,6 +205,29 @@ async function applyXAction(mode: ActionMode, sig: Signals): Promise<boolean> {
  *  - "profile" — the profile header on the account's own page. Badge only. */
 type ScanContext = "reply" | "feed" | "profile";
 
+// X's home timeline tab labels for the "Following" feed, per locale.
+const FOLLOWING_TAB_RE =
+  /^(following|正在关注|關注中|フォロー中|팔로잉|abonnements|siguiendo|seguindo|folge ich|volgend)$/i;
+
+/** True on /home with the "Following" timeline selected — every standalone
+ *  post there is by an account the viewer follows. */
+function isFollowingFeed(): boolean {
+  if (location.pathname !== "/home") return false;
+  const tab = document.querySelector('[role="tablist"] [role="tab"][aria-selected="true"]');
+  return !!tab && FOLLOWING_TAB_RE.test((tab.textContent ?? "").trim());
+}
+
+/** In the Following feed an article is the AUTHOR'S OWN standalone post —
+ *  not a repost (social-context line, original author may be a stranger)
+ *  and not the parent half of a conversation pair (one timeline cell holding
+ *  two articles; the parent's author need not be followed). */
+function isStandaloneOwnPost(art: HTMLElement): boolean {
+  if (art.querySelector('[data-testid="socialContext"]')) return false;
+  const cell = art.closest<HTMLElement>('[data-testid="cellInnerDiv"]');
+  if (!cell) return false;
+  return cell.querySelectorAll('article[data-testid="tweet"]').length === 1;
+}
+
 /** Status id of the tweet the current page is focused on, or null when not
  *  on a /user/status/<id> page. */
 function focalStatusId(): string | null {
@@ -1230,6 +1253,10 @@ export default defineContentScript({
           }
         }
       }
+      // Following feed = a live, page-by-page stream of accounts the viewer
+      // follows; harvest them as they scroll past instead of relying on the
+      // (paginated, rarely visited) /following list or on the fiber bridge.
+      const followingFeed = settings.followingWhitelist && isFollowingFeed();
       for (const art of articles) {
         const handle = handleFromArticle(art);
         const nameBlock = art.querySelector<HTMLElement>('[data-testid="User-Name"]');
@@ -1239,6 +1266,9 @@ export default defineContentScript({
         const info = extractFromArticle(art);
         if (!info) continue;
         if (topic && !info.threadTopic) info.threadTopic = topic;
+        if (followingFeed && !info.viewerFollowing && !info.isReply && isStandaloneOwnPost(art)) {
+          info.viewerFollowing = true;
+        }
         if (nodeHandle.get(art) !== handle) clearMounts(nameBlock); // recycled node
         nodeHandle.set(art, handle);
         const sid = focal ? articleStatusId(art) : null;

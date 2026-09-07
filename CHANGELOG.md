@@ -25,10 +25,16 @@ everything, and ships the MAIN-world profile bridge that 0.6.0 missed.
   highest priority of the whole chain — accounts on it are never badged,
   rule-matched, sent for online detection or auto-processed, even when the
   public list or an official rule says spam. Followed accounts join
-  automatically (`followingWhitelist`, default on) when seen with the
-  viewer-follows relationship or on the viewer's own /following page; any
-  handle can be added from the badge popover (加入白名单) or the options tab.
-  Local storage only, never uploaded.
+  automatically (`followingWhitelist`, default on) as they scroll past:
+  every standalone post in the home **Following** feed (reposts, thread-pair
+  parents and replies excluded), any author X's own profile object marks as
+  followed (fiber bridge), and the viewer's own /following page; any handle
+  can be added from the badge popover (加入白名单) or the options tab. Local
+  storage only, never uploaded.
+- The fiber/bridge reader understands X's 2025 GraphQL user shape (`core`,
+  `relationship_perspectives`, `verification`, `location`, `avatar`) as
+  well as the legacy one — without this the bridge found no user at all on
+  current X.
 - **MAIN-world profile bridge** (`x-bridge.content.ts`): a page-world script
   reads the author profile X already holds in its React state and stamps it
   onto the article as a DOM attribute, so the isolated content script can

@@ -160,6 +160,35 @@ test("bio is bounded so a stamp cannot bloat the page DOM", () => {
 // does in the page world. That lets us pin the stamping contract: given an
 // article whose React fiber carries the author, the bridge must publish the
 // signals the classifier needs, keyed to that author.
+test("the 2025 GraphQL user shape (core / relationship_perspectives) is read too", async () => {
+  const art = mount();
+  const user = {
+    __typename: "User",
+    rest_id: "1450000000000000002",
+    core: { screen_name: "sexbot9911", name: "小可爱", created_at: "Tue Jul 01 00:00:00 +0000 2026" },
+    avatar: { image_url: "https://pbs.twimg.com/profile_images/1450000000000000002/x_normal.jpg" },
+    legacy: { description: "24h 在线 看主页", followers_count: 7, friends_count: 900, statuses_count: 12 },
+    relationship_perspectives: { following: true, followed_by: false, blocking: false, muting: false },
+    verification: { verified: false },
+    location: { location: "Tokyo" },
+  };
+  (art as unknown as Record<string, unknown>)["__reactFiber$test"] = {
+    memoizedProps: {},
+    memoizedState: null,
+    return: { memoizedProps: { result: user } },
+  };
+  const { readFiberUser } = await import("../lib/detect");
+  const u = readFiberUser(art, "sexbot9911");
+  assert.equal(u.userId, "1450000000000000002");
+  assert.equal(u.bio, "24h 在线 看主页");
+  assert.equal(u.followersCount, 7);
+  assert.equal(u.statusesCount, 12);
+  assert.equal(typeof u.accountAgeDays, "number", "created_at read from core");
+  assert.equal(u.viewerFollowing, true, "following read from relationship_perspectives");
+  assert.equal(u.location, "Tokyo");
+  assert.equal(u.profileDefaultImage, false, "derived from the avatar url");
+});
+
 test("the bridge stamps the fiber-borne profile onto the article", async () => {
   const art = mount();
   const legacy = {

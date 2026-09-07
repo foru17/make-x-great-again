@@ -245,9 +245,13 @@ function readFiberUserUncached(el: Element, expectedHandle?: string): FiberUser 
         const u = findUser(bag, seen, 0, budget, expectedHandle);
         if (u) {
           const legacy = u.legacy ?? u;
-          const created = legacy.created_at
-            ? Date.parse(legacy.created_at)
-            : NaN;
+          // 2025 GraphQL shape: identity in `core`, viewer relationship in
+          // `relationship_perspectives`, verification/location/avatar in
+          // their own sub-objects. Read both old and new locations.
+          const core = u.core ?? {};
+          const rel = u.relationship_perspectives ?? {};
+          const createdRaw = legacy.created_at ?? core.created_at;
+          const created = createdRaw ? Date.parse(createdRaw) : NaN;
           const userId = fiberUserId(u, legacy);
           const accountAgeDays = Number.isNaN(created)
             ? undefined
@@ -261,17 +265,35 @@ function readFiberUserUncached(el: Element, expectedHandle?: string): FiberUser 
           const mediaCount = count(legacy.media_count);
           const favouritesCount = count(legacy.favourites_count);
           const isVerified =
-            trueFlag(u.is_blue_verified) || trueFlag(legacy.verified) || trueFlag(legacy.is_blue_verified)
+            trueFlag(u.is_blue_verified) ||
+            trueFlag(legacy.verified) ||
+            trueFlag(legacy.is_blue_verified) ||
+            trueFlag(u.verification?.verified)
               ? true
               : undefined;
+          const locationRaw =
+            typeof legacy.location === "string" ? legacy.location : u.location?.location;
           const location =
-            typeof legacy.location === "string" && legacy.location.trim()
-              ? legacy.location.trim().slice(0, 100)
+            typeof locationRaw === "string" && locationRaw.trim()
+              ? locationRaw.trim().slice(0, 100)
               : undefined;
+          const avatarUrl: string | undefined =
+            typeof legacy.profile_image_url_https === "string"
+              ? legacy.profile_image_url_https
+              : typeof u.avatar?.image_url === "string"
+                ? u.avatar.image_url
+                : undefined;
           const profileDefaultImage =
             typeof legacy.default_profile_image === "boolean"
               ? legacy.default_profile_image
-              : undefined;
+              : avatarUrl
+                ? /default_profile/.test(avatarUrl)
+                : undefined;
+          const following = trueFlag(legacy.following) || trueFlag(rel.following);
+          const blocking = trueFlag(legacy.blocking) || trueFlag(rel.blocking);
+          const muting = trueFlag(legacy.muting) || trueFlag(rel.muting);
+          const followRequestSent =
+            trueFlag(legacy.follow_request_sent) || trueFlag(rel.follow_request_sent);
           return {
             bio: typeof legacy.description === "string" ? legacy.description : "",
             ...(userId ? { userId } : {}),
@@ -285,12 +307,10 @@ function readFiberUserUncached(el: Element, expectedHandle?: string): FiberUser 
             ...(favouritesCount !== undefined ? { favouritesCount } : {}),
             ...(location ? { location } : {}),
             ...(profileDefaultImage !== undefined ? { profileDefaultImage } : {}),
-            ...(trueFlag(legacy.following) ? { viewerFollowing: true as const } : {}),
-            ...(trueFlag(legacy.blocking) ? { viewerBlocking: true as const } : {}),
-            ...(trueFlag(legacy.muting) ? { viewerMuting: true as const } : {}),
-            ...(trueFlag(legacy.follow_request_sent)
-              ? { viewerFollowRequestSent: true as const }
-              : {}),
+            ...(following ? { viewerFollowing: true as const } : {}),
+            ...(blocking ? { viewerBlocking: true as const } : {}),
+            ...(muting ? { viewerMuting: true as const } : {}),
+            ...(followRequestSent ? { viewerFollowRequestSent: true as const } : {}),
           };
         }
       }
@@ -310,7 +330,7 @@ function fiberUserId(u: any, legacy: any): string | undefined {
     console.warn("[MXGA] conflicting X user ids in fiber; dropping uid", {
       legacyId: fromLegacy,
       restId: fromRest,
-      screenName: legacy?.screen_name,
+      screenName: legacy?.screen_name ?? u?.core?.screen_name,
     });
     return undefined;
   }
@@ -352,14 +372,17 @@ function findUser(
   seen.add(o);
   try {
     const legacy = o.legacy ?? o;
+    // X moved screen_name / name / created_at out of `legacy` into `core`
+    // (and the viewer relationship into `relationship_perspectives`) in
+    // 2025; accept both shapes, or the walk never finds a user at all.
     if (
       o.__typename === "User" &&
       legacy &&
       typeof legacy === "object" &&
       typeof legacy.description === "string" &&
-      ("followers_count" in legacy || "screen_name" in legacy)
+      ("followers_count" in legacy || "screen_name" in legacy || "screen_name" in (o.core ?? {}))
     ) {
-      const screenName = normalizeHandle(legacy.screen_name);
+      const screenName = normalizeHandle(legacy.screen_name ?? o.core?.screen_name);
       if (!expectedHandle || screenName === expectedHandle) return o;
     }
     for (const k of Object.keys(o)) {
