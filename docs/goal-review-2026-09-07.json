@@ -222,6 +222,19 @@
         ".review-2026-09-07/network-timeouts-red.log",
         ".review-2026-09-07/network-timeouts-green.log"
       ]
+    },
+    {
+      "id": "whitelist-late-result",
+      "severity": "medium",
+      "status": "fixed",
+      "finding": "An AI result arriving after a whitelist change reinserted the protected author into the suspicious findings list.",
+      "fix": "Recheck protection before queued classification and after async cache/model results; reject protected findings.",
+      "verify": "Real Chrome delayed-response reproduction red then green; extension compile/build passed",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/detection-lifecycle-red.log",
+        ".review-2026-09-07/detection-lifecycle-green.log"
+      ]
     }
   ],
   "manual_items": []

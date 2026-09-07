@@ -743,6 +743,7 @@ export default defineContentScript({
       source: string,
       meta?: { categoryZh?: string; tweetId?: string; tier?: "confirmed" | "auto" },
     ) {
+      if (protectedAccount(sig)) return;
       if (!["spam", "porn_bot", "likely_spam"].includes(v.label)) return;
       const id = keyOf(sig);
       // Dedupe by key AND by handle: the same account can be scanned once
@@ -857,7 +858,15 @@ export default defineContentScript({
         revalidationsStarted < MAX_CACHE_REVALIDATIONS_PER_PAGE
       ) {
         revalidationsStarted += 1;
-        const result = await onlineClassificationLimiter.run(() => classifyAndCache(key, sig));
+        const result = await onlineClassificationLimiter.run(() =>
+          protectedAccount(sig)
+            ? Promise.resolve({ status: "failed" as const })
+            : classifyAndCache(key, sig),
+        );
+        if (protectedAccount(sig)) {
+          badgeFor(anchor, key, sig, null);
+          return;
+        }
         if (result.status === "classified") {
           if (onlineVerdictVisibility(result.verdict) === "silent") {
             markChecked(anchor);
@@ -880,9 +889,14 @@ export default defineContentScript({
       clearMounts(anchor);
       mountBadge(anchor, createAnalyzingBadge);
       const result = await onlineClassificationLimiter.run(async () => {
+        if (protectedAccount(sig)) return { status: "failed" as const };
         if (!onlineAuthenticated) return { status: "unauthenticated" as const };
         return classifyAndCache(key, sig);
       });
+      if (protectedAccount(sig)) {
+        badgeFor(anchor, key, sig, null);
+        return;
+      }
       if (result.status === "unauthenticated") onlineAuthenticated = false;
       if (result.status !== "classified") {
         badgeFor(anchor, key, sig, null);
@@ -1053,6 +1067,10 @@ export default defineContentScript({
         //    as-is; legit/uncertain only if signals unchanged so new evidence
         //    can still re-trigger).
         const cached = await cacheGet(key);
+        if (protectedAccount(sig)) {
+          badgeFor(anchor, key, sig, null);
+          return;
+        }
         if (cached) {
           const spammy = ["spam", "porn_bot", "likely_spam"].includes(cached.verdict.label);
           // Reuse rules (2026-09-06): a verdict is reused when the signals are
