@@ -141,6 +141,19 @@
         ".review-2026-09-07/whitelist-race-green.log",
         ".review-2026-09-07/backup-ui-after.log"
       ]
+    },
+    {
+      "id": "whitelist-identity",
+      "severity": "high",
+      "status": "fixed",
+      "finding": "A reused handle inherited local whitelist protection despite a conflicting immutable account ID.",
+      "fix": "Known IDs must agree for a handle match; the original ID remains protected after a rename.",
+      "verify": "9 whitelist tests and extension compile passed",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/whitelist-identity-red.log",
+        ".review-2026-09-07/whitelist-identity-green.log"
+      ]
     }
   ],
   "manual_items": []

@@ -63,6 +63,17 @@ const sig = (over: Partial<Signals>): Signals => ({
   ...over,
 });
 
+test("a reused handle cannot whitelist a different immutable account ID", async () => {
+  const env = installChrome();
+  try {
+    await warmLocalWhitelist();
+    await addLocalWhitelist({handle:'trusted',userId:'100',source:'manual'});
+    assert.equal(isLocallyWhitelisted('200','trusted'),false);
+    assert.equal(isLocallyWhitelisted('100','renamed'),true);
+    assert.equal(isLocallyWhitelisted(undefined,'trusted'),true);
+  } finally { env.restore(); }
+});
+
 test("a concurrent backup import and whitelist add share the background write queue", async () => {
   const env = installChrome();
   try {

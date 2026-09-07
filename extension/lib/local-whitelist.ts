@@ -93,7 +93,7 @@ export function normalizeWhitelistHandle(raw: unknown): string | null {
 
 // In-memory mirrors for the synchronous hot-path check. Rebuilt from storage
 // on warm and on every storage change (any tab / the options page).
-let handles = new Set<string>();
+let handles = new Map<string, string | undefined>();
 let ids = new Set<string>();
 let excludedSet = new Set<string>();
 /** The onChanged emitter we subscribed to — re-subscribe if the runtime
@@ -101,10 +101,10 @@ let excludedSet = new Set<string>();
 let subscribedTo: unknown = null;
 
 function rebuild(store: LocalWhitelistStore): void {
-  const h = new Set<string>();
+  const h = new Map<string, string | undefined>();
   const i = new Set<string>();
   for (const e of store.entries) {
-    if (e?.handle) h.add(e.handle.toLowerCase());
+    if (e?.handle) h.set(e.handle.toLowerCase(), e.userId);
     if (e?.userId) i.add(e.userId);
   }
   handles = h;
@@ -222,7 +222,11 @@ export async function warmLocalWhitelist(): Promise<void> {
  *  was stored with a uid, and vice versa. */
 export function isLocallyWhitelisted(userId?: string, handle?: string): boolean {
   if (userId && ids.has(userId)) return true;
-  if (handle && handles.has(handle.toLowerCase())) return true;
+  if (handle && handles.has(handle.toLowerCase())) {
+    const expectedId = handles.get(handle.toLowerCase());
+    // Handles are reusable. A known conflicting UID is a different account.
+    return !userId || !expectedId || expectedId === userId;
+  }
   return false;
 }
 
