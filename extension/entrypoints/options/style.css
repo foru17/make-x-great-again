@@ -8,8 +8,8 @@
   --color-bg-2: #111113;
   --color-fg: #fafafa;
   --color-fg-2: #a1a1aa;
-  --color-fg-3: #71717a;
-  --color-fg-4: #52525b;
+  --color-fg-3: #8a8a94;
+  --color-fg-4: #85858f;
   --color-card: rgb(255 255 255 / 0.025);
   --color-card-hi: rgb(255 255 255 / 0.05);
   --color-border: rgb(255 255 255 / 0.07);
@@ -36,7 +36,7 @@
     --color-fg: #09090b;
     --color-fg-2: #3f3f46;
     --color-fg-3: #71717a;
-    --color-fg-4: #a1a1aa;
+    --color-fg-4: #686873;
     --color-card: rgb(0 0 0 / 0.025);
     --color-card-hi: rgb(0 0 0 / 0.055);
     --color-border: rgb(0 0 0 / 0.08);
@@ -58,7 +58,7 @@
   --color-fg: #09090b;
   --color-fg-2: #3f3f46;
   --color-fg-3: #71717a;
-  --color-fg-4: #a1a1aa;
+  --color-fg-4: #686873;
   --color-card: rgb(0 0 0 / 0.025);
   --color-card-hi: rgb(0 0 0 / 0.055);
   --color-border: rgb(0 0 0 / 0.08);

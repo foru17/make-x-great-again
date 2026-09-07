@@ -92,7 +92,10 @@ export default defineBackground(() => {
     (msg: BgRequest, _s: chrome.runtime.MessageSender, sendResponse: (r: BgResponse) => void) => {
       (async () => {
         try {
-          if (msg.type === "health") {
+          if (msg.type === "local-data") {
+            const { handleLocalDataMutation } = await import("../lib/local-data-background");
+            sendResponse({ ok: true, data: await handleLocalDataMutation(msg.mutation) });
+          } else if (msg.type === "health") {
             const { indexSize, warmLocalIndex } = await import("../lib/local-index");
             const { getStoredList } = await import("../lib/list-sync");
             await warmLocalIndex();

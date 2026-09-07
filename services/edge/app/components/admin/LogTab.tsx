@@ -67,7 +67,7 @@ function ContribSection() {
           </TableHeader>
           <TableBody>
             {days.map((d) => {
-              const w = byDay.get(d)!;
+              const w = byDay.get(d) ?? {};
               const cell = (n?: number) => (
                 <TableCell className="text-right font-mono tabular-nums">
                   {n ? n : <span className="text-muted-foreground">—</span>}

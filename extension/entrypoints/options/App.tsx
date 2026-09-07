@@ -9,6 +9,7 @@ import {
   exportBackup,
   importBackup,
   parseBackup,
+  presentBackupSections,
   summarize,
 } from "../../lib/backup";
 import { BRAND } from "../../lib/brand";
@@ -2446,8 +2447,7 @@ const SECTION_ZH: Record<BackupSection, string> = {
   localWhitelist: "本地白名单",
   customRules: "自定义规则",
   disabledRules: "停用的官方规则",
-  hiddenIds: "已隐藏账号",
-  hiddenRecords: "处理记录",
+  hiddenIds: "已隐藏账号与处理记录",
   stats: "本地统计",
   cache: "检测缓存",
 };
@@ -2456,6 +2456,7 @@ function summaryLines(s: BackupSummary): string[] {
   const out: string[] = [];
   if (s.settings) out.push("设置");
   if (s.localWhitelist) out.push(`本地白名单 ${s.localWhitelist.toLocaleString("zh-CN")} 个`);
+  if (s.localWhitelistExcluded) out.push(`不再自动加入白名单 ${s.localWhitelistExcluded.toLocaleString("zh-CN")} 个`);
   if (s.customRules) out.push(`自定义规则 ${s.customRules} 条`);
   if (s.disabledRules) out.push(`停用的官方规则 ${s.disabledRules} 条`);
   if (s.hiddenIds || s.hiddenRecords)
@@ -2474,6 +2475,7 @@ function BackupPage() {
   const [exportMsg, setExportMsg] = useState<string | null>(null);
   const [parsed, setParsed] = useState<{ file: BackupFile; summary: BackupSummary; name: string } | null>(null);
   const [parseErr, setParseErr] = useState<string | null>(null);
+  const [importErr, setImportErr] = useState<string | null>(null);
   const [mode, setMode] = useState<ImportMode>("merge");
   const [skip, setSkip] = useState<Partial<Record<BackupSection, boolean>>>({});
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -2510,38 +2512,44 @@ function BackupPage() {
     setParsed(null);
     setParseErr(null);
     setResult(null);
+    setImportErr(null);
     setSkip({});
     if (!f) return;
     if (f.size > 50 * 1024 * 1024) {
       setParseErr("文件超过 50 MB，不是本扩展的备份");
       return;
     }
-    const r = parseBackup(await f.text());
-    if (!r.ok) {
-      setParseErr(r.error);
-      return;
+    try {
+      const r = parseBackup(await f.text());
+      if (!r.ok) {
+        setParseErr(r.error);
+        return;
+      }
+      setParsed({ file: r.file, summary: r.summary, name: f.name });
+    } catch (e) {
+      setParseErr(`读取失败：${(e as Error).message}`);
     }
-    setParsed({ file: r.file, summary: r.summary, name: f.name });
   };
 
   const doImport = async () => {
     if (!parsed) return;
     setBusy(true);
+    setResult(null);
+    setImportErr(null);
     try {
       const sections: Partial<Record<BackupSection, boolean>> = {};
       for (const [k, v] of Object.entries(skip)) if (v) sections[k as BackupSection] = false;
       const applied = await importBackup(parsed.file, mode, sections);
       setResult(applied);
+    } catch (e) {
+      setImportErr(`导入失败：${(e as Error).message}。请检查本机数据后重试。`);
     } finally {
       setBusy(false);
       setConfirmOpen(false);
     }
   };
 
-  const present = parsed ? (Object.keys(SECTION_ZH) as BackupSection[]).filter((k) => {
-    const v = parsed.summary[k];
-    return typeof v === "boolean" ? v : v > 0;
-  }) : [];
+  const present = parsed ? presentBackupSections(parsed.file) : [];
 
   return (
     <Page title="备份" sub="导出 / 导入你在本机的数据 · 换浏览器、换电脑时迁移">
@@ -2550,7 +2558,7 @@ function BackupPage() {
           <SectionH>导出备份</SectionH>
           <p className="mb-3 text-[12px] leading-relaxed text-fg-3">
             导出一个 JSON 文件，包含：设置、本地白名单、自定义规则与停用的官方规则、已隐藏账号与处理记录、本地统计。
-            <b className="text-fg-2">不包含</b> GitHub 登录信息（换浏览器后需重新登录）和公开名单（会自动重新同步）。文件里只有 X 账号的公开标识，可以放心保存。
+            <b className="text-fg-2">不包含</b> GitHub 登录信息（换浏览器后需重新登录）、服务地址和公开名单（会自动重新同步）。文件含你的白名单、隐藏偏好和处理记录，请妥善保管。
           </p>
           <div className="mb-3 space-y-2">
             <Toggle on={includeStats} onChange={setIncludeStats} label="包含本地统计" hint="扫描 / 命中 / 处理计数" />
@@ -2600,7 +2608,8 @@ function BackupPage() {
                 {present.map((k) => {
                   const v = parsed.summary[k];
                   return (
-                    <li key={k} className="flex items-center gap-2 text-[13px]">
+                    <li key={k} className="text-[13px]">
+                      <label className="flex items-center gap-2">
                       <input
                         type="checkbox"
                         checked={!skip[k]}
@@ -2609,6 +2618,8 @@ function BackupPage() {
                       />
                       <span className="text-fg">{SECTION_ZH[k]}</span>
                       {typeof v === "number" && <span className="text-fg-3">{v.toLocaleString("zh-CN")}</span>}
+                      {k === "localWhitelist" && parsed.summary.localWhitelistExcluded > 0 && <span className="text-fg-3">（不再自动加入 {parsed.summary.localWhitelistExcluded} 个）</span>}
+                      </label>
                     </li>
                   );
                 })}
@@ -2640,7 +2651,7 @@ function BackupPage() {
                 ))}
               </div>
               <div className="flex flex-wrap items-center gap-3">
-                <Btn tier={mode === "replace" ? "danger" : "primary"} onClick={() => setConfirmOpen(true)} disabled={busy || present.length === 0}>
+                <Btn tier={mode === "replace" ? "danger" : "primary"} onClick={() => setConfirmOpen(true)} disabled={busy || !present.some((k) => !skip[k])}>
                   {mode === "replace" ? "覆盖导入" : "合并导入"}
                 </Btn>
                 {result && (
@@ -2648,6 +2659,7 @@ function BackupPage() {
                     已导入：{summaryLines(result).join("、") || "没有新增内容"}
                   </span>
                 )}
+                {importErr && <span role="alert" className="text-[12px] text-danger">{importErr}</span>}
               </div>
             </div>
           )}

@@ -283,7 +283,7 @@ function RuleHitAccountsDialog({
                       <a
                         href={`https://x.com/${r.handle}`}
                         target="_blank"
-                        rel="noopener"
+                        rel="noopener noreferrer"
                         className="font-mono text-sm hover:underline"
                       >
                         @{r.handle}

@@ -1,5 +1,9 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { handleLocalDataMutation } from "../lib/local-data-background";
+import type { LocalDataMutation } from "../lib/local-data";
+import { edgeBase } from "../lib/list-sync";
+import { postOnlineClassification } from "../lib/online-detection";
 import {
   BACKUP_FORMAT,
   BACKUP_VERSION,
@@ -7,6 +11,7 @@ import {
   exportBackup,
   importBackup,
   parseBackup,
+  presentBackupSections,
   sanitizeSettings,
 } from "../lib/backup";
 
@@ -15,7 +20,10 @@ function installChrome(seed: Record<string, unknown> = {}) {
   const previous = root.chrome;
   const bag: Record<string, unknown> = { ...seed };
   root.chrome = {
-    runtime: { getManifest: () => ({ version: "0.6.1" }) },
+    runtime: {
+      getManifest: () => ({ version: "0.6.1" }),
+      sendMessage: async ({ mutation }: { mutation: LocalDataMutation }) => ({ ok: true, data: await handleLocalDataMutation(mutation) }),
+    },
     storage: {
       local: {
         get: async (k: string | string[] | null) => {
@@ -24,6 +32,7 @@ function installChrome(seed: Record<string, unknown> = {}) {
           return Object.fromEntries(keys.map((x) => [x, bag[x]]));
         },
         set: async (obj: Record<string, unknown>) => Object.assign(bag, obj),
+        remove: async (keys: string[]) => { for (const key of keys) delete bag[key]; },
       },
       onChanged: { addListener: () => {}, removeListener: () => {} },
     },
@@ -81,6 +90,71 @@ test("export carries the user's own data and nothing secret", async () => {
   }
 });
 
+test("merging an older backup cannot restore an explicitly removed whitelist entry", async () => {
+  const env = installChrome({ "xss:whitelist:local": { entries: [], excluded: ["removed"] } });
+  try {
+    const parsed = parseBackup(JSON.stringify({ format: BACKUP_FORMAT, version: 1, data: {
+      localWhitelist: [{handle:'removed',source:'following',addedAt:1}], localWhitelistExcluded: [],
+    } }));
+    assert.ok(parsed.ok);
+    const applied = await importBackup(parsed.file, 'merge');
+    assert.deepEqual((env.bag['xss:whitelist:local'] as {entries:unknown[]}).entries,[]);
+    assert.equal(applied.localWhitelist,0);
+  } finally { env.restore(); }
+});
+
+test("the import preview includes empty sections and groups hidden records with account IDs", () => {
+  const parsed = parseBackup(JSON.stringify({
+    format: BACKUP_FORMAT, version: 1,
+    data: { localWhitelist: [], localWhitelistExcluded: ["removed"], customRules: [], hidden: { ids: [], records: [] }, cache: {} },
+  }));
+  assert.ok(parsed.ok);
+  assert.deepEqual(presentBackupSections(parsed.file), ["localWhitelist", "customRules", "hiddenIds", "cache"]);
+  assert.equal(parsed.summary.localWhitelistExcluded, 1);
+});
+
+test("storage read failure aborts backup operations without overwriting existing data", async () => {
+  const env = installChrome(SEED);
+  try {
+    const parsed = parseBackup(JSON.stringify({ format: BACKUP_FORMAT, version: 1, data: { hidden: { ids: ["999"], records: [] } } }));
+    assert.ok(parsed.ok);
+    Object.assign(chrome.storage.local, { get: async () => { throw new Error("storage unavailable"); } });
+    await assert.rejects(() => importBackup(parsed.file, "merge"), /storage unavailable/);
+    await assert.rejects(() => exportBackup(), /storage unavailable/);
+    assert.deepEqual(env.bag["xss:blocked"], SEED["xss:blocked"]);
+  } finally { env.restore(); }
+});
+
+test("cache replacement removes absent entries, while skipped cache stays untouched", async () => {
+  const env = installChrome(SEED);
+  try {
+    const parsed = parseBackup(JSON.stringify({ format: BACKUP_FORMAT, version: 1, data: { cache: {} } }));
+    assert.ok(parsed.ok);
+    await importBackup(parsed.file, "replace", { cache: false });
+    assert.ok(env.bag["xss:v1:1001"]);
+    await importBackup(parsed.file, "replace");
+    assert.equal(env.bag["xss:v1:1001"], undefined, "replace must remove stale verdicts absent from the backup");
+    assert.equal(env.bag["xss:ghToken"], "SECRET-TOKEN");
+    assert.deepEqual(env.bag["xss:list:v2"], SEED["xss:list:v2"]);
+  } finally {
+    env.restore();
+  }
+});
+
+test("malformed whitelist values never throw while parsing a backup", () => {
+  for (const handle of [42, {}, [], true, null]) {
+    const parsed = parseBackup(JSON.stringify({
+      format: BACKUP_FORMAT, version: 1,
+      data: { localWhitelist: [{ handle }, { handle: "valid", userId: 123, addedAt: 1e999 }] },
+    }));
+    assert.ok(parsed.ok);
+    assert.deepEqual(parsed.file.data.localWhitelist, [{ handle: "valid", source: "manual", addedAt: 0 }]);
+  }
+  for (const version of [0, -1, 0.5]) {
+    assert.equal(parseBackup(JSON.stringify({ format: BACKUP_FORMAT, version, data: {} })).ok, false);
+  }
+});
+
 test("parse rejects junk, strips unknown/off-enum values, keeps the rest", () => {
   assert.equal(parseBackup("not json").ok, false);
   assert.equal(parseBackup(JSON.stringify({ format: "other" })).ok, false);
@@ -110,7 +184,37 @@ test("parse rejects junk, strips unknown/off-enum values, keeps the rest", () =>
   assert.equal(typeof r.file.data.hidden?.records[0]?.ts, "number");
   assert.equal(r.summary.cache, 1);
   assert.equal(r.file.data.cache?.["123"]?.verdict.confidence, 1, "confidence clamped");
-  assert.deepEqual(sanitizeSettings({ edgeBase: "https://staging.example" }), { edgeBase: "https://staging.example" });
+  assert.deepEqual(sanitizeSettings({ edgeBase: "https://staging.example" }), {});
+});
+
+test("a backup cannot redirect authenticated requests or export endpoint credentials", async () => {
+  const env = installChrome({
+    ...SEED,
+    "xss:settings": { edgeBase: "https://trusted.example", legacySecret: "PRIVATE-SETTING" },
+  });
+  try {
+    const parsed = parseBackup(JSON.stringify({
+      format: BACKUP_FORMAT, version: 1,
+      data: { settings: { edgeBase: "https://untrusted.example", enabled: true } },
+    }));
+    assert.ok(parsed.ok);
+    await importBackup(parsed.file, "merge");
+    let destination = "";
+    await postOnlineClassification({
+      base: await edgeBase(), token: "TEST-ONLY-TOKEN",
+      sig: { isProfile: false, handle: "fixture", displayName: "Fixture", bio: "", recentTweets: [], hasDefaultAvatar: false },
+      fetcher: (async (url) => {
+        destination = String(url);
+        return new Response("{}", { status: 200 });
+      }) as typeof fetch,
+    });
+    assert.equal(destination, "https://trusted.example/v1/classify");
+    env.bag["xss:settings"] = { edgeBase: "https://user:PRIVATE-ENDPOINT@trusted.example", legacySecret: "PRIVATE-SETTING" };
+    const exported = JSON.stringify(await exportBackup());
+    assert.ok(!exported.includes("PRIVATE-"), "export only portable, known preference keys");
+  } finally {
+    env.restore();
+  }
 });
 
 test("import merge unions lists and sums counters; replace overwrites; excluded keys untouched", async () => {

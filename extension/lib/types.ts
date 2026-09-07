@@ -1,4 +1,5 @@
 import type { SpamCategory } from "./category";
+import type { LocalDataMutation } from "./local-data";
 
 export type Label = "spam" | "porn_bot" | "likely_spam" | "uncertain" | "legit";
 
@@ -80,6 +81,7 @@ export type Surface = "home" | "thread" | "profile" | "search" | "notifications"
 /** Background messages. "list-sync" triggers the public blocklist download
  *  (read-only GET of the official artifact; nothing is uploaded). */
 export type BgRequest =
+  | { type: "local-data"; mutation: LocalDataMutation }
   | { type: "health" }
   | { type: "stats" }
   | { type: "records" }

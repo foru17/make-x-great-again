@@ -273,6 +273,7 @@ async function syncWhitelist(base: string): Promise<number | undefined> {
     for (let page = 0; page < WL_MAX_PAGES; page++) {
       const res = await fetch(`${base}/v1/whitelist?since=${since}&limit=${WL_PAGE_LIMIT}`, {
         cache: "no-cache",
+        signal: AbortSignal.timeout(30_000),
       });
       if (!res.ok) return undefined;
       const raw = await readJsonBounded(res, MAX_WHITELIST_BYTES);
@@ -315,7 +316,7 @@ async function doSync(force: boolean): Promise<SyncResult> {
     // should reach clients on the next sync, not the next list release).
     const white = await syncWhitelist(base);
 
-    const metaRes = await fetch(`${base}/v1/list/meta`, { cache: "no-cache" });
+    const metaRes = await fetch(`${base}/v1/list/meta`, { cache: "no-cache", signal: AbortSignal.timeout(30_000) });
     if (!metaRes.ok) return { updated: false, white, error: `meta ${metaRes.status}` };
     const meta = (await readJsonBounded(metaRes, MAX_META_BYTES)) as ListMeta;
     const litePath = meta.artifacts?.lite;
@@ -328,7 +329,7 @@ async function doSync(force: boolean): Promise<SyncResult> {
       return { updated: false, version: stored.version, black: stored.count, white };
     }
 
-    const liteRes = await fetch(`${base}${litePath}`);
+    const liteRes = await fetch(`${base}${litePath}`, { signal: AbortSignal.timeout(30_000) });
     if (!liteRes.ok) return { updated: false, white, error: `lite ${liteRes.status}` };
     const validated = validateLiteArtifact(
       await readJsonBounded(liteRes, MAX_LITE_BYTES),

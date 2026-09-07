@@ -214,6 +214,7 @@ export async function postOnlineClassification(input: {
   const base = input.base.replace(/\/+$/, "");
   const response = await fetcher(`${base}/v1/classify`, {
     method: "POST",
+    signal: AbortSignal.timeout(120_000),
     headers: {
       authorization: `Bearer ${input.token}`,
       "content-type": "application/json",

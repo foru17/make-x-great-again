@@ -30,6 +30,7 @@ import {
 import { DEFAULTS, SETTINGS_KEY, type Settings, getSettings } from "./settings";
 import type { BlockRecord } from "./store";
 import type { Label, Verdict } from "./types";
+import { requestLocalDataMutation } from "./local-data";
 
 export const BACKUP_FORMAT = "mxga-backup";
 export const BACKUP_VERSION = 1;
@@ -79,6 +80,7 @@ export interface BackupFile {
 export interface BackupSummary {
   settings: boolean;
   localWhitelist: number;
+  localWhitelistExcluded: number;
   customRules: number;
   disabledRules: number;
   hiddenIds: number;
@@ -87,8 +89,24 @@ export interface BackupSummary {
   cache: number;
 }
 
-export type BackupSection = keyof BackupSummary;
+// IDs and records are one atomic section; exclusions travel with the whitelist.
+export type BackupSection = Exclude<keyof BackupSummary, "hiddenRecords" | "localWhitelistExcluded">;
 export type ImportMode = "merge" | "replace";
+
+/** Sections shown for approval in the import preview. */
+export function presentBackupSections(file: BackupFile): BackupSection[] {
+  const d = file.data;
+  const present: Record<BackupSection, boolean> = {
+    settings: !!d.settings && Object.keys(d.settings).length > 0,
+    localWhitelist: d.localWhitelist !== undefined || d.localWhitelistExcluded !== undefined,
+    customRules: d.customRules !== undefined,
+    disabledRules: d.disabledRules !== undefined,
+    hiddenIds: d.hidden !== undefined,
+    stats: d.stats !== undefined,
+    cache: d.cache !== undefined,
+  };
+  return (Object.keys(present) as BackupSection[]).filter((key) => present[key]);
+}
 
 export interface ExportOptions {
   includeCache?: boolean;
@@ -104,11 +122,9 @@ const MAX_CACHE = 20_000;
 const MAX_DISABLED = 5_000;
 
 async function storageGet(keys: string[] | null): Promise<Record<string, unknown>> {
-  try {
-    return (await chrome.storage.local.get(keys as never)) as unknown as Record<string, unknown>;
-  } catch {
-    return {};
-  }
+  // A failed read is not an empty profile: continuing would turn a merge
+  // into a destructive overwrite and export a falsely successful empty file.
+  return (await chrome.storage.local.get(keys as never)) as unknown as Record<string, unknown>;
 }
 
 async function storageSet(obj: Record<string, unknown>): Promise<void> {
@@ -132,7 +148,7 @@ export async function exportBackup(opts: ExportOptions = {}): Promise<BackupFile
   const got = await storageGet(includeCache ? null : Object.values(KEYS));
   const settings = await getSettings();
   const data: BackupData = {
-    settings,
+    settings: sanitizeSettings(settings),
     localWhitelist: sanitizeLocalWhitelist(got[KEYS.whitelist]),
     localWhitelistExcluded: sanitizeLocalWhitelistExcluded(
       (got[KEYS.whitelist] as { excluded?: unknown } | undefined)?.excluded,
@@ -148,11 +164,15 @@ export async function exportBackup(opts: ExportOptions = {}): Promise<BackupFile
   }
   if (includeCache) {
     const cache: Record<string, Cached> = {};
+    let count = 0;
     for (const [k, v] of Object.entries(got)) {
       if (!k.startsWith(CACHE_PREFIX)) continue;
       const c = sanitizeCached(v);
-      if (c) cache[k.slice(CACHE_PREFIX.length)] = c;
-      if (Object.keys(cache).length >= MAX_CACHE) break;
+      if (c) {
+        cache[k.slice(CACHE_PREFIX.length)] = c;
+        count += 1;
+      }
+      if (count >= MAX_CACHE) break;
     }
     data.cache = cache;
   }
@@ -324,9 +344,9 @@ export function sanitizeSettings(raw: unknown): Partial<Settings> {
   if (typeof s.autoScope === "string" && AUTO_SCOPES.has(s.autoScope)) out.autoScope = s.autoScope as Settings["autoScope"];
   if (typeof s.autoTierMode === "string" && AUTO_TIERS.has(s.autoTierMode)) out.autoTierMode = s.autoTierMode as Settings["autoTierMode"];
   if (typeof s.bubblePos === "string" && BUBBLE_POS.has(s.bubblePos)) out.bubblePos = s.bubblePos as Settings["bubblePos"];
-  if (typeof s.edgeBase === "string" && (s.edgeBase === "" || /^https:\/\/[^\s/]+(\/[^\s]*)?$/.test(s.edgeBase))) {
-    out.edgeBase = s.edgeBase.slice(0, 200);
-  }
+  // Service trust belongs to this installation. Importing an arbitrary URL
+  // would send the existing GitHub bearer token to the backup author's host.
+  // Excluding it on export also keeps URL credentials out of the file.
   if (s.categoryActions && typeof s.categoryActions === "object") {
     const ca: Partial<Settings["categoryActions"]> = {};
     for (const cat of SPAM_CATEGORIES) {
@@ -351,8 +371,8 @@ export function parseBackup(
   if (!raw || typeof raw !== "object") return { ok: false, error: "文件内容不是备份对象" };
   const f = raw as Partial<BackupFile>;
   if (f.format !== BACKUP_FORMAT) return { ok: false, error: "不是 MXGA 备份文件（format 不匹配）" };
-  if (typeof f.version !== "number" || f.version > BACKUP_VERSION) {
-    return { ok: false, error: `备份版本 ${String(f.version)} 高于当前扩展支持的 ${BACKUP_VERSION}，请先升级扩展` };
+  if (f.version !== BACKUP_VERSION) {
+    return { ok: false, error: `不支持备份版本 ${String(f.version)}，当前支持版本 ${BACKUP_VERSION}` };
   }
   const d = (f.data && typeof f.data === "object" ? f.data : {}) as Record<string, unknown>;
   const data: BackupData = {};
@@ -369,11 +389,15 @@ export function parseBackup(
   if (d.stats !== undefined) data.stats = sanitizeStats(d.stats);
   if (d.cache && typeof d.cache === "object") {
     const cache: Record<string, Cached> = {};
+    let count = 0;
     for (const [k, v] of Object.entries(d.cache as Record<string, unknown>)) {
       if (!HIDDEN_ID_RE.test(k)) continue;
       const c = sanitizeCached(v);
-      if (c) cache[k] = c;
-      if (Object.keys(cache).length >= MAX_CACHE) break;
+      if (c) {
+        cache[k] = c;
+        count += 1;
+      }
+      if (count >= MAX_CACHE) break;
     }
     data.cache = cache;
   }
@@ -392,6 +416,7 @@ export function summarize(file: BackupFile): BackupSummary {
   return {
     settings: !!d.settings && Object.keys(d.settings).length > 0,
     localWhitelist: d.localWhitelist?.length ?? 0,
+    localWhitelistExcluded: d.localWhitelistExcluded?.length ?? 0,
     customRules: d.customRules?.length ?? 0,
     disabledRules: d.disabledRules?.length ?? 0,
     hiddenIds: d.hidden?.ids.length ?? 0,
@@ -411,12 +436,23 @@ export async function importBackup(
   mode: ImportMode,
   sections: Partial<Record<BackupSection, boolean>> = {},
 ): Promise<BackupSummary> {
+  return requestLocalDataMutation({ kind: "import", file, mode, sections });
+}
+
+/** Background-only implementation, serialized with whitelist changes. */
+export async function applyBackupImport(
+  file: BackupFile,
+  mode: ImportMode,
+  sections: Partial<Record<BackupSection, boolean>> = {},
+): Promise<BackupSummary> {
   const want = (s: BackupSection) => sections[s] !== false;
   const d = file.data;
   const writes: Record<string, unknown> = {};
+  const removals: string[] = [];
   const applied: BackupSummary = {
     settings: false,
     localWhitelist: 0,
+    localWhitelistExcluded: 0,
     customRules: 0,
     disabledRules: 0,
     hiddenIds: 0,
@@ -436,17 +472,15 @@ export async function importBackup(
     applied.settings = true;
   }
 
-  if (d.localWhitelist && want("localWhitelist")) {
+  if ((d.localWhitelist || d.localWhitelistExcluded) && want("localWhitelist")) {
     const existing = mode === "merge" ? sanitizeLocalWhitelist(cur[KEYS.whitelist]) : [];
     const byHandle = new Map(existing.map((e) => [e.handle.toLowerCase(), e]));
-    let added = 0;
-    for (const e of d.localWhitelist) {
+    for (const e of d.localWhitelist ?? []) {
       const k = e.handle.toLowerCase();
       const prev = byHandle.get(k);
       if (!prev) {
         if (byHandle.size >= MAX_LOCAL_WHITELIST) break;
         byHandle.set(k, e);
-        added += 1;
       } else if (e.source === "manual" && prev.source !== "manual") {
         byHandle.set(k, { ...prev, source: "manual" });
       } else if (e.userId && !prev.userId) {
@@ -458,8 +492,16 @@ export async function importBackup(
         ? sanitizeLocalWhitelistExcluded((cur[KEYS.whitelist] as { excluded?: unknown } | undefined)?.excluded)
         : [];
     const excluded = sanitizeLocalWhitelistExcluded([...curExcluded, ...(d.localWhitelistExcluded ?? [])]);
-    writes[KEYS.whitelist] = { entries: [...byHandle.values()], excluded };
-    applied.localWhitelist = mode === "merge" ? added : d.localWhitelist.length;
+    // Explicit removals win over stale rows from either backup/device. A
+    // deliberate manual add through the whitelist UI clears the exclusion.
+    const excludedSet = new Set(excluded);
+    const entries = [...byHandle.values()].filter((e) => !excludedSet.has(e.handle.toLowerCase()));
+    const existingHandles = new Set(existing.map((e) => e.handle.toLowerCase()));
+    writes[KEYS.whitelist] = { entries, excluded };
+    applied.localWhitelist = mode === "merge"
+      ? entries.filter((e) => !existingHandles.has(e.handle.toLowerCase())).length
+      : entries.length;
+    applied.localWhitelistExcluded = excluded.length;
   }
 
   if (d.customRules && want("customRules")) {
@@ -533,18 +575,23 @@ export async function importBackup(
 
   if (d.cache && want("cache")) {
     const existingKeys = new Set(
-      mode === "merge" ? Object.keys(await storageGet(null)).filter((k) => k.startsWith(CACHE_PREFIX)) : [],
+      Object.keys(await storageGet(null)).filter((k) => k.startsWith(CACHE_PREFIX)),
     );
     let n = 0;
     for (const [id, c] of Object.entries(d.cache)) {
       const k = CACHE_PREFIX + id;
-      if (existingKeys.has(k)) continue;
+      if (mode === "merge" && existingKeys.has(k)) continue;
       writes[k] = c;
       n += 1;
     }
     applied.cache = n;
+    if (mode === "replace") {
+      for (const k of existingKeys) if (!(k in writes)) removals.push(k);
+    }
   }
 
   await storageSet(writes);
+  // Persist replacements first: a failed write must not destroy the old cache.
+  if (removals.length) await chrome.storage.local.remove(removals);
   return applied;
 }
