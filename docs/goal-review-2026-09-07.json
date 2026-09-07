@@ -1,0 +1,61 @@
+{
+  "goal": "Review and test the current 0.6.1 iteration, fix verified defects, and revalidate the result",
+  "baseline": "d0fcac0 (feat/rules-visibility-telemetry)",
+  "branch": "codex/review-2026-09-07",
+  "tasks": [
+    {
+      "id": "baseline",
+      "task": "Inventory changed paths and run baseline tests, type checks, builds and dependency audits",
+      "verify": "Captured command outputs for core, extension, edge and agent runner",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/baseline-{core,extension,edge,runner}.log: all tests and compilation/builds passed; lint has 2 errors; generated Worker types check fails",
+        ".review-2026-09-07/audit-{core,extension,edge}.json: core 0; extension 7 high; edge 8 high and 2 moderate dependency findings"
+      ]
+    },
+    {
+      "id": "tooling",
+      "task": "Fix baseline lint errors, stale Worker types, vulnerable dependency resolutions and missing CI checks",
+      "verify": "Lint, generated types check, bounded dependency audits and all affected builds/tests pass",
+      "passes": false
+    },
+    {
+      "id": "backup",
+      "task": "Review backup parsing, merge/replace, credential exclusion and cross-tab storage integrity; fix reproduced defects",
+      "verify": "Adversarial backup regression tests and extension compile",
+      "passes": false
+    },
+    {
+      "id": "whitelist",
+      "task": "Review identity matching, following harvest, removal tombstones and live protection changes",
+      "verify": "Whitelist and bridge integration/regression tests",
+      "passes": false
+    },
+    {
+      "id": "detection",
+      "task": "Review detection, cache revalidation, auto-action guards and telemetry failure/budget behavior",
+      "verify": "Targeted regression tests through affected caller paths",
+      "passes": false
+    },
+    {
+      "id": "edge",
+      "task": "Review current edge API changes, authentication, moderation state and classifier contracts",
+      "verify": "Edge and agent-runner tests plus bounded local HTTP checks",
+      "passes": false
+    },
+    {
+      "id": "ui",
+      "task": "Exercise real extension build, backup and whitelist flows on desktop/mobile and light/dark themes",
+      "verify": "Browser assertions and inspected screenshots",
+      "passes": false
+    },
+    {
+      "id": "final",
+      "task": "Adversarially recheck every finding and record verified results and external limitations",
+      "verify": "Full final tests/type checks/builds, clean diff and commit history, evidence report",
+      "passes": false
+    }
+  ],
+  "findings": [],
+  "manual_items": []
+}
