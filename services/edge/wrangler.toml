@@ -1,5 +1,5 @@
 name = "x-spam-sentinel-edge"
-main = "src/index.ts"
+main = "src/worker.ts"
 compatibility_date = "2026-05-01"
 compatibility_flags = ["nodejs_compat"]
 

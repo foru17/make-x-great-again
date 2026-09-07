@@ -17,7 +17,8 @@
     "typecheck": "tsc --noEmit",
     "types:check": "wrangler types worker-configuration.d.ts --check",
     "typecheck:app": "tsc -p tsconfig.app.json --noEmit",
-    "test": "tsx --test test/**/*.test.ts"
+    "test": "tsx --test test/**/*.test.ts",
+    "test:runtime": "node scripts/smoke-worker.mjs"
   },
   "dependencies": {
     "hono": "^4.12.29",

@@ -275,6 +275,20 @@
         ".review-2026-09-07/contrast-green.log",
         ".ui-acceptance/2026-09-07-review/backup-after-dark-390.png"
       ]
+    },
+    {
+      "id": "worker-runtime-entry",
+      "severity": "high",
+      "status": "fixed",
+      "finding": "The actual workerd runtime rejected the named CLASSIFY_SYSTEM_PROMPT string export and could not start, despite Node tests and typechecks passing.",
+      "fix": "Deploy a default-only worker module; keep evaluation helpers available from index.ts; add a bounded real-runtime HTTP smoke check to CI.",
+      "verify": "Startup failure reproduced; workerd starts after fix, 6 HTTP routes return expected 200/401/403; typechecks pass.",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/worker-entry-red.log",
+        ".review-2026-09-07/worker-entry-green.log",
+        ".review-2026-09-07/http-final.json"
+      ]
     }
   ],
   "manual_items": []
