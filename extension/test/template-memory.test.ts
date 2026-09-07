@@ -34,6 +34,17 @@ const sig = (handle: string, text: string): Signals => ({
   triggeringComment: text,
 });
 
+test("prototype-named handles are ordinary accounts in template memory", async () => {
+  const env = installChrome();
+  try {
+    for (const handle of ["__proto__", "constructor", "toString"]) {
+      assert.equal(await noteTemplate(sig(handle, "repeated fixture text"), 1000, "1"), 0);
+      assert.equal(await noteTemplate(sig(handle, "repeated fixture text"), 2000, "2"), 1);
+    }
+    assert.ok(Object.hasOwn(env.bag[TEMPLATE_MEMORY_KEY] as object, "__proto__"));
+  } finally { env.restore(); }
+});
+
 test("counts earlier sightings of the same text by the same author; stores only hashes", async () => {
   const env = installChrome();
   try {

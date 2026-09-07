@@ -40,9 +40,10 @@ async function readStore(): Promise<Store> {
   try {
     const got = await chrome.storage.local.get(TEMPLATE_MEMORY_KEY);
     const v = got[TEMPLATE_MEMORY_KEY];
-    return v && typeof v === "object" && !Array.isArray(v) ? (v as Store) : {};
+    return Object.assign(Object.create(null) as Store,
+      v && typeof v === "object" && !Array.isArray(v) ? v : {});
   } catch {
-    return {};
+    return Object.create(null) as Store;
   }
 }
 

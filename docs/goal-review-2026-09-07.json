@@ -183,6 +183,19 @@
         ".review-2026-09-07/edge-cache-hash-red.log",
         ".review-2026-09-07/cache-hash-green.log"
       ]
+    },
+    {
+      "id": "template-identity",
+      "severity": "medium",
+      "status": "fixed",
+      "finding": "Valid prototype-named handles such as __proto__ crashed the template-memory path before online detection.",
+      "fix": "Use a null-prototype author dictionary so account handles remain data keys.",
+      "verify": "4 template-memory tests and extension compile passed",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/template-identity-red.log",
+        ".review-2026-09-07/template-identity-green.log"
+      ]
     }
   ],
   "manual_items": []
