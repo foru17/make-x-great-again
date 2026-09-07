@@ -25,6 +25,7 @@ import {
   type LocalWhitelistEntry,
   MAX_LOCAL_WHITELIST,
   sanitizeLocalWhitelist,
+  sanitizeLocalWhitelistExcluded,
 } from "./local-whitelist";
 import { DEFAULTS, SETTINGS_KEY, type Settings, getSettings } from "./settings";
 import type { BlockRecord } from "./store";
@@ -49,6 +50,8 @@ const CACHE_PREFIX = "xss:v1:";
 export interface BackupData {
   settings?: Partial<Settings>;
   localWhitelist?: LocalWhitelistEntry[];
+  /** Handles the user removed from the local whitelist (never auto-added again). */
+  localWhitelistExcluded?: string[];
   customRules?: CustomRule[];
   disabledRules?: string[];
   hidden?: { ids: string[]; records: BlockRecord[] };
@@ -131,6 +134,9 @@ export async function exportBackup(opts: ExportOptions = {}): Promise<BackupFile
   const data: BackupData = {
     settings,
     localWhitelist: sanitizeLocalWhitelist(got[KEYS.whitelist]),
+    localWhitelistExcluded: sanitizeLocalWhitelistExcluded(
+      (got[KEYS.whitelist] as { excluded?: unknown } | undefined)?.excluded,
+    ),
     customRules: validateCustomRules(got[KEYS.customRules]),
     disabledRules: sanitizeDisabled(got[KEYS.disabledRules]),
     hidden: sanitizeHidden(got[KEYS.blockedIds], got[KEYS.blockRecords]),
@@ -352,6 +358,8 @@ export function parseBackup(
   const data: BackupData = {};
   if (d.settings !== undefined) data.settings = sanitizeSettings(d.settings);
   if (d.localWhitelist !== undefined) data.localWhitelist = sanitizeLocalWhitelist({ entries: d.localWhitelist });
+  if (d.localWhitelistExcluded !== undefined)
+    data.localWhitelistExcluded = sanitizeLocalWhitelistExcluded(d.localWhitelistExcluded);
   if (d.customRules !== undefined) data.customRules = validateCustomRules(d.customRules);
   if (d.disabledRules !== undefined) data.disabledRules = sanitizeDisabled(d.disabledRules);
   if (d.hidden && typeof d.hidden === "object") {
@@ -445,7 +453,12 @@ export async function importBackup(
         byHandle.set(k, { ...prev, userId: e.userId });
       }
     }
-    writes[KEYS.whitelist] = { entries: [...byHandle.values()] };
+    const curExcluded =
+      mode === "merge"
+        ? sanitizeLocalWhitelistExcluded((cur[KEYS.whitelist] as { excluded?: unknown } | undefined)?.excluded)
+        : [];
+    const excluded = sanitizeLocalWhitelistExcluded([...curExcluded, ...(d.localWhitelistExcluded ?? [])]);
+    writes[KEYS.whitelist] = { entries: [...byHandle.values()], excluded };
     applied.localWhitelist = mode === "merge" ? added : d.localWhitelist.length;
   }
 

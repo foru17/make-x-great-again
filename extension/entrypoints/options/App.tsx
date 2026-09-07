@@ -37,6 +37,8 @@ import {
   type LocalWhitelistEntry,
   MAX_LOCAL_WHITELIST,
   addLocalWhitelist,
+  clearExcluded,
+  listExcluded,
   listLocalWhitelist,
   normalizeWhitelistHandle,
   removeLocalWhitelist,
@@ -2230,13 +2232,22 @@ function LocalWhitelistSection({
     await removeLocalWhitelist(handle);
     reload();
   };
+  const [excluded, setExcluded] = useState<string[]>([]);
+  const [page, setPage] = useState(0);
+  const PAGE = 50;
+  useEffect(() => {
+    void listExcluded().then(setExcluded);
+  }, [rows]);
   const following = rows.filter((r) => r.source === "following").length;
-  const shown = q.trim()
-    ? rows.filter((r) => {
-        const s = q.trim().toLowerCase().replace(/^@+/, "");
-        return r.handle.toLowerCase().includes(s) || (r.displayName ?? "").toLowerCase().includes(s);
-      })
+  const needle = q.trim().toLowerCase().replace(/^@+/, "");
+  const shown = needle
+    ? rows.filter(
+        (r) => r.handle.toLowerCase().includes(needle) || (r.displayName ?? "").toLowerCase().includes(needle),
+      )
     : rows;
+  const pages = Math.max(1, Math.ceil(shown.length / PAGE));
+  const cur = Math.min(page, pages - 1);
+  const slice = shown.slice(cur * PAGE, cur * PAGE + PAGE);
   return (
     <section className="mb-10">
       <SectionH>本地白名单 · 你信任的账号</SectionH>
@@ -2247,7 +2258,7 @@ function LocalWhitelistSection({
         <span>
           <span className="block text-[13px] font-medium text-fg">自动加入我关注的账号</span>
           <span className="block text-[12px] leading-5 text-fg-3">
-            在时间线、主页或你的「正在关注」列表里识别到已关注的账号时自动加入
+            刷到你关注的账号（X 自带的关注关系）时自动加入；「移出」过的账号不会再自动加回
             {following > 0 ? `（已收录 ${following.toLocaleString("zh-CN")} 个）` : ""}
           </span>
         </span>
@@ -2278,14 +2289,20 @@ function LocalWhitelistSection({
         </div>
       ) : (
         <>
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <span className="text-[12px] text-fg-3">共 {rows.length.toLocaleString("zh-CN")} 个账号</span>
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+            <span className="text-[12px] text-fg-3">
+              共 {rows.length.toLocaleString("zh-CN")} 个账号
+              {needle ? ` · 筛选出 ${shown.length.toLocaleString("zh-CN")} 个` : ""}
+            </span>
             {rows.length > 8 && (
               <input
                 value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder="筛选"
-                className="w-40 rounded-md border border-border-2 bg-transparent px-2.5 py-1 text-[12px] outline-none transition focus:border-accent"
+                onChange={(e) => {
+                  setQ(e.target.value);
+                  setPage(0);
+                }}
+                placeholder="筛选用户名 / 昵称"
+                className="w-44 rounded-md border border-border-2 bg-transparent px-2.5 py-1 text-[12px] outline-none transition focus:border-accent"
               />
             )}
           </div>
@@ -2300,24 +2317,27 @@ function LocalWhitelistSection({
                 </tr>
               </thead>
               <tbody>
-                {shown.slice(0, 300).map((r) => (
+                {slice.map((r) => (
                   <tr key={r.handle} className={trHover}>
                     <td className={td}>
                       <a
                         href={`https://x.com/${r.handle}`}
                         target="_blank"
                         rel="noopener"
-                        className="text-fg hover:underline"
+                        className="inline-flex items-center gap-2.5 text-fg hover:underline"
                         title={`去 @${r.handle} 的 X 主页`}
                       >
-                        {r.displayName ? (
-                          <>
-                            <span className="font-medium">{r.displayName}</span>
-                            <span className="ml-1.5 text-fg-3">@{r.handle}</span>
-                          </>
-                        ) : (
-                          <>@{r.handle}</>
-                        )}
+                        <Avatar url={r.avatarUrl} name={r.displayName || r.handle} />
+                        <span className="min-w-0">
+                          {r.displayName ? (
+                            <>
+                              <span className="font-medium">{r.displayName}</span>
+                              <span className="ml-1.5 text-fg-3">@{r.handle}</span>
+                            </>
+                          ) : (
+                            <>@{r.handle}</>
+                          )}
+                        </span>
                       </a>
                     </td>
                     <td className={`${td} text-[12px] text-fg-2`} title={WL_SOURCE_ZH[r.source].hint}>
@@ -2336,10 +2356,42 @@ function LocalWhitelistSection({
               </tbody>
             </table>
           </div>
-          {shown.length > 300 && (
-            <p className="mt-2 text-[12px] text-fg-3">仅显示前 300 条，请用筛选缩小范围。</p>
+          {pages > 1 && (
+            <div className="mt-2 flex items-center justify-between gap-3 text-[12px] text-fg-3">
+              <span>
+                第 {cur + 1} / {pages} 页 · 每页 {PAGE} 个
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Btn size="sm" onClick={() => setPage(0)} disabled={cur === 0}>
+                  首页
+                </Btn>
+                <Btn size="sm" onClick={() => setPage(cur - 1)} disabled={cur === 0}>
+                  上一页
+                </Btn>
+                <Btn size="sm" onClick={() => setPage(cur + 1)} disabled={cur >= pages - 1}>
+                  下一页
+                </Btn>
+                <Btn size="sm" onClick={() => setPage(pages - 1)} disabled={cur >= pages - 1}>
+                  末页
+                </Btn>
+              </span>
+            </div>
           )}
         </>
+      )}
+      {excluded.length > 0 && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-[12px] text-fg-3">
+          <span>
+            已移出 {excluded.length.toLocaleString("zh-CN")} 个关注的账号，不会再自动加回（手动加入可解除）
+          </span>
+          <Btn
+            tier="ghost"
+            size="sm"
+            onClick={() => void clearExcluded().then(() => listExcluded().then(setExcluded))}
+          >
+            全部允许再次自动加入
+          </Btn>
+        </div>
       )}
     </section>
   );

@@ -29,7 +29,10 @@ everything, and ships the MAIN-world profile bridge that 0.6.0 missed.
   every standalone post in the home **Following** feed (reposts, thread-pair
   parents and replies excluded), any author X's own profile object marks as
   followed (fiber bridge), and the viewer's own /following page; any handle
-  can be added from the badge popover (加入白名单) or the options tab. Local
+  can be added from the badge popover (加入白名单) or the options tab. Removing
+  an entry also excludes it from automatic re-adding (a followed account you
+  deliberately removed stays out until you add it back by hand; the tab can
+  clear all exclusions). The list shows avatars and pages by 50. Local
   storage only, never uploaded.
 - The fiber/bridge reader understands X's 2025 GraphQL user shape (`core`,
   `relationship_perspectives`, `verification`, `location`, `avatar`) as

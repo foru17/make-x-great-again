@@ -3,7 +3,10 @@ import test from "node:test";
 import {
   LOCAL_WL_KEY,
   addLocalWhitelist,
+  clearExcluded,
+  isExcludedFromAuto,
   isLocallyWhitelisted,
+  listExcluded,
   listLocalWhitelist,
   localWhitelistSize,
   noteFollowing,
@@ -133,6 +136,53 @@ test("noteFollowing adds followed authors only when enabled, never the viewer", 
     const [row] = await listLocalWhitelist();
     assert.equal(row?.source, "following");
     assert.equal(row?.displayName, "Some One");
+  } finally {
+    env.restore();
+  }
+});
+
+test("removing an entry excludes it from automatic re-adding until a manual add", async () => {
+  const env = installChrome();
+  try {
+    await warmLocalWhitelist();
+    const followed = sig({
+      handle: "ExFriend",
+      userId: "55",
+      viewerFollowing: true,
+      avatarUrl: "https://pbs.twimg.com/profile_images/1/a_normal.jpg",
+    });
+    noteFollowing(followed, true);
+    await listLocalWhitelist();
+    assert.equal(isLocallyWhitelisted("55"), true);
+    assert.equal((await listLocalWhitelist())[0]?.avatarUrl, "https://pbs.twimg.com/profile_images/1/a_normal.jpg");
+
+    assert.equal(await removeLocalWhitelist("exfriend"), true);
+    assert.equal(isLocallyWhitelisted("55", "ExFriend"), false);
+    assert.deepEqual(await listExcluded(), ["exfriend"]);
+    assert.equal(isExcludedFromAuto("EXFRIEND"), true);
+
+    // Seen again while still followed → stays out.
+    noteFollowing(followed, true);
+    await listLocalWhitelist();
+    assert.equal(isLocallyWhitelisted("55", "ExFriend"), false);
+    assert.equal(await addLocalWhitelist({ handle: "ExFriend", source: "following" }), false);
+
+    // A deliberate manual add lifts the exclusion.
+    assert.equal(await addLocalWhitelist({ handle: "ExFriend", userId: "55", source: "manual" }), true);
+    assert.deepEqual(await listExcluded(), []);
+    assert.equal(isLocallyWhitelisted("55"), true);
+
+    // clearExcluded forgets every exclusion.
+    await removeLocalWhitelist("ExFriend");
+    await clearExcluded();
+    assert.deepEqual(await listExcluded(), []);
+    noteFollowing(followed, true);
+    await listLocalWhitelist();
+    assert.equal(isLocallyWhitelisted("55"), true, "auto-add works again");
+
+    // Non-X avatar hosts are dropped.
+    await addLocalWhitelist({ handle: "evil", avatarUrl: "https://evil.example/x.png", source: "manual" });
+    assert.equal((await listLocalWhitelist()).find((e) => e.handle === "evil")?.avatarUrl, undefined);
   } finally {
     env.restore();
   }

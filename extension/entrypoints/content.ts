@@ -23,6 +23,7 @@ import { matchLocalRules, warmRuleConfig } from "../lib/local-rules";
 import {
   LOCAL_WL_KEY,
   addLocalWhitelist,
+  isExcludedFromAuto,
   isLocallyWhitelisted,
   noteFollowing,
   removeLocalWhitelist,
@@ -793,6 +794,7 @@ export default defineContentScript({
                   handle: sig.handle,
                   ...(sig.userId ? { userId: sig.userId } : {}),
                   ...(sig.displayName ? { displayName: sig.displayName } : {}),
+                  ...(sig.avatarUrl ? { avatarUrl: sig.avatarUrl } : {}),
                   source: "manual",
                 });
                 // removeBlock clears the 处理记录 row and the fast-path id.
@@ -1201,9 +1203,19 @@ export default defineContentScript({
             break;
           }
         }
-        if (!handle || isLocallyWhitelisted(uid, handle)) continue;
+        if (!handle || isLocallyWhitelisted(uid, handle) || isExcludedFromAuto(handle)) continue;
+        const avatar = cell.querySelector<HTMLImageElement>('img[src*="profile_images/"]')?.src;
+        const name = cell
+          .querySelector<HTMLAnchorElement>(`a[href="/${handle}"] span`)
+          ?.textContent?.trim();
         added += 1;
-        void addLocalWhitelist({ handle, ...(uid ? { userId: uid } : {}), source: "following" });
+        void addLocalWhitelist({
+          handle,
+          ...(uid ? { userId: uid } : {}),
+          ...(name ? { displayName: name } : {}),
+          ...(avatar ? { avatarUrl: avatar } : {}),
+          source: "following",
+        });
       }
       const line = `[MXGA] following harvest: ${cells} cells, +${added} to local whitelist`;
       if (added > 0 || harvestLogged !== line) {
