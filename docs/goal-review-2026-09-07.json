@@ -95,6 +95,22 @@
         ".review-2026-09-07/backup-cache-red.log",
         ".review-2026-09-07/backup-cache-green.log"
       ]
+    },
+    {
+      "id": "backup-preview",
+      "severity": "high",
+      "status": "fixed",
+      "finding": "Empty sections were hidden from approval but still overwritten; hidden-record selection was ignored; storage read failure silently converted merges into overwrites and errors were not shown.",
+      "fix": "Show every present section, group hidden IDs/records into one control, show exclusions, abort on read failure and display import/read errors.",
+      "verify": "8 backup tests, extension compile/build, real Chrome extension UI interaction assertions and four viewport/theme screenshots passed",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/backup-preview-red.log",
+        ".review-2026-09-07/backup-preview-green.log",
+        ".review-2026-09-07/backup-ui-after.log",
+        ".ui-acceptance/2026-09-07-review/backup-after-dark-390.png",
+        ".ui-acceptance/2026-09-07-review/backup-after-light-1440.png"
+      ]
     }
   ],
   "manual_items": []

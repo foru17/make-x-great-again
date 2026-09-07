@@ -9,6 +9,7 @@ import {
   exportBackup,
   importBackup,
   parseBackup,
+  presentBackupSections,
   sanitizeSettings,
 } from "../lib/backup";
 
@@ -82,6 +83,28 @@ test("export carries the user's own data and nothing secret", async () => {
   } finally {
     env.restore();
   }
+});
+
+test("the import preview includes empty sections and groups hidden records with account IDs", () => {
+  const parsed = parseBackup(JSON.stringify({
+    format: BACKUP_FORMAT, version: 1,
+    data: { localWhitelist: [], localWhitelistExcluded: ["removed"], customRules: [], hidden: { ids: [], records: [] }, cache: {} },
+  }));
+  assert.ok(parsed.ok);
+  assert.deepEqual(presentBackupSections(parsed.file), ["localWhitelist", "customRules", "hiddenIds", "cache"]);
+  assert.equal(parsed.summary.localWhitelistExcluded, 1);
+});
+
+test("storage read failure aborts backup operations without overwriting existing data", async () => {
+  const env = installChrome(SEED);
+  try {
+    const parsed = parseBackup(JSON.stringify({ format: BACKUP_FORMAT, version: 1, data: { hidden: { ids: ["999"], records: [] } } }));
+    assert.ok(parsed.ok);
+    Object.assign(chrome.storage.local, { get: async () => { throw new Error("storage unavailable"); } });
+    await assert.rejects(() => importBackup(parsed.file, "merge"), /storage unavailable/);
+    await assert.rejects(() => exportBackup(), /storage unavailable/);
+    assert.deepEqual(env.bag["xss:blocked"], SEED["xss:blocked"]);
+  } finally { env.restore(); }
 });
 
 test("cache replacement removes absent entries, while skipped cache stays untouched", async () => {

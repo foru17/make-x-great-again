@@ -79,6 +79,7 @@ export interface BackupFile {
 export interface BackupSummary {
   settings: boolean;
   localWhitelist: number;
+  localWhitelistExcluded: number;
   customRules: number;
   disabledRules: number;
   hiddenIds: number;
@@ -87,8 +88,24 @@ export interface BackupSummary {
   cache: number;
 }
 
-export type BackupSection = keyof BackupSummary;
+// IDs and records are one atomic section; exclusions travel with the whitelist.
+export type BackupSection = Exclude<keyof BackupSummary, "hiddenRecords" | "localWhitelistExcluded">;
 export type ImportMode = "merge" | "replace";
+
+/** Sections shown for approval in the import preview. */
+export function presentBackupSections(file: BackupFile): BackupSection[] {
+  const d = file.data;
+  const present: Record<BackupSection, boolean> = {
+    settings: !!d.settings && Object.keys(d.settings).length > 0,
+    localWhitelist: d.localWhitelist !== undefined || d.localWhitelistExcluded !== undefined,
+    customRules: d.customRules !== undefined,
+    disabledRules: d.disabledRules !== undefined,
+    hiddenIds: d.hidden !== undefined,
+    stats: d.stats !== undefined,
+    cache: d.cache !== undefined,
+  };
+  return (Object.keys(present) as BackupSection[]).filter((key) => present[key]);
+}
 
 export interface ExportOptions {
   includeCache?: boolean;
@@ -104,11 +121,9 @@ const MAX_CACHE = 20_000;
 const MAX_DISABLED = 5_000;
 
 async function storageGet(keys: string[] | null): Promise<Record<string, unknown>> {
-  try {
-    return (await chrome.storage.local.get(keys as never)) as unknown as Record<string, unknown>;
-  } catch {
-    return {};
-  }
+  // A failed read is not an empty profile: continuing would turn a merge
+  // into a destructive overwrite and export a falsely successful empty file.
+  return (await chrome.storage.local.get(keys as never)) as unknown as Record<string, unknown>;
 }
 
 async function storageSet(obj: Record<string, unknown>): Promise<void> {
@@ -400,6 +415,7 @@ export function summarize(file: BackupFile): BackupSummary {
   return {
     settings: !!d.settings && Object.keys(d.settings).length > 0,
     localWhitelist: d.localWhitelist?.length ?? 0,
+    localWhitelistExcluded: d.localWhitelistExcluded?.length ?? 0,
     customRules: d.customRules?.length ?? 0,
     disabledRules: d.disabledRules?.length ?? 0,
     hiddenIds: d.hidden?.ids.length ?? 0,
@@ -426,6 +442,7 @@ export async function importBackup(
   const applied: BackupSummary = {
     settings: false,
     localWhitelist: 0,
+    localWhitelistExcluded: 0,
     customRules: 0,
     disabledRules: 0,
     hiddenIds: 0,
@@ -445,11 +462,11 @@ export async function importBackup(
     applied.settings = true;
   }
 
-  if (d.localWhitelist && want("localWhitelist")) {
+  if ((d.localWhitelist || d.localWhitelistExcluded) && want("localWhitelist")) {
     const existing = mode === "merge" ? sanitizeLocalWhitelist(cur[KEYS.whitelist]) : [];
     const byHandle = new Map(existing.map((e) => [e.handle.toLowerCase(), e]));
     let added = 0;
-    for (const e of d.localWhitelist) {
+    for (const e of d.localWhitelist ?? []) {
       const k = e.handle.toLowerCase();
       const prev = byHandle.get(k);
       if (!prev) {
@@ -468,7 +485,8 @@ export async function importBackup(
         : [];
     const excluded = sanitizeLocalWhitelistExcluded([...curExcluded, ...(d.localWhitelistExcluded ?? [])]);
     writes[KEYS.whitelist] = { entries: [...byHandle.values()], excluded };
-    applied.localWhitelist = mode === "merge" ? added : d.localWhitelist.length;
+    applied.localWhitelist = mode === "merge" ? added : (d.localWhitelist?.length ?? 0);
+    applied.localWhitelistExcluded = excluded.length;
   }
 
   if (d.customRules && want("customRules")) {
