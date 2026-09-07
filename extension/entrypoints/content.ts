@@ -1413,6 +1413,30 @@ export default defineContentScript({
         container.appendChild(bubble.el);
         if (!settings.bubble) bubble.el.style.display = "none";
         bubbleApi = bubble;
+        // Keep the pill at the tidy 12px unless it would actually sit on X's
+        // sidebar search box (a viewport-width question: wide screens have
+        // free space to the right of the sidebar, ~1200px ones do not).
+        const avoidSearchBox = () => {
+          if (settings.bubblePos !== "tr") return;
+          const box = document.querySelector<HTMLElement>(
+            '[data-testid="SearchBox_Search_Input"], form[role="search"], input[placeholder][data-testid*="Search"]',
+          );
+          const search = box?.closest<HTMLElement>('[data-testid="sidebarColumn"]') ? box : null;
+          let top = "";
+          if (search) {
+            const r = search.getBoundingClientRect();
+            // Measure the visible pill, not the container (whose hidden card
+            // makes it far wider than what the user sees).
+            const pill = (bubble.el.querySelector<HTMLElement>(".pill") ?? bubble.el).getBoundingClientRect();
+            const collides =
+              r.width > 0 && r.bottom > 0 && r.top < 70 && pill.left < r.right + 8 && pill.right > r.left - 8;
+            if (collides) top = `${Math.round(r.bottom + 10)}px`;
+          }
+          bubble.el.style.setProperty("--xss-bubble-top", top);
+        };
+        avoidSearchBox();
+        ctx.addEventListener(window, "resize", avoidSearchBox);
+        ctx.setInterval(avoidSearchBox, 4000);
         // The bubble's 已处理 list is SESSION-scoped: it persists across SPA
         // navigation (the content script and its in-memory archive live on),
         // but a full reload / freshly-opened X must start clean — resurrecting

@@ -53,12 +53,11 @@ export const STYLE = `
   z-index: 2147483000;
   color: var(--text); -webkit-font-smoothing: antialiased;
 }
-/* Desktop X keeps its search box pinned to the top of the right sidebar
- * (≈0–53px); a pill at 12px sat right on top of its right end. Drop below
- * it where the sidebar shows (X renders the sidebar from ~1000px). */
-@media (min-width: 1000px) {
-  .xss-bubble:not(.br) { top: max(64px, env(safe-area-inset-top)); }
-}
+/* X pins its search box to the top of the right sidebar; whether a pill at
+ * 12px collides with it depends on the viewport width. content.ts measures
+ * the real overlap (see avoidSearchBox) and sets --xss-bubble-top only when
+ * needed, so the default stays the tidy 12px. */
+.xss-bubble:not(.br) { top: var(--xss-bubble-top, max(12px, env(safe-area-inset-top))); }
 .xss-bubble.br {
   top: auto;
   bottom: max(12px, env(safe-area-inset-bottom));
