@@ -248,6 +248,19 @@
         ".review-2026-09-07/dependencies-extension-verify.log",
         ".review-2026-09-07/audit-extension-final.json"
       ]
+    },
+    {
+      "id": "edge-dependencies",
+      "severity": "high",
+      "status": "fixed",
+      "finding": "Edge production and development dependencies had 8 high and 2 moderate audit findings.",
+      "fix": "Apply compatible Hono/toolchain patches and update pinned React Router to 7.18.3.",
+      "verify": "143 Edge tests, Worker/app typechecks and app build passed; audit 0 findings.",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/dependencies-edge-verify.log",
+        ".review-2026-09-07/audit-edge-final.json"
+      ]
     }
   ],
   "manual_items": []
