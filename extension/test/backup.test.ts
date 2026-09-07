@@ -26,6 +26,7 @@ function installChrome(seed: Record<string, unknown> = {}) {
           return Object.fromEntries(keys.map((x) => [x, bag[x]]));
         },
         set: async (obj: Record<string, unknown>) => Object.assign(bag, obj),
+        remove: async (keys: string[]) => { for (const key of keys) delete bag[key]; },
       },
       onChanged: { addListener: () => {}, removeListener: () => {} },
     },
@@ -80,6 +81,20 @@ test("export carries the user's own data and nothing secret", async () => {
     assert.equal(backupFileName(d), "mxga-2026-09-07-0905-export.json");
   } finally {
     env.restore();
+  }
+});
+
+test("malformed whitelist values never throw while parsing a backup", () => {
+  for (const handle of [42, {}, [], true, null]) {
+    const parsed = parseBackup(JSON.stringify({
+      format: BACKUP_FORMAT, version: 1,
+      data: { localWhitelist: [{ handle }, { handle: "valid", userId: 123, addedAt: 1e999 }] },
+    }));
+    assert.ok(parsed.ok);
+    assert.deepEqual(parsed.file.data.localWhitelist, [{ handle: "valid", source: "manual", addedAt: 0 }]);
+  }
+  for (const version of [0, -1, 0.5]) {
+    assert.equal(parseBackup(JSON.stringify({ format: BACKUP_FORMAT, version, data: {} })).ok, false);
   }
 });
 

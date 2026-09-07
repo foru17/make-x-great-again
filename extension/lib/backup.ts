@@ -351,8 +351,8 @@ export function parseBackup(
   if (!raw || typeof raw !== "object") return { ok: false, error: "文件内容不是备份对象" };
   const f = raw as Partial<BackupFile>;
   if (f.format !== BACKUP_FORMAT) return { ok: false, error: "不是 MXGA 备份文件（format 不匹配）" };
-  if (typeof f.version !== "number" || f.version > BACKUP_VERSION) {
-    return { ok: false, error: `备份版本 ${String(f.version)} 高于当前扩展支持的 ${BACKUP_VERSION}，请先升级扩展` };
+  if (f.version !== BACKUP_VERSION) {
+    return { ok: false, error: `不支持备份版本 ${String(f.version)}，当前支持版本 ${BACKUP_VERSION}` };
   }
   const d = (f.data && typeof f.data === "object" ? f.data : {}) as Record<string, unknown>;
   const data: BackupData = {};

@@ -51,8 +51,9 @@ const HANDLE_RE = /^[A-Za-z0-9_]{1,15}$/;
 const USER_ID_RE = /^\d{1,32}$/;
 const AVATAR_RE = /^https:\/\/pbs\.twimg\.com\/[^\s"'<>]{1,300}$/;
 
-export function normalizeWhitelistHandle(raw: string | undefined | null): string | null {
-  const h = (raw ?? "").trim().replace(/^@+/, "");
+export function normalizeWhitelistHandle(raw: unknown): string | null {
+  if (typeof raw !== "string") return null;
+  const h = raw.trim().replace(/^@+/, "");
   return HANDLE_RE.test(h) ? h : null;
 }
 
@@ -89,7 +90,7 @@ function sanitizeEntries(raw: unknown): LocalWhitelistEntry[] {
     seen.add(k);
     out.push({
       handle,
-      ...(row.userId && USER_ID_RE.test(row.userId) ? { userId: row.userId } : {}),
+      ...(typeof row.userId === "string" && USER_ID_RE.test(row.userId) ? { userId: row.userId } : {}),
       ...(typeof row.displayName === "string" && row.displayName
         ? { displayName: row.displayName.slice(0, 80) }
         : {}),
@@ -97,7 +98,7 @@ function sanitizeEntries(raw: unknown): LocalWhitelistEntry[] {
         ? { avatarUrl: row.avatarUrl }
         : {}),
       source: row.source === "following" ? "following" : "manual",
-      addedAt: typeof row.addedAt === "number" ? row.addedAt : 0,
+      addedAt: typeof row.addedAt === "number" && Number.isFinite(row.addedAt) && row.addedAt >= 0 ? row.addedAt : 0,
     });
     if (out.length >= MAX_LOCAL_WHITELIST) break;
   }

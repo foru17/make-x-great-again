@@ -69,6 +69,19 @@
         ".review-2026-09-07/backup-endpoint-red.log",
         ".review-2026-09-07/backup-endpoint-green.log"
       ]
+    },
+    {
+      "id": "backup-validation",
+      "severity": "medium",
+      "status": "fixed",
+      "finding": "Numeric/object whitelist handles caused parseBackup to throw instead of returning a validated result; numeric IDs and unsupported old/fractional versions were accepted.",
+      "fix": "Validate handle/ID/timestamp types and require the supported backup format version.",
+      "verify": "11 backup/whitelist tests and extension compile passed",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/backup-validation-red.log",
+        ".review-2026-09-07/backup-validation-green.log"
+      ]
     }
   ],
   "manual_items": []
