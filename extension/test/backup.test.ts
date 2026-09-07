@@ -85,6 +85,19 @@ test("export carries the user's own data and nothing secret", async () => {
   }
 });
 
+test("merging an older backup cannot restore an explicitly removed whitelist entry", async () => {
+  const env = installChrome({ "xss:whitelist:local": { entries: [], excluded: ["removed"] } });
+  try {
+    const parsed = parseBackup(JSON.stringify({ format: BACKUP_FORMAT, version: 1, data: {
+      localWhitelist: [{handle:'removed',source:'following',addedAt:1}], localWhitelistExcluded: [],
+    } }));
+    assert.ok(parsed.ok);
+    const applied = await importBackup(parsed.file, 'merge');
+    assert.deepEqual((env.bag['xss:whitelist:local'] as {entries:unknown[]}).entries,[]);
+    assert.equal(applied.localWhitelist,0);
+  } finally { env.restore(); }
+});
+
 test("the import preview includes empty sections and groups hidden records with account IDs", () => {
   const parsed = parseBackup(JSON.stringify({
     format: BACKUP_FORMAT, version: 1,

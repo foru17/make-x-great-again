@@ -111,6 +111,19 @@
         ".ui-acceptance/2026-09-07-review/backup-after-dark-390.png",
         ".ui-acceptance/2026-09-07-review/backup-after-light-1440.png"
       ]
+    },
+    {
+      "id": "backup-exclusion",
+      "severity": "medium",
+      "status": "fixed",
+      "finding": "Merging an old backup restored whitelist entries that the user explicitly removed.",
+      "fix": "Removal exclusions take precedence over stale entries during backup merge/replace.",
+      "verify": "9 backup tests and extension compile passed",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/backup-exclusion-red.log",
+        ".review-2026-09-07/backup-exclusion-green.log"
+      ]
     }
   ],
   "manual_items": []

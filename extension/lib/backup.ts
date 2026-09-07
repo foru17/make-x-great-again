@@ -465,14 +465,12 @@ export async function importBackup(
   if ((d.localWhitelist || d.localWhitelistExcluded) && want("localWhitelist")) {
     const existing = mode === "merge" ? sanitizeLocalWhitelist(cur[KEYS.whitelist]) : [];
     const byHandle = new Map(existing.map((e) => [e.handle.toLowerCase(), e]));
-    let added = 0;
     for (const e of d.localWhitelist ?? []) {
       const k = e.handle.toLowerCase();
       const prev = byHandle.get(k);
       if (!prev) {
         if (byHandle.size >= MAX_LOCAL_WHITELIST) break;
         byHandle.set(k, e);
-        added += 1;
       } else if (e.source === "manual" && prev.source !== "manual") {
         byHandle.set(k, { ...prev, source: "manual" });
       } else if (e.userId && !prev.userId) {
@@ -484,8 +482,15 @@ export async function importBackup(
         ? sanitizeLocalWhitelistExcluded((cur[KEYS.whitelist] as { excluded?: unknown } | undefined)?.excluded)
         : [];
     const excluded = sanitizeLocalWhitelistExcluded([...curExcluded, ...(d.localWhitelistExcluded ?? [])]);
-    writes[KEYS.whitelist] = { entries: [...byHandle.values()], excluded };
-    applied.localWhitelist = mode === "merge" ? added : (d.localWhitelist?.length ?? 0);
+    // Explicit removals win over stale rows from either backup/device. A
+    // deliberate manual add through the whitelist UI clears the exclusion.
+    const excludedSet = new Set(excluded);
+    const entries = [...byHandle.values()].filter((e) => !excludedSet.has(e.handle.toLowerCase()));
+    const existingHandles = new Set(existing.map((e) => e.handle.toLowerCase()));
+    writes[KEYS.whitelist] = { entries, excluded };
+    applied.localWhitelist = mode === "merge"
+      ? entries.filter((e) => !existingHandles.has(e.handle.toLowerCase())).length
+      : entries.length;
     applied.localWhitelistExcluded = excluded.length;
   }
 
