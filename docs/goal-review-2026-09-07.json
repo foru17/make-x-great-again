@@ -17,7 +17,13 @@
       "id": "tooling",
       "task": "Fix baseline lint errors, stale Worker types, vulnerable dependency resolutions and missing CI checks",
       "verify": "Lint, generated types check, bounded dependency audits and all affected builds/tests pass",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/final-core.log",
+        ".review-2026-09-07/final-extension.log",
+        ".review-2026-09-07/final-edge.log",
+        ".review-2026-09-07/runtime-node22-final.log"
+      ]
     },
     {
       "id": "backup",
@@ -32,31 +38,56 @@
       "id": "whitelist",
       "task": "Review identity matching, following harvest, removal tombstones and live protection changes",
       "verify": "Whitelist and bridge integration/regression tests",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/final-extension.log",
+        ".review-2026-09-07/browser-lifecycle-final.log",
+        ".review-2026-09-07/browser-regressions.log"
+      ]
     },
     {
       "id": "detection",
       "task": "Review detection, cache revalidation, auto-action guards and telemetry failure/budget behavior",
       "verify": "Targeted regression tests through affected caller paths",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/final-extension.log",
+        ".review-2026-09-07/global-budget-surface-green.log"
+      ]
     },
     {
       "id": "edge",
       "task": "Review current edge API changes, authentication, moderation state and classifier contracts",
       "verify": "Edge and agent-runner tests plus bounded local HTTP checks",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/final-edge.log",
+        ".review-2026-09-07/final-runner.log",
+        ".review-2026-09-07/runtime-node22-final.log",
+        ".review-2026-09-07/http-final.json"
+      ]
     },
     {
       "id": "ui",
       "task": "Exercise real extension build, backup and whitelist flows on desktop/mobile and light/dark themes",
       "verify": "Browser assertions and inspected screenshots",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/contrast-green.log",
+        ".review-2026-09-07/inpage-final.log",
+        ".review-2026-09-07/firefox-runtime-final.log"
+      ]
     },
     {
       "id": "final",
       "task": "Adversarially recheck every finding and record verified results and external limitations",
       "verify": "Full final tests/type checks/builds, clean diff and commit history, evidence report",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/final-verification.json",
+        "docs/review-2026-09-07.md"
+      ],
+      "scope_note": "Local review and verification complete; deployment, live provider/X actions and proposed follow-ups are explicitly outside this signoff."
     }
   ],
   "findings": [
@@ -304,5 +335,31 @@
       ]
     }
   ],
-  "manual_items": []
+  "manual_items": [
+    {
+      "id": "R-01",
+      "item": "Proposed follow-up: atomic/fail-closed non-model public-write limits; see review report",
+      "owner": "backend maintainer (proposed)"
+    },
+    {
+      "id": "R-02",
+      "item": "Verify provider budget, alert delivery/owner and approved peak workload before deployment or quota changes",
+      "owner": "user/operations"
+    },
+    {
+      "id": "R-03",
+      "item": "Real X test-account actions and Safari native/device acceptance",
+      "owner": "user/release maintainer"
+    },
+    {
+      "id": "R-04",
+      "item": "Migrate existing Safari bundled-list fallback to comply with current no-large-client-list requirement",
+      "owner": "Safari maintainer (proposed)"
+    },
+    {
+      "id": "R-05",
+      "item": "Provide the project Feishu progress document URL for milestone synchronization",
+      "owner": "user"
+    }
+  ]
 }
