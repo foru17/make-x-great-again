@@ -29,7 +29,25 @@ export interface Cached {
   avatarUrl?: string;
 }
 
-/** Tiny stable hash of the signals that actually drive the verdict. */
+/** Counters drift on every render (a follower gained, a post made); hashing
+ *  them raw would make an ACCOUNT-level cache miss on every view. Bucket by
+ *  powers of two — a legit account stays "the same account" until it grows
+ *  (or shrinks) by half, which is when the model's read could change. */
+function bucket(n: number | undefined): number | null {
+  if (typeof n !== "number" || !Number.isFinite(n) || n < 0) return null;
+  return n < 2 ? n : Math.round(Math.log2(n) * 2);
+}
+
+/** Tiny stable hash of the ACCOUNT evidence that drives the verdict.
+ *
+ *  This key answers "have we already judged this account on this evidence"
+ *  — it is what lets a legit account cost one online check instead of one
+ *  per thread. So it deliberately excludes per-VIEW context (threadTopic,
+ *  surface, isReply, replyTo, rootAuthor, templateRepeats, translation
+ *  flag): those change with every thread the account appears in, and the
+ *  edge already hashes the full model input with its own status TTLs. What
+ *  is in: identity text, the triggering text, avatar/verification facts,
+ *  and bucketed counters. */
 export function signalsHash(parts: Pick<Signals, "handle" | "displayName" | "bio" | "recentTweets" | "hasDefaultAvatar"> & Partial<Signals>): string {
   // triggeringComment is hashed on its own: the article path no longer
   // mirrors it into recentTweets, and a new tweet must still count as new
@@ -41,22 +59,15 @@ export function signalsHash(parts: Pick<Signals, "handle" | "displayName" | "bio
     parts.recentTweets,
     parts.triggeringComment ?? "",
     parts.hasDefaultAvatar,
-    parts.accountAgeDays ?? null,
-    parts.followersCount ?? null,
-    parts.followingCount ?? null,
-    parts.threadTopic ?? "",
-    parts.tweetsTranslated ?? false,
     parts.avatarSource ?? null,
     parts.isVerified ?? false,
-    parts.statusesCount ?? null,
-    parts.mediaCount ?? null,
-    parts.favouritesCount ?? null,
     parts.location ?? "",
-    parts.surface ?? null,
-    parts.isReply ?? null,
-    parts.replyToHandle ?? "",
-    parts.rootAuthorHandle ?? "",
-    parts.templateRepeats ?? 0,
+    bucket(parts.accountAgeDays === undefined ? undefined : Math.floor(parts.accountAgeDays / 30)),
+    bucket(parts.followersCount),
+    bucket(parts.followingCount),
+    bucket(parts.statusesCount),
+    bucket(parts.mediaCount),
+    bucket(parts.favouritesCount),
   ]);
   let h = 5381;
   for (let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;

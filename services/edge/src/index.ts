@@ -2206,12 +2206,27 @@ async function submitReport(c: Ctx, source: string) {
     const rateFp = await throttleFingerprint(c.env, "classify", rateId);
     if (!rateFp) return c.json({ error: "report_salt_required" }, 503);
     const quotaError = await reserveModelQuota(c.env, rateFp, now);
-    if (quotaError) return c.json({ error: quotaError, retryAfterMs: REPORT_WINDOW_MS }, quotaError === "rate_limited" ? 429 : 503);
-    const cl = await classify(c.env, s);
-    vLabel = cl.label;
-    vConf = cl.confidence;
-    if (["spam", "porn_bot", "likely_spam"].includes(cl.label)) {
-      vCategory = cl.category ?? categoryForLabel(cl.label);
+    if (quotaError === "report_salt_required" || quotaError === "quota_config_invalid") {
+      return c.json({ error: quotaError }, 503);
+    }
+    if (quotaError) {
+      // The report itself is the user's contribution and is already stored;
+      // an exhausted or unavailable model budget must not turn it into a
+      // 429 that drops the account from the review queue. Queue it without
+      // an AI verdict — a human reviews it exactly like any other report,
+      // and the next classify with budget rescores it (auto_pending_review
+      // TTL is one day).
+      logWarn("report.model_quota_denied", { reason: quotaError, source });
+      vLabel = "uncertain";
+      vConf = 0;
+      vReasons = JSON.stringify(["reported", `model budget ${quotaError}; queued without AI verdict`]);
+    } else {
+      const cl = await classify(c.env, s);
+      vLabel = cl.label;
+      vConf = cl.confidence;
+      if (["spam", "porn_bot", "likely_spam"].includes(cl.label)) {
+        vCategory = cl.category ?? categoryForLabel(cl.label);
+      }
     }
   }
 

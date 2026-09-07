@@ -62,7 +62,7 @@ test("concurrent classifications cannot overshoot the global quota, and unavaila
 });
 
 
-test("report, confirm and scheduled backfill cannot bypass the global model budget", async () => {
+test("report and confirm queue without a model call once the budget is gone; backfill cannot bypass it", async () => {
   const originalFetch = globalThis.fetch;
   let calls = 0;
   globalThis.fetch = async (input) => {
@@ -84,6 +84,12 @@ test("report, confirm and scheduled backfill cannot bypass the global model budg
     const pending: Promise<unknown>[] = [];
     worker.scheduled({ cron: "*/10 * * * *" } as never, env as never, { waitUntil(p: Promise<unknown>) { pending.push(p); } } as never);
     await Promise.all(pending);
-    assert.deepEqual([report.status, confirm.status, calls], [429, 429, 1]);
+    // A report is the user's contribution: it is stored and QUEUED even when
+    // the model budget is gone (no provider call), never bounced with 429.
+    assert.deepEqual([report.status, confirm.status, calls], [200, 200, 1]);
+    const queued = db.sqlite.prepare("SELECT status, verdict_label, confidence FROM accounts WHERE handle='budget_report'").get() as Record<string, unknown>;
+    assert.equal(queued?.status, "auto_pending_review");
+    assert.equal(queued?.verdict_label, "uncertain");
+    assert.equal(queued?.confidence, 0);
   } finally { globalThis.fetch = originalFetch; db.sqlite.close(); }
 });
