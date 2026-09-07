@@ -74,7 +74,7 @@ test("export carries the user's own data and nothing secret", async () => {
     assert.equal(Object.keys(f.data.cache ?? {}).length, 1);
     const lean = await exportBackup();
     assert.equal(lean.data.cache, undefined, "cache is opt-in");
-    assert.match(backupFileName(new Date("2026-09-07T01:00:00Z")), /^mxga-backup-2026-09-07\.json$/);
+    assert.match(backupFileName(new Date("2026-09-07T01:00:00Z")), /^mxga-2026-09-07\.json$/);
   } finally {
     env.restore();
   }

@@ -160,7 +160,7 @@ export async function exportBackup(opts: ExportOptions = {}): Promise<BackupFile
 }
 
 export function backupFileName(now = new Date()): string {
-  return `mxga-backup-${now.toISOString().slice(0, 10)}.json`;
+  return `mxga-${now.toISOString().slice(0, 10)}.json`;
 }
 
 // ---- validation ---------------------------------------------------------------
