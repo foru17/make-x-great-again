@@ -40,6 +40,7 @@
     "wxt": "^0.20.27"
   },
   "overrides": {
+    "adm-zip": "^0.6.0",
     "esbuild": "^0.28.1",
     "shell-quote": "^1.10.0",
     "tmp": "^0.2.7",

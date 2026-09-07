@@ -235,6 +235,19 @@
         ".review-2026-09-07/detection-lifecycle-red.log",
         ".review-2026-09-07/detection-lifecycle-green.log"
       ]
+    },
+    {
+      "id": "extension-dependencies",
+      "severity": "high",
+      "status": "fixed",
+      "finding": "Extension development dependency audit reported 7 high findings, including a crafted ZIP memory-exhaustion issue.",
+      "fix": "Update compatible lockfile patches and override adm-zip to patched 0.6 without migrating WXT.",
+      "verify": "Extension tests, compile, Chrome/Firefox builds passed; audit 0 findings; archive folder round trip passed.",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/dependencies-extension-verify.log",
+        ".review-2026-09-07/audit-extension-final.json"
+      ]
     }
   ],
   "manual_items": []
