@@ -56,6 +56,20 @@
       "passes": false
     }
   ],
-  "findings": [],
+  "findings": [
+    {
+      "id": "backup-endpoint",
+      "severity": "high",
+      "status": "fixed",
+      "finding": "A backup could change edgeBase, redirecting subsequent authenticated requests with the existing GitHub token; unsanitized settings export could also leak URL credentials or unknown legacy settings.",
+      "fix": "Export and import only known portable preferences; preserve the installation service endpoint.",
+      "verify": "backup endpoint regression red then green; extension compile passed",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/backup-endpoint-red.log",
+        ".review-2026-09-07/backup-endpoint-green.log"
+      ]
+    }
+  ],
   "manual_items": []
 }

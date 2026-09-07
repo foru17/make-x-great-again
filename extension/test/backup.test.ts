@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { edgeBase } from "../lib/list-sync";
+import { postOnlineClassification } from "../lib/online-detection";
 import {
   BACKUP_FORMAT,
   BACKUP_VERSION,
@@ -110,7 +112,37 @@ test("parse rejects junk, strips unknown/off-enum values, keeps the rest", () =>
   assert.equal(typeof r.file.data.hidden?.records[0]?.ts, "number");
   assert.equal(r.summary.cache, 1);
   assert.equal(r.file.data.cache?.["123"]?.verdict.confidence, 1, "confidence clamped");
-  assert.deepEqual(sanitizeSettings({ edgeBase: "https://staging.example" }), { edgeBase: "https://staging.example" });
+  assert.deepEqual(sanitizeSettings({ edgeBase: "https://staging.example" }), {});
+});
+
+test("a backup cannot redirect authenticated requests or export endpoint credentials", async () => {
+  const env = installChrome({
+    ...SEED,
+    "xss:settings": { edgeBase: "https://trusted.example", legacySecret: "PRIVATE-SETTING" },
+  });
+  try {
+    const parsed = parseBackup(JSON.stringify({
+      format: BACKUP_FORMAT, version: 1,
+      data: { settings: { edgeBase: "https://untrusted.example", enabled: true } },
+    }));
+    assert.ok(parsed.ok);
+    await importBackup(parsed.file, "merge");
+    let destination = "";
+    await postOnlineClassification({
+      base: await edgeBase(), token: "TEST-ONLY-TOKEN",
+      sig: { isProfile: false, handle: "fixture", displayName: "Fixture", bio: "", recentTweets: [], hasDefaultAvatar: false },
+      fetcher: (async (url) => {
+        destination = String(url);
+        return new Response("{}", { status: 200 });
+      }) as typeof fetch,
+    });
+    assert.equal(destination, "https://trusted.example/v1/classify");
+    env.bag["xss:settings"] = { edgeBase: "https://user:PRIVATE-ENDPOINT@trusted.example", legacySecret: "PRIVATE-SETTING" };
+    const exported = JSON.stringify(await exportBackup());
+    assert.ok(!exported.includes("PRIVATE-"), "export only portable, known preference keys");
+  } finally {
+    env.restore();
+  }
 });
 
 test("import merge unions lists and sums counters; replace overwrites; excluded keys untouched", async () => {

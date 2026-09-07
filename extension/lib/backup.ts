@@ -132,7 +132,7 @@ export async function exportBackup(opts: ExportOptions = {}): Promise<BackupFile
   const got = await storageGet(includeCache ? null : Object.values(KEYS));
   const settings = await getSettings();
   const data: BackupData = {
-    settings,
+    settings: sanitizeSettings(settings),
     localWhitelist: sanitizeLocalWhitelist(got[KEYS.whitelist]),
     localWhitelistExcluded: sanitizeLocalWhitelistExcluded(
       (got[KEYS.whitelist] as { excluded?: unknown } | undefined)?.excluded,
@@ -324,9 +324,9 @@ export function sanitizeSettings(raw: unknown): Partial<Settings> {
   if (typeof s.autoScope === "string" && AUTO_SCOPES.has(s.autoScope)) out.autoScope = s.autoScope as Settings["autoScope"];
   if (typeof s.autoTierMode === "string" && AUTO_TIERS.has(s.autoTierMode)) out.autoTierMode = s.autoTierMode as Settings["autoTierMode"];
   if (typeof s.bubblePos === "string" && BUBBLE_POS.has(s.bubblePos)) out.bubblePos = s.bubblePos as Settings["bubblePos"];
-  if (typeof s.edgeBase === "string" && (s.edgeBase === "" || /^https:\/\/[^\s/]+(\/[^\s]*)?$/.test(s.edgeBase))) {
-    out.edgeBase = s.edgeBase.slice(0, 200);
-  }
+  // Service trust belongs to this installation. Importing an arbitrary URL
+  // would send the existing GitHub bearer token to the backup author's host.
+  // Excluding it on export also keeps URL credentials out of the file.
   if (s.categoryActions && typeof s.categoryActions === "object") {
     const ca: Partial<Settings["categoryActions"]> = {};
     for (const cat of SPAM_CATEGORIES) {
