@@ -61,6 +61,13 @@ everything, and ships the MAIN-world profile bridge that 0.6.0 missed.
   ≤200-char excerpt of the spam account's own text (server-verified to
   contain the pattern), shown in the admin drill-down before promotion.
   Disclosed in PRIVACY A.4b and the settings copy.
+- **Backup & migration** (设置 → 备份): export the user's own local data
+  (settings, local whitelist, custom / disabled rules, hidden accounts +
+  处理记录, local stats, optionally the detection cache) to a JSON file and
+  import it on another browser — merge (union lists, sum counters) or
+  replace per section, with a content preview first. The file never
+  contains the GitHub login or the synced public lists; import validates
+  every field and can only write those known keys.
 - **Frozen classifier eval set** (`docs/eval/cases.json`, 42 cases) and an
   offline runner with a hard call cap; the 0.6.1 prompt scores 42/42.
 - **In-page UI acceptance harness** (`scripts/ui-acceptance/inpage`): real

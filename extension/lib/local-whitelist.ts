@@ -63,6 +63,16 @@ function rebuild(entries: LocalWhitelistEntry[]): void {
   ids = i;
 }
 
+/** Validate an untrusted list (storage, backup file) into clean entries. */
+export function sanitizeLocalWhitelist(raw: unknown): LocalWhitelistEntry[] {
+  return sanitize(raw);
+}
+
+/** Replace the whole list (backup import). */
+export function replaceLocalWhitelist(entries: LocalWhitelistEntry[]): Promise<void> {
+  return serialized(() => writeStore(sanitize({ entries })));
+}
+
 function sanitize(raw: unknown): LocalWhitelistEntry[] {
   const v = raw as Partial<Store> | undefined;
   if (!v || !Array.isArray(v.entries)) return [];

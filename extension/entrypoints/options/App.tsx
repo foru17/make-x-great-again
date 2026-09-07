@@ -1,5 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { clearGh, getGhLogin, getGhToken, ghUser, setGh } from "../../lib/auth";
+import {
+  type BackupFile,
+  type BackupSection,
+  type BackupSummary,
+  type ImportMode,
+  backupFileName,
+  exportBackup,
+  importBackup,
+  parseBackup,
+  summarize,
+} from "../../lib/backup";
 import { BRAND } from "../../lib/brand";
 import { CATEGORY_ZH, SPAM_CATEGORIES, type SpamCategory, categoryFromCode } from "../../lib/category";
 import {
@@ -2361,12 +2372,253 @@ function WhitelistPage() {
   );
 }
 
+const SECTION_ZH: Record<BackupSection, string> = {
+  settings: "设置",
+  localWhitelist: "本地白名单",
+  customRules: "自定义规则",
+  disabledRules: "停用的官方规则",
+  hiddenIds: "已隐藏账号",
+  hiddenRecords: "处理记录",
+  stats: "本地统计",
+  cache: "检测缓存",
+};
+
+function summaryLines(s: BackupSummary): string[] {
+  const out: string[] = [];
+  if (s.settings) out.push("设置");
+  if (s.localWhitelist) out.push(`本地白名单 ${s.localWhitelist.toLocaleString("zh-CN")} 个`);
+  if (s.customRules) out.push(`自定义规则 ${s.customRules} 条`);
+  if (s.disabledRules) out.push(`停用的官方规则 ${s.disabledRules} 条`);
+  if (s.hiddenIds || s.hiddenRecords)
+    out.push(`已隐藏账号 ${s.hiddenIds.toLocaleString("zh-CN")} 个（处理记录 ${s.hiddenRecords.toLocaleString("zh-CN")} 条）`);
+  if (s.stats) out.push("本地统计");
+  if (s.cache) out.push(`检测缓存 ${s.cache.toLocaleString("zh-CN")} 条`);
+  return out;
+}
+
+/** 备份与迁移 — export the user's own local data to a JSON file, import it on
+ *  another browser. Never includes the GitHub login or the synced public
+ *  lists; import validates every field and merges or replaces per section. */
+function BackupPage() {
+  const [includeCache, setIncludeCache] = useState(false);
+  const [includeStats, setIncludeStats] = useState(true);
+  const [exportMsg, setExportMsg] = useState<string | null>(null);
+  const [parsed, setParsed] = useState<{ file: BackupFile; summary: BackupSummary; name: string } | null>(null);
+  const [parseErr, setParseErr] = useState<string | null>(null);
+  const [mode, setMode] = useState<ImportMode>("merge");
+  const [skip, setSkip] = useState<Partial<Record<BackupSection, boolean>>>({});
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<BackupSummary | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  const doExport = async () => {
+    setBusy(true);
+    setExportMsg(null);
+    try {
+      const file = await exportBackup({ includeCache, includeStats });
+      const text = JSON.stringify(file, null, 2);
+      const blob = new Blob([text], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = backupFileName();
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      const s = summarize(file);
+      setExportMsg(`已导出 ${a.download}（${(text.length / 1024).toFixed(0)} KB）：${summaryLines(s).join("、") || "无数据"}`);
+    } catch (e) {
+      setExportMsg(`导出失败：${(e as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onPick = async (f: File | undefined) => {
+    setParsed(null);
+    setParseErr(null);
+    setResult(null);
+    setSkip({});
+    if (!f) return;
+    if (f.size > 50 * 1024 * 1024) {
+      setParseErr("文件超过 50 MB，不是本扩展的备份");
+      return;
+    }
+    const r = parseBackup(await f.text());
+    if (!r.ok) {
+      setParseErr(r.error);
+      return;
+    }
+    setParsed({ file: r.file, summary: r.summary, name: f.name });
+  };
+
+  const doImport = async () => {
+    if (!parsed) return;
+    setBusy(true);
+    try {
+      const sections: Partial<Record<BackupSection, boolean>> = {};
+      for (const [k, v] of Object.entries(skip)) if (v) sections[k as BackupSection] = false;
+      const applied = await importBackup(parsed.file, mode, sections);
+      setResult(applied);
+    } finally {
+      setBusy(false);
+      setConfirmOpen(false);
+    }
+  };
+
+  const present = parsed ? (Object.keys(SECTION_ZH) as BackupSection[]).filter((k) => {
+    const v = parsed.summary[k];
+    return typeof v === "boolean" ? v : v > 0;
+  }) : [];
+
+  return (
+    <Page title="备份" sub="导出 / 导入你在本机的数据 · 换浏览器、换电脑时迁移">
+      <div className="max-w-[760px]">
+        <section className="mb-10">
+          <SectionH>导出备份</SectionH>
+          <p className="mb-3 text-[12px] leading-relaxed text-fg-3">
+            导出一个 JSON 文件，包含：设置、本地白名单、自定义规则与停用的官方规则、已隐藏账号与处理记录、本地统计。
+            <b className="text-fg-2">不包含</b> GitHub 登录信息（换浏览器后需重新登录）和公开名单（会自动重新同步）。文件里只有 X 账号的公开标识，可以放心保存。
+          </p>
+          <div className="mb-3 space-y-2">
+            <Toggle on={includeStats} onChange={setIncludeStats} label="包含本地统计" hint="扫描 / 命中 / 处理计数" />
+            <Toggle
+              on={includeCache}
+              onChange={setIncludeCache}
+              label="包含检测缓存"
+              hint="账号级判定缓存，换机后可少调用在线检测；文件会明显变大，且旧判定会一并带走"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Btn tier="primary" onClick={() => void doExport()} disabled={busy}>
+              导出备份文件
+            </Btn>
+            {exportMsg && <span className="text-[12px] text-fg-2">{exportMsg}</span>}
+          </div>
+        </section>
+
+        <section>
+          <SectionH>导入备份</SectionH>
+          <p className="mb-3 text-[12px] leading-relaxed text-fg-3">
+            选择之前导出的文件，先看到内容摘要，再选择合并或覆盖。导入只写入上面列出的几类数据，不会碰登录信息。
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <input
+              ref={fileInput}
+              type="file"
+              accept="application/json,.json"
+              className="hidden"
+              onChange={(e) => void onPick(e.target.files?.[0])}
+            />
+            <Btn onClick={() => fileInput.current?.click()} disabled={busy}>
+              选择备份文件
+            </Btn>
+            {parsed && <span className="text-[12px] text-fg-2">{parsed.name}</span>}
+            {parseErr && <span className="text-[12px] text-danger">{parseErr}</span>}
+          </div>
+
+          {parsed && (
+            <div className="mt-4 rounded-lg border border-border bg-card p-4">
+              <div className="mb-1 text-[13px] font-medium text-fg">备份内容</div>
+              <div className="mb-3 text-[12px] text-fg-3">
+                导出于 {parsed.file.exportedAt ? new Date(parsed.file.exportedAt).toLocaleString("zh-CN") : "未知时间"}
+                {parsed.file.extensionVersion ? ` · 扩展 v${parsed.file.extensionVersion}` : ""}
+              </div>
+              <ul className="mb-4 space-y-1.5">
+                {present.map((k) => {
+                  const v = parsed.summary[k];
+                  return (
+                    <li key={k} className="flex items-center gap-2 text-[13px]">
+                      <input
+                        type="checkbox"
+                        checked={!skip[k]}
+                        onChange={(e) => setSkip((s) => ({ ...s, [k]: !e.target.checked }))}
+                        className="h-4 w-4 accent-fg"
+                      />
+                      <span className="text-fg">{SECTION_ZH[k]}</span>
+                      {typeof v === "number" && <span className="text-fg-3">{v.toLocaleString("zh-CN")}</span>}
+                    </li>
+                  );
+                })}
+                {present.length === 0 && <li className="text-[12px] text-fg-3">文件里没有可导入的数据</li>}
+              </ul>
+              <div className="mb-4 grid gap-2 sm:grid-cols-2">
+                {(
+                  [
+                    { v: "merge", label: "合并（推荐）", hint: "名单/规则/隐藏账号取并集，统计相加，设置以备份为准；本机已有的数据保留" },
+                    { v: "replace", label: "覆盖", hint: "勾选的每一类以备份为准，本机同类数据被替换；未勾选的类别不动" },
+                  ] as const
+                ).map((o) => (
+                  <button
+                    type="button"
+                    key={o.v}
+                    onClick={() => setMode(o.v)}
+                    className={`flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-left transition ${
+                      mode === o.v ? "border-fg bg-card-hi" : "border-border hover:border-fg-3"
+                    }`}
+                  >
+                    <span className={`mt-1 flex h-3.5 w-3.5 flex-none items-center justify-center rounded-full border ${mode === o.v ? "border-fg" : "border-border-2"}`}>
+                      {mode === o.v && <span className="h-2 w-2 rounded-full bg-fg" />}
+                    </span>
+                    <span>
+                      <span className="text-[13px] font-medium text-fg">{o.label}</span>
+                      <span className="block text-[12px] leading-5 text-fg-3">{o.hint}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <Btn tier={mode === "replace" ? "danger" : "primary"} onClick={() => setConfirmOpen(true)} disabled={busy || present.length === 0}>
+                  {mode === "replace" ? "覆盖导入" : "合并导入"}
+                </Btn>
+                {result && (
+                  <span className="text-[12px] text-ok">
+                    已导入：{summaryLines(result).join("、") || "没有新增内容"}
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
+        </section>
+
+        <ConfirmDialog
+          open={confirmOpen}
+          title={mode === "replace" ? "覆盖导入" : "合并导入"}
+          body={
+            <>
+              将把 {parsed?.name ?? "备份"} 中的：
+              <ul className="my-2 list-inside list-disc text-fg-3">
+                {present.filter((k) => !skip[k]).map((k) => (
+                  <li key={k}>{SECTION_ZH[k]}</li>
+                ))}
+              </ul>
+              {mode === "replace" ? (
+                <b className="text-fg">覆盖本机同类数据（不可恢复，建议先导出一份当前备份）。</b>
+              ) : (
+                <>与本机数据合并。已隐藏的账号会在 X 上立即生效。</>
+              )}
+            </>
+          }
+          okLabel={mode === "replace" ? "确认覆盖" : "确认合并"}
+          variant={mode === "replace" ? "danger" : "primary"}
+          onCancel={() => setConfirmOpen(false)}
+          onConfirm={() => void doImport()}
+        />
+      </div>
+    </Page>
+  );
+}
+
 const TABS = [
   ["overview", "概览", Overview],
   ["blocklist", "处理记录", Blocklist],
   ["cache", "检测缓存", Cache],
   ["settings", "设置", Settings],
   ["whitelist", "白名单", WhitelistPage],
+  ["backup", "备份", BackupPage],
   ["about", "关于", About],
 ] as const;
 type TabId = (typeof TABS)[number][0];
