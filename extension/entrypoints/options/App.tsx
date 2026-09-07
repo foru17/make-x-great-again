@@ -2228,9 +2228,9 @@ function LocalWhitelistSection({
     : rows;
   return (
     <section className="mb-10">
-      <SectionH>本地白名单</SectionH>
+      <SectionH>本地白名单 · 你信任的账号</SectionH>
       <p className="mb-3 text-[12px] leading-relaxed text-fg-3">
-        优先级最高：名单内账号<b className="text-fg-2">不检测、不标记、不自动处理</b>，即使公共名单或关键词规则命中。仅保存在本机，不上传、不参与回传。
+        针对<b className="text-fg-2">别人的账号</b>（你关注的人、朋友、确认不是垃圾号的账号）：只对本机生效，优先级最高——名单内账号<b className="text-fg-2">不检测、不标记、不自动处理</b>，即使公共名单或关键词规则命中。仅保存在本机，不上传、不参与回传。
       </p>
       <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2.5">
         <span>
@@ -2346,11 +2346,16 @@ function WhitelistPage() {
     setSt((s) => (s ? { ...s, [k]: v } : s));
   };
   return (
-    <Page title="白名单" sub="本地白名单优先级最高 · 官方白名单保护你自己的账号不被误列">
+    <Page title="白名单" sub="两份名单，对象不同：上面保护「你自己」不被别人误列；下面保护「你信任的人」不被本机误处理">
       <div className="max-w-[760px]">
+        <section className="mb-10">
+          <SectionH>保护我的账号 · 官方白名单</SectionH>
+          <p className="mb-3 text-[12px] leading-relaxed text-fg-3">
+            针对<b className="text-fg-2">你自己的 X 账号</b>：申请进入官方白名单后，所有用户的扩展都不会再检测、标记或收录你。需要 GitHub 登录，由维护者审核。
+          </p>
+          {st && <WhitelistApplySection edgeBase={st.edgeBase} />}
+        </section>
         {st && <LocalWhitelistSection st={st} save={save} />}
-        <SectionH>保护我的账号（官方白名单）</SectionH>
-        {st && <WhitelistApplySection edgeBase={st.edgeBase} />}
       </div>
     </Page>
   );
