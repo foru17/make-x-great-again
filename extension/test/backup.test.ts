@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { handleLocalDataMutation } from "../lib/local-data-background";
+import type { LocalDataMutation } from "../lib/local-data";
 import { edgeBase } from "../lib/list-sync";
 import { postOnlineClassification } from "../lib/online-detection";
 import {
@@ -18,7 +20,10 @@ function installChrome(seed: Record<string, unknown> = {}) {
   const previous = root.chrome;
   const bag: Record<string, unknown> = { ...seed };
   root.chrome = {
-    runtime: { getManifest: () => ({ version: "0.6.1" }) },
+    runtime: {
+      getManifest: () => ({ version: "0.6.1" }),
+      sendMessage: async ({ mutation }: { mutation: LocalDataMutation }) => ({ ok: true, data: await handleLocalDataMutation(mutation) }),
+    },
     storage: {
       local: {
         get: async (k: string | string[] | null) => {

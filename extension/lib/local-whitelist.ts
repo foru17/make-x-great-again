@@ -21,6 +21,7 @@
 // part of any telemetry or report. Mirrors the official whitelist's shape of
 // protection (see local-index.ts isWhitelisted) but is fully user-owned.
 import type { Signals } from "./types";
+import { requestLocalDataMutation } from "./local-data";
 
 export const LOCAL_WL_KEY = "xss:whitelist:local";
 export type LocalWhitelistSource = "manual" | "following";
@@ -40,6 +41,39 @@ export interface LocalWhitelistStore {
   entries: LocalWhitelistEntry[];
   /** Lower-cased handles the user removed — never auto-added again. */
   excluded: string[];
+}
+
+type WhitelistInput = Omit<LocalWhitelistEntry, "addedAt">;
+export type LocalWhitelistMutation =
+  | { action: "add"; input: WhitelistInput }
+  | { action: "remove"; handle: string }
+  | { action: "replace"; entries: LocalWhitelistEntry[]; excluded?: string[] }
+  | { action: "clear-excluded" };
+
+async function requestMutation(mutation: LocalWhitelistMutation): Promise<boolean> {
+  const result = await requestLocalDataMutation<{ changed: boolean; store: LocalWhitelistStore }>({ kind: "whitelist", mutation });
+  rebuild(sanitize(result.store));
+  return result.changed;
+}
+
+export const addLocalWhitelist = (input: WhitelistInput): Promise<boolean> => requestMutation({ action: "add", input });
+export const removeLocalWhitelist = (handle: string): Promise<boolean> => requestMutation({ action: "remove", handle });
+export async function clearExcluded(): Promise<void> { await requestMutation({ action: "clear-excluded" }); }
+export async function replaceLocalWhitelist(entries: LocalWhitelistEntry[], excluded?: string[]): Promise<void> {
+  await requestMutation({ action: "replace", entries, excluded });
+}
+
+/** Called only by the background's shared local-data queue. */
+export async function applyLocalWhitelistMutation(mutation: LocalWhitelistMutation): Promise<{ changed: boolean; store: LocalWhitelistStore }> {
+  let changed: boolean;
+  switch (mutation.action) {
+    case "add": changed = await addEntry(mutation.input); break;
+    case "remove": changed = await removeEntry(mutation.handle); break;
+    case "replace": await replaceEntries(mutation.entries, mutation.excluded); changed = true; break;
+    case "clear-excluded": await clearExcludedEntries(); changed = true; break;
+    default: throw new Error("未知的白名单操作");
+  }
+  return { changed, store: await readStore() };
 }
 
 /** Hard cap on entries — a very large following list still fits, while a
@@ -137,21 +171,13 @@ export function sanitizeLocalWhitelistExcluded(raw: unknown): string[] {
 }
 
 async function readStore(): Promise<LocalWhitelistStore> {
-  try {
-    const got = await chrome.storage.local.get(LOCAL_WL_KEY);
-    return sanitize(got[LOCAL_WL_KEY]);
-  } catch {
-    return { entries: [], excluded: [] };
-  }
+  const got = await chrome.storage.local.get(LOCAL_WL_KEY);
+  return sanitize(got[LOCAL_WL_KEY]);
 }
 
 async function writeStore(store: LocalWhitelistStore): Promise<void> {
-  rebuild(store); // optimistic: the hot path sees the change before the storage event
-  try {
-    await chrome.storage.local.set({ [LOCAL_WL_KEY]: store });
-  } catch {
-    /* storage unavailable — the in-memory mirror still protects this page */
-  }
+  await chrome.storage.local.set({ [LOCAL_WL_KEY]: store });
+  rebuild(store);
 }
 
 // storage.local has no transactions; serialize read-modify-writes so a
@@ -165,7 +191,7 @@ function serialized<T>(fn: () => Promise<T>): Promise<T> {
 
 /** Replace the whole list (backup import). Exclusions are replaced too when
  *  given, otherwise kept. */
-export function replaceLocalWhitelist(
+function replaceEntries(
   entries: LocalWhitelistEntry[],
   excluded?: string[],
 ): Promise<void> {
@@ -222,7 +248,7 @@ export async function listExcluded(): Promise<string[]> {
 }
 
 /** Forget every exclusion — followed accounts may be auto-added again. */
-export function clearExcluded(): Promise<void> {
+function clearExcludedEntries(): Promise<void> {
   return serialized(async () => {
     const store = await readStore();
     await writeStore({ entries: store.entries, excluded: [] });
@@ -234,7 +260,7 @@ export function clearExcluded(): Promise<void> {
  *  a later unfollow cannot silently drop a deliberate choice; a manual add
  *  also lifts a previous exclusion. An automatic ("following") add of an
  *  excluded handle is refused. */
-export function addLocalWhitelist(input: {
+function addEntry(input: {
   handle: string;
   userId?: string;
   displayName?: string;
@@ -298,7 +324,7 @@ export function addLocalWhitelist(input: {
 
 /** Remove an entry AND remember the handle as excluded from automatic
  *  re-adding (the user said "not this one"). */
-export function removeLocalWhitelist(handle: string): Promise<boolean> {
+function removeEntry(handle: string): Promise<boolean> {
   return serialized(async () => {
     const k = (normalizeWhitelistHandle(handle) ?? "").toLowerCase();
     if (!k) return false;
@@ -316,14 +342,14 @@ export function removeLocalWhitelist(handle: string): Promise<boolean> {
 
 /** Following auto-add: called from the scan path with every extracted
  *  signal set. Cheap when nothing to do (one or two Set lookups). */
-export function noteFollowing(sig: Signals, enabled: boolean): void {
+export async function noteFollowing(sig: Signals, enabled: boolean): Promise<void> {
   if (!enabled || !sig.viewerFollowing || sig.viewerIsSelf) return;
   if (isLocallyWhitelisted(sig.userId, sig.handle) || isExcludedFromAuto(sig.handle)) return;
-  void addLocalWhitelist({
+  await addLocalWhitelist({
     handle: sig.handle,
     ...(sig.userId ? { userId: sig.userId } : {}),
     ...(sig.displayName ? { displayName: sig.displayName } : {}),
     ...(sig.avatarUrl ? { avatarUrl: sig.avatarUrl } : {}),
     source: "following",
-  });
+  }).catch(() => { /* Best-effort harvest: retry on a later scan. */ });
 }

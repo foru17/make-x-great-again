@@ -30,6 +30,7 @@ import {
 import { DEFAULTS, SETTINGS_KEY, type Settings, getSettings } from "./settings";
 import type { BlockRecord } from "./store";
 import type { Label, Verdict } from "./types";
+import { requestLocalDataMutation } from "./local-data";
 
 export const BACKUP_FORMAT = "mxga-backup";
 export const BACKUP_VERSION = 1;
@@ -431,6 +432,15 @@ export function summarize(file: BackupFile): BackupSummary {
  *  replace (overwrite each present section). Only the keys in KEYS (+ the
  *  cache prefix) are ever written. Returns what was applied. */
 export async function importBackup(
+  file: BackupFile,
+  mode: ImportMode,
+  sections: Partial<Record<BackupSection, boolean>> = {},
+): Promise<BackupSummary> {
+  return requestLocalDataMutation({ kind: "import", file, mode, sections });
+}
+
+/** Background-only implementation, serialized with whitelist changes. */
+export async function applyBackupImport(
   file: BackupFile,
   mode: ImportMode,
   sections: Partial<Record<BackupSection, boolean>> = {},

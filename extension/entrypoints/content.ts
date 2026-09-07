@@ -1007,7 +1007,7 @@ export default defineContentScript({
         //     manual handle, and (via enqueueAuto's guard) never auto-acted.
         //     A followed account seen with the viewer-follows relationship
         //     joins the list here (settings.followingWhitelist).
-        noteFollowing(sig, settings.followingWhitelist);
+        await noteFollowing(sig, settings.followingWhitelist);
         if (isLocallyWhitelisted(sig.userId, sig.handle)) {
           badgeFor(anchor, key, sig, null);
           return;
@@ -1215,7 +1215,7 @@ export default defineContentScript({
           ...(name ? { displayName: name } : {}),
           ...(avatar ? { avatarUrl: avatar } : {}),
           source: "following",
-        });
+        }).catch(() => { /* Retry following harvest on the next scan. */ });
       }
       const line = `[MXGA] following harvest: ${cells} cells, +${added} to local whitelist`;
       if (added > 0 || harvestLogged !== line) {

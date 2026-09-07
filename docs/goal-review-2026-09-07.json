@@ -23,7 +23,10 @@
       "id": "backup",
       "task": "Review backup parsing, merge/replace, credential exclusion and cross-tab storage integrity; fix reproduced defects",
       "verify": "Adversarial backup regression tests and extension compile",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "backup regressions, storage failure/merge tests and real browser import assertions; see findings"
+      ]
     },
     {
       "id": "whitelist",
@@ -123,6 +126,20 @@
       "evidence": [
         ".review-2026-09-07/backup-exclusion-red.log",
         ".review-2026-09-07/backup-exclusion-green.log"
+      ]
+    },
+    {
+      "id": "whitelist-write-race",
+      "severity": "high",
+      "status": "fixed",
+      "finding": "Two page-local write queues overwrote each other; backup import could race following harvest; following detection did not wait for protection to persist.",
+      "fix": "Route whitelist mutations and backup import through one background queue; await following protection before detection; propagate storage failures.",
+      "verify": "76 extension tests, compile/build, isolated-context concurrency tests and real backup UI passed",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/whitelist-race-red.log",
+        ".review-2026-09-07/whitelist-race-green.log",
+        ".review-2026-09-07/backup-ui-after.log"
       ]
     }
   ],

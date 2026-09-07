@@ -1,5 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { handleLocalDataMutation } from "../lib/local-data-background";
+import type { LocalDataMutation } from "../lib/local-data";
+import { BACKUP_FORMAT, importBackup, parseBackup } from "../lib/backup";
 import {
   LOCAL_WL_KEY,
   addLocalWhitelist,
@@ -22,13 +25,14 @@ function installChrome(seed: Record<string, unknown> = {}) {
   const bag: Record<string, unknown> = { ...seed };
   const listeners: Array<(c: Record<string, { newValue?: unknown }>, area: string) => void> = [];
   root.chrome = {
+    runtime: { sendMessage: async ({ mutation }: { mutation: LocalDataMutation }) => ({ ok: true, data: await handleLocalDataMutation(mutation) }) },
     storage: {
       local: {
-        get: async (k: string) => ({ [k]: bag[k] }),
+        get: async (k: string | string[] | null) => structuredClone(k === null ? bag : Object.fromEntries((Array.isArray(k) ? k : [k]).map(key=>[key,bag[key]]))),
         set: async (obj: Record<string, unknown>) => {
           const changes: Record<string, { newValue?: unknown }> = {};
           for (const [k, v] of Object.entries(obj)) {
-            bag[k] = v;
+            bag[k] = structuredClone(v);
             changes[k] = { newValue: v };
           }
           for (const l of listeners) l(changes, "local");
@@ -57,6 +61,28 @@ const sig = (over: Partial<Signals>): Signals => ({
   hasDefaultAvatar: false,
   recentTweets: [],
   ...over,
+});
+
+test("a concurrent backup import and whitelist add share the background write queue", async () => {
+  const env = installChrome();
+  try {
+    const parsed = parseBackup(JSON.stringify({format:BACKUP_FORMAT,version:1,data:{localWhitelist:[{handle:'from_backup',source:'manual',addedAt:1}]}}));
+    assert.ok(parsed.ok);
+    await Promise.all([importBackup(parsed.file,'merge'),addLocalWhitelist({handle:'from_page',source:'manual'})]);
+    assert.deepEqual(new Set((await listLocalWhitelist()).map(e=>e.handle)),new Set(['from_backup','from_page']));
+  } finally { env.restore(); }
+});
+
+test("two isolated page contexts preserve concurrent whitelist additions", async () => {
+  const env = installChrome();
+  try {
+    const tab2 = await import(new URL('../lib/local-whitelist.ts?context=second', import.meta.url).href);
+    await Promise.all([
+      addLocalWhitelist({handle:'first_tab',source:'manual'}),
+      tab2.addLocalWhitelist({handle:'second_tab',source:'manual'}),
+    ]);
+    assert.deepEqual(new Set((await listLocalWhitelist()).map(e=>e.handle)),new Set(['first_tab','second_tab']));
+  } finally { env.restore(); }
 });
 
 test("manual add protects both identity forms, remove clears it", async () => {
@@ -123,10 +149,10 @@ test("noteFollowing adds followed authors only when enabled, never the viewer", 
   const env = installChrome();
   try {
     await warmLocalWhitelist();
-    noteFollowing(sig({ handle: "friend", userId: "7", viewerFollowing: true }), false);
-    noteFollowing(sig({ handle: "stranger", userId: "8" }), true);
-    noteFollowing(sig({ handle: "me", userId: "9", viewerFollowing: true, viewerIsSelf: true }), true);
-    noteFollowing(sig({ handle: "friend", userId: "7", viewerFollowing: true }), true);
+    await noteFollowing(sig({ handle: "friend", userId: "7", viewerFollowing: true }), false);
+    await noteFollowing(sig({ handle: "stranger", userId: "8" }), true);
+    await noteFollowing(sig({ handle: "me", userId: "9", viewerFollowing: true, viewerIsSelf: true }), true);
+    await noteFollowing(sig({ handle: "friend", userId: "7", viewerFollowing: true }), true);
     // adds are serialized async writes — let them settle
     await new Promise((r) => setTimeout(r, 0));
     await listLocalWhitelist();
@@ -151,7 +177,7 @@ test("removing an entry excludes it from automatic re-adding until a manual add"
       viewerFollowing: true,
       avatarUrl: "https://pbs.twimg.com/profile_images/1/a_normal.jpg",
     });
-    noteFollowing(followed, true);
+    await noteFollowing(followed, true);
     await listLocalWhitelist();
     assert.equal(isLocallyWhitelisted("55"), true);
     assert.equal((await listLocalWhitelist())[0]?.avatarUrl, "https://pbs.twimg.com/profile_images/1/a_normal.jpg");
@@ -162,7 +188,7 @@ test("removing an entry excludes it from automatic re-adding until a manual add"
     assert.equal(isExcludedFromAuto("EXFRIEND"), true);
 
     // Seen again while still followed → stays out.
-    noteFollowing(followed, true);
+    await noteFollowing(followed, true);
     await listLocalWhitelist();
     assert.equal(isLocallyWhitelisted("55", "ExFriend"), false);
     assert.equal(await addLocalWhitelist({ handle: "ExFriend", source: "following" }), false);
@@ -176,7 +202,7 @@ test("removing an entry excludes it from automatic re-adding until a manual add"
     await removeLocalWhitelist("ExFriend");
     await clearExcluded();
     assert.deepEqual(await listExcluded(), []);
-    noteFollowing(followed, true);
+    await noteFollowing(followed, true);
     await listLocalWhitelist();
     assert.equal(isLocallyWhitelisted("55"), true, "auto-add works again");
 
