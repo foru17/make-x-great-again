@@ -289,6 +289,19 @@
         ".review-2026-09-07/worker-entry-green.log",
         ".review-2026-09-07/http-final.json"
       ]
+    },
+    {
+      "id": "global-budget-surface",
+      "severity": "high",
+      "status": "fixed",
+      "finding": "Reports, block confirmations and scheduled category backfill bypassed the classify-only global admission budget. A local cap of 1 still allowed four mock provider calls.",
+      "fix": "Share atomic identity/global reservations across every Worker model path and give backfill calls a finite deadline; count conservative logical attempts (up to two provider attempts each).",
+      "verify": "Real SQLite public-route/cron regression changed from report/confirm 200/200 and 4 calls to 429/429 and 1 call; all 144 Edge tests/typecheck pass.",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/global-budget-surface-red.log",
+        ".review-2026-09-07/global-budget-surface-green.log"
+      ]
     }
   ],
   "manual_items": []

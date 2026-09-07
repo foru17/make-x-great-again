@@ -168,9 +168,10 @@ const CLASSIFY_MAX_PER_WINDOW = 60;
 // cache/TTL reuse first), so a generous per-identity cap is invisible to real
 // browsing while bounding forged-payload floods.
 const RULE_WRITE_MAX_PER_WINDOW = 30;
-// Global (cross-identity) LLM calls per hour — the hard spend ceiling behind
-// the per-identity classify cap (which an anonymous caller can reset by
-// rotating IPs). Override with the LLM_GLOBAL_MAX_PER_WINDOW env var.
+// Global admission budget shared by classify/report/confirm and backfill.
+// Each reservation allows one logical operation with at most two provider
+// attempts; this is not a token/dollar or accepted-delivery counter.
+// Override with the LLM_GLOBAL_MAX_PER_WINDOW env var.
 const LLM_GLOBAL_MAX_PER_WINDOW = 2000;
 const APPEAL_MAX_PER_WINDOW = 5;
 const BLOOM_SIZE = 65_536; // 8 KB bit array
@@ -850,6 +851,48 @@ async function throttleFingerprint(env: Bindings, scope: string, id: string): Pr
 
 async function throttleOk(env: Bindings, fp: string, now: number, max: number): Promise<boolean> {
   return (await rateLogCount(env, [fp, fp], now - REPORT_WINDOW_MS)) < max;
+}
+
+// Shared admission budget for interactive classifications, reports and cron
+// batches. Reservations are conservative attempts, not provider billing totals;
+// a logical operation may make up to two bounded parsing attempts.
+async function reserveModelQuota(env: Bindings, rateFp: string, now: number): Promise<
+  "report_salt_required" | "quota_config_invalid" | "rate_limited" | "quota_unavailable" | null
+> {
+  const globalFp = await throttleFingerprint(env, "classify-global", "all");
+  const globalMax = env.LLM_GLOBAL_MAX_PER_WINDOW
+    ? Number(env.LLM_GLOBAL_MAX_PER_WINDOW)
+    : LLM_GLOBAL_MAX_PER_WINDOW;
+  if (!globalFp) return "report_salt_required";
+  if (!Number.isSafeInteger(globalMax) || globalMax < 1) {
+    return "quota_config_invalid";
+  }
+  try {
+    // One SQLite statement checks BOTH limits and reserves BOTH counters.
+    // Separate COUNTs followed by INSERTs allow concurrent callers to spend
+    // the same remaining slot; failed accounting must never permit a call.
+    const reservation = await env.DB.prepare(
+      `WITH quota AS MATERIALIZED (
+         SELECT (SELECT count(*) FROM rate_log WHERE fp=? AND created_at>=?) < ?
+            AND (SELECT count(*) FROM rate_log WHERE fp=? AND created_at>=?) < ? AS allowed
+       ), fingerprints(fp) AS (SELECT ? UNION ALL SELECT ?)
+       INSERT INTO rate_log (fp, created_at)
+       SELECT fingerprints.fp, ? FROM fingerprints, quota WHERE quota.allowed`,
+    ).bind(rateFp, now - REPORT_WINDOW_MS, CLASSIFY_MAX_PER_WINDOW,
+      globalFp, now - REPORT_WINDOW_MS, globalMax, rateFp, globalFp, now).run();
+    if (!(reservation.meta?.changes > 0)) {
+      logWarn("classify.quota_exhausted", { identityMax: CLASSIFY_MAX_PER_WINDOW, globalMax });
+      return "rate_limited";
+    }
+  } catch (err) {
+    logError("classify.quota_unavailable", err);
+    return "quota_unavailable";
+  }
+  await env.DB.prepare(
+    "DELETE FROM rate_log WHERE rowid IN (SELECT rowid FROM rate_log WHERE created_at<? LIMIT 1000)",
+  ).bind(now - REPORT_WINDOW_MS * 2).run()
+    .catch((err) => logError("classify.quota_prune_failed", err));
+  return null;
 }
 
 interface AccountSignalSnapshot {
@@ -1922,45 +1965,8 @@ app.post("/v1/classify", async (c) => {
   if (!rateFp) {
     return c.json({ error: "report_salt_required", detail: "REPORT_SALT not configured" }, 503);
   }
-  // Global (cross-identity) circuit breaker on top of the per-identity cap:
-  // the per-identity key is the connecting IP for anonymous legacy clients,
-  // so an IP-rotating attacker gets a fresh 60-call window per address and
-  // total LLM spend is otherwise unbounded. Sized far above organic
-  // fresh-classify volume (post-TTL that's a fraction of this) — it only
-  // trips under attack, and turns "unbounded bill" into "bounded hour".
-  const globalFp = await throttleFingerprint(c.env, "classify-global", "all");
-  const globalMax = c.env.LLM_GLOBAL_MAX_PER_WINDOW
-    ? Number(c.env.LLM_GLOBAL_MAX_PER_WINDOW)
-    : LLM_GLOBAL_MAX_PER_WINDOW;
-  if (!globalFp) return c.json({ error: "report_salt_required" }, 503);
-  if (!Number.isSafeInteger(globalMax) || globalMax < 1) {
-    return c.json({ error: "quota_config_invalid" }, 503);
-  }
-  try {
-    // One SQLite statement checks BOTH limits and reserves BOTH counters.
-    // Separate COUNTs followed by INSERTs allow concurrent callers to spend
-    // the same remaining slot; failed accounting must never permit a call.
-    const reservation = await c.env.DB.prepare(
-      `WITH quota AS MATERIALIZED (
-         SELECT (SELECT count(*) FROM rate_log WHERE fp=? AND created_at>=?) < ?
-            AND (SELECT count(*) FROM rate_log WHERE fp=? AND created_at>=?) < ? AS allowed
-       ), fingerprints(fp) AS (SELECT ? UNION ALL SELECT ?)
-       INSERT INTO rate_log (fp, created_at)
-       SELECT fingerprints.fp, ? FROM fingerprints, quota WHERE quota.allowed`,
-    ).bind(rateFp, now - REPORT_WINDOW_MS, CLASSIFY_MAX_PER_WINDOW,
-      globalFp, now - REPORT_WINDOW_MS, globalMax, rateFp, globalFp, now).run();
-    if (!(reservation.meta?.changes > 0)) {
-      logWarn("classify.quota_exhausted", { identityMax: CLASSIFY_MAX_PER_WINDOW, globalMax });
-      return c.json({ error: "rate_limited", retryAfterMs: REPORT_WINDOW_MS }, 429);
-    }
-  } catch (err) {
-    logError("classify.quota_unavailable", err);
-    return c.json({ error: "quota_unavailable" }, 503);
-  }
-  await c.env.DB.prepare(
-    "DELETE FROM rate_log WHERE rowid IN (SELECT rowid FROM rate_log WHERE created_at<? LIMIT 1000)",
-  ).bind(now - REPORT_WINDOW_MS * 2).run()
-    .catch((err) => logError("classify.quota_prune_failed", err));
+  const quotaError = await reserveModelQuota(c.env, rateFp, now);
+  if (quotaError) return c.json({ error: quotaError, retryAfterMs: REPORT_WINDOW_MS }, quotaError === "rate_limited" ? 429 : 503);
   await recordContribActive(
     c.env,
     who.id === "anon" ? "classify_anon" : "classify",
@@ -2196,6 +2202,11 @@ async function submitReport(c: Ctx, source: string) {
     vLabel = prev.verdict_label;
     vConf = prev.confidence;
   } else {
+    const rateId = who.id === "anon" ? `ip:${c.req.header("cf-connecting-ip") ?? "unknown"}` : who.id;
+    const rateFp = await throttleFingerprint(c.env, "classify", rateId);
+    if (!rateFp) return c.json({ error: "report_salt_required" }, 503);
+    const quotaError = await reserveModelQuota(c.env, rateFp, now);
+    if (quotaError) return c.json({ error: quotaError, retryAfterMs: REPORT_WINDOW_MS }, quotaError === "rate_limited" ? 429 : 503);
     const cl = await classify(c.env, s);
     vLabel = cl.label;
     vConf = cl.confidence;
@@ -6253,6 +6264,12 @@ async function backfillCategories(env: Bindings): Promise<void> {
   if (!pending.length) return;
 
   for (let off = 0; off < pending.length; off += BACKFILL_ROWS_PER_CALL) {
+    const rateFp = await throttleFingerprint(env, "classify", "category-backfill");
+    const quotaError = rateFp ? await reserveModelQuota(env, rateFp, Date.now()) : "report_salt_required";
+    if (quotaError) {
+      logWarn("category_backfill.quota_denied", { reason: quotaError });
+      return;
+    }
     const batch = pending.slice(off, off + BACKFILL_ROWS_PER_CALL);
     const lines = batch.map((r, idx) => {
       const reasons = safeReasons(r.reasons).join("; ").slice(0, 160);
@@ -6270,6 +6287,7 @@ async function backfillCategories(env: Bindings): Promise<void> {
       try {
         const res = await fetch(`${env.LLM_API_BASE}/chat/completions`, {
           method: "POST",
+          signal: AbortSignal.timeout(45_000),
           headers: {
             authorization: `Bearer ${env.LLM_API_KEY}`,
             "content-type": "application/json",
