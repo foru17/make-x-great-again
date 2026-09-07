@@ -148,11 +148,15 @@ export async function exportBackup(opts: ExportOptions = {}): Promise<BackupFile
   }
   if (includeCache) {
     const cache: Record<string, Cached> = {};
+    let count = 0;
     for (const [k, v] of Object.entries(got)) {
       if (!k.startsWith(CACHE_PREFIX)) continue;
       const c = sanitizeCached(v);
-      if (c) cache[k.slice(CACHE_PREFIX.length)] = c;
-      if (Object.keys(cache).length >= MAX_CACHE) break;
+      if (c) {
+        cache[k.slice(CACHE_PREFIX.length)] = c;
+        count += 1;
+      }
+      if (count >= MAX_CACHE) break;
     }
     data.cache = cache;
   }
@@ -369,11 +373,15 @@ export function parseBackup(
   if (d.stats !== undefined) data.stats = sanitizeStats(d.stats);
   if (d.cache && typeof d.cache === "object") {
     const cache: Record<string, Cached> = {};
+    let count = 0;
     for (const [k, v] of Object.entries(d.cache as Record<string, unknown>)) {
       if (!HIDDEN_ID_RE.test(k)) continue;
       const c = sanitizeCached(v);
-      if (c) cache[k] = c;
-      if (Object.keys(cache).length >= MAX_CACHE) break;
+      if (c) {
+        cache[k] = c;
+        count += 1;
+      }
+      if (count >= MAX_CACHE) break;
     }
     data.cache = cache;
   }
@@ -414,6 +422,7 @@ export async function importBackup(
   const want = (s: BackupSection) => sections[s] !== false;
   const d = file.data;
   const writes: Record<string, unknown> = {};
+  const removals: string[] = [];
   const applied: BackupSummary = {
     settings: false,
     localWhitelist: 0,
@@ -533,18 +542,23 @@ export async function importBackup(
 
   if (d.cache && want("cache")) {
     const existingKeys = new Set(
-      mode === "merge" ? Object.keys(await storageGet(null)).filter((k) => k.startsWith(CACHE_PREFIX)) : [],
+      Object.keys(await storageGet(null)).filter((k) => k.startsWith(CACHE_PREFIX)),
     );
     let n = 0;
     for (const [id, c] of Object.entries(d.cache)) {
       const k = CACHE_PREFIX + id;
-      if (existingKeys.has(k)) continue;
+      if (mode === "merge" && existingKeys.has(k)) continue;
       writes[k] = c;
       n += 1;
     }
     applied.cache = n;
+    if (mode === "replace") {
+      for (const k of existingKeys) if (!(k in writes)) removals.push(k);
+    }
   }
 
   await storageSet(writes);
+  // Persist replacements first: a failed write must not destroy the old cache.
+  if (removals.length) await chrome.storage.local.remove(removals);
   return applied;
 }

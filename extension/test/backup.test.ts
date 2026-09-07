@@ -84,6 +84,22 @@ test("export carries the user's own data and nothing secret", async () => {
   }
 });
 
+test("cache replacement removes absent entries, while skipped cache stays untouched", async () => {
+  const env = installChrome(SEED);
+  try {
+    const parsed = parseBackup(JSON.stringify({ format: BACKUP_FORMAT, version: 1, data: { cache: {} } }));
+    assert.ok(parsed.ok);
+    await importBackup(parsed.file, "replace", { cache: false });
+    assert.ok(env.bag["xss:v1:1001"]);
+    await importBackup(parsed.file, "replace");
+    assert.equal(env.bag["xss:v1:1001"], undefined, "replace must remove stale verdicts absent from the backup");
+    assert.equal(env.bag["xss:ghToken"], "SECRET-TOKEN");
+    assert.deepEqual(env.bag["xss:list:v2"], SEED["xss:list:v2"]);
+  } finally {
+    env.restore();
+  }
+});
+
 test("malformed whitelist values never throw while parsing a backup", () => {
   for (const handle of [42, {}, [], true, null]) {
     const parsed = parseBackup(JSON.stringify({

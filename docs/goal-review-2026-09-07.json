@@ -82,6 +82,19 @@
         ".review-2026-09-07/backup-validation-red.log",
         ".review-2026-09-07/backup-validation-green.log"
       ]
+    },
+    {
+      "id": "backup-cache",
+      "severity": "medium",
+      "status": "fixed",
+      "finding": "Replace mode kept old cache entries absent from the backup; cache export/parse repeatedly enumerated all accumulated keys.",
+      "fix": "Remove only obsolete cache keys after replacement writes succeed; track validated entry counts in linear time.",
+      "verify": "6 backup tests and extension compile passed",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/backup-cache-red.log",
+        ".review-2026-09-07/backup-cache-green.log"
+      ]
     }
   ],
   "manual_items": []
