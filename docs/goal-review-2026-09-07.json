@@ -261,6 +261,20 @@
         ".review-2026-09-07/dependencies-edge-verify.log",
         ".review-2026-09-07/audit-edge-final.json"
       ]
+    },
+    {
+      "id": "options-contrast",
+      "severity": "low",
+      "status": "fixed",
+      "finding": "Dark options secondary copy measured only 4.10:1 contrast; faint labels also used unnecessarily low-contrast tokens.",
+      "fix": "Raise muted text contrast while preserving the existing layout and theme.",
+      "verify": "Real Chrome secondary text contrast: light 4.83:1, dark 5.79:1; four viewport/theme screenshots, no overflow, import assertions passed.",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/contrast-red.log",
+        ".review-2026-09-07/contrast-green.log",
+        ".ui-acceptance/2026-09-07-review/backup-after-dark-390.png"
+      ]
     }
   ],
   "manual_items": []
