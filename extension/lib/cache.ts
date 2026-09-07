@@ -2,7 +2,7 @@
 // Verdict is account-level, not comment-level: once we've judged an account
 // we must not re-spend an LLM call when it reappears in another tweet /
 // reply / session. This is the dominant cost saver.
-import type { Verdict } from "./types";
+import type { Signals, Verdict } from "./types";
 
 const PREFIX = "xss:v1:";
 const DAY = 86_400_000;
@@ -30,15 +30,7 @@ export interface Cached {
 }
 
 /** Tiny stable hash of the signals that actually drive the verdict. */
-export function signalsHash(parts: {
-  handle: string;
-  displayName: string;
-  bio: string;
-  recentTweets: string[];
-  triggeringComment?: string;
-  hasDefaultAvatar: boolean;
-  accountAgeDays?: number;
-}): string {
+export function signalsHash(parts: Pick<Signals, "handle" | "displayName" | "bio" | "recentTweets" | "hasDefaultAvatar"> & Partial<Signals>): string {
   // triggeringComment is hashed on its own: the article path no longer
   // mirrors it into recentTweets, and a new tweet must still count as new
   // evidence for a cached legit/uncertain verdict.
@@ -50,6 +42,21 @@ export function signalsHash(parts: {
     parts.triggeringComment ?? "",
     parts.hasDefaultAvatar,
     parts.accountAgeDays ?? null,
+    parts.followersCount ?? null,
+    parts.followingCount ?? null,
+    parts.threadTopic ?? "",
+    parts.tweetsTranslated ?? false,
+    parts.avatarSource ?? null,
+    parts.isVerified ?? false,
+    parts.statusesCount ?? null,
+    parts.mediaCount ?? null,
+    parts.favouritesCount ?? null,
+    parts.location ?? "",
+    parts.surface ?? null,
+    parts.isReply ?? null,
+    parts.replyToHandle ?? "",
+    parts.rootAuthorHandle ?? "",
+    parts.templateRepeats ?? 0,
   ]);
   let h = 5381;
   for (let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;

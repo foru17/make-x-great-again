@@ -506,21 +506,9 @@ function hash(s: string): string {
   for (let i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
   return h.toString(36);
 }
-const sigHash = (s: Signals) =>
-  hash(
-    JSON.stringify([
-      s.handle,
-      s.displayName,
-      s.bio,
-      s.recentTweets,
-      // Hashed separately since 2026-09-06: clients no longer mirror the
-      // triggering text into recentTweets, and a new comment must still be
-      // new evidence.
-      s.triggeringComment ?? "",
-      s.hasDefaultAvatar ?? 0,
-      s.accountAgeDays ?? -1,
-    ]),
-  );
+// Hash exactly what the model sees, including newly added profile/context
+// facts. Status TTLs still cap reclassification when those inputs drift.
+const sigHash = (s: Signals) => hash(userPrompt(s));
 
 /** MurmurHash3-like 32-bit hash (deterministic, fast). */
 function murmur32(key: string, seed: number): number {

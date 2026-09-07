@@ -169,6 +169,20 @@
         ".review-2026-09-07/whitelist-actions-tests.log",
         ".ui-acceptance/2026-09-07-review/whitelist-actions.png"
       ]
+    },
+    {
+      "id": "classifier-cache-inputs",
+      "severity": "medium",
+      "status": "fixed",
+      "finding": "Client and Worker cache hashes ignored profile facts and rendering context; even expired server rows reused verdicts after those inputs changed.",
+      "fix": "Include all model-visible client signals and hash the actual Worker user prompt; preserve status TTL and request caps.",
+      "verify": "Both regression tests red then green; all 142 Edge tests and extension/Worker type checks passed",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/cache-hash-red.log",
+        ".review-2026-09-07/edge-cache-hash-red.log",
+        ".review-2026-09-07/cache-hash-green.log"
+      ]
     }
   ],
   "manual_items": []
