@@ -132,6 +132,13 @@ class MockStmt implements D1PreparedStatement {
   }
 
   async run(): Promise<{ results?: unknown[]; meta: { changes?: number; last_row_id?: number } }> {
+    if (this.sql.includes("WITH quota AS MATERIALIZED")) {
+      const [identity, since, perIdentity, global, globalSince, globalMax, , , now] = this.args as [string, number, number, string, number, number, string, string, number];
+      const count = (fp: string, start: number) => this.db.rateLog.filter(r=>r.fp === fp && r.created_at >= start).length;
+      if (count(identity, since) >= perIdentity || count(global, globalSince) >= globalMax) return { meta: { changes: 0 } };
+      this.db.rateLog.push({ fp: identity, created_at: now }, { fp: global, created_at: now });
+      return { meta: { changes: 2 } };
+    }
     if (this.sql.includes("INSERT INTO reports")) {
       const [_, uid, handle, fp, age, evidence, now, lookupHandle, a, b] = this.args as [
         string,

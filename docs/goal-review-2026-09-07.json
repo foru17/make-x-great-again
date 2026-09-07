@@ -196,6 +196,19 @@
         ".review-2026-09-07/template-identity-red.log",
         ".review-2026-09-07/template-identity-green.log"
       ]
+    },
+    {
+      "id": "classify-quota",
+      "severity": "high",
+      "status": "fixed",
+      "finding": "COUNT-then-INSERT permitted concurrent LLM requests past the quota; missing rate_log failed open and still called the provider.",
+      "fix": "Atomically reserve identity/global slots in one SQLite statement; return 503 for unavailable/invalid accounting; bounded cleanup.",
+      "verify": "Real SQLite route test: cap 1 with 3 concurrent requests returns 200/429/429, one mock model call; missing table returns 503 with no additional call; all 143 Edge tests/typecheck passed",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/classify-quota-red.log",
+        ".review-2026-09-07/classify-quota-green.log"
+      ]
     }
   ],
   "manual_items": []
