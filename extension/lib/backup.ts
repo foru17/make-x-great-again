@@ -159,8 +159,12 @@ export async function exportBackup(opts: ExportOptions = {}): Promise<BackupFile
   };
 }
 
+/** `mxga-YYYY-MM-DD-HHmm-export.json` in the user's LOCAL time (a colon is
+ *  not a legal file-name character on Windows, hence HHmm). */
 export function backupFileName(now = new Date()): string {
-  return `mxga-${now.toISOString().slice(0, 10)}.json`;
+  const p = (n: number) => String(n).padStart(2, "0");
+  const stamp = `${now.getFullYear()}-${p(now.getMonth() + 1)}-${p(now.getDate())}-${p(now.getHours())}${p(now.getMinutes())}`;
+  return `mxga-${stamp}-export.json`;
 }
 
 // ---- validation ---------------------------------------------------------------
