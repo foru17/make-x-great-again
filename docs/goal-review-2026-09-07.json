@@ -154,6 +154,21 @@
         ".review-2026-09-07/whitelist-identity-red.log",
         ".review-2026-09-07/whitelist-identity-green.log"
       ]
+    },
+    {
+      "id": "whitelist-actions",
+      "severity": "high",
+      "status": "fixed",
+      "finding": "A real extension page resumed a saved X block for an already-whitelisted account and kept its article hidden; pacing and queued actions did not recheck protection.",
+      "fix": "Whitelist wins before hidden IDs; resume/auto queues and native calls recheck protection at execution boundaries; live whitelist changes restore surfaces and cancel pending hides.",
+      "verify": "Real browser reproduction changed from one intercepted X block + invisible row to zero requests + visible row; 78 extension tests/compile/build passed",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/whitelist-actions-red.log",
+        ".review-2026-09-07/whitelist-actions-green.log",
+        ".review-2026-09-07/whitelist-actions-tests.log",
+        ".ui-acceptance/2026-09-07-review/whitelist-actions.png"
+      ]
     }
   ],
   "manual_items": []

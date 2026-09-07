@@ -178,18 +178,19 @@ function autoCategoryCount(s: Settings): number {
  *  hide/record is applied separately and always — the X call rides on top.
  *  Returns false only when the native X action definitively failed (used by
  *  the bubble's batch panel to surface a per-row 重试 state). */
-async function applyXAction(mode: ActionMode, sig: Signals): Promise<boolean> {
+async function applyXAction(mode: ActionMode, sig: Signals, shouldProceed: () => boolean = () => true): Promise<boolean> {
+  if (!shouldProceed()) return false;
   if (mode === "local") return true;
 
   // Load the mutation client only after the user explicitly chooses a native
   // X action and grants the optional host permission.
   const { performXAction, retryDelayForAttempt } = await import("../lib/x-action");
-  const attempt = await performXAction(mode, sig.userId, sig.handle);
+  const attempt = await performXAction(mode, sig.userId, sig.handle, shouldProceed);
   if (attempt.ok) return true;
   const delay = retryDelayForAttempt(attempt, 1);
   if (delay > 0) {
     await new Promise((r) => setTimeout(r, delay));
-    const second = await performXAction(mode, sig.userId, sig.handle); // one best-effort retry
+    const second = await performXAction(mode, sig.userId, sig.handle, shouldProceed); // one best-effort retry
     return second.ok;
   }
   return false;
@@ -357,6 +358,20 @@ export default defineContentScript({
     await refreshOnlineAuth();
 
     const keyOf = (s: Signals) => s.userId || `h:${s.handle}`;
+    const protectedAccount = (sig: Pick<Signals, "userId" | "handle">) =>
+      isLocallyWhitelisted(sig.userId, sig.handle) || isWhitelisted(sig.userId, sig.handle);
+
+    function restoreProtectedSurfaces() {
+      const active = new Set<string>();
+      for (const surface of document.querySelectorAll<HTMLElement>("[data-xss-hidden-key]")) {
+        const key = surface.getAttribute("data-xss-hidden-key");
+        if (!key) continue;
+        const article = surface.matches("article") ? surface : surface.querySelector<HTMLElement>("article");
+        const handle = key.startsWith("h:") ? key.slice(2) : (article ? handleFromArticle(article) : undefined);
+        if (!protectedAccount({ userId: key.startsWith("h:") ? undefined : key, handle: handle ?? "" })) active.add(key);
+      }
+      restoreAccountSurfaces(active);
+    }
 
     /** Schedule a hide action with a 5-second undo window. `mode` overrides
      *  settings.actionMode for this one action (popover 隐藏 → "local"). */
@@ -543,7 +558,7 @@ export default defineContentScript({
       if (autoActing.has(it.key)) return;
       // The user's own whitelist outranks every list/rule verdict: never
       // auto-act on an account they chose to protect (or follow).
-      if (isLocallyWhitelisted(it.sig.userId, it.sig.handle)) return;
+      if (protectedAccount(it.sig)) return;
       autoActing.add(it.key);
       // Record FIRST — the protection survives navigation even if the
       // animation never gets to play.
@@ -628,32 +643,35 @@ export default defineContentScript({
         try {
           // Whitelisted while queued (popover / options page during the
           // gather window): undo the up-front record and let the row stand.
-          if (isLocallyWhitelisted(it.sig.userId, it.sig.handle)) {
+          const allowed = () => settings.enabled && settings.autoProcess && !protectedAccount(it.sig);
+          const cancel = async () => {
             // Undo everything enqueueAuto recorded up-front: the 处理记录 row
             // AND the fast-path id (removeBlock does both), the stats bump,
             // the pending marker; then let the bubble row settle.
-            void removeBlock(it.key);
-            if (it.sig.userId) void removeBlock(it.sig.userId);
+            await removeBlock(it.key);
+            if (it.sig.userId && it.sig.userId !== it.key) await removeBlock(it.sig.userId);
             void bumpStats({ blocks: -1 });
             void clearPendingAction(it.key);
             bubbleApi?.markAuto(it.key, "failed", it.verb);
             const row = autoTarget(it);
             if (row) badgeFor(row, it.key, it.sig, null);
-            continue;
-          }
+          };
+          if (!allowed()) { await cancel(); continue; }
           const t0 = Date.now();
           const acting = autoTarget(it);
           if (acting) mountActing(acting, it.verb, false);
           bubbleApi?.markAuto(it.key, "processing", it.verb);
           const xOk =
             it.action === "mute" || it.action === "block"
-              ? await applyXAction(it.action, it.sig)
+              ? await applyXAction(it.action, it.sig, allowed)
               : true;
+          if (!allowed()) { await cancel(); continue; }
           if (!xOk)
             console.warn(`[MXGA] 自动${it.verb}：X 原生动作失败`, it.sig.handle, it.sig.userId);
           // Even the instant local-hide mode dwells long enough to be SEEN.
           const dwell = AUTO_MIN_ACT_MS - (Date.now() - t0);
           if (dwell > 0) await sleep(dwell);
+          if (!allowed()) { await cancel(); continue; }
           // Hide the real tweet INSTANTLY — the processing theater (fade /
           // shrink / fly-into-chip) belongs to the corner bubble; animating
           // the page's own DOM competes with X's scroll/virtualizer and reads
@@ -707,7 +725,9 @@ export default defineContentScript({
           handle: p.handle,
           ...(/^\d+$/.test(p.id) ? { userId: p.id } : {}),
         } as Signals;
-        const ok = await applyXAction(p.action, sig).catch(() => false);
+        const allowed = () => settings.enabled && settings.actionMode !== "local" && !protectedAccount(sig);
+        if (!allowed()) { await clearPendingAction(p.id); continue; }
+        const ok = await applyXAction(p.action, sig, allowed).catch(() => false);
         if (!ok) {
           void updateBlockRecord(p.id, {
             reason: `自动${p.action === "block" ? "拉黑" : "静音"}（X 动作失败，仅本地隐藏）`,
@@ -973,6 +993,13 @@ export default defineContentScript({
       if (inFlight.has(key)) return; // a concurrent scan is already on it
       inFlight.add(key);
       try {
+        // User protection outranks even previously hidden IDs and pending work.
+        await noteFollowing(sig, settings.followingWhitelist);
+        if (protectedAccount(sig)) {
+          cancelPending(key);
+          badgeFor(anchor, key, sig, null);
+          return;
+        }
         // 0. Already blocked → hide, never render again. Exception: the cell
         //    the visible auto queue is working on (it was recorded up-front)
         //    — its animation owns the hide; OTHER cells by the same account
@@ -1001,17 +1028,6 @@ export default defineContentScript({
 
         // 1. Check pending undo queue — skip if already scheduled.
         if (pendingActions.has(key)) return;
-
-        // 1.5 LOCAL whitelist — the user's own list, highest priority of all:
-        //     no list/rule/cache/online check, no badge beyond the neutral
-        //     manual handle, and (via enqueueAuto's guard) never auto-acted.
-        //     A followed account seen with the viewer-follows relationship
-        //     joins the list here (settings.followingWhitelist).
-        await noteFollowing(sig, settings.followingWhitelist);
-        if (isLocallyWhitelisted(sig.userId, sig.handle)) {
-          badgeFor(anchor, key, sig, null);
-          return;
-        }
 
         // 2. Whitelist wins over EVERYTHING below — lookupLocal excludes
         //    whitelisted accounts itself, but a v0.4-era cached spam verdict
@@ -1461,6 +1477,10 @@ export default defineContentScript({
           shouldScan = restoreAccountSurfaces(next) > 0;
         }
         if (changes[LIST_KEY] || changes[WL_KEY] || changes[LOCAL_WL_KEY]) {
+          restoreProtectedSurfaces();
+          for (const [key, pending] of pendingActions) if (protectedAccount(pending.sig)) cancelPending(key);
+          findings = findings.filter((finding) => !protectedAccount(finding));
+          bubbleApi?.update(findings);
           for (const host of document.querySelectorAll<HTMLElement>(".xss-mount")) {
             // Badges live in the host's shadow root; keep pending-undo flows.
             if (host.shadowRoot?.querySelector(".xss-badge.pending")) continue;
