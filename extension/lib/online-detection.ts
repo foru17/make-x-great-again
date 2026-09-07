@@ -103,6 +103,10 @@ export function effectiveVerdict(verdict: Verdict, reviewStatus?: string): Verdi
  * cached edge row, no LLM) so a moderation withdrawal reaches the client
  * without waiting for the local TTL. */
 export const CACHE_REVALIDATE_AFTER_MS = 24 * 3_600_000;
+/** Per-page cap for those re-checks — separate from the fresh-detection
+ * budget so a reply section full of day-old cached bots cannot starve the
+ * genuinely new accounts further down. */
+export const MAX_CACHE_REVALIDATIONS_PER_PAGE = 10;
 
 interface ClassificationBody {
   cached?: boolean;

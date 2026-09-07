@@ -23,6 +23,9 @@ const TTL_MS = 14 * 86_400_000;
 interface Sighting {
   h: string; // text hash
   ts: number;
+  /** Status id of the post, when known — the same post seen twice (another
+   *  surface, a re-scan after a cache miss) must not count as a repeat. */
+  id?: string;
 }
 type Store = Record<string, Sighting[]>; // handle (lower) → sightings, newest last
 
@@ -61,7 +64,11 @@ function serialized<T>(fn: () => Promise<T>): Promise<T> {
 /** Record this sighting and return how many EARLIER sightings of the same
  *  text by the same author this browser remembers (0 = first time). Texts
  *  too short to be a template are not tracked. */
-export function noteTemplate(sig: Signals, now = Date.now()): Promise<number> {
+export function noteTemplate(
+  sig: Signals,
+  now = Date.now(),
+  tweetId: string | null = null,
+): Promise<number> {
   const text = (sig.triggeringComment ?? "").trim();
   if (text.length < 6) return Promise.resolve(0);
   return serialized(async () => {
@@ -69,8 +76,16 @@ export function noteTemplate(sig: Signals, now = Date.now()): Promise<number> {
     const key = sig.handle.toLowerCase();
     const h = hashText(text);
     const fresh = (store[key] ?? []).filter((s) => now - s.ts < TTL_MS);
+    // Same post already recorded → report the count of OTHER sightings of
+    // this text and do not add a duplicate.
+    if (tweetId && fresh.some((s) => s.id === tweetId)) {
+      const others = fresh.filter((s) => s.h === h && s.id !== tweetId).length;
+      store[key] = fresh;
+      await writeStore(store);
+      return others;
+    }
     const repeats = fresh.filter((s) => s.h === h).length;
-    fresh.push({ h, ts: now });
+    fresh.push({ h, ts: now, ...(tweetId ? { id: tweetId } : {}) });
     store[key] = fresh.slice(-PER_HANDLE);
     // Global bound: evict the authors seen longest ago.
     const keys = Object.keys(store);

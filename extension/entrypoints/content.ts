@@ -30,7 +30,7 @@ import {
 } from "../lib/local-whitelist";
 import {
   CACHE_REVALIDATE_AFTER_MS,
-  MAX_AUTO_CLASSIFICATIONS_PER_PAGE,
+  MAX_CACHE_REVALIDATIONS_PER_PAGE,
   OnlineClassificationLimiter,
   classifyAndCache,
   onlineVerdictVisibility,
@@ -53,6 +53,7 @@ import {
   bumpStats,
   clearPendingAction,
   getPendingActions,
+  removeBlock,
   updateBlockRecord,
 } from "../lib/store";
 import type { Signals, Verdict } from "../lib/types";
@@ -281,6 +282,7 @@ export default defineContentScript({
     const hitPublicSeen = new Set<string>(); // hitPublic stat: once per account
     const onlineClassificationLimiter = new OnlineClassificationLimiter();
     let autoClassificationsStarted = 0;
+    let revalidationsStarted = 0;
     let onlineAuthenticated = false;
 
     let settings = await getSettings();
@@ -603,9 +605,14 @@ export default defineContentScript({
           // Whitelisted while queued (popover / options page during the
           // gather window): undo the up-front record and let the row stand.
           if (isLocallyWhitelisted(it.sig.userId, it.sig.handle)) {
-            void removeBlocked(it.key);
-            if (it.sig.userId) void removeBlocked(it.sig.userId);
+            // Undo everything enqueueAuto recorded up-front: the 处理记录 row
+            // AND the fast-path id (removeBlock does both), the stats bump,
+            // the pending marker; then let the bubble row settle.
+            void removeBlock(it.key);
+            if (it.sig.userId) void removeBlock(it.sig.userId);
+            void bumpStats({ blocks: -1 });
             void clearPendingAction(it.key);
+            bubbleApi?.markAuto(it.key, "failed", it.verb);
             const row = autoTarget(it);
             if (row) badgeFor(row, it.key, it.sig, null);
             continue;
@@ -765,8 +772,9 @@ export default defineContentScript({
                   ...(sig.displayName ? { displayName: sig.displayName } : {}),
                   source: "manual",
                 });
+                // removeBlock clears the 处理记录 row and the fast-path id.
                 for (const id of [key, sig.userId, `h:${sig.handle}`]) {
-                  if (id) void removeBlocked(id);
+                  if (id) void removeBlock(id);
                 }
               }
               // Re-render this row now; the storage event re-evaluates the rest.
@@ -796,12 +804,14 @@ export default defineContentScript({
       // upheld, report rejected, whitelisted) the edge answers legit from its
       // own row — no LLM call — and the stale local entry is overwritten.
       // Bounded by the same per-page cap as fresh detection.
+      // Own small quota: re-checks must not starve first-seen accounts of
+      // the page's fresh-detection budget.
       if (
         onlineAuthenticated &&
         Date.now() - c.ts > CACHE_REVALIDATE_AFTER_MS &&
-        autoClassificationsStarted < MAX_AUTO_CLASSIFICATIONS_PER_PAGE
+        revalidationsStarted < MAX_CACHE_REVALIDATIONS_PER_PAGE
       ) {
-        autoClassificationsStarted += 1;
+        revalidationsStarted += 1;
         const result = await onlineClassificationLimiter.run(() => classifyAndCache(key, sig));
         if (result.status === "classified") {
           if (onlineVerdictVisibility(result.verdict) === "silent") {
@@ -1090,7 +1100,12 @@ export default defineContentScript({
           // Cross-thread repetition is the strongest bot corroboration the
           // prompt asks for and the one thing a single page can't show —
           // the local template memory supplies it as a bare count.
-          sig.templateRepeats = await noteTemplate(sig);
+          const hitArt = articleOf(anchor);
+          sig.templateRepeats = await noteTemplate(
+            sig,
+            Date.now(),
+            hitArt ? articleStatusId(hitArt) : null,
+          );
           await renderOnlineDetection(anchor, key, sig);
           return;
         }
@@ -1342,6 +1357,7 @@ export default defineContentScript({
       anchorByKey.clear();
       findings = [];
       autoClassificationsStarted = 0;
+      revalidationsStarted = 0;
       // Collapse the card and archive this page's processed rows — the
       // bubble follows the user across SPA navigations, so a stale open
       // panel over a new page reads as broken; the session's records stay

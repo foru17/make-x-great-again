@@ -334,11 +334,13 @@ const Signals = z.object({
     .string()
     .trim()
     .regex(/^@?[A-Za-z0-9_]{1,15}$/)
+    .transform((s) => s.replace(/^@/, ""))
     .optional(),
   rootAuthorHandle: z
     .string()
     .trim()
     .regex(/^@?[A-Za-z0-9_]{1,15}$/)
+    .transform((s) => s.replace(/^@/, ""))
     .optional(),
   // Earlier sightings of this exact comment text by this author in the
   // reporting browser (client-side template memory; only the count is sent).
@@ -477,9 +479,11 @@ const SYSTEM = `You classify X (Twitter) accounts ONLY for spam / porn-advertisi
   cross-thread template repetition. When the context fields are absent, do
   not assume the post was a reply.
 - templateRepeats (when present) = how many EARLIER times the reporting
-  client saw this exact comment text from this author elsewhere. >= 2 is
-  hard evidence of template posting and corroborates a bait pattern; 0 means
-  "first sighting", which is neutral — it is NOT evidence against spam.
+  client saw this exact comment text from this author in OTHER posts. It is
+  client-reported and unverified: treat >= 2 as corroboration that
+  strengthens an already suspicious bait pattern, never as sufficient
+  evidence on its own for benign text; 0 means "first sighting", which is
+  neutral — it is NOT evidence against spam.
 - HIGH-REACH CAUTION: for accounts with followers >= 100000, a false
   accusation is maximally harmful and true spam at that reach is rare — such
   accounts are usually real celebrities, brands, media, or creators. Require
@@ -2368,12 +2372,15 @@ app.post("/v1/rule-hits", async (c) => {
     // otherwise the field is an arbitrary-text channel into the admin UI.
     const sample =
       h.matchedText && keywordHit(h.pattern, h.matchedText) ? h.matchedText : null;
+    // The field is the RULE's field unless the rule matches any field — a
+    // client cannot claim a bio rule fired in a tweet.
+    const field = rule.field === "any" ? (h.field ?? null) : rule.field;
     rows.push({
       pattern: h.pattern,
       handle,
       uid: h.xUserId ?? null,
       category: categoryForRule(rule),
-      field: h.field ?? null,
+      field,
       sample,
     });
   }

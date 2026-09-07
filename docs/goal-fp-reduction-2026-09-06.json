@@ -148,7 +148,8 @@
       "passes": true,
       "evidence": [
         "scripts/ui-acceptance/inpage/（Playwright + 真实构建 + 仿真 X 页）三主题×两视口 38 张截图，.ui-acceptance/2026-09-06-inpage/VERDICT.md PASS",
-        "修复 3 项：X 主题跟随（data-xss-theme 覆盖 prefers-color-scheme）、桌面 pill 下移避开右栏搜索框、气泡行「误判」不拆行；extension 61/61，wxt build 通过"
+        "修复 3 项：X 主题跟随（data-xss-theme 覆盖 prefers-color-scheme）、桌面 pill 下移避开右栏搜索框、气泡行「误判」不拆行；extension 61/61，wxt build 通过",
+        "补跑 options 页与 admin console 截图验收：.ui-acceptance/2026-09-06-options/（6 张 + 行为断言 加入/移出/开关）、.ui-acceptance/2026-09-06-admin-rule-evidence/（4 张 + 提审 POST 断言），VERDICT 均 PASS"
       ]
     },
     {
@@ -159,7 +160,8 @@
       "evidence": [
         "从 feat/rules-visibility-telemetry 部署（lineage 探针 /v1/rule-hits=400 确认），版本 943b8b34-deea-4010-ac8e-3bec8e47b82c，2026-09-06",
         "D1 迁移 2026-09-06-rule-hit-evidence.sql 已应用（rows_written=2），PRAGMA 确认 field/sample_text 列存在",
-        "冒烟：/v1/list/meta 200；/v1/rule-hits 未知规则→{stored:0,dropped:1}；/v1/admin/stats 含 auto_unsure(=3，部署后即有写入)；/v1/admin/rule-hits/accounts 行含 field/sample_text；待审 82,149（较 09-04 的 43,902 继续膨胀，分流后应止涨）"
+        "冒烟：/v1/list/meta 200；/v1/rule-hits 未知规则→{stored:0,dropped:1}；/v1/admin/stats 含 auto_unsure(=3，部署后即有写入)；/v1/admin/rule-hits/accounts 行含 field/sample_text；待审 82,149（较 09-04 的 43,902 继续膨胀，分流后应止涨）",
+        "2026-09-07 二次部署 b14daec2（reviewer 修正：field 与规则交叉校验、templateRepeats 措辞降级、replyTo/rootAuthor 去 @）；冒烟 rule-hits 400 / list meta 200"
       ]
     },
     {

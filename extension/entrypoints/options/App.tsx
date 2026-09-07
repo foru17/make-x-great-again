@@ -1929,7 +1929,7 @@ function Settings() {
               <div className="mb-1.5 text-[12px] font-semibold text-fg">自动收录条目</div>
               <p className="mb-2 text-[12px] leading-relaxed text-fg-3">
                 命中分两级：<b className="text-fg-2">人工确认</b>（维护者复核过的公榜条目，始终按下方各类别的动作完整执行）和
-                <b className="text-fg-2">自动收录</b>（AI/规则自动上榜的公榜条目 + 本地官方规则命中，占大多数）。这里决定自动收录一级能自动处理到什么程度。
+                <b className="text-fg-2">自动收录</b>（AI/规则自动上榜的公榜条目 + 本地官方规则命中，占大多数）。这里决定自动上榜条目能自动处理到什么程度；本地规则命中无论选哪档都封顶为本地隐藏。
               </p>
               <div className="grid grid-cols-1 gap-2">
                 {(

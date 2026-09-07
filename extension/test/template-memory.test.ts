@@ -51,6 +51,20 @@ test("counts earlier sightings of the same text by the same author; stores only 
   }
 });
 
+test("the same post seen again is not a repeat; a different post with the same text is", async () => {
+  const env = installChrome();
+  try {
+    const t0 = 1_800_000_000_000;
+    assert.equal(await noteTemplate(sig("bot2", "看主页 @dispatcher01"), t0, "100"), 0);
+    assert.equal(await noteTemplate(sig("bot2", "看主页 @dispatcher01"), t0 + 1, "100"), 0, "same tweet id");
+    assert.equal(await noteTemplate(sig("bot2", "看主页 @dispatcher01"), t0 + 2, "100"), 0, "still the same post");
+    assert.equal(await noteTemplate(sig("bot2", "看主页 @dispatcher01"), t0 + 3, "101"), 1, "second post, same template");
+    assert.equal(await noteTemplate(sig("bot2", "看主页 @dispatcher01"), t0 + 4, "100"), 1, "the first post now has one other sighting");
+  } finally {
+    env.restore();
+  }
+});
+
 test("sightings expire and very short texts are ignored", async () => {
   const env = installChrome();
   try {

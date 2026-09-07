@@ -270,7 +270,7 @@ function RuleHitAccountsDialog({
               <TableHeader>
                 <TableRow>
                   <TableHead>账号</TableHead>
-                  <TableHead>命中证据</TableHead>
+                  <TableHead title="扩展匿名上报的命中处原文片段（服务端只校验含该规则关键词），未经人工核实">命中证据（客户端上报）</TableHead>
                   <TableHead className="w-16 text-right">命中</TableHead>
                   <TableHead className="w-20">最近</TableHead>
                   <TableHead className="w-20">状态</TableHead>
