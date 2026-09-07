@@ -160,6 +160,43 @@ test("bio is bounded so a stamp cannot bloat the page DOM", () => {
 // does in the page world. That lets us pin the stamping contract: given an
 // article whose React fiber carries the author, the bridge must publish the
 // signals the classifier needs, keyed to that author.
+test("the timeline's flat props.tweet.user object (no __typename) is read — production 2026-09-07", async () => {
+  const art = mount();
+  const user = {
+    name: "小可爱",
+    screen_name: "sexbot9911",
+    id_str: "1450000000000000003",
+    description: "24h 在线 看主页",
+    created_at: "Tue Jul 01 00:00:00 +0000 2026",
+    followers_count: 3,
+    friends_count: 2100,
+    statuses_count: 40,
+    media_count: 2,
+    favourites_count: 1,
+    location: "",
+    is_blue_verified: false,
+    verified: false,
+    profile_image_url_https: "https://pbs.twimg.com/profile_images/1900000000000000000/a_normal.jpg",
+    following: true,
+  };
+  (art as unknown as Record<string, unknown>)["__reactFiber$test"] = {
+    memoizedProps: {},
+    memoizedState: null,
+    return: { memoizedProps: {}, return: { memoizedProps: { tweet: { id_str: "1", user } } } },
+  };
+  const { readFiberUser } = await import("../lib/detect");
+  const u = readFiberUser(art, "sexbot9911");
+  assert.equal(u.userId, "1450000000000000003");
+  assert.equal(u.followersCount, 3);
+  assert.equal(u.followingCount, 2100);
+  assert.equal(u.statusesCount, 40);
+  assert.equal(typeof u.accountAgeDays, "number");
+  assert.equal(u.viewerFollowing, true);
+  assert.equal(u.profileDefaultImage, false);
+  // The viewer's own object further up must not be mistaken for the author.
+  assert.deepEqual(readFiberUser(art, "someone_else"), {});
+});
+
 test("the 2025 GraphQL user shape (core / relationship_perspectives) is read too", async () => {
   const art = mount();
   const user = {

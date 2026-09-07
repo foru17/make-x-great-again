@@ -372,17 +372,26 @@ function findUser(
   seen.add(o);
   try {
     const legacy = o.legacy ?? o;
-    // X moved screen_name / name / created_at out of `legacy` into `core`
-    // (and the viewer relationship into `relationship_perspectives`) in
-    // 2025; accept both shapes, or the walk never finds a user at all.
-    if (
-      o.__typename === "User" &&
+    // Three shapes seen in X's React state:
+    //  - GraphQL `{__typename:"User", rest_id, legacy:{…}}`;
+    //  - the 2025 variant with `core` / `relationship_perspectives`;
+    //  - the timeline's `props.tweet.user`: a FLAT legacy-style object
+    //    (screen_name, id_str, followers_count, following…) with NO
+    //    __typename at all — measured on production 2026-09-07; requiring
+    //    __typename meant the walk never found a user on current X.
+    // Identify a user by its field signature, not its type tag.
+    const core = o.core ?? {};
+    const screenRaw = legacy?.screen_name ?? core.screen_name;
+    const userLike =
       legacy &&
       typeof legacy === "object" &&
-      typeof legacy.description === "string" &&
-      ("followers_count" in legacy || "screen_name" in legacy || "screen_name" in (o.core ?? {}))
-    ) {
-      const screenName = normalizeHandle(legacy.screen_name ?? o.core?.screen_name);
+      typeof screenRaw === "string" &&
+      (typeof legacy.followers_count === "number" ||
+        typeof legacy.id_str === "string" ||
+        typeof o.rest_id === "string" ||
+        o.__typename === "User");
+    if (userLike) {
+      const screenName = normalizeHandle(screenRaw);
       if (!expectedHandle || screenName === expectedHandle) return o;
     }
     for (const k of Object.keys(o)) {
