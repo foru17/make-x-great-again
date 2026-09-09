@@ -1,8 +1,18 @@
 {
   "schema": 1,
-  "generatedAt": 1788890415995,
-  "count": 2398,
+  "generatedAt": 1788955212943,
+  "count": 2400,
   "list": [
+    {
+      "handle": "shaoyujie",
+      "x_user_id": null,
+      "last_scored": 1788937280210
+    },
+    {
+      "handle": "ericvvvvvvvvvv",
+      "x_user_id": null,
+      "last_scored": 1788937275835
+    },
     {
       "handle": "sun76790508",
       "x_user_id": "1193500786786889728",
