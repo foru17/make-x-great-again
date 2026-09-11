@@ -1,8 +1,63 @@
 {
   "schema": 1,
-  "generatedAt": 1788955212943,
-  "count": 2400,
+  "generatedAt": 1789149621078,
+  "count": 2411,
   "list": [
+    {
+      "handle": "neodolinux",
+      "x_user_id": null,
+      "last_scored": 1789134034331
+    },
+    {
+      "handle": "kenhew666",
+      "x_user_id": null,
+      "last_scored": 1789134033622
+    },
+    {
+      "handle": "jermicx",
+      "x_user_id": "518340894",
+      "last_scored": 1789134032935
+    },
+    {
+      "handle": "samuel_wgm",
+      "x_user_id": null,
+      "last_scored": 1789134032201
+    },
+    {
+      "handle": "yizhaiyiju",
+      "x_user_id": "1900091678540914691",
+      "last_scored": 1789134031417
+    },
+    {
+      "handle": "ng_shiyu",
+      "x_user_id": "1064474507614797825",
+      "last_scored": 1789134030586
+    },
+    {
+      "handle": "iuoocc",
+      "x_user_id": null,
+      "last_scored": 1789134029765
+    },
+    {
+      "handle": "epver52621",
+      "x_user_id": null,
+      "last_scored": 1789134028947
+    },
+    {
+      "handle": "zhb_chn",
+      "x_user_id": null,
+      "last_scored": 1789134028218
+    },
+    {
+      "handle": "bytheway527",
+      "x_user_id": null,
+      "last_scored": 1789134027494
+    },
+    {
+      "handle": "baeiu77",
+      "x_user_id": null,
+      "last_scored": 1789134020167
+    },
     {
       "handle": "shaoyujie",
       "x_user_id": null,
