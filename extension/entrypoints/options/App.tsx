@@ -897,6 +897,20 @@ function Toggle({
 }
 
 const X_ORIGINS = ["*://x.com/*", "*://twitter.com/*"];
+const GH_ORIGINS = ["https://github.com/*"];
+
+// Firefox's chrome.* compatibility shim does NOT promisify
+// permissions.request / permissions.contains — calling them without a callback
+// returns `undefined`, so `await`ing them yields a falsy value and a successful
+// grant is wrongly treated as denied (the exact "未授权访问 x.com" loop, even
+// after the user clicks Allow). The native `browser.*` API is fully
+// promise-based and reliable, so prefer it on Firefox and fall back to chrome.*
+// on Chromium builds.
+const perms = ((globalThis as any).browser?.permissions ??
+  (globalThis as any).chrome.permissions) as {
+  contains: (p: any) => Promise<boolean>;
+  request: (p: any) => Promise<boolean>;
+};
 
 const ACTION_MODES: {
   value: ActionMode;
@@ -941,8 +955,26 @@ function isMobileApplePlatform(): boolean {
 async function ensureXPermission(): Promise<boolean> {
   if (import.meta.env.SAFARI) return true;
   try {
-    if (await chrome.permissions.contains({ origins: X_ORIGINS })) return true;
-    return await chrome.permissions.request({ origins: X_ORIGINS });
+    // Firefox REQUIRES permissions.request() to be called synchronously from
+    // a user input handler. Any await *before* it (e.g. contains()) lets the
+    // browser drop the user-gesture token, and request() throws:
+    //   "permissions.request may only be called from a user input handler"
+    //
+    // If the permission is already granted, request() returns true instantly
+    // without showing a dialog, so calling it unconditionally is harmless.
+    // The only ground truth is contains(), which we check afterward.
+    // The return value is intentionally ignored: request() can resolve to
+    // false (or to `undefined` under Firefox's chrome.* shim) even when the
+    // grant succeeded. We only await it to keep a possible rejection from
+    // surfacing as an unhandled promise error.
+    try {
+      await perms.request({ origins: X_ORIGINS });
+    } catch {
+      // Firefox throws "permissions.request may only be called from a user
+      // input handler" when the gesture token was already consumed. The grant
+      // may still have gone through, so fall through to contains().
+    }
+    return await perms.contains({ origins: X_ORIGINS });
   } catch {
     return false;
   }
@@ -1168,16 +1200,31 @@ function WhitelistApplySection({ edgeBase }: { edgeBase: string }) {
   const ghLogin = async () => {
     setMsg(null);
     try {
+      // Same two Firefox pitfalls as ensureXPermission():
+      //   1. permissions.request() must be called SYNCHRONOUSLY from the user
+      //      input handler — an `await` before it (here: the data_collection
+      //      request) drops the user-gesture token and the second request()
+      //      throws "permissions.request may only be called from a user input
+      //      handler".
+      //   2. request()'s return value is NOT reliable — it can return false
+      //      even for already-granted origins, which produced the exact
+      //      "未授权访问 …" loop. contains() is the only ground truth.
+      //
+      // So: fire every request() synchronously, then judge with contains().
+      const pending: Promise<unknown>[] = [];
       if (import.meta.env.BROWSER === "firefox") {
-        const dataGranted = await chrome.permissions.request({
-          data_collection: ["authenticationInfo", "personallyIdentifyingInfo"],
-        } as chrome.permissions.Permissions & { data_collection: string[] });
-        if (!dataGranted) {
-          setMsg({ text: "未授权白名单申请所需的数据传输权限。", ok: false });
-          return;
-        }
+        pending.push(
+          Promise.resolve(
+            perms.request({
+              data_collection: ["authenticationInfo", "personallyIdentifyingInfo"],
+            } as any),
+          ).catch(() => undefined),
+        );
       }
-      const granted = await chrome.permissions.request({ origins: ["https://github.com/*"] });
+      pending.push(Promise.resolve(perms.request({ origins: GH_ORIGINS })).catch(() => undefined));
+      await Promise.all(pending);
+
+      const granted = await perms.contains({ origins: GH_ORIGINS });
       if (!granted) {
         setMsg({ text: "未授权访问 github.com——一键登录需要该权限（仅用于 GitHub 配对登录）。", ok: false });
         return;
