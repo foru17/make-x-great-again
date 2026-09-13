@@ -1,8 +1,23 @@
 {
   "schema": 1,
-  "generatedAt": 1789279302347,
-  "count": 2434,
+  "generatedAt": 1789300863135,
+  "count": 2437,
   "list": [
+    {
+      "handle": "ffirmstone22262",
+      "x_user_id": "2047980830656544768",
+      "last_scored": 1789281413305
+    },
+    {
+      "handle": "team_7648",
+      "x_user_id": "2050497648369758208",
+      "last_scored": 1789280795698
+    },
+    {
+      "handle": "aeri2728",
+      "x_user_id": "2042877803901657088",
+      "last_scored": 1789279619704
+    },
     {
       "handle": "yuyu31607952729",
       "x_user_id": "1711022864105693185",
