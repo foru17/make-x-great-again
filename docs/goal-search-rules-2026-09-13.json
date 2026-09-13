@@ -1,0 +1,27 @@
+[
+  {
+    "id": "reproduce",
+    "task": "复现线上搜索和规则匹配遗漏",
+    "verification": "真实路径回归测试先失败；只读核对线上结果",
+    "passes": true,
+    "evidence": "node --import tsx --test services/edge/test/search-rule-unicode.test.ts: 3 failing tests, each actual=1 expected=3; .verification/search-rules-2026-09-13/repro-red.log"
+  },
+  {
+    "id": "search",
+    "task": "修复搜索遗漏",
+    "verification": "搜索回归测试通过，核对计数与分页",
+    "passes": false
+  },
+  {
+    "id": "rules",
+    "task": "修复规则匹配遗漏",
+    "verification": "服务端和扩展规则回归测试通过",
+    "passes": false
+  },
+  {
+    "id": "verify",
+    "task": "整体证伪复核和交付",
+    "verification": "相关完整测试、类型检查、构建；记录线上验证或阻塞",
+    "passes": false
+  }
+]
