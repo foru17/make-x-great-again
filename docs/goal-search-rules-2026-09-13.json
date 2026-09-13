@@ -25,7 +25,7 @@
     "task": "整体证伪复核和交付",
     "verification": "相关完整测试、类型检查、构建；记录线上验证或阻塞",
     "passes": true,
-    "evidence": ".verification/edge-full.log: 152 passed; .verification/typecheck.log: tsc exit 0; .verification/runtime.log: workerd/D1 search=25, preview=25, sweep=25"
+    "evidence": ".verification/edge-full.log: 152 passed; .verification/typecheck.log: tsc exit 0; .verification/runtime.log: workerd/D1 search=25, preview=25, sweep=25 (first runtime startup failed transiently; unchanged bundle passed rerun)"
   },
   {
     "id": "deploy",
