@@ -8,9 +8,9 @@
     "governance": "GOVERNANCE.md"
   },
   "verification": {
-    "x_profile": "The live X profile resolves @EricWongly to UID 1675836276648361985; it is available, shows Eric Wong, joined 2023-07-03, reports 45 posts, 6 followers, 57 following, and has an empty bio. The profile page currently renders no original posts. No repeatable commercial spam or porn-advertising-bot evidence was found.",
+    "x_profile": "The live X profile resolves @EricWongly to UID 1675836276648361985; it is available, shows Eric Wong, joined 2023-07-03, reports 45 posts, 6 followers, 57 following, and has an empty bio. The logged-out profile view did not expose timeline entries. No repeatable commercial spam or porn-advertising-bot evidence was found.",
     "pre_decision": "No matching account was found in /v1/check, /v1/admin/blacklist, /v1/admin/queue, /v1/admin/whitelist, or the latest data-mirror blacklist and whitelist snapshots.",
-    "post_decision": "Authenticated admin whitelist returned the normalized handle ericwongly with rowid 959041 and status whitelisted; review_log contains audit ID 757916 with action whitelist_add. /v1/whitelist returned the UID, /v1/check returned no hit, and the current lite/shards artifacts contain neither the UID nor the handle.",
+    "post_decision": "Because no pre-existing blacklist or pending row was found, the authenticated admin whitelist created a preventive registration for normalized handle ericwongly with rowid 959041 and status whitelisted; review_log contains audit ID 757916 with action whitelist_add. /v1/whitelist returned the UID, /v1/check returned no hit, and the current lite/shards artifacts contain neither the UID nor the handle.",
     "artifact_version": "v-_____f_______f_-174429",
     "artifact_generated_at": 1789275058024,
     "artifact_count": 174429,
@@ -21,6 +21,7 @@
       "issue": 405,
       "handle": "EricWongly",
       "decision": "whitelisted",
+      "was_listed_before": false,
       "uid": "1675836276648361985",
       "rowid": 959041,
       "audit_id": 757916,
