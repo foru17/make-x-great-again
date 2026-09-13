@@ -1,8 +1,38 @@
 {
   "schema": 1,
-  "generatedAt": 1789257675490,
-  "count": 2428,
+  "generatedAt": 1789279302347,
+  "count": 2434,
   "list": [
+    {
+      "handle": "yuyu31607952729",
+      "x_user_id": "1711022864105693185",
+      "last_scored": 1789278509301
+    },
+    {
+      "handle": "zaykee7nom",
+      "x_user_id": "2091266160046268416",
+      "last_scored": 1789277998185
+    },
+    {
+      "handle": "nptower",
+      "x_user_id": "1488873234401353732",
+      "last_scored": 1789275613089
+    },
+    {
+      "handle": "zyl2005",
+      "x_user_id": "1044319166",
+      "last_scored": 1789275471347
+    },
+    {
+      "handle": "ericwongly",
+      "x_user_id": "1675836276648361985",
+      "last_scored": 1789275084344
+    },
+    {
+      "handle": "xjcjchdbbd",
+      "x_user_id": "1583711402006413313",
+      "last_scored": 1789274437710
+    },
     {
       "handle": "wolch9",
       "x_user_id": null,
