@@ -18,6 +18,7 @@
 // (attribution marker → tweetsTranslated), because that text may be X's
 // translation of a legit foreign tweet. Display names / bios are not
 // translated by X, so those fields stay fully matchable.
+import { keywordIndex, originalMatchSpan, stripInvisibleText } from "../../src/text-normalization";
 import { SPAM_CATEGORIES, type SpamCategory, categoryFromCode } from "./category";
 import { SETTINGS_KEY, getSettings } from "./settings";
 import type { Label, Signals } from "./types";
@@ -102,7 +103,7 @@ function compile(
 ): CompiledRule {
   return {
     pattern,
-    patternLower: pattern.toLowerCase(),
+    patternLower: stripInvisibleText(pattern).toLowerCase(),
     patternCJK: hasCJK(pattern),
     field,
     label,
@@ -252,15 +253,18 @@ try {
 
 function matchAgainst(rules: CompiledRule[], s: Signals): LocalRuleHit | null {
   if (!rules.length) return null;
-  const handle = s.handle.toLowerCase();
-  const name = s.displayName.toLowerCase();
-  const bio = s.bio.toLowerCase();
+  const handle = stripInvisibleText(s.handle).toLowerCase();
+  const name = stripInvisibleText(s.displayName).toLowerCase();
+  const bio = stripInvisibleText(s.bio).toLowerCase();
   const tweetsRaw = [...s.recentTweets, s.triggeringComment ?? ""];
-  const tweets = tweetsRaw.map((t) => t.toLowerCase());
+  const tweets = tweetsRaw.map((t) => stripInvisibleText(t).toLowerCase());
 
   for (const r of rules) {
     if (r.origin === "official" && disabledPatterns.has(r.pattern)) continue;
     const p = r.patternLower;
+    if (!p) continue;
+    // Custom rules retain their documented literal-substring behavior.
+    const indexOf = (text: string) => r.origin === "official" ? keywordIndex(p, text) : text.indexOf(p);
     // Translate guard: a CJK pattern must not match text X itself rendered
     // as a translation (attribution marker → tweetsTranslated). That marker
     // is the whole guard — an extra "author profile must also show CJK"
@@ -277,31 +281,32 @@ function matchAgainst(rules: CompiledRule[], s: Signals): LocalRuleHit | null {
     let field: RuleField | undefined;
     let text = "";
     let at = -1;
-    if ((any || r.field === "handle") && (at = handle.indexOf(p)) >= 0) {
+    if ((any || r.field === "handle") && (at = indexOf(handle)) >= 0) {
       field = "handle";
       text = s.handle;
-    } else if ((any || r.field === "display_name") && (at = name.indexOf(p)) >= 0) {
+    } else if ((any || r.field === "display_name") && (at = indexOf(name)) >= 0) {
       field = "display_name";
       text = s.displayName;
-    } else if ((any || r.field === "bio") && (at = bio.indexOf(p)) >= 0) {
+    } else if ((any || r.field === "bio") && (at = indexOf(bio)) >= 0) {
       field = "bio";
       text = s.bio;
     } else if ((any || r.field === "tweet") && tweetTrusted) {
-      const i = tweets.findIndex((t) => t.includes(p));
+      const i = tweets.findIndex((t) => indexOf(t) >= 0);
       if (i >= 0) {
         field = "tweet";
         text = tweetsRaw[i] ?? "";
-        at = tweets[i]?.indexOf(p) ?? 0;
+        at = indexOf(tweets[i] ?? "");
       }
     }
     if (field) {
+      const [rawIndex, rawLength] = originalMatchSpan(text, Math.max(0, at), p.length);
       return {
         pattern: r.pattern,
         label: r.label,
         category: r.category,
         origin: r.origin,
         field,
-        matchedText: matchExcerpt(text, Math.max(0, at), p.length),
+        matchedText: matchExcerpt(text, rawIndex, rawLength),
       };
     }
   }

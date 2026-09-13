@@ -1,4 +1,4 @@
-import { stripInvisibleText } from "../../../src/text-normalization";
+import { keywordIndex, stripInvisibleText } from "../../../src/text-normalization";
 import { stripInvisibleSql } from "./text-normalization";
 import { type Context, Hono } from "hono";
 import { cors } from "hono/cors";
@@ -1403,21 +1403,8 @@ function tweetTextTrusted(pattern: string, s: Signals): boolean {
 // [a-z0-9_]); patterns containing CJK or other non-ASCII keep substring
 // semantics — CJK text has no word delimiters, so boundaries would silently
 // disable every curated Chinese rule.
-const keywordRegexCache = new Map<string, RegExp>();
 function keywordHit(pattern: string, v: string | undefined | null): boolean {
-  if (!v) return false;
-  const p = pattern.toLowerCase();
-  if (!p) return false;
-  const t = v.toLowerCase();
-  // eslint-disable-next-line no-control-regex
-  if (!/^[\x20-\x7f]+$/.test(p)) return t.includes(p);
-  let re = keywordRegexCache.get(p);
-  if (!re) {
-    const esc = p.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    re = new RegExp(`(?<![a-z0-9_])${esc}(?![a-z0-9_])`);
-    keywordRegexCache.set(p, re);
-  }
-  return re.test(t);
+  return !!v && keywordIndex(stripInvisibleText(pattern).toLowerCase(), stripInvisibleText(v).toLowerCase()) >= 0;
 }
 
 function ruleMatchesText(rule: KeywordRule, s: Signals): boolean {
@@ -3979,6 +3966,41 @@ app.post("/v1/admin/rule-hits/promote", async (c) => {
   return c.json({ ok: true, queued, skipped });
 });
 
+interface StoredRuleText {
+  handle: string | null;
+  display_name: string | null;
+  evidence_text: string | null;
+}
+
+function storedRuleMatches(row: StoredRuleText, rule: Pick<KeywordRule, "pattern" | "field">): boolean {
+  if (!rule.pattern) return false;
+  const has = (v: string | null) => keywordHit(rule.pattern, v);
+  switch (rule.field) {
+    case "handle":
+      return has(row.handle);
+    case "display_name":
+      return has(row.display_name);
+    case "bio":
+    case "tweet":
+      return has(row.evidence_text);
+    case "any":
+      // NB: never match row.reasons — that is the AI's own prose and would
+      // fire on negated mentions ("no 约 solicitation found"). Mirror the
+      // live ruleMatchesText field set as closely as the row layout allows.
+      return has(row.handle) || has(row.display_name) || has(row.evidence_text);
+    default:
+      // Unknown field — do not silently widen to match everything.
+      return false;
+  }
+}
+
+
+// SQLite lower() only folds ASCII. For cased Unicode rules admit non-ASCII
+// candidates as a conservative superset; the shared JS matcher is final.
+function hasCasedUnicode(pattern: string): boolean {
+  return Array.from(pattern).some(c => c.codePointAt(0)! > 127 && c.toLowerCase() !== c.toUpperCase());
+}
+
 // Preview: how many *currently pending* queue rows would this rule catch?
 // Doesn't write anything; doesn't bump hit_count. Used by the admin UI's
 // "试一下" button before commit. Returns count + up-to-5 sample handles.
@@ -3988,32 +4010,38 @@ app.post("/v1/admin/keyword-rules/preview", async (c) => {
     pattern: string;
     field: "handle" | "display_name" | "bio" | "tweet" | "any";
   };
-  const p = String(body.pattern || "").trim();
+  const p = stripInvisibleText(String(body.pattern || "")).trim().toLowerCase();
   if (!p) return c.json({ count: 0, samples: [] });
-  // We match against fields stored on accounts: handle, display_name,
-  // evidence_text (the closest proxy for "tweet" we persist), and reasons
-  // (a JSON blob — not really bio, but useful catch-all). 'bio' isn't
-  // stored on accounts directly so we approximate by including reasons.
-  const fp = `%${p.toLowerCase()}%`;
-  const where =
-    body.field === "handle"
-      ? "lower(handle) LIKE ?"
-      : body.field === "display_name"
-        ? "lower(coalesce(display_name,'')) LIKE ?"
-        : body.field === "bio" || body.field === "tweet"
-          ? "lower(coalesce(evidence_text,'')) LIKE ?"
-          : // 'any'
-            "(lower(handle) LIKE ?1 OR lower(coalesce(display_name,'')) LIKE ?1 OR lower(coalesce(evidence_text,'')) LIKE ?1 OR lower(coalesce(reasons,'')) LIKE ?1)";
-  const sqlCount = `SELECT count(*) AS n FROM accounts WHERE status='auto_pending_review' AND ${where}`;
-  const sqlSamples = `SELECT handle, display_name, evidence_text FROM accounts WHERE status='auto_pending_review' AND ${where} ORDER BY last_scored DESC LIMIT 5`;
-  const [countRow, samplesRows] = await c.env.DB.batch([
-    c.env.DB.prepare(sqlCount).bind(fp),
-    c.env.DB.prepare(sqlSamples).bind(fp),
-  ]);
-  return c.json({
-    count: (countRow.results?.[0] as { n: number } | undefined)?.n ?? 0,
-    samples: samplesRows.results ?? [],
-  });
+  const fields: Record<string, string> = {
+    handle: "handle", display_name: "display_name", bio: "evidence_text", tweet: "evidence_text",
+    any: "coalesce(handle,'')||' '||coalesce(display_name,'')||' '||coalesce(evidence_text,'')",
+  };
+  const expression = Object.hasOwn(fields, body.field) ? fields[body.field] : undefined;
+  if (!expression) return c.json({ error: "invalid_field" }, 400);
+  const haystack = `lower(${stripInvisibleSql(expression)})`;
+  const where = `instr(${haystack},?)>0${hasCasedUnicode(p) ? ` OR (${expression}) GLOB '*[^ -~]*'` : ""}`;
+  let cursor = 0;
+  let count = 0;
+  const samples: StoredRuleText[] = [];
+  const deadline = Date.now() + 25_000;
+  // At most 40 pages / 20K candidates. Never present a partial scan as an
+  // exact count; broad patterns must be narrowed before previewing them.
+  for (let page = 0; page < 40; page++) {
+    const result = await c.env.DB.prepare(
+      `SELECT rowid, handle, display_name, evidence_text FROM accounts
+       WHERE status='auto_pending_review' AND rowid>? AND (${where}) ORDER BY rowid LIMIT 500`,
+    ).bind(cursor, p).all<StoredRuleText & { rowid: number }>();
+    const rows = result.results ?? [];
+    for (const row of rows) {
+      if (!storedRuleMatches(row, { pattern: p, field: body.field })) continue;
+      count++;
+      if (samples.length < 5) samples.push({ handle: row.handle, display_name: row.display_name, evidence_text: row.evidence_text });
+    }
+    if (rows.length < 500) return c.json({ count, samples });
+    cursor = rows[rows.length - 1].rowid;
+    if (Date.now() >= deadline) break;
+  }
+  return c.json({ error: "预览范围过大，请缩小关键词范围后重试。", truncated: true }, 422);
 });
 
 // Apply all enabled rules to existing rows. Default sweeps
@@ -4064,36 +4092,18 @@ app.post("/v1/admin/keyword-rules/apply-to-queue", async (c) => {
   const PAT_BINDS_PER_CHUNK = 90; // headroom under D1's 100-variable ceiling
   const RAW_HAYSTACK =
     "coalesce(handle,'')||' '||coalesce(display_name,'')||' '||coalesce(evidence_text,'')";
-  const HAYSTACK = `lower(${RAW_HAYSTACK})`;
+  const HAYSTACK = `lower(${stripInvisibleSql(RAW_HAYSTACK)})`;
 
-  // One prefilter term per pattern, each costing a single bind. SQLite's
-  // lower() folds ASCII only, so a pattern in a cased non-ASCII script
-  // (Cyrillic, Greek, full-width Latin) would never match the lowered
-  // haystack even though the JS matcher — which lowercases with full Unicode
-  // semantics — would hit it: a silent miss, the exact failure class that has
-  // burned this sweep before. Those patterns get a second term matching the
-  // un-lowered haystack against the pattern as the maintainer typed it.
-  // Residual gap: text in such a script cased differently from BOTH the typed
-  // form and its lowercase (e.g. rule "привет" vs. profile text "Привет").
-  // CJK has no case and ASCII is fully covered by lower(), so today's rule set
-  // adds zero extra terms.
+  // Refer to the normalized CTE column so the SQL text stays below D1's
+  // 100KB statement limit even with 90 patterns in one chunk.
   const terms: { sql: string; bind: string }[] = [];
   const seen = new Set<string>();
   for (const r of rules) {
-    const raw = r.pattern;
-    if (!raw) continue;
-    const low = raw.toLowerCase();
-    if (!seen.has(low)) {
-      seen.add(low);
-      terms.push({ sql: `instr(${HAYSTACK},?)>0`, bind: low });
-    }
-    const hasNonAscii = Array.from(raw).some(
-      (character) => (character.codePointAt(0) ?? 0) > 0x7f,
-    );
-    if (raw !== low && hasNonAscii && !seen.has(raw)) {
-      seen.add(raw);
-      terms.push({ sql: `instr(${RAW_HAYSTACK},?)>0`, bind: raw });
-    }
+    const low = stripInvisibleText(r.pattern).toLowerCase();
+    if (!low || seen.has(low)) continue;
+    seen.add(low);
+    const unicodeFallback = hasCasedUnicode(low) ? " OR normalized_haystack GLOB '*[^ -~]*'" : "";
+    terms.push({ sql: `(instr(normalized_haystack,?)>0${unicodeFallback})`, bind: low });
   }
 
   // Walk a partition by rowid cursor. A plain `LIMIT n` would hand back the
@@ -4106,6 +4116,8 @@ app.post("/v1/admin/keyword-rules/apply-to-queue", async (c) => {
   // `status` is a code-controlled literal (never user input) so it is inlined
   // rather than bound — one more bind slot for patterns, and the status stays
   // visible to the query planner's partial indexes.
+  let scanQueries = 0;
+  const MAX_SCAN_QUERIES = 120;
   async function prefilter(status: "auto_pending_review" | "auto_legit" | "auto_unsure") {
     const found = new Map<number, SweepRow>();
     let truncated = false;
@@ -4115,10 +4127,18 @@ app.post("/v1/admin/keyword-rules/apply-to-queue", async (c) => {
       const cond = group.map((t) => t.sql).join(" OR ");
       let cursor = 0;
       for (;;) {
+        if (scanQueries >= MAX_SCAN_QUERIES || Date.now() > DEADLINE) {
+          truncated = true;
+          break chunks;
+        }
+        scanQueries++;
         const res = await c.env.DB.prepare(
-          `SELECT rowid, x_user_id, handle, display_name, evidence_text, reasons, status, followers_count
-             FROM accounts WHERE status='${status}' AND rowid>? AND (${cond})
-            ORDER BY rowid LIMIT ?`,
+          `WITH candidates AS (
+             SELECT rowid, x_user_id, handle, display_name, evidence_text, reasons, status, followers_count,
+                    ${HAYSTACK} AS normalized_haystack
+             FROM accounts WHERE status='${status}' AND rowid>?
+           ) SELECT rowid, x_user_id, handle, display_name, evidence_text, reasons, status, followers_count
+             FROM candidates WHERE (${cond}) ORDER BY rowid LIMIT ?`,
         )
           .bind(cursor, ...group.map((t) => t.bind), PAGE)
           .all<SweepRow>();
@@ -4157,35 +4177,11 @@ app.post("/v1/admin/keyword-rules/apply-to-queue", async (c) => {
   const perRule: Record<number, number> = {};
   for (const r of rules) perRule[r.id] = 0;
 
-  // We can't reuse ruleMatchesText here because the row layout differs from
-  // the Signals payload. Build a row-shaped matcher:
-  function rowMatches(row: (typeof candidates)[number], rule: KeywordRule): boolean {
-    if (!rule.pattern) return false;
-    const has = (v: string | null) => keywordHit(rule.pattern, v);
-    switch (rule.field) {
-      case "handle":
-        return has(row.handle);
-      case "display_name":
-        return has(row.display_name);
-      case "bio":
-      case "tweet":
-        return has(row.evidence_text);
-      case "any":
-        // NB: never match row.reasons — that is the AI's own prose and would
-        // fire on negated mentions ("no 约 solicitation found"). Mirror the
-        // live ruleMatchesText field set as closely as the row layout allows.
-        return has(row.handle) || has(row.display_name) || has(row.evidence_text);
-      default:
-        // Unknown field — do not silently widen to match everything.
-        return false;
-    }
-  }
-
   const stmts: D1PreparedStatement[] = [];
   let totalHit = 0;
   let legitHit = 0;
   for (const row of [...candidates, ...legitCandidates]) {
-    const hit = rules.find((r) => rowMatches(row, r));
+    const hit = rules.find((r) => storedRuleMatches(row, r));
     if (!hit) continue;
     const fromLegit = row.status === "auto_legit" || row.status === "auto_unsure";
     // Same auto-publish gate as the live fast-path: a 'blacklist' rule can't

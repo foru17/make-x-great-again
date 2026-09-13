@@ -371,3 +371,15 @@ test("report: a reported high-follower rule match queues instead of publishing",
   assert.equal(body.status, "auto_pending_review");
   assert.equal(llmCalls, 1);
 });
+
+test("classify: invisible formatting in a bio still reaches the real keyword fast path", async () => {
+  llmCalls = 0;
+  const response = await worker.fetch(post('/v1/classify', {
+    userId:'909', handle:'unicode_fixture', displayName:'测试',
+    bio:'看\u2060我\u200c主\u200d页', recentTweets:[],
+  }), env);
+  assert.equal(response.status, 200);
+  const result = await response.json() as {matchedRule?: {id:number}};
+  assert.equal(result.matchedRule?.id, 1);
+  assert.equal(llmCalls, 0);
+});

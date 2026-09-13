@@ -170,7 +170,7 @@ test("sweep pages past the first window instead of rescanning it forever", async
   assert.equal(j.legitTruncated, false);
 });
 
-test("a cased non-ASCII pattern also prefilters against the un-lowered haystack", async () => {
+test("a cased non-ASCII pattern admits Unicode candidates for the exact JS matcher", async () => {
   // SQLite's lower() is ASCII-only, so matching a Cyrillic rule against the
   // lowered haystack alone would silently skip rows the JS matcher hits.
   class CyrillicDB extends DB {
@@ -184,10 +184,10 @@ test("a cased non-ASCII pattern also prefilters against the un-lowered haystack"
   assert.equal(res.status, 200);
   const scan = db.prepared.find((s) => s.sql.includes("status='auto_legit'"));
   assert.ok(scan, "the auto_legit prefilter must run");
-  assert.ok(scan.sql.includes("instr(lower("), "lowered-haystack term");
-  assert.ok(scan.sql.includes("instr(coalesce("), "raw-haystack term for the cased pattern");
+  assert.ok(scan.sql.includes("instr(normalized_haystack,"), "lowered-haystack term");
+  assert.ok(scan.sql.includes("GLOB '*[^ -~]*'"), "Unicode fallback covers uppercase variants too");
   assert.ok(scan.args.includes("привет"), "lowercased form is bound");
-  assert.ok(scan.args.includes("Привет"), "as-typed form is bound");
+  assert.ok(scan.sql.length < 100_000, "D1 statement size ceiling");
 });
 
 test("queue-scope sweep also prefilters in SQL instead of pulling the partition", async () => {

@@ -17,7 +17,8 @@
     "id": "rules",
     "task": "修复规则匹配遗漏",
     "verification": "服务端和扩展规则回归测试通过",
-    "passes": false
+    "passes": true,
+    "evidence": ".verification/search-rules-2026-09-13/rules-green.log: 27 passed, 0 failed; live classify, SQL prefilter, preview/sweep parity, extension and original evidence excerpt"
   },
   {
     "id": "verify",
