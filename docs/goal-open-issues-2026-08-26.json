@@ -1,0 +1,56 @@
+{
+  "run_at": "2026-09-13T12:53:49+08:00",
+  "scope": "open appeal issue #405 (single-account issue; no other open GitHub issues found in the sweep)",
+  "source": {
+    "github_repo": "https://github.com/foru17/make-x-great-again",
+    "github_issue": "https://github.com/foru17/make-x-great-again/issues/405",
+    "production_api": "https://x.zuoluo.tv",
+    "governance": "GOVERNANCE.md"
+  },
+  "verification": {
+    "x_profile": "The live X profile resolves @EricWongly to UID 1675836276648361985; it is available, shows Eric Wong, joined 2023-07-03, reports 45 posts, 6 followers, 57 following, and has an empty bio. The logged-out profile view did not expose timeline entries. No repeatable commercial spam or porn-advertising-bot evidence was found.",
+    "pre_decision": "No matching account was found in /v1/check, /v1/admin/blacklist, /v1/admin/queue, /v1/admin/whitelist, or the latest data-mirror blacklist and whitelist snapshots.",
+    "post_decision": "Because no pre-existing blacklist or pending row was found, the authenticated admin whitelist created a preventive registration for normalized handle ericwongly with rowid 959041 and status whitelisted; review_log contains audit ID 757916 with action whitelist_add. /v1/whitelist returned the UID, /v1/check returned no hit, and the current lite/shards artifacts contain neither the UID nor the handle.",
+    "artifact_version": "v-_____f_______f_-174429",
+    "artifact_generated_at": 1789275058024,
+    "artifact_count": 174429,
+    "rowid_note": "The rowid was recovered by decoding the authenticated admin whitelist endpoint's limit=1 nextBefore cursor [1789275084344,1789275084344,959041]; it was not guessed.",
+    "external_actions": {
+      "github_comment_edited": [5651240588],
+      "github_comment_deleted": [
+        {
+          "id": 5651273230,
+          "result": "already_absent_at_verification"
+        }
+      ],
+      "github_issue_closed": [
+        {
+          "issue": 405,
+          "state": "closed",
+          "reason": "completed"
+        }
+      ]
+    }
+  },
+  "records": [
+    {
+      "issue": 405,
+      "handle": "EricWongly",
+      "decision": "whitelisted",
+      "was_listed_before": false,
+      "uid": "1675836276648361985",
+      "rowid": 959041,
+      "audit_id": 757916,
+      "audit_action": "whitelist_add",
+      "github_comment_id": 5651240588,
+      "result": "completed",
+      "evidence": "The account was not listed before review; the current public X profile resolves the submitted UID exactly and shows no repeatable commercial spam or porn-advertising-bot evidence. It was registered preventively on the whitelist.",
+      "sources": [
+        "https://x.com/EricWongly"
+      ],
+      "check_hit": false,
+      "whitelist_present": true,
+      "artifact_present": false
+    }
+  ]
+}
