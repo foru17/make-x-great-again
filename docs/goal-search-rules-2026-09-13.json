@@ -10,7 +10,8 @@
     "id": "search",
     "task": "修复搜索遗漏",
     "verification": "搜索回归测试通过，核对计数与分页",
-    "passes": false
+    "passes": true,
+    "evidence": ".verification/search-rules-2026-09-13/search-green.log: 3 passed, 0 failed; real SQLite queue/blacklist, count, pagination, structured filters, batch dry-run"
   },
   {
     "id": "rules",

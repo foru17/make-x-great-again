@@ -8,7 +8,9 @@ import worker from "../src/index";
 // conceal precisely the SQL/JavaScript mismatch this regression covers.
 class DB {
   sqlite = new DatabaseSync(":memory:");
-  constructor() { this.sqlite.exec(readFileSync(new URL("../schema.sql", import.meta.url), "utf8")); }
+  constructor() { this.sqlite.exec(readFileSync(new URL("../schema.sql", import.meta.url), "utf8"));
+    this.sqlite.exec("ALTER TABLE accounts ADD COLUMN agent_id TEXT; ALTER TABLE accounts ADD COLUMN agent_label TEXT; ALTER TABLE accounts ADD COLUMN last_decided_by TEXT; ALTER TABLE accounts ADD COLUMN last_decided_at INTEGER;");
+  }
   prepare(sql: string) {
     const stmt = this.sqlite.prepare(sql);
     let args: any[] = [];
@@ -46,6 +48,19 @@ test("queue search finds all visible-equivalent terms, with accurate count and p
     const second = await get(`/v1/admin/queue?${new URLSearchParams({q,offset:'2',limit:'2'})}`);
     assert.equal(new Set([...first.queue,...second.queue].map(r => r.handle)).size, 3);
   }
+});
+test("structured filters and batch dry-run share visible-text search", async () => {
+  for (const key of ['display_name', 'evidence']) {
+    const result = await get(`/v1/admin/queue?${new URLSearchParams({[key]:hidden,total:'1'})}`);
+    assert.equal(result.total, 3);
+  }
+  const result = await get('/v1/admin/decide-by-filter', {action:'approve',dryRun:true,filters:{q:hidden}});
+  assert.equal(result.matched, 3);
+});
+test("blacklist search normalizes stored names and query", async () => {
+  seed('listed', hidden, 'human_confirmed');
+  const result = await get(`/v1/admin/blacklist?${new URLSearchParams({q:plain,total:'1'})}`);
+  assert.equal(result.total, 1);
 });
 test("rule preview sees invisible-character variants", async () => {
   const result = await get('/v1/admin/keyword-rules/preview', {pattern: plain, field:'display_name'});

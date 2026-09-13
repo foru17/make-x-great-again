@@ -1,3 +1,5 @@
+import { stripInvisibleText } from "../../../src/text-normalization";
+import { stripInvisibleSql } from "./text-normalization";
 import { type Context, Hono } from "hono";
 import { cors } from "hono/cors";
 import { z } from "zod";
@@ -2910,8 +2912,8 @@ interface TextFilters {
 }
 
 function parseTextFilters(get: (k: string) => string | undefined): TextFilters {
-  const str = (k: string) => (get(k) || "").trim() || null;
-  let q = (get("q") || "").trim().replace(/^@+/, "") || null;
+  const str = (k: string) => stripInvisibleText(get(k) || "").trim() || null;
+  let q = stripInvisibleText(get("q") || "").trim().replace(/^@+/, "") || null;
   let uid = str("uid");
   if (q && /^\d+$/.test(q) && !uid) {
     uid = q;
@@ -2934,15 +2936,15 @@ function textFilterWhere(alias: string, f: TextFilters): { sql: string; binds: u
           AND (? IS NULL OR (
                  lower(${a}.handle) LIKE '%' || lower(?) || '%'
               OR ${a}.x_user_id LIKE ? || '%'
-              OR lower(coalesce(${a}.display_name,'')) LIKE '%' || lower(?) || '%'
-              OR lower(coalesce(${a}.evidence_text,'')) LIKE '%' || lower(?) || '%'
-              OR lower(coalesce(${a}.reasons,'')) LIKE '%' || lower(?) || '%'
+              OR lower(${stripInvisibleSql(`${a}.display_name`)}) LIKE '%' || lower(?) || '%'
+              OR lower(${stripInvisibleSql(`${a}.evidence_text`)}) LIKE '%' || lower(?) || '%'
+              OR lower(${stripInvisibleSql(`${a}.reasons`)}) LIKE '%' || lower(?) || '%'
           ))
           AND (? IS NULL OR ${a}.x_user_id LIKE ? || '%')
           AND (? IS NULL OR lower(${a}.handle) LIKE '%' || lower(?) || '%')
-          AND (? IS NULL OR lower(coalesce(${a}.evidence_text,'')) LIKE '%' || lower(?) || '%')
-          AND (? IS NULL OR lower(coalesce(${a}.display_name,'')) LIKE '%' || lower(?) || '%')
-          AND (? IS NULL OR lower(coalesce(${a}.reasons,'')) LIKE '%' || lower(?) || '%')`,
+          AND (? IS NULL OR lower(${stripInvisibleSql(`${a}.evidence_text`)}) LIKE '%' || lower(?) || '%')
+          AND (? IS NULL OR lower(${stripInvisibleSql(`${a}.display_name`)}) LIKE '%' || lower(?) || '%')
+          AND (? IS NULL OR lower(${stripInvisibleSql(`${a}.reasons`)}) LIKE '%' || lower(?) || '%')`,
     binds: [
       f.q,
       f.q,
