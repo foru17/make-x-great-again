@@ -1,0 +1,129 @@
+{
+  "production_url": "https://x.zuoluo.tv/admin",
+  "version": "679e6c49-b50e-4570-a551-a460a724ceb9",
+  "previous_version": "f92a381b-b6f2-4820-93ac-2ca7e697af5f",
+  "production_baseline_commit": "8973943",
+  "production_before": [
+    {
+      "query": "我福不黑",
+      "total": 0,
+      "returned": 0,
+      "visible_phrase_in_names": 0,
+      "error": null
+    },
+    {
+      "query": "⁠⁠‌我福⁠‌不‍‌黑⁠‌⁠⁠",
+      "total": 0,
+      "returned": 0,
+      "visible_phrase_in_names": 0,
+      "error": null
+    },
+    {
+      "query": "我福",
+      "total": 0,
+      "returned": 0,
+      "visible_phrase_in_names": 0,
+      "error": null
+    },
+    {
+      "query": "黑",
+      "total": 100,
+      "returned": 100,
+      "visible_phrase_in_names": 0,
+      "error": null
+    }
+  ],
+  "production_sample": [
+    {
+      "query": "福",
+      "total": 75,
+      "sampled": 75,
+      "visible_phrase_hits": 52,
+      "phrase_excerpt": "应该没人比我玩的开了吧我福不黑不信你看"
+    },
+    {
+      "query": "我",
+      "total": 715,
+      "sampled": 200,
+      "visible_phrase_hits": 50,
+      "phrase_excerpt": "应该没人比我玩的开了吧我福不黑不信你看"
+    }
+  ],
+  "production_after": [
+    {
+      "check": "search",
+      "query": "我福不黑",
+      "total": 53,
+      "returned": 53,
+      "http": 200,
+      "seconds": 1.527254
+    },
+    {
+      "check": "search",
+      "query": "⁠⁠‌我福⁠‌不‍‌黑⁠‌⁠⁠",
+      "total": 53,
+      "returned": 53,
+      "http": 200,
+      "seconds": 1.527334
+    },
+    {
+      "check": "rule_preview",
+      "count": 53,
+      "http": 200,
+      "seconds": 0.988992
+    },
+    {
+      "check": "batch_dry_run",
+      "matched": 53,
+      "http": 200,
+      "seconds": 1.135882
+    },
+    {
+      "check": "health",
+      "ok": true,
+      "http": 200,
+      "seconds": 0.947176
+    },
+    {
+      "check": "admin_html_unchanged",
+      "sha256": "3af0f1aa48470851fe79f16010c96df01abed8f2de16a42f862caa0fb93229f0",
+      "http": 200
+    }
+  ],
+  "runtime": {
+    "passed": true,
+    "runtime": "workerd/D1",
+    "variants": 25,
+    "requests": 6,
+    "search": 25,
+    "preview": 25,
+    "sweep": 25
+  },
+  "tests": {
+    "development_edge": 177,
+    "production_hotfix_edge": 152,
+    "extension": 109,
+    "core": 24
+  },
+  "checks": [
+    "Edge and app TypeScript passed",
+    "Core TypeScript passed",
+    "Extension TypeScript passed",
+    "Chrome and Firefox builds passed",
+    "Production hotfix workerd/D1 runtime passed",
+    "Production desktop/light and 390x844 light/dark screenshots inspected through CUA; viewport/theme restored"
+  ],
+  "scope": {
+    "assets": "Wrangler: No updated asset files to upload",
+    "schema_migrations": false,
+    "cloud_resources_created": false,
+    "moderation_writes": false,
+    "git_push": false
+  },
+  "budget_alert": "Cloudflare billing UI checked before deploy: existing $10 budget alert, 1 recipient",
+  "limitations": [
+    "Extension fixes are committed and built locally; installed store extensions require a new release.",
+    "The optional wrangler types --check reported a generated-file mismatch with the installed Wrangler 4.129.0; tsc and actual runtime checks passed.",
+    "First isolated-hotfix workerd startup failed; unchanged bundle passed on rerun."
+  ]
+}
