@@ -24,6 +24,13 @@
     "id": "verify",
     "task": "整体证伪复核和交付",
     "verification": "相关完整测试、类型检查、构建；记录线上验证或阻塞",
+    "passes": true,
+    "evidence": ".verification/edge-full.log: 152 passed; .verification/typecheck.log: tsc exit 0; .verification/runtime.log: workerd/D1 search=25, preview=25, sweep=25"
+  },
+  {
+    "id": "deploy",
+    "task": "发布线上基线上的独立修复并回读验证",
+    "verification": "保留线上静态资源及配置，检查真实搜索和预览结果、健康检查和桌面/移动端页面",
     "passes": false
   }
 ]
