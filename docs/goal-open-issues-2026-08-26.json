@@ -1,0 +1,47 @@
+{
+  "run_at": "2026-09-13T14:34:29+08:00",
+  "scope": "open appeal issue #413 at run start (1 single-account issue; no other open GitHub appeal issues found)",
+  "source": {
+    "github_repo": "https://github.com/foru17/make-x-great-again",
+    "production_api": "https://x.zuoluo.tv",
+    "governance": "GOVERNANCE.md"
+  },
+  "verification": {
+    "x_profile": "The current public X profile resolves @team_7648 to UID 2050497648369758208, matching the submitted UID. It shows 抹茶, location 地球, joined May 2026, 41 posts, 4 followers, 2 following, and a personal-interest bio. The currently rendered public post (2026-09-02) discusses My Hero Academia and a China-related cultural question; no repeatable commercial solicitation or porn-advertising-bot evidence was found in the accessible public material.",
+    "pre_decision": "Before the write, /v1/check returned hits={} and authenticated searches found no matching row in /v1/admin/blacklist, /v1/admin/queue, or /v1/admin/whitelist; the latest 100 /v1/admin/log rows also had no matching handle or UID.",
+    "post_decision": "The authenticated maintainer whitelist flow returned ok=true and created a whitelisted row. /v1/whitelist returned the exact UID after the write; /v1/check still returned hits={}; authenticated blacklist and pending-queue searches remained empty; all three agent staging buckets had no matching row. The audit log contains id 758111 with action whitelist_add.",
+    "artifact_version": "v-_____f_______f_-174593",
+    "artifact_generated_at": 1789280462374,
+    "artifact_count": 174593,
+    "artifact_pending": 4603,
+    "artifact_check": "The latest bloom, shards, meta, and lite artifacts were fetched successfully. None contains UID 2050497648369758208 or handle team_7648.",
+    "rowid_note": "rowid 956939 was recovered from the authenticated /v1/admin/whitelist?limit=1&q=team_7648 nextBefore cursor [last_scored, last_scored, rowid]; it was not guessed.",
+    "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/413#issuecomment-5651682974"
+  },
+  "records": [
+    {
+      "issue": 413,
+      "handle": "team_7648",
+      "decision": "whitelisted",
+      "uid": "2050497648369758208",
+      "rowid": 956939,
+      "audit_id": 758111,
+      "audit_action": "whitelist_add",
+      "github_comment_id": 5651682974,
+      "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/413#issuecomment-5651682974",
+      "github_state": "closed",
+      "result": "completed",
+      "evidence": "The current public X profile matches the submitted UID and presents an active personal account: 41 posts, 4 followers, 2 following, a personal-interest bio, and a recent discussion about My Hero Academia and a China-related cultural question. No repeatable commercial spam or porn-advertising-bot pattern was found. Political and cultural expression is outside MXGA scope.",
+      "sources": [
+        "https://x.com/team_7648",
+        "https://x.com/team_7648/status/2095131677169426939"
+      ],
+      "check_hit": false,
+      "whitelist_present": true,
+      "blacklist_present": false,
+      "queue_present": false,
+      "agent_present": false,
+      "artifact_present": false
+    }
+  ]
+}
