@@ -1,0 +1,37 @@
+{
+  "run_at": "2026-09-13T12:42:47+08:00",
+  "scope": "open appeal issue #404 (single-account issue; no other open appeal issues found)",
+  "source": {
+    "github_repo": "https://github.com/foru17/make-x-great-again",
+    "production_api": "https://x.zuoluo.tv",
+    "governance": "GOVERNANCE.md"
+  },
+  "verification": {
+    "x_profile": "X profile resolved @xjcjchdbbd to UID 1583711402006413313; active profile iekwj, joined 2022-10, 6289 posts, 233 followers, 2389 following, empty bio.",
+    "pre_decision": "No hit in /v1/check, admin blacklist, admin queue, admin whitelist, latest lite artifact, or data-mirror snapshot.",
+    "post_decision": "Admin whitelist returned rowid 887923 and status whitelisted; /v1/whitelist returned the UID; /v1/check returned no hit; current lite and shards artifact version v-_____f_______f_-174416 contain no matching UID or handle.",
+    "artifact_version": "v-_____f_______f_-174416",
+    "artifact_generated_at": 1789273258115,
+    "rowid_note": "rowid was recovered from the authenticated admin whitelist pagination cursor; it was not guessed."
+  },
+  "records": [
+    {
+      "issue": 404,
+      "handle": "xjcjchdbbd",
+      "decision": "whitelisted",
+      "uid": "1583711402006413313",
+      "rowid": 887923,
+      "audit_id": 757913,
+      "audit_action": "whitelist_add",
+      "github_comment_id": 5651194567,
+      "result": "completed",
+      "evidence": "The current public X profile resolves the submitted UID exactly and shows an active established account with an empty bio; no repeatable commercial spam or porn-advertising-bot evidence was found. Evidence is insufficient for a blacklist under the project scope.",
+      "sources": [
+        "https://x.com/xjcjchdbbd"
+      ],
+      "check_hit": false,
+      "whitelist_present": true,
+      "artifact_present": false
+    }
+  ]
+}
