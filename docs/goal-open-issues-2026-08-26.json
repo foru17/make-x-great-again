@@ -1,0 +1,51 @@
+{
+  "run_at": "2026-09-13T14:38:59+08:00",
+  "scope": "open appeal issue #415 at run start (1 single-account issue; no other open GitHub appeal issues found)",
+  "source": {
+    "github_repo": "https://github.com/foru17/make-x-great-again",
+    "production_api": "https://x.zuoluo.tv",
+    "governance": "GOVERNANCE.md"
+  },
+  "verification": {
+    "x_profile": "The current public X profile resolves @FFirmstone22262 to display name 不吃草 and structured rest_id 2047980830656544768. The submitted 2097222490028429312 is the current avatar media ID, not the user ID. The profile shows April 2026 signup, 114 posts, 33 followers, 57 following, and an empty description; the visible post is ordinary commentary with no repeatable commercial spam or porn-advertising-bot evidence.",
+    "pre_decision": "The submitted UID returned hits={} from /v1/check, and authenticated admin searches by handle found no publishable blacklist row, pending queue row, or whitelist row. After the avatar-media-ID mismatch was detected, the provisional wrong-ID whitelist row was demoted and the existing current-UID account row was updated with the verified UID.",
+    "post_decision": "The final maintainer whitelist flow returned the verified UID and status=whitelisted. The wrong-ID provisional row is no longer whitelisted; /v1/check returned hits={} for both the verified UID and submitted media ID. The GitHub appeal comment was corrected in place and issue #415 was closed as completed.",
+    "artifact_version": "v-_____f_______f_-174593",
+    "artifact_generated_at": 1789280462374,
+    "artifact_count": 174593,
+    "artifact_pending": 4613,
+    "artifact_check": "The latest lite and shards artifacts were fetched successfully and contain neither the verified UID, the submitted avatar media ID, nor the handle.",
+    "rowid_note": "rowid 103313 was recovered from the authenticated admin whitelist pagination cursor [last_scored, last_scored, rowid]; it was not guessed.",
+    "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/415#issuecomment-5651695574"
+  },
+  "records": [
+    {
+      "issue": 415,
+      "handle": "FFirmstone22262",
+      "decision": "whitelisted",
+      "uid": "2047980830656544768",
+      "submitted_uid": "2097222490028429312",
+      "submitted_uid_interpretation": "avatar_media_id",
+      "rowid": 103313,
+      "audit_id": 758114,
+      "audit_action": "whitelist_add",
+      "correction_audit_id": 758113,
+      "correction_audit_action": "whitelist_remove",
+      "github_comment_id": 5651695574,
+      "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/415#issuecomment-5651695574",
+      "github_state": "closed",
+      "result": "completed",
+      "evidence": "The current public X profile's structured rest_id is 2047980830656544768; the submitted number is an avatar media ID. The profile and visible ordinary commentary show no repeatable commercial spam or porn-advertising-bot pattern, so the account is out of scope or lacks evidence for a blacklist decision.",
+      "sources": [
+        "https://x.com/FFirmstone22262",
+        "https://x.com/FFirmstone22262/status/2077323001889247239"
+      ],
+      "check_hit": false,
+      "whitelist_present": true,
+      "blacklist_present": false,
+      "queue_present": false,
+      "agent_present": false,
+      "artifact_present": false
+    }
+  ]
+}
