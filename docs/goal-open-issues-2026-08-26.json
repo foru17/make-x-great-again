@@ -1,0 +1,104 @@
+{
+  "run_at": "2026-09-13T13:51:11+08:00",
+  "scope": "open appeal issues #409 and #410 at run start (2 single-account issues; this run completed the production writes and GitHub replies through the maintainer flow before final verification)",
+  "source": {
+    "github_repo": "https://github.com/foru17/make-x-great-again",
+    "production_api": "https://x.zuoluo.tv",
+    "governance": "GOVERNANCE.md"
+  },
+  "verification": {
+    "x_profiles": "The current public X pages resolve @Zaykee7nom to UID 2091266160046268416 (梨子🍐, joined August 2026, 442 posts, 339 followers, following 30; personal-fragments bio) and @yuyu31607952729 to UID 1711022864105693185 (yu, joined October 2023, 775 posts, 66 followers, following 6; personal-expression bio). Both submitted UIDs match the current structured profile UIDs.",
+    "pre_decision": "For #409, the prior D1 row was human_confirmed/porn_bot at confidence 0.92 with 0 reporters. Its five original reasons are preserved in records[0].prior_reasons and were rebutted individually: the prior bio phrase `私信跟我玩` is no longer present and the current bio points to an NGL anonymous-question link, not commercial solicitation; the stored explicit text is one personal-sexual experience rather than an advertisement; the current profile and sampled posts do not show a repeatable DM-bait campaign; the prior 18d/352-post snapshot is stale because the current profile shows 442 posts, 339 followers, and 30 following, and activity/follower counts alone do not establish bot behavior; and no current commercial offer or porn-advertising service was found, so adult self-expression alone is out of scope. For #410, the lookup found no current blacklist or pending row and its public profile/posts likewise supplied no in-scope evidence.",
+    "post_decision": "This run's authenticated maintainer flow changed both accounts to whitelisted and closed GitHub issues #409 and #410 as completed. A final public whitelist query (since=1789000000000) returned both exact UIDs; /v1/check?ids=2091266160046268416,1711022864105693185 returned hits={}.",
+    "whitelist_rows": [
+      {"uid": "2091266160046268416", "handle": "zaykee7nom", "last_scored": 1789277998185},
+      {"uid": "1711022864105693185", "handle": "yuyu31607952729", "last_scored": 1789278509301}
+    ],
+    "artifact_version": "v-_____f_______f_-174582",
+    "artifact_generated_at": 1789279301224,
+    "artifact_count": 174582,
+    "artifact_check": "The latest lite and shards artifacts contain neither target UID nor handle.",
+    "rowid_note": "Rowids came from the authenticated maintainer admin lookups recorded in the GitHub audit replies; they were not guessed.",
+    "concurrency_note": "This run performed the production writes and GitHub replies through the maintainer flow before final reads; no duplicate whitelist writes or comments were issued."
+  },
+  "records": [
+    {
+      "issue": 409,
+      "handle": "Zaykee7nom",
+      "decision": "whitelisted",
+      "uid": "2091266160046268416",
+      "rowid": 1017899,
+      "audit_id": 758091,
+      "audit_action": "whitelist_add",
+      "github_comment_id": 5651455908,
+      "correction_comment_id": 5651544981,
+      "github_state": "closed",
+      "result": "completed",
+      "prior_reasons": [
+        "sexual solicitation in bio (私信跟我玩)",
+        "highly explicit personal sex story as triggeringComment",
+        "bait pattern to drive DMs / private interaction",
+        "new account (18d) with high post volume (352) and low followers",
+        "content is off-topic self-promotion of sexual availability"
+      ],
+      "prior_reason_review": [
+        {
+          "prior_reason": "sexual solicitation in bio (私信跟我玩)",
+          "current_finding": "The prior phrase is no longer present. The current bio is personal-fragments text with an NGL anonymous-question link, not commercial solicitation.",
+          "supports_in_scope_violation": false
+        },
+        {
+          "prior_reason": "highly explicit personal sex story as triggeringComment",
+          "current_finding": "The stored text is one personal-sexual experience narrative. It is adult expression, not an advertisement or service offer.",
+          "supports_in_scope_violation": false
+        },
+        {
+          "prior_reason": "bait pattern to drive DMs / private interaction",
+          "current_finding": "The current profile and sampled recent posts do not show a repeatable DM-bait campaign or commercial funnel.",
+          "supports_in_scope_violation": false
+        },
+        {
+          "prior_reason": "new account (18d) with high post volume (352) and low followers",
+          "current_finding": "The prior snapshot is stale. The current profile shows joined August 2026, 442 posts, 339 followers, and 30 following; activity and follower counts alone do not establish bot behavior.",
+          "supports_in_scope_violation": false
+        },
+        {
+          "prior_reason": "content is off-topic self-promotion of sexual availability",
+          "current_finding": "No current commercial offer or porn-advertising service was found. Personal adult expression without commercial promotion is outside MXGA scope.",
+          "supports_in_scope_violation": false
+        }
+      ],
+      "evidence": "逐条复核原始 D1 判据：① `私信跟我玩` 的旧简介文案现已不存在，当前简介是个人碎碎念并带 NGL 匿名提问链接，不是商业导流；②触发文本是单条个人性经历叙述，不是广告或服务报价；③当前主页与抽查的近期帖子未见可重复的 DM 诱导或商业转化模式；④`18d/352 帖、低关注`是过期快照，当前为 2026 年 8 月加入、442 帖、339 位关注者、关注 30 人，活跃度和关注数本身不能证明 bot；⑤未发现当前商业性邀约或色情广告服务，成人自我表达不单独构成违规。结论：原始五条判据均不足以在当前证据下证明范围内的商业垃圾或色情广告 bot。",
+      "sources": [
+        "https://x.com/Zaykee7nom",
+        "https://x.com/Zaykee7nom/status/2098983610141519953",
+        "https://x.com/Zaykee7nom/status/2098977612769136947"
+      ],
+      "check_hit": false,
+      "whitelist_present": true,
+      "artifact_present": false
+    },
+    {
+      "issue": 410,
+      "handle": "yuyu31607952729",
+      "decision": "whitelisted",
+      "uid": "1711022864105693185",
+      "rowid": 934566,
+      "audit_id": 758095,
+      "audit_action": "whitelist_add",
+      "github_comment_id": 5651479294,
+      "github_state": "closed",
+      "result": "completed",
+      "evidence": "The current profile and available recent posts show ordinary personal expression, including seasonal thoughts, a reaction to a horror-game stream, and daily conversation. No repeatable commercial solicitation or porn-advertising-bot evidence was found.",
+      "sources": [
+        "https://x.com/yuyu31607952729",
+        "https://x.com/yuyu31607952729/status/2098436998902288754",
+        "https://x.com/yuyu31607952729/status/2061170013386543605",
+        "https://x.com/yuyu31607952729/status/1998343904979009572"
+      ],
+      "check_hit": false,
+      "whitelist_present": true,
+      "artifact_present": false
+    }
+  ]
+}
