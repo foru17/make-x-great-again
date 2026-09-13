@@ -1,0 +1,48 @@
+{
+  "run_at": "2026-09-13T14:08:55+08:00",
+  "scope": "open appeal issue #412 at run start (1 single-account issue; no other open GitHub appeal issues found)",
+  "source": {
+    "github_repo": "https://github.com/foru17/make-x-great-again",
+    "production_api": "https://x.zuoluo.tv",
+    "governance": "GOVERNANCE.md"
+  },
+  "verification": {
+    "x_profile": "The current public X profile resolves @aeri2728 to UID 2042877803901657088, matching the submitted UID. It shows visang, Republic of Korea, joined April 2026, 265 statuses, 32 followers, 6 following, an empty bio, and recent activity. A sample of recent public replies and reposts contained ordinary political/social discussion and no repeatable commercial solicitation or porn-advertising-bot evidence.",
+    "pre_decision": "Before the write, /v1/check returned hits={} and authenticated production searches found no matching row in the admin blacklist, pending queue, whitelist, or any agent staging bucket. The account therefore had no current production row to remove from a public list, but the appeal was still registered as a preventive whitelist override.",
+    "post_decision": "The authenticated maintainer whitelist flow created a whitelisted row and review_log entry, the GitHub appeal comment was posted, and issue #412 was closed as completed. /v1/whitelist returned the exact UID; /v1/check still returned hits={}; authenticated blacklist and pending-queue searches remained empty.",
+    "artifact_version": "v-_____f_______f_-174582",
+    "artifact_generated_at": 1789279301224,
+    "artifact_count": 174582,
+    "artifact_pending": 4588,
+    "artifact_check": "The latest lite, shards, and meta artifacts were fetched successfully and contain neither target UID nor handle. The bloom artifact was also fetched successfully.",
+    "rowid_note": "rowid 1072042 was recovered from the authenticated admin whitelist pagination cursor [last_scored, last_scored, rowid]; it was not guessed.",
+    "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/412#issuecomment-5651564581"
+  },
+  "records": [
+    {
+      "issue": 412,
+      "handle": "aeri2728",
+      "decision": "whitelisted",
+      "uid": "2042877803901657088",
+      "rowid": 1072042,
+      "audit_id": 758097,
+      "audit_action": "whitelist_add",
+      "github_comment_id": 5651564581,
+      "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/412#issuecomment-5651564581",
+      "github_state": "closed",
+      "result": "completed",
+      "evidence": "The current public profile matches the submitted UID and shows an active personal account. Recent public replies and reposts are ordinary political/social expression; no repeatable commercial spam or porn-advertising-bot pattern was found. Political viewpoints, language, and nationality are outside MXGA scope.",
+      "sources": [
+        "https://x.com/aeri2728",
+        "https://x.com/aeri2728/status/2098796272065147241",
+        "https://x.com/aeri2728/status/2093960129196789936"
+      ],
+      "check_hit": false,
+      "whitelist_present": true,
+      "blacklist_present": false,
+      "queue_present": false,
+      "agent_present": false,
+      "artifact_present": false
+    }
+  ]
+}
