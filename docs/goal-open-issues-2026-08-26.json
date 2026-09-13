@@ -31,6 +31,7 @@
       "audit_id": 758091,
       "audit_action": "whitelist_add",
       "github_comment_id": 5651455908,
+      "correction_comment_id": 5651544981,
       "github_state": "closed",
       "result": "completed",
       "prior_reasons": [
