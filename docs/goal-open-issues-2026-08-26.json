@@ -1,0 +1,69 @@
+{
+  "run_at": "2026-09-13T13:51:11+08:00",
+  "scope": "open appeal issues #409 and #410 at run start (2 single-account issues; both were completed by the maintainer flow before this run's final verification)",
+  "source": {
+    "github_repo": "https://github.com/foru17/make-x-great-again",
+    "production_api": "https://x.zuoluo.tv",
+    "governance": "GOVERNANCE.md"
+  },
+  "verification": {
+    "x_profiles": "The current public X pages resolve @Zaykee7nom to UID 2091266160046268416 (梨子🍐, joined August 2026, 442 posts, 339 followers, following 30; personal-fragments bio) and @yuyu31607952729 to UID 1711022864105693185 (yu, joined October 2023, 775 posts, 66 followers, following 6; personal-expression bio). Both submitted UIDs match the current structured profile UIDs.",
+    "pre_decision": "The maintainer lookup found @Zaykee7nom as human_confirmed/porn_bot at confidence 0.92 with 0 reporters; its stored trigger was one personal sexual-experience narrative, without repeatable commercial or porn-advertising-bot evidence. The lookup found no current blacklist or pending row for @yuyu31607952729; its public profile and posts likewise supplied no in-scope evidence.",
+    "post_decision": "The authenticated maintainer flow changed both accounts to whitelisted and closed GitHub issues #409 and #410 as completed. A final public whitelist query (since=1789000000000) returned both exact UIDs; /v1/check?ids=2091266160046268416,1711022864105693185 returned hits={}.",
+    "whitelist_rows": [
+      {"uid": "2091266160046268416", "handle": "zaykee7nom", "last_scored": 1789277998185},
+      {"uid": "1711022864105693185", "handle": "yuyu31607952729", "last_scored": 1789278509301}
+    ],
+    "artifact_version": "v-_____f_______f_-174579",
+    "artifact_generated_at": 1789278078366,
+    "artifact_count": 174579,
+    "artifact_check": "The latest lite and shards artifacts contain neither target UID nor handle.",
+    "rowid_note": "Rowids came from the authenticated maintainer admin lookups recorded in the GitHub audit replies; they were not guessed.",
+    "concurrency_note": "The production writes and GitHub replies were already present before this run's final reads, so no duplicate whitelist writes or comments were issued."
+  },
+  "records": [
+    {
+      "issue": 409,
+      "handle": "Zaykee7nom",
+      "decision": "whitelisted",
+      "uid": "2091266160046268416",
+      "rowid": 1017899,
+      "audit_id": 758091,
+      "audit_action": "whitelist_add",
+      "github_comment_id": 5651455908,
+      "github_state": "closed",
+      "result": "completed",
+      "evidence": "The current profile is active and personal. The production trigger was a single explicit personal-sexual narrative; no repeatable commercial solicitation or porn-advertising-bot pattern was found. Adult expression alone is outside MXGA scope.",
+      "sources": [
+        "https://x.com/Zaykee7nom",
+        "https://x.com/Zaykee7nom/status/2098983610141519953",
+        "https://x.com/Zaykee7nom/status/2098977612769136947"
+      ],
+      "check_hit": false,
+      "whitelist_present": true,
+      "artifact_present": false
+    },
+    {
+      "issue": 410,
+      "handle": "yuyu31607952729",
+      "decision": "whitelisted",
+      "uid": "1711022864105693185",
+      "rowid": 934566,
+      "audit_id": 758095,
+      "audit_action": "whitelist_add",
+      "github_comment_id": 5651479294,
+      "github_state": "closed",
+      "result": "completed",
+      "evidence": "The current profile and available recent posts show ordinary personal expression, including seasonal thoughts, a reaction to a horror-game stream, and daily conversation. No repeatable commercial solicitation or porn-advertising-bot evidence was found.",
+      "sources": [
+        "https://x.com/yuyu31607952729",
+        "https://x.com/yuyu31607952729/status/2098436998902288754",
+        "https://x.com/yuyu31607952729/status/2061170013386543605",
+        "https://x.com/yuyu31607952729/status/1998343904979009572"
+      ],
+      "check_hit": false,
+      "whitelist_present": true,
+      "artifact_present": false
+    }
+  ]
+}
