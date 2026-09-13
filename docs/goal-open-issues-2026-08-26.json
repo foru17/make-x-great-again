@@ -14,9 +14,9 @@
       {"uid": "2091266160046268416", "handle": "zaykee7nom", "last_scored": 1789277998185},
       {"uid": "1711022864105693185", "handle": "yuyu31607952729", "last_scored": 1789278509301}
     ],
-    "artifact_version": "v-_____f_______f_-174581",
-    "artifact_generated_at": 1789278658433,
-    "artifact_count": 174581,
+    "artifact_version": "v-_____f_______f_-174582",
+    "artifact_generated_at": 1789279301224,
+    "artifact_count": 174582,
     "artifact_check": "The latest lite and shards artifacts contain neither target UID nor handle.",
     "rowid_note": "Rowids came from the authenticated maintainer admin lookups recorded in the GitHub audit replies; they were not guessed.",
     "concurrency_note": "This run performed the production writes and GitHub replies through the maintainer flow before final reads; no duplicate whitelist writes or comments were issued."
