@@ -14,7 +14,23 @@
     "artifact_version": "v-_____f_______f_-174429",
     "artifact_generated_at": 1789275058024,
     "artifact_count": 174429,
-    "rowid_note": "The rowid was recovered by decoding the authenticated admin whitelist endpoint's limit=1 nextBefore cursor [1789275084344,1789275084344,959041]; it was not guessed."
+    "rowid_note": "The rowid was recovered by decoding the authenticated admin whitelist endpoint's limit=1 nextBefore cursor [1789275084344,1789275084344,959041]; it was not guessed.",
+    "external_actions": {
+      "github_comment_edited": [5651240588],
+      "github_comment_deleted": [
+        {
+          "id": 5651273230,
+          "result": "already_absent_at_verification"
+        }
+      ],
+      "github_issue_closed": [
+        {
+          "issue": 405,
+          "state": "closed",
+          "reason": "completed"
+        }
+      ]
+    }
   },
   "records": [
     {
@@ -28,7 +44,7 @@
       "audit_action": "whitelist_add",
       "github_comment_id": 5651240588,
       "result": "completed",
-      "evidence": "The current public X profile resolves the submitted UID exactly and shows an available account with no repeatable commercial spam or porn-advertising-bot evidence. Evidence is insufficient for a blacklist under the project scope.",
+      "evidence": "The account was not listed before review; the current public X profile resolves the submitted UID exactly and shows no repeatable commercial spam or porn-advertising-bot evidence. It was registered preventively on the whitelist.",
       "sources": [
         "https://x.com/EricWongly"
       ],
