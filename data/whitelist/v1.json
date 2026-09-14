@@ -1,8 +1,23 @@
 {
   "schema": 1,
-  "generatedAt": 1789300863135,
-  "count": 2437,
+  "generatedAt": 1789355156604,
+  "count": 2440,
   "list": [
+    {
+      "handle": "shu_fa2351",
+      "x_user_id": "1709414702479003648",
+      "last_scored": 1789355080878
+    },
+    {
+      "handle": "deepsleep886",
+      "x_user_id": null,
+      "last_scored": 1789351855837
+    },
+    {
+      "handle": "iatwints",
+      "x_user_id": null,
+      "last_scored": 1789351853611
+    },
     {
       "handle": "ffirmstone22262",
       "x_user_id": "2047980830656544768",
