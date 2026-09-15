@@ -1,0 +1,68 @@
+{
+  "run_at": "2026-09-15T19:44:03+08:00",
+  "scope": "open appeal issue #421 at run start (1 single-account issue; no other open GitHub appeal issues found)",
+  "source": {
+    "github_repo": "https://github.com/foru17/make-x-great-again",
+    "production_api": "https://x.zuoluo.tv",
+    "governance": "GOVERNANCE.md"
+  },
+  "verification": {
+    "x_profile": "The current public X profile resolves @mikawaifusuki to structured UID 1585339869445779456, matching the submitted UID. It shows the display name 小鸟游星野🍥（劝人吃麦当劳第一人）, joined October 2022, about 19.9K followers, 145 following, no profile website, and a bio describing content reposting, adult expression, and political identity. A 60-post sample from 2026-09-11 through 2026-09-15 contains adult commentary, ordinary commentary, political discussion, and quote/repost activity; the account-owned posts expose X media links, not a commercial destination or contact route. A quoted account's payment link was on the quoted author's profile, not on @mikawaifusuki's profile.",
+    "pre_decision": "Before the write, /v1/check?ids=1585339869445779456 returned hits={}. Authenticated admin searches found one human_confirmed row for the UID/handle, source=auto_keyword, published_tier=rule, verdict_label=porn_bot, confidence=1, category=porn, evidence_text=好涩 plus an explicit-media caption, reporters=1; no queue, whitelist, or agent-staging row was present. The matching curated rule was tweet pattern 好涩 (rule 20), which is an ambiguous/context-free expression rather than proof of commercial porn advertising.",
+    "decision_basis": "The profile and sampled posts show adult expression and some vulgar commentary, plus political and ordinary discussion, but no account-owned commercial solicitation, contact route, paid-content funnel, or repeatable porn-advertising bot pattern. Adult expression, political views, reposting, and a single ambiguous keyword hit are outside or insufficient for the narrowly defined commercial-spam/pornographic-advertising-bot scope.",
+    "post_decision": "The production whitelist upsert returned status=whitelisted. The canonical row is UID 1585339869445779456, rowid 80881, with status=whitelisted, source=admin_whitelist, verdict_label=legit, confidence=1, signals_hash/published_at/published_tier cleared; review_log.id=761697 records whitelist_add by admin. /v1/check remained empty and authenticated blacklist/queue searches returned no row.",
+    "artifact_before": "At the decision time /v1/list/meta advertised v-_____f_________-175304 (generatedAt=1789472469257, count=175304); the old R2 lite and shards artifacts still contained this UID until the next scheduled publication.",
+    "artifact_after": "At the final check (2026-09-15T12:08:07Z), /v1/list/meta still advertised v-_____f_________-175304 (count=175304); the fetched R2 lite contained the UID and handle once each, and shards contained the UID/handle (4/3 textual matches). The post-decision data-mirror v2-lite at 1f7d8ef had no match. R2 publication had not refreshed yet, so this record does not claim that the old public artifacts were already removed.",
+    "mirror_sync": "POST /v1/admin/sync-mirror returned ok=true with whitelist=committed, blacklist=committed, lite=committed.",
+    "data_mirror_commits": "The post-decision data-mirror commits are 8b0d2ee (whitelist, 2442 total), 9105928 (blacklist, 50000 total), and 1f7d8ef (lite, 175305 total). The data-mirror whitelist contains the UID/handle and both the v1 blacklist and v2-lite contain no match.",
+    "rowid_note": "rowid 80881 was decoded from the authenticated admin whitelist pagination cursor [last_scored, last_scored, rowid] returned with limit=1; it was not guessed.",
+    "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/421#issuecomment-5679933600"
+  },
+  "records": [
+    {
+      "issue": 421,
+      "handle": "mikawaifusuki",
+      "decision": "whitelisted",
+      "uid": "1585339869445779456",
+      "submitted_uid": "1585339869445779456",
+      "rowid": 80881,
+      "audit_id": 761697,
+      "audit_action": "whitelist_add",
+      "prior_status": "human_confirmed",
+      "prior_source": "auto_keyword",
+      "prior_verdict_label": "porn_bot",
+      "prior_confidence": 1,
+      "prior_category": "porn",
+      "prior_evidence": "好涩\n掀开裙子就出来了",
+      "prior_rule_id": 20,
+      "prior_rule_pattern": "好涩",
+      "github_comment_id": 5679933600,
+      "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/421#issuecomment-5679933600",
+      "github_state": "closed",
+      "result": "completed",
+      "evidence": "The public profile UID matches the appeal. The profile and a 60-post sample show adult expression and vulgar commentary, but no account-owned commercial solicitation, contact route, paid-content funnel, or repeatable porn-advertising bot pattern. The keyword hit is insufficient under the project's narrow governance scope.",
+      "sources": [
+        "https://x.com/mikawaifusuki",
+        "https://api.fxtwitter.com/2/profile/mikawaifusuki",
+        "https://api.fxtwitter.com/2/profile/mikawaifusuki/statuses?count=20",
+        "https://x.com/mikawaifusuki/status/2099497234467582062",
+        "https://x.com/mikawaifusuki/status/2099746459436613954",
+        "https://x.com/mikawaifusuki/status/2099659938520002585",
+        "https://x.zuoluo.tv/v1/check?ids=1585339869445779456",
+        "https://x.zuoluo.tv/v1/whitelist?since=1789473256405&limit=2000",
+        "https://x.zuoluo.tv/v1/list/meta",
+        "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/whitelist/v1.json",
+        "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v1.json",
+        "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v2-lite.json"
+      ],
+      "check_hit": false,
+      "whitelist_present": true,
+      "blacklist_present": false,
+      "queue_present": false,
+      "agent_present_before": false,
+      "agent_present_after": false,
+      "artifact_present_before": true,
+      "artifact_present_after": true
+    }
+  ]
+}
