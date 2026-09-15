@@ -1,0 +1,73 @@
+{
+  "run_at": "2026-09-15T15:16:50+08:00",
+  "scope": "open appeal issue #419 at run start (1 single-account issue; no other open GitHub appeal issues found)",
+  "source": {
+    "github_repo": "https://github.com/foru17/make-x-great-again",
+    "production_api": "https://x.zuoluo.tv",
+    "governance": "GOVERNANCE.md"
+  },
+  "verification": {
+    "x_profile": "The current public X profile resolves @ranranbing to display name 然 and structured rest_id 1874109310659350528, matching the submitted UID. It shows December 2024 signup, 7,618 posts, 652 followers, and 811 following. The visible timeline sample contains ordinary interaction and adult self-expression; the explicit post 2099391484512674228 and the other visible t.co links resolve back to X posts, with no commercial destination, contact route, repeated ad funnel, or repeatable bot pattern found.",
+    "pre_decision": "Before the write, /v1/check?ids=1874109310659350528 returned hits={}; authenticated searches by handle and UID found no human_confirmed blacklist row, pending queue row, or whitelist row. One non-public agent_blacklist staging row existed with verdict_label=porn_bot, confidence=0.92, agent_id=batch-openai-v2, agent_confidence=0.98, and an explicit-content trigger; the stored bot rationale was not sufficient to satisfy the human governance gate.",
+    "decision_basis": "The account has adult expression, including one explicit media post, but the current public evidence does not establish commercial solicitation, a contact or sales route, a repeated advertising funnel, or bot behavior. Adult expression alone is outside the governance scope of commercial spam and pornographic-advertising bots.",
+    "post_decision": "The production whitelist upsert returned status=whitelisted. The canonical row is UID 1874109310659350528, rowid 1096254, with published fields cleared; review_log.id=761621 records whitelist_add by admin. The GitHub appeal comment was posted and issue #419 was closed as completed.",
+    "artifact_version": "v-_____f_________-175266",
+    "artifact_generated_at": 1789456269427,
+    "artifact_count": 175266,
+    "artifact_pending": 3364,
+    "artifact_check": "The latest /v1/list/meta, lite artifact, and shards artifact were fetched successfully; neither the UID nor handle appears in the lite or shards artifact. The data-mirror whitelist snapshot contains the UID/handle and the blacklist snapshot does not.",
+    "mirror_sync": "The first POST /v1/admin/sync-mirror returned a blacklist-side 502 after committing whitelist/lite; the idempotent retry returned ok=true with whitelist=skipped, blacklist=committed, lite=committed.",
+    "data_mirror_commits": "The whitelist snapshot commit is f229b44 (2441 total); the fetched data-mirror head is 8caef78 (latest lite sync, 175268 total).",
+    "rowid_note": "rowid 1096254 was decoded from the authenticated admin whitelist pagination cursor [last_scored, last_scored, rowid]; it was not guessed.",
+    "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/419#issuecomment-5676308224"
+  },
+  "records": [
+    {
+      "issue": 419,
+      "handle": "ranranbing",
+      "decision": "whitelisted",
+      "uid": "1874109310659350528",
+      "submitted_uid": "1874109310659350528",
+      "rowid": 1096254,
+      "audit_id": 761621,
+      "audit_action": "whitelist_add",
+      "prior_status": "agent_blacklist",
+      "prior_verdict_label": "porn_bot",
+      "prior_confidence": 0.92,
+      "prior_agent_id": "batch-openai-v2",
+      "prior_agent_confidence": 0.98,
+      "prior_evidence": "#成熟教师被诱人黑色巨棒征服，满足的舔舐吞咽着最后毫无抵抗力地被塞满一嘴",
+      "prior_reasons": [
+        "explicit sexual/pornographic solicitation in comment",
+        "bait pattern typical of reply-section porn advertising bots",
+        "off-topic adult content in home feed with no relation to threadTopic",
+        "account posts high volume of media (1848) consistent with adult spam behavior"
+      ],
+      "github_comment_id": 5676308224,
+      "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/419#issuecomment-5676308224",
+      "github_state": "closed",
+      "result": "completed",
+      "evidence": "The public profile UID matches the appeal. The profile has ordinary interaction and adult self-expression, including one explicit media post, but the sampled posts and resolved links show no commercial solicitation, contact route, repeated ad funnel, or repeatable bot pattern. The evidence is insufficient for an in-scope commercial spam or pornographic-advertising bot decision.",
+      "sources": [
+        "https://x.com/ranranbing",
+        "https://x.com/ranranbing/status/2099391484512674228",
+        "https://x.com/ranranbing/status/2099717481283633617",
+        "https://x.com/ranranbing/status/2099521313274732696",
+        "https://x.com/ranranbing/status/2099168365478813826",
+        "https://x.zuoluo.tv/v1/check?ids=1874109310659350528",
+        "https://x.zuoluo.tv/v1/list/meta",
+        "https://x.zuoluo.tv/v1/artifacts/lite-v-_____f_________-175266.json",
+        "https://x.zuoluo.tv/v1/artifacts/shards-v-_____f_________-175266.json",
+        "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/whitelist/v1.json",
+        "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v1.json"
+      ],
+      "check_hit": false,
+      "whitelist_present": true,
+      "blacklist_present": false,
+      "queue_present": false,
+      "agent_present_before": true,
+      "agent_present_after": false,
+      "artifact_present": false
+    }
+  ]
+}
