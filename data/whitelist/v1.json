@@ -1,8 +1,13 @@
 {
   "schema": 1,
-  "generatedAt": 1789456423384,
-  "count": 2441,
+  "generatedAt": 1789473386995,
+  "count": 2442,
   "list": [
+    {
+      "handle": "mikawaifusuki",
+      "x_user_id": "1585339869445779456",
+      "last_scored": 1789473256406
+    },
     {
       "handle": "ranranbing",
       "x_user_id": "1874109310659350528",
