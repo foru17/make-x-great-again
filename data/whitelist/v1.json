@@ -1,8 +1,13 @@
 {
   "schema": 1,
-  "generatedAt": 1789355156604,
-  "count": 2440,
+  "generatedAt": 1789456423384,
+  "count": 2441,
   "list": [
+    {
+      "handle": "ranranbing",
+      "x_user_id": "1874109310659350528",
+      "last_scored": 1789456395657
+    },
     {
       "handle": "shu_fa2351",
       "x_user_id": "1709414702479003648",
