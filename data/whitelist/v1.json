@@ -1,8 +1,13 @@
 {
   "schema": 1,
-  "generatedAt": 1789495302212,
-  "count": 2443,
+  "generatedAt": 1789556281917,
+  "count": 2444,
   "list": [
+    {
+      "handle": "lamya_3b",
+      "x_user_id": "1643501177659883520",
+      "last_scored": 1789556210616
+    },
     {
       "handle": "nini_incrypto_",
       "x_user_id": "2033549131797733376",
