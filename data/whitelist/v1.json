@@ -1,8 +1,13 @@
 {
   "schema": 1,
-  "generatedAt": 1789581663274,
-  "count": 2455,
+  "generatedAt": 1789611634192,
+  "count": 2456,
   "list": [
+    {
+      "handle": "peter91719371",
+      "x_user_id": "944543674515406848",
+      "last_scored": 1789611555610
+    },
     {
       "handle": "xiangliuyang",
       "x_user_id": null,
