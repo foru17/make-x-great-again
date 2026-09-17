@@ -1,0 +1,65 @@
+{
+  "run_at": "2026-09-17T10:22:34+08:00",
+  "scope": "open GitHub issue #424 at run start (1 single-account appeal)",
+  "source": {
+    "github_repo": "https://github.com/foru17/make-x-great-again",
+    "github_issue": "https://github.com/foru17/make-x-great-again/issues/424",
+    "production_api": "https://x.zuoluo.tv",
+    "governance": "GOVERNANCE.md"
+  },
+  "verification": {
+    "x_profile": "The current public X profile resolves @Peter91719371 to structured UID 944543674515406848, matching the submitted UID. It shows display name localucer, joined 2017-12-23, 3,892 posts, 56 followers, 585 following, location Tokyo-to, Japan, bio 'nothing lasts', and no profile website. The visible pinned and recent timeline is personal commentary about relationships, television, games, and music; no account-owned commercial destination, contact/sales route, paid-content funnel, or repeatable advertising-bot pattern was found.",
+    "pre_decision": "Before the write, /v1/check?ids=944543674515406848 returned hits={}. Authenticated searches found no current matching row in /v1/admin/blacklist, /v1/admin/queue, or /v1/admin/whitelist; the latest 100 review_log rows had no matching handle or UID. The first 200 rows of each agent staging bucket also had no matching handle or UID.",
+    "decision_basis": "The submitted screenshot records a single 95% porn_bot model/rule hit with ambiguous text, but the current public profile and visible recent activity do not establish commercial spam, pornographic advertising, a contact/sales route, or repeatable bot behavior. Adult or suggestive expression alone is outside the narrowly defined governance scope. The account therefore qualifies for a whitelist correction.",
+    "post_decision": "The production whitelist upsert returned status=whitelisted. The canonical row is handle peter91719371, UID 944543674515406848, rowid 975263; review_log.id=764632 records whitelist_add by admin. /v1/check remained empty, and the public whitelist delta returned the exact UID and handle.",
+    "mirror_sync": "POST /v1/admin/sync-mirror returned ok=true with whitelist=committed, blacklist=committed, lite=committed.",
+    "data_mirror_commits": "The post-decision data-mirror commits are cd23cd6 (whitelist, 2456 total), 4ba1833 (blacklist, 50000 total), and b09459b (lite, 175531 total). The data-mirror whitelist contains the UID/handle; the blacklist v1 and v2-lite snapshots contain neither.",
+    "artifact_check": "At final verification, /v1/list/meta advertised version v-_____f_________-175529 with count=175529 and pending=2051. The advertised bloom artifact fetched successfully (HTTP 200, 87384 bytes); the advertised meta, lite, and shards artifacts all fetched successfully and recursively contained neither UID 944543674515406848 nor handle peter91719371. The account was not present in the public blacklist before the appeal, so no public-list removal was needed.",
+    "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/424#issuecomment-5707490472",
+    "github_state": "closed",
+    "github_state_reason": "completed"
+  },
+  "records": [
+    {
+      "issue": 424,
+      "handle": "peter91719371",
+      "decision": "whitelisted",
+      "uid": "944543674515406848",
+      "submitted_uid": "944543674515406848",
+      "rowid": 975263,
+      "audit_id": 764632,
+      "audit_action": "whitelist_add",
+      "prior_status": null,
+      "prior_source": null,
+      "github_comment_id": 5707490472,
+      "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/424#issuecomment-5707490472",
+      "github_state": "closed",
+      "result": "completed",
+      "evidence": "The public profile UID matches the appeal. It is an established low-follower account with nearly nine years of history, a personal bio, and varied recent posts about relationships, television, games, and music. No commercial solicitation, contact route, paid-content funnel, or repeatable porn-advertising-bot behavior was found; the single ambiguous model/rule hit is insufficient under the project's narrow governance scope.",
+      "sources": [
+        "https://x.com/Peter91719371",
+        "https://x.com/Peter91719371/status/2011600687516533189",
+        "https://x.com/Peter91719371/status/2099669719318147405",
+        "https://x.com/Peter91719371/status/2099652598747758988",
+        "https://api.fxtwitter.com/2/profile/Peter91719371",
+        "https://github.com/foru17/make-x-great-again/issues/424",
+        "https://github.com/user-attachments/assets/0b8c557a-cc0f-456a-ab9d-05ee2f252169",
+        "https://x.zuoluo.tv/v1/check?ids=944543674515406848",
+        "https://x.zuoluo.tv/v1/whitelist?since=1789600000000&limit=2000",
+        "https://x.zuoluo.tv/v1/list/meta",
+        "https://x.zuoluo.tv/v1/artifacts/lite-v-_____f_________-175529.json",
+        "https://x.zuoluo.tv/v1/artifacts/shards-v-_____f_________-175529.json",
+        "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/whitelist/v1.json",
+        "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v1.json",
+        "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v2-lite.json"
+      ],
+      "check_hit": false,
+      "whitelist_present": true,
+      "blacklist_present": false,
+      "queue_present": false,
+      "artifact_present_after": false,
+      "mirror_whitelist_present": true,
+      "mirror_blacklist_present": false
+    }
+  ]
+}
