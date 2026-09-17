@@ -1,8 +1,13 @@
 {
   "schema": 1,
-  "generatedAt": 1789611634192,
-  "count": 2456,
+  "generatedAt": 1789621494199,
+  "count": 2457,
   "list": [
+    {
+      "handle": "inkingfish",
+      "x_user_id": "1198837480759287808",
+      "last_scored": 1789621457727
+    },
     {
       "handle": "peter91719371",
       "x_user_id": "944543674515406848",
