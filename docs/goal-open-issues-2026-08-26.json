@@ -1,0 +1,92 @@
+{
+  "run_at": "2026-09-17T02:25:51Z",
+  "scope": "open GitHub appeal issues #424 and #425 at run start (two single-account items)",
+  "source": {
+    "github_repo": "https://github.com/foru17/make-x-great-again",
+    "production_api": "https://x.zuoluo.tv",
+    "governance": "GOVERNANCE.md"
+  },
+  "verification": {
+    "x_profiles": "Both public X profiles resolved to the submitted structured UIDs. @Peter91719371 resolves to 944543674515406848 and shows personal film, game, music, and opinion posts. @LiaoJieAiAi resolves to 2054894802504966144 and shows a personal media/business/lifestyle profile with ordinary opinion and entertainment posts. Neither profile showed an account-owned commercial destination, paid-content funnel, sales/contact route, or repeatable commercial-spam/porn-advertising-bot pattern.",
+    "production_reads": "For both UIDs, /v1/check returned an empty hits object. The live whitelist delta contained Peter's canonical row (handle peter91719371, UID 944543674515406848, last_scored 1789611555610) and no LiaoJieAiAi match. The latest data-mirror whitelist contains Peter and no LiaoJieAiAi match; the latest blacklist snapshot contains neither account.",
+    "decision_basis": "Personal expression, entertainment commentary, and isolated references to advertising are not by themselves commercial spam or a pornographic-advertising bot under GOVERNANCE.md. Peter was already whitelisted by a concurrent completed review, so no duplicate mutation was made. LiaoJieAiAi was not present on the public blacklist or published artifacts, so no production row required a new public-list removal.",
+    "post_decision": "Issue #424's authoritative maintainer comment records canonical row peter91719371 / UID 944543674515406848 as whitelisted, rowid 975263, with review_log.id=764632 and action whitelist_add. Issue #425 received a not_planned result with no D1 write, so it has no new rowid or review_log audit ID.",
+    "artifact_check": "At final verification, /v1/list/meta advertised version v-_____f_________-175529 with count 175529 and pending 2051. The referenced lite and shards artifacts were fetched successfully and contained neither UID/handle. The public data-mirror blacklist and whitelist snapshots were also checked.",
+    "github_comments": {
+      "424": "https://github.com/foru17/make-x-great-again/issues/424#issuecomment-5707490472",
+      "425": "https://github.com/foru17/make-x-great-again/issues/425#issuecomment-5707506442"
+    }
+  },
+  "records": [
+    {
+      "issue": 424,
+      "handle": "Peter91719371",
+      "decision": "whitelisted",
+      "uid": "944543674515406848",
+      "submitted_uid": "944543674515406848",
+      "rowid": 975263,
+      "audit_id": 764632,
+      "audit_action": "whitelist_add",
+      "prior_status": null,
+      "prior_source": null,
+      "github_comment_id": 5707490472,
+      "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/424#issuecomment-5707490472",
+      "github_state": "closed",
+      "result": "completed",
+      "evidence": "The submitted UID matches the public profile. The account is an established personal profile with varied entertainment and opinion posts; no commercial solicitation, pornographic advertising, paid funnel, or repeatable ad-bot behavior was found. The concurrent authoritative review changed the canonical row to whitelisted.",
+      "sources": [
+        "https://x.com/Peter91719371",
+        "https://x.com/Peter91719371/status/2099669719318147405",
+        "https://x.zuoluo.tv/v1/check?ids=944543674515406848",
+        "https://x.zuoluo.tv/v1/whitelist?since=1789579494466&limit=2000",
+        "https://x.zuoluo.tv/v1/list/meta",
+        "https://x.zuoluo.tv/v1/artifacts/lite-v-_____f_________-175529.json",
+        "https://x.zuoluo.tv/v1/artifacts/shards-v-_____f_________-175529.json",
+        "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/whitelist/v1.json",
+        "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v1.json"
+      ],
+      "check_hit": false,
+      "whitelist_present": true,
+      "blacklist_present": false,
+      "queue_present": null,
+      "agent_present_before": null,
+      "agent_present_after": null,
+      "artifact_present_after": false
+    },
+    {
+      "issue": 425,
+      "handle": "LiaoJieAiAi",
+      "decision": "not_planned",
+      "uid": "2054894802504966144",
+      "submitted_uid": "2054894802504966144",
+      "rowid": null,
+      "audit_id": null,
+      "audit_action": null,
+      "prior_status": null,
+      "prior_source": null,
+      "github_comment_id": 5707506442,
+      "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/425#issuecomment-5707506442",
+      "github_state": "closed",
+      "result": "not_planned",
+      "evidence": "The submitted UID matches the public profile. The account presents personal media, business, finance, travel, and entertainment commentary; no account-owned commercial solicitation, pornographic advertising, paid funnel, sales/contact route, or repeatable ad-bot pattern was found. It was absent from /v1/check, the current published blacklist artifacts, and the data-mirror blacklist, so no D1 list write was performed.",
+      "sources": [
+        "https://x.com/LiaoJieAiAi",
+        "https://x.com/LiaoJieAiAi/status/2100407752631914712",
+        "https://x.zuoluo.tv/v1/check?ids=2054894802504966144",
+        "https://x.zuoluo.tv/v1/whitelist?since=1785658983000&limit=2000",
+        "https://x.zuoluo.tv/v1/list/meta",
+        "https://x.zuoluo.tv/v1/artifacts/lite-v-_____f_________-175529.json",
+        "https://x.zuoluo.tv/v1/artifacts/shards-v-_____f_________-175529.json",
+        "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/whitelist/v1.json",
+        "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v1.json"
+      ],
+      "check_hit": false,
+      "whitelist_present": false,
+      "blacklist_present": false,
+      "queue_present": null,
+      "agent_present_before": null,
+      "agent_present_after": null,
+      "artifact_present_after": false
+    }
+  ]
+}
