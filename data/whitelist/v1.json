@@ -1,8 +1,18 @@
 {
   "schema": 1,
-  "generatedAt": 1789621494199,
-  "count": 2457,
+  "generatedAt": 1789748518755,
+  "count": 2459,
   "list": [
+    {
+      "handle": "ccpthenazist",
+      "x_user_id": "1827501237132054528",
+      "last_scored": 1789748338692
+    },
+    {
+      "handle": "aizhiz14078",
+      "x_user_id": "1947797427135602689",
+      "last_scored": 1789748337281
+    },
     {
       "handle": "inkingfish",
       "x_user_id": "1198837480759287808",
