@@ -1,8 +1,13 @@
 {
   "schema": 1,
-  "generatedAt": 1789748518755,
-  "count": 2459,
+  "generatedAt": 1789787111170,
+  "count": 2460,
   "list": [
+    {
+      "handle": "yanmin1105",
+      "x_user_id": "1904539885769457665",
+      "last_scored": 1789787090738
+    },
     {
       "handle": "ccpthenazist",
       "x_user_id": "1827501237132054528",
