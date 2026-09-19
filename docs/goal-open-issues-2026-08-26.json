@@ -1,0 +1,73 @@
+{
+  "run_at": "2026-09-19T03:06:46Z",
+  "scope": "open GitHub appeal issue #434 at run start (one single-account item)",
+  "source": {
+    "github_repo": "https://github.com/foru17/make-x-great-again",
+    "github_issue": "https://github.com/foru17/make-x-great-again/issues/434",
+    "production_api": "https://x.zuoluo.tv",
+    "governance": "GOVERNANCE.md"
+  },
+  "verification": {
+    "x_profile": "The current public X profile resolves @yanmin1105 to structured UID 1904539885769457665, matching the submitted UID. It is an active public personal account joined 2025-03-25 with 1,778 posts, 2,311 followers, and 522 following. Recent posts contain repeated Hong Kong phone-card sales and giveaway promotion, but the profile also has ongoing personal posts and interaction; no repeatable advertising-bot pattern was established.",
+    "historical_listing": "The historical blacklist snapshot at commit 883b9a7 recorded handle yanmin1105 with UID 2048062376847835137, verdict spam, confidence 0.98, and phone-card sales evidence. That UID does not match the current public profile UID and is not currently returned by /v1/check or the targeted admin searches.",
+    "pre_decision": "Before the write, /v1/check returned hits={} for both the submitted UID 1904539885769457665 and historical UID 2048062376847835137. Authenticated admin blacklist, queue, and whitelist searches returned no current row for the handle or either UID; the first 200 rows of each agent staging bucket also had no match.",
+    "decision_basis": "The current account does self-promote a phone-card business, but its public profile is a sustained personal account with non-commercial posts and interaction. The available evidence does not establish a commercial-spam bot, and ordinary personal-account self-promotion is not independently a violation under the narrow GOVERNANCE.md scope. The historical UID mismatch further prevents treating the old record as a current-account verdict.",
+    "post_decision": "POST /v1/admin/whitelist returned status=whitelisted for canonical handle yanmin1105 / UID 1904539885769457665. The targeted admin whitelist row is rowid 140280 with published fields cleared; review_log.id=767198 records whitelist_add. The rowid was recovered by decoding the authenticated limit=1 nextBefore cursor [1789787090738,1789787090738,140280], not guessed. /v1/check remains hits={}, and the whitelist delta returns the UID.",
+    "mirror_sync": "POST /v1/admin/sync-mirror returned ok=true with whitelist=committed, blacklist=committed, and lite=committed. data-mirror commits are e115646 (whitelist), 8504ab6 (blacklist v1), and 863a69f (blacklist lite). The mirrored whitelist contains the target; mirrored blacklist v1 and v2-lite do not.",
+    "artifact_check": "The advertised /v1/list/meta remained version v-_____f_________-175772 generated at 1789785069736. Its referenced lite, shards, bloom, and meta artifacts were fetched successfully; none contains UID 1904539885769457665 or handle yanmin1105. The account was not a current public blacklist hit before the write, and remains absent from the published artifacts.",
+    "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/434#issuecomment-5738881989",
+    "github_state": "Issue #434 closed",
+    "github_state_reason": "completed"
+  },
+  "records": [
+    {
+      "issue": 434,
+      "handle": "yanmin1105",
+      "submitted_handle": "yanmin1105",
+      "decision": "whitelisted",
+      "uid": "1904539885769457665",
+      "submitted_uid": "1904539885769457665",
+      "historical_uid": "2048062376847835137",
+      "rowid": 140280,
+      "rowid_note": "Decoded from the authenticated admin whitelist limit=1 nextBefore cursor; not guessed.",
+      "audit_id": 767198,
+      "audit_action": "whitelist_add",
+      "prior_status": null,
+      "prior_source": null,
+      "github_comment_id": 5738881989,
+      "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/434#issuecomment-5738881989",
+      "github_state": "closed",
+      "github_state_reason": "completed",
+      "result": "completed",
+      "evidence": "The submitted UID matches the current public X profile. The profile has recurring phone-card sales and giveaway posts, but is a sustained personal account with ordinary non-commercial activity and interaction; no repeatable commercial-spam-bot behavior was established. The historical blacklist record used a different UID, so it cannot be treated as a current-account verdict under the UID-first review rule.",
+      "sources": [
+        "https://x.com/yanmin1105",
+        "https://x.com/yanmin1105/status/2096133966508306535",
+        "https://x.com/yanmin1105/status/2101006260279927085",
+        "https://x.com/yanmin1105/status/2100265543295173066",
+        "https://api.fxtwitter.com/2/profile/yanmin1105",
+        "https://api.fxtwitter.com/2/profile/yanmin1105/statuses?count=100",
+        "https://x.zuoluo.tv/v1/check?ids=1904539885769457665,2048062376847835137",
+        "https://x.zuoluo.tv/v1/whitelist?since=1789787090737&limit=20",
+        "https://x.zuoluo.tv/v1/list/meta",
+        "https://x.zuoluo.tv/v1/artifacts/lite-v-_____f_________-175772.json",
+        "https://x.zuoluo.tv/v1/artifacts/shards-v-_____f_________-175772.json",
+        "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/whitelist/v1.json",
+        "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v1.json",
+        "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v2-lite.json",
+        "https://github.com/foru17/make-x-great-again/commit/883b9a7"
+      ],
+      "check_hit": false,
+      "whitelist_present": true,
+      "blacklist_present": false,
+      "queue_present": false,
+      "agent_present_before": false,
+      "agent_present_after": false,
+      "lite_artifact_present_after": false,
+      "shards_artifact_present_after": false,
+      "artifact_present_after": false,
+      "mirror_whitelist_present": true,
+      "mirror_blacklist_present": false
+    }
+  ]
+}
