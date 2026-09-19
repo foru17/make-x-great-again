@@ -1,0 +1,41 @@
+{
+  "run_at": "2026-09-19T07:10:41Z",
+  "scope": "Open GitHub issues at run start: #436 was the only open issue and was not a false-positive or appeal item.",
+  "source": {
+    "github_repo": "https://github.com/foru17/make-x-great-again",
+    "github_issue": "https://github.com/foru17/make-x-great-again/issues/436",
+    "governance": "GOVERNANCE.md"
+  },
+  "verification": {
+    "open_issues": "The repository had one open issue at triage: #436, titled '[Bug] 判定提示中，希望能有中文的提示'.",
+    "issue_triage": "The title and body request a Chinese version of a verdict prompt under the 'other' component. They contain no false-positive or appeal language, X handle, X numeric user ID, or account URL.",
+    "decision_basis": "The automation is limited to individual false-positive and appeal reviews for commercial spam or pornographic-advertising bots. Issue #436 is a product localization request, so it is outside this moderation run. No X profile, D1/admin row, review_log entry, or public-list artifact was queried or changed.",
+    "production_verification": "Not applicable: no account was submitted and no production mutation was attempted.",
+    "github_comment_url": null,
+    "github_state": "Issue #436 remains open for maintainer product triage.",
+    "github_state_reason": "not_planned_for_moderation_automation"
+  },
+  "records": [
+    {
+      "issue": 436,
+      "handle": null,
+      "submitted_handle": null,
+      "decision": "not_planned",
+      "uid": null,
+      "submitted_uid": null,
+      "rowid": null,
+      "audit_id": null,
+      "audit_action": null,
+      "github_comment_id": null,
+      "github_comment_url": null,
+      "github_state": "open",
+      "github_state_reason": "not_planned_for_moderation_automation",
+      "result": "not_planned",
+      "evidence": "The issue requests Chinese UI copy for a verdict prompt and does not identify a misclassified account or request removal from the public list. It was intentionally left open and no account-level review or production change was performed.",
+      "sources": [
+        "https://github.com/foru17/make-x-great-again/issues/436",
+        "GOVERNANCE.md"
+      ]
+    }
+  ]
+}
