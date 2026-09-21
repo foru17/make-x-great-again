@@ -134,6 +134,19 @@ export default defineBackground(() => {
               }
               sendResponse({ ok: true, data: { status: res.status, body } });
             }
+          } else if (msg.type === "jev_classify") {
+            // 判定结果直接回给内容脚本，由它决定动作并写入本地缓存 ——
+            // background 不落库，保持无状态。
+            const { classifyWithJev, getJevConfig, jevReady } = await import("../lib/jev-client");
+            const cfg = await getJevConfig();
+            if (!jevReady(cfg)) {
+              sendResponse({ ok: false, error: "jev_not_configured" });
+            } else {
+              sendResponse({ ok: true, data: await classifyWithJev(msg.sig, cfg) });
+            }
+          } else if (msg.type === "jev_test") {
+            const { testJev } = await import("../lib/jev-client");
+            sendResponse({ ok: true, data: await testJev() });
           } else {
             sendResponse({ ok: false, error: "unknown message" });
           }

@@ -16,6 +16,12 @@ otherwise.
   and responsive Safari popup/options layouts for compact screens.
 - A shared optional Xcode signing configuration that injects local Team settings into all
   Apple platform targets without committing developer credentials.
+- Opt-in AI 判定 with the user's own TypeSafe Jev key: reply-section accounts that miss the
+  public list, cache and official rules are judged once on-device (one request of typed
+  questions — verdict, category, redirect bait, escort copy, legitimate commerce — mapped to
+  a verdict by calibrated-probability thresholds in code). Hits ride the rule-hit auto-action
+  path (reply sections only, auto tier under `autoTierMode`); results are cached per account
+  and never published. The `api.typesafe.ai` host permission is requested only on enable.
 
 ### Changed
 

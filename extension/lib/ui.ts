@@ -1067,9 +1067,10 @@ export function createBubble(
                         `<span class="qtag">${f.tier === "confirmed" ? "人工确认" : "自动收录"}</span>`,
                       );
                   } else if (f.source === "local-rule") tags.push(`<span class="qtag">规则</span>`);
+                  else if (f.source === "ai") tags.push(`<span class="qtag">AI 判定</span>`);
                   else if (f.source === "cache") tags.push(`<span class="qtag">缓存</span>`);
                   if (f.categoryZh) tags.push(`<span class="qtag">${esc(f.categoryZh)}</span>`);
-                  if (f.source === "local-rule" && !isAuto)
+                  if ((f.source === "local-rule" || f.source === "ai") && !isAuto)
                     tags.push(`<span class="qtag warn">需手动</span>`);
                   return tags.length
                     ? `<div class="qtags" title="${esc(f.verdict.reasons.join("\n"))}">${tags.join("")}</div>`
@@ -1647,7 +1648,7 @@ const ACTION_LADDER: { mode: ActionMode; verb: string }[] = [
 /** Inline pill on the author row; hover/focus → popover with reasons. */
 /** source: 'fresh' = just classified (rise-in); 'list'/'cache' = already on
  *  record → instant calm "known" marker, no processing implied. */
-export type BadgeSource = "fresh" | "list" | "cache" | "rule";
+export type BadgeSource = "fresh" | "list" | "cache" | "rule" | "ai";
 
 // Popover overlay — a singleton shadow host attached directly under
 // <html>. Popovers must NOT live inside the badge's own shadow root: X's
@@ -1691,7 +1692,7 @@ export function createBadge(
     el.innerHTML = `${icon("shield", "currentColor", 13)}<span>检查</span>`;
   } else {
     const meta = LABEL[v.label];
-    const known = source === "list" || source === "cache" || source === "rule";
+    const known = source !== "fresh";
     el.className = `xss-badge ${known ? "known" : "fresh"}`;
     // Tinted pill: bg/border derive from --badge-color via color-mix in STYLE.
     el.style.setProperty("--badge-color", color);
@@ -1700,7 +1701,9 @@ export function createBadge(
         ? "命中公共名单"
         : source === "rule"
           ? "命中官方关键词规则（本机比对）"
-          : source === "cache"
+          : source === "ai"
+            ? "AI 判定（用你自己的 TypeSafe Key 判定，结果只存本机）"
+            : source === "cache"
             ? "本地缓存命中"
             : "首次发现（本机首次判定，已记录待人工确认）";
     // No native title: the hover popover already carries the details, and the

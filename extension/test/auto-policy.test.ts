@@ -114,3 +114,28 @@ test("cache and fresh verdicts never auto-act", () => {
     );
   }
 });
+
+test("AI 判定 hits: reply sections only and auto-tier, exactly like rule hits", () => {
+  for (const autoScope of ["replies", "all"] as const) {
+    assert.equal(
+      autoEligible({ source: "ai", tier: "auto", inReply: true, autoScope, autoTierMode: "full" }),
+      true,
+    );
+    assert.equal(
+      autoEligible({ source: "ai", tier: "auto", inReply: false, autoScope, autoTierMode: "full" }),
+      false,
+    );
+  }
+  assert.equal(
+    autoEligible({ source: "ai", tier: "auto", inReply: true, autoScope: "replies", autoTierMode: "badge" }),
+    false,
+  );
+  assert.equal(
+    capAutoTierAction("block", { source: "ai", tier: "auto", autoTierMode: "hide" }),
+    "hide",
+  );
+  assert.equal(
+    capAutoTierAction("block", { source: "ai", tier: "auto", autoTierMode: "full" }),
+    "block",
+  );
+});
