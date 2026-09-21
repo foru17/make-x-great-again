@@ -1,8 +1,13 @@
 {
   "schema": 1,
-  "generatedAt": 1789992122351,
-  "count": 2470,
+  "generatedAt": 1790003835223,
+  "count": 2471,
   "list": [
+    {
+      "handle": "toyiu11",
+      "x_user_id": "1892970687792402432",
+      "last_scored": 1790003774338
+    },
     {
       "handle": "tolovesky",
       "x_user_id": null,
