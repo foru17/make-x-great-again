@@ -1,7 +1,7 @@
 import type { CategoryAction, Settings } from "./settings";
 
 /** Where a hit came from, for auto-action eligibility purposes. */
-export type AutoSource = "list" | "rule" | "cache" | "fresh";
+export type AutoSource = "list" | "rule" | "ai" | "cache" | "fresh";
 
 /**
  * Whether a hit may enter the automatic-processing path at all (the
@@ -25,6 +25,11 @@ export type AutoSource = "list" | "rule" | "cache" | "fresh";
  * 永不自动处理" and rule hits are exactly that tier, so "badge" must gate
  * them too. Before this they bypassed the tier setting entirely.
  *
+ * AI 判定 hits (the user's own TypeSafe Jev key, judged on-device, never
+ * published) get exactly the rule-hit treatment: reply sections only, and
+ * auto-tier for autoTierMode — "badge" gates them, "hide" caps them. They
+ * only ever fire above Jev's calibrated threshold (lib/jev.ts).
+ *
  * Cache and fresh verdicts never auto-act.
  */
 export function autoEligible(opts: {
@@ -38,7 +43,7 @@ export function autoEligible(opts: {
     if (opts.tier !== "confirmed" && opts.autoTierMode === "badge") return false;
     return opts.autoScope === "all" || opts.inReply;
   }
-  if (opts.source === "rule") {
+  if (opts.source === "rule" || opts.source === "ai") {
     if (opts.autoTierMode === "badge") return false;
     return opts.inReply;
   }

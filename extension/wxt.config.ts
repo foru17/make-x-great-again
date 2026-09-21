@@ -37,12 +37,16 @@ export default defineConfig({
     // whitelist section (Device Flow endpoints don't serve CORS). Safari
     // declares the same X origins, while website access is managed from its
     // Extensions settings rather than Chrome's runtime permission prompt.
+    // api.typesafe.ai: requested only when the user turns on AI 判定 with
+    // their own TypeSafe key (its API sends no CORS headers for extension
+    // origins).
     ...(browser === "firefox"
       ? {
           optional_permissions: [
             "*://x.com/*",
             "*://twitter.com/*",
             "https://github.com/*",
+            "https://api.typesafe.ai/*",
           ],
         }
       : browser === "safari"
@@ -51,6 +55,7 @@ export default defineConfig({
               "*://x.com/*",
               "*://twitter.com/*",
               "https://github.com/*",
+            "https://api.typesafe.ai/*",
             ],
             // Safari requires packaged resources fetched by a content script
             // to be explicitly exposed. This bundled snapshot is only the
@@ -68,6 +73,7 @@ export default defineConfig({
               "*://x.com/*",
               "*://twitter.com/*",
               "https://github.com/*",
+            "https://api.typesafe.ai/*",
             ],
           }),
     action: { default_title: "Make X Great Again (MXGA)" },
@@ -88,7 +94,9 @@ export default defineConfig({
               strict_min_version: "109.0",
               data_collection_permissions: {
                 required: ["none"],
-                optional: ["authenticationInfo", "personallyIdentifyingInfo"],
+                // websiteContent: opt-in AI 判定 sends a replier's public
+                // profile + reply text to TypeSafe with the user's own key.
+                optional: ["authenticationInfo", "personallyIdentifyingInfo", "websiteContent"],
               },
             },
           },

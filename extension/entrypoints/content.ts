@@ -2,7 +2,7 @@ import { hideAccountSurface } from "../lib/account-surface";
 import { autoEligible, capAutoTierAction } from "../lib/auto-policy";
 import { addBlocked, isBlockedSync, warm as warmBlocklist } from "../lib/blocklist";
 import { BRAND } from "../lib/brand";
-import { type Cached, cacheGet, signalsHash } from "../lib/cache";
+import { type Cached, cacheGet, cacheSet, signalsHash } from "../lib/cache";
 import {
   extractFromArticle,
   extractProfile,
@@ -10,6 +10,8 @@ import {
   viewerHandle,
 } from "../lib/detect";
 import { CATEGORY_ZH } from "../lib/category";
+import { JEV_CONFIG_KEY, type JevConfig, getJevConfig, jevReady } from "../lib/jev-client";
+import type { JevJudgment } from "../lib/jev";
 import { LIST_KEY, WL_KEY } from "../lib/list-sync";
 import { type IndexEntry, isWhitelisted, lookupLocal, warmLocalIndex } from "../lib/local-index";
 import { matchLocalRules } from "../lib/local-rules";
@@ -257,6 +259,14 @@ export default defineContentScript({
 
     let settings = await getSettings();
     if (!settings.enabled) return; // master off → don't init (applies next load)
+    // AI 判定（用户自带 TypeSafe Key）。只缓存「能不能用」一个布尔：Key 本身
+    // 留在 background，内容脚本从不经手。
+    let jevOn = jevReady(await getJevConfig());
+    chrome.storage.onChanged.addListener((changes, area) => {
+      if (area === "local" && changes[JEV_CONFIG_KEY]) {
+        jevOn = jevReady({ ...(changes[JEV_CONFIG_KEY].newValue as JevConfig) });
+      }
+    });
     // Build marker — confirms which content-script build is live in this tab
     // (reloading the unpacked extension does NOT refresh already-open tabs).
     console.info("[MXGA] content script ready · build 2026-07-24 (profile-pending-settle)");
@@ -700,6 +710,68 @@ export default defineContentScript({
       pushFinding(sig, c.verdict, "cache");
     }
 
+    const findingSource = (b: BadgeSource) =>
+      b === "rule" ? "local-rule" : b === "ai" ? "ai" : "local-index";
+
+    /**
+     * 评论区里公榜 / 缓存 / 官方规则都没命中的账号 → AI 判定（TypeSafe Jev）。
+     *
+     * 只有 spam / porn_bot 走 renderLocalIndex 的自动处理链（与官方规则命中
+     * 同一套门禁：仅评论区、按自动收录一级受 autoTierMode 约束）；likely_spam
+     * 只挂角标；legit / uncertain 维持中立。判不出来就不判 —— 绝不因为
+     * 「模型没答上来」而默认成 spam。结果按账号落本地缓存，同一账号换条推文
+     * 不再重复调用。
+     */
+    async function classifyWithAi(anchor: HTMLElement, key: string, sig: Signals, ctx: ScanContext) {
+      let judged: JevJudgment | undefined;
+      try {
+        const resp = await chrome.runtime.sendMessage({ type: "jev_classify", sig });
+        if (resp?.ok) judged = resp.data as JevJudgment;
+      } catch {
+        /* background 不可用 / 网络错误 —— 下面按未判定处理 */
+      }
+      if (!judged) {
+        badgeFor(anchor, key, sig, null);
+        return;
+      }
+      const { verdict, category } = judged;
+      void cacheSet(key, {
+        verdict,
+        signalsHash: signalsHash(sig),
+        model: "jev",
+        ts: Date.now(),
+        handle: sig.handle,
+        displayName: sig.displayName,
+        ...(sig.avatarUrl ? { avatarUrl: sig.avatarUrl } : {}),
+      });
+      void bumpStats({ detections: 1, label: verdict.label });
+      if (verdict.label === "spam" || verdict.label === "porn_bot") {
+        renderLocalIndex(
+          anchor,
+          key,
+          sig,
+          {
+            userId: sig.userId ?? "",
+            handle: sig.handle,
+            verdict,
+            category,
+            tier: "auto",
+            source: "community",
+            updatedAt: new Date().toISOString(),
+          },
+          "ai",
+          ctx,
+        );
+        return;
+      }
+      if (verdict.label === "likely_spam") {
+        badgeFor(anchor, key, sig, verdict, undefined, "ai");
+        pushFinding(sig, verdict, "ai", { categoryZh: CATEGORY_ZH[category] });
+        return;
+      }
+      badgeFor(anchor, key, sig, null);
+    }
+
     function renderLocalIndex(
       anchor: HTMLElement,
       key: string,
@@ -708,7 +780,7 @@ export default defineContentScript({
       badgeSource: BadgeSource = "list",
       ctx: ScanContext = "feed",
     ) {
-      if (!hitPublicSeen.has(key)) {
+      if (badgeSource !== "ai" && !hitPublicSeen.has(key)) {
         hitPublicSeen.add(key);
         void bumpStat("hitPublic");
       }
@@ -749,7 +821,7 @@ export default defineContentScript({
       // regardless of the per-category policy.
       if (action === "badge" || !settings.autoProcess) {
         badgeFor(anchor, key, sig, entry.verdict, undefined, badgeSource);
-        pushFinding(sig, entry.verdict, badgeSource === "rule" ? "local-rule" : "local-index", {
+        pushFinding(sig, entry.verdict, findingSource(badgeSource), {
           categoryZh: CATEGORY_ZH[entry.category],
           ...(hitTweetId ? { tweetId: hitTweetId } : {}),
           ...(badgeSource === "list" ? { tier: entry.tier } : {}),
@@ -759,7 +831,7 @@ export default defineContentScript({
       // Auto-processed accounts still show up in the bubble panel — as
       // display-only rows driven through markAuto (checkbox disabled,
       // button is a status chip). Chips + radar pill counts follow.
-      pushFinding(sig, entry.verdict, badgeSource === "rule" ? "local-rule" : "local-index", {
+      pushFinding(sig, entry.verdict, findingSource(badgeSource), {
         categoryZh: CATEGORY_ZH[entry.category],
         ...(hitTweetId ? { tweetId: hitTweetId } : {}),
         ...(badgeSource === "list" ? { tier: entry.tier } : {}),
@@ -836,9 +908,14 @@ export default defineContentScript({
         //    as-is; legit/uncertain only if signals unchanged so new evidence
         //    can still re-trigger).
         const cached = await cacheGet(key);
+        // AI 判定的正常 / 不确定结果只用来省掉第 5 步的重复调用：不在这里
+        // 渲染（首次判定时就是中立），也不挡住下面的官方规则。
+        let aiSettled = false;
         if (cached) {
           const spammy = ["spam", "porn_bot", "likely_spam"].includes(cached.verdict.label);
-          if (spammy || cached.signalsHash === signalsHash(sig)) {
+          if (!spammy && cached.model === "jev") {
+            aiSettled = cached.signalsHash === signalsHash(sig);
+          } else if (spammy || cached.signalsHash === signalsHash(sig)) {
             renderCached(anchor, key, sig, cached);
             void bumpStats({ cacheHits: 1 });
             return;
@@ -877,7 +954,20 @@ export default defineContentScript({
           return;
         }
 
-        // 5. Local public list did not match. Just show neutral/unhit state.
+        // 5. AI 判定 — reply sections only (where the spam wave lives, and
+        //    the only place an AI hit may auto-act anyway). Opt-in: the user
+        //    brings their own TypeSafe key. Never judge the viewer's own replies.
+        if (
+          jevOn &&
+          !aiSettled &&
+          ctx === "reply" &&
+          sig.handle.toLowerCase() !== lastViewer?.toLowerCase()
+        ) {
+          await classifyWithAi(anchor, key, sig, ctx);
+          return;
+        }
+
+        // 6. Nothing matched. Just show neutral/unhit state.
         badgeFor(anchor, key, sig, null);
       } finally {
         inFlight.delete(key);

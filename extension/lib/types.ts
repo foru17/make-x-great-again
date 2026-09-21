@@ -53,7 +53,11 @@ export type BgRequest =
   // 举报: the authenticated POST to /v1/report MUST run in the background —
   // a content-script fetch is bound by x.com's CORS/CSP, whereas the SW shares
   // the extension origin the whitelist-apply flow already reports from.
-  | { type: "report"; sig: Signals };
+  | { type: "report"; sig: Signals }
+  // AI 判定（TypeSafe Jev，用户自带 Key）。同样必须在 background 发出：
+  // api.typesafe.ai 不对扩展源开放 CORS，靠用户授予的可选主机权限放行。
+  | { type: "jev_classify"; sig: Signals }
+  | { type: "jev_test" };
 
 export interface BgResponse {
   ok: boolean;

@@ -2,6 +2,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { clearGh, getGhLogin, getGhToken, ghUser, setGh } from "../../lib/auth";
 import { BRAND } from "../../lib/brand";
 import { CATEGORY_ZH, SPAM_CATEGORIES, type SpamCategory } from "../../lib/category";
+import {
+  JEV_ORIGINS,
+  type JevConfig,
+  getJevConfig,
+  setJevConfig,
+} from "../../lib/jev-client";
 import { categorizeReason, categorizeReasons } from "../../lib/reason-category";
 import {
   type ActionMode,
@@ -1480,6 +1486,107 @@ function WhitelistApplySection({ edgeBase }: { edgeBase: string }) {
   );
 }
 
+/** Firefox 把「把网页内容发给第三方」列为需单独授权的数据传输类别。 */
+async function ensureJevPermission(): Promise<boolean> {
+  try {
+    if (import.meta.env.BROWSER === "firefox") {
+      const dataGranted = await chrome.permissions.request({
+        data_collection: ["websiteContent"],
+      } as chrome.permissions.Permissions & { data_collection: string[] });
+      if (!dataGranted) return false;
+    }
+    if (await chrome.permissions.contains({ origins: JEV_ORIGINS })) return true;
+    return await chrome.permissions.request({ origins: JEV_ORIGINS });
+  } catch {
+    return false;
+  }
+}
+
+function AiJudgeSection() {
+  const [cfg, setCfg] = useState<JevConfig | null>(null);
+  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [busy, setBusy] = useState(false);
+  useEffect(() => {
+    void getJevConfig().then(setCfg);
+  }, []);
+  const patch = async (p: Partial<JevConfig>) => setCfg(await setJevConfig(p));
+
+  const toggle = async (on: boolean) => {
+    setMsg(null);
+    // 权限申请必须在点击手势里发起，所以放在开关的 onChange 链上。
+    if (on && !(await ensureJevPermission())) {
+      setMsg({ text: "未授权访问 api.typesafe.ai，AI 判定保持关闭。", ok: false });
+      return;
+    }
+    await patch({ enabled: on });
+  };
+
+  const test = async () => {
+    setMsg(null);
+    setBusy(true);
+    try {
+      if (!(await ensureJevPermission())) throw new Error("未授权访问 api.typesafe.ai");
+      const r = await chrome.runtime.sendMessage({ type: "jev_test" });
+      if (!r?.ok) {
+        throw new Error(r?.error === "jev_not_configured" ? "请先填写 API Key" : r?.error);
+      }
+      const d = r.data as { ms: number; label: string };
+      setMsg({ text: `连接正常 · ${d.ms}ms · 样本判定「${d.label}」`, ok: true });
+    } catch (e) {
+      setMsg({ text: `失败：${e instanceof Error ? e.message : String(e)}`, ok: false });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!cfg) return null;
+  return (
+    <section>
+      <SectionH>AI 判定</SectionH>
+      <p className="mb-3 text-[12px] leading-relaxed text-fg-3">
+        评论区里公共黑名单和官方规则都没命中的账号，交给 TypeSafe Jev 判定一次（结果按账号缓存，不重复调用）。
+        需自备 TypeSafe API Key：Key 只存在本机，账号的公开资料和回复由扩展直接发往 TypeSafe，不经过本项目的服务器，判定结果也不会公开上报。
+      </p>
+      <Toggle
+        on={cfg.enabled}
+        onChange={(v) => void toggle(v)}
+        label="启用 AI 判定"
+        hint="命中后按上方「自动处理策略」执行（归入自动收录一级）；关闭后不再发出任何请求"
+      />
+      <div className="mt-2 space-y-2">
+        {(
+          [
+            ["key", "API Key", "在 typesafe.ai 控制台创建"],
+            ["model", "模型", "jev-latest"],
+          ] as const
+        ).map(([k, label, ph]) => (
+          <label key={k} className="block">
+            <span className="mb-1 block text-[12px] font-semibold text-fg">{label}</span>
+            <input
+              type={k === "key" ? "password" : "text"}
+              value={cfg[k]}
+              placeholder={ph}
+              autoComplete="off"
+              spellCheck={false}
+              onChange={(e) => setCfg({ ...cfg, [k]: e.target.value })}
+              onBlur={(e) => void patch({ [k]: e.target.value.trim() })}
+              className="w-full rounded-md border border-border-2 bg-card px-2.5 py-1.5 text-[13px] text-fg outline-none focus:border-fg-3"
+            />
+          </label>
+        ))}
+        <div className="flex flex-wrap items-center gap-3 pt-1">
+          <Btn size="sm" disabled={busy} onClick={() => void test()}>
+            {busy ? "测试中…" : "测试判定"}
+          </Btn>
+          {msg && (
+            <span className={`text-[12px] ${msg.ok ? "text-fg-2" : "text-danger"}`}>{msg.text}</span>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function Settings() {
   const [cleared, setCleared] = useState(false);
   const [clearOpen, setClearOpen] = useState(false);
@@ -1554,8 +1661,8 @@ function Settings() {
           <section>
             <SectionH>自动处理策略</SectionH>
             <p className="mb-3 text-[12px] leading-relaxed text-fg-3">
-              命中<b className="text-fg-2">公共黑名单或官方规则</b>的账号按下方类别设定自动处理，其余只挂角标。
-              规则命中只在评论区自动执行；白名单账号永不处理；一切可在「处理记录」撤销。
+              命中<b className="text-fg-2">公共黑名单、官方规则或 AI 判定</b>的账号按下方类别设定自动处理，其余只挂角标。
+              规则与 AI 判定命中只在评论区自动执行；白名单账号永不处理；一切可在「处理记录」撤销。
             </p>
             <div className="mb-4">
               <Toggle
@@ -1612,7 +1719,7 @@ function Settings() {
               <div className="mb-1.5 text-[12px] font-semibold text-fg">自动收录条目</div>
               <p className="mb-2 text-[12px] leading-relaxed text-fg-3">
                 命中分两级：<b className="text-fg-2">人工确认</b>（维护者复核过的公榜条目，始终按下方各类别的动作完整执行）和
-                <b className="text-fg-2">自动收录</b>（AI/规则自动上榜的公榜条目 + 本地官方规则命中，占大多数）。这里决定自动收录一级能自动处理到什么程度。
+                <b className="text-fg-2">自动收录</b>（AI/规则自动上榜的公榜条目 + 本地官方规则命中 + 本机 AI 判定命中，占大多数）。这里决定自动收录一级能自动处理到什么程度。
               </p>
               <div className="grid grid-cols-1 gap-2">
                 {(
@@ -1688,6 +1795,8 @@ function Settings() {
             )}
           </section>
         )}
+
+        <AiJudgeSection />
 
         {st && (
           <section>
