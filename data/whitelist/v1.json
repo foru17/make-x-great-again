@@ -1,8 +1,28 @@
 {
   "schema": 1,
-  "generatedAt": 1790055591220,
-  "count": 2472,
+  "generatedAt": 1790100127142,
+  "count": 2476,
   "list": [
+    {
+      "handle": "masatusai",
+      "x_user_id": null,
+      "last_scored": 1790081504093
+    },
+    {
+      "handle": "ricohatane01",
+      "x_user_id": null,
+      "last_scored": 1790081503456
+    },
+    {
+      "handle": "ka_yi_lee",
+      "x_user_id": null,
+      "last_scored": 1790081502831
+    },
+    {
+      "handle": "tom_9275",
+      "x_user_id": null,
+      "last_scored": 1790081501677
+    },
     {
       "handle": "lijnchn24426647",
       "x_user_id": "1722888172978483200",
