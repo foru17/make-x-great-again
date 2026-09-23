@@ -58,10 +58,12 @@ export function QueueTab({
     total,
     pageCount,
     loading,
+    refreshing,
     error,
     apply: applyFilters,
     goPage: changePage,
     reload,
+    refresh,
   } = useFilteredList<Account>(
     async (qs) => {
       const j = await api.queue(qs);
@@ -83,6 +85,7 @@ export function QueueTab({
     applyFilters(next, nextSort);
   };
   const goPage = (next: number) => {
+    if (busy || loading || refreshing) return;
     sel.clear();
     changePage(next);
   };
@@ -93,7 +96,7 @@ export function QueueTab({
     onAuth,
     onDone: () => {
       sel.clear();
-      reload();
+      refresh();
       onMutated();
     },
   });
@@ -105,7 +108,7 @@ export function QueueTab({
       if (!result.processed) toast.info("这条记录已被处理，已刷新列表");
       else toast.success(`已${ACTION_ZH[action]}`);
       sel.clear();
-      await reload();
+      await refresh();
       onMutated();
     } catch (e) {
       if (e instanceof AuthError) onAuth();
@@ -136,7 +139,7 @@ export function QueueTab({
       );
       toast.success(`已提交重新初审 ${result.processed ?? 0} 条`);
       sel.clear();
-      await reload();
+      await refresh();
       onMutated();
     } catch (e) {
       if (e instanceof AuthError) onAuth();
@@ -173,19 +176,19 @@ export function QueueTab({
           `已${label} ${result.processed ?? 0} 条${result.skipped ? `；${result.skipped} 条已被处理，已跳过` : ""}`,
         );
         sel.clear();
-        await reload();
+        await refresh();
         onMutated();
       } catch (e) {
         if (e instanceof AuthError) onAuth();
         else toast.error("批量操作失败，请刷新后重试");
-        await reload();
+        await refresh();
       } finally {
         setBusy(false);
       }
     };
 
   return (
-    <fieldset className="min-w-0" disabled={busy} aria-busy={loading || busy}>
+    <fieldset className="min-w-0" disabled={busy || refreshing} aria-busy={loading || busy || refreshing}>
       <ViewHead
         title="待审队列"
         count={total == null ? fmtN(queue.length) : fmtN(total)}

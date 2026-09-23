@@ -37,6 +37,7 @@ export function useFilteredList<T>(
   const [page, setPage] = useState(0);
   const [total, setTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(false);
   const requestId = useRef(0);
   // The fetch closes over tab state; keep it in a ref so `run` stays stable and
@@ -45,9 +46,11 @@ export function useFilteredList<T>(
   fetchRef.current = fetchPage;
 
   const run = useCallback(
-    async (f: Filters, so: string, p: number, withTotal: boolean) => {
+    async (f: Filters, so: string, p: number, withTotal: boolean, background = false) => {
       const id = ++requestId.current;
-      setLoading(true);
+      // Keep mounted rows (and expanded evidence) during mutation reconciliation.
+      setLoading(!background);
+      setRefreshing(background);
       setError(false);
       try {
         let r = await fetchRef.current(filterQuery(f, so, p, withTotal));
@@ -67,7 +70,10 @@ export function useFilteredList<T>(
         setRows([]);
         if (e instanceof AuthError) onAuth();
       } finally {
-        if (id === requestId.current) setLoading(false);
+        if (id === requestId.current) {
+          setLoading(false);
+          setRefreshing(false);
+        }
       }
     },
     [onAuth],
@@ -101,6 +107,8 @@ export function useFilteredList<T>(
   /** After a mutation: same page, and re-count (rows may have left the set). */
   const reload = useCallback(() => run(filters, sort, page, true), [run, filters, sort, page]);
 
+  const refresh = useCallback(() => run(filters, sort, page, true, true), [run, filters, sort, page]);
+
   const pageCount = total == null ? null : Math.max(1, Math.ceil(total / PAGE_SIZE));
-  return { rows, setRows, filters, sort, page, total, pageCount, loading, error, apply, goPage, reload };
+  return { rows, setRows, filters, sort, page, total, pageCount, loading, refreshing, error, apply, goPage, reload, refresh };
 }

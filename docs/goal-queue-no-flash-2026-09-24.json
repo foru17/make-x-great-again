@@ -1,0 +1,22 @@
+{
+  "goal": "修复待审裁决后整表闪烁并发布",
+  "tasks": [
+    {
+      "id": "F1",
+      "task": "复现并修复裁决后整表卸载",
+      "verify": "DOM 行保留断言；无加载骨架；计数与分页正确",
+      "passes": true,
+      "evidence": [
+        "旧版真实点击：flashes=1, kept=0/99, expanded=false；修复后连续两次拉黑：flashes=0, kept=99/99, expanded=true",
+        "单条拉黑/白名单/驳回/移除后计数 112→107；末页批量驳回 7 条后回到第 1/1 页、100 行、选择清空",
+        "前端 TypeScript、修改文件 lint、Vite 构建通过；三尺寸/主题截图已核对"
+      ]
+    },
+    {
+      "id": "F2",
+      "task": "界面验收和发布",
+      "verify": "类型/构建、桌面移动暗色、生产版本与资源校验",
+      "passes": false
+    }
+  ]
+}
