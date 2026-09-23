@@ -47,6 +47,12 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
+export interface RuleSweepCursor {
+  partition: number;
+  after: number;
+  fingerprint: string;
+}
+
 export interface Account {
   status?: string;
   agent_model?: string;
@@ -323,10 +329,15 @@ export const api = {
         body: JSON.stringify({ pattern, items }),
       },
     ),
-  rulesApply: (scope: "queue" | "all" = "queue") =>
+  rulesApply: (scope: "queue" | "all" = "queue", cursor?: RuleSweepCursor) =>
     req<{
       ok: boolean;
       matched: number;
+      textMatched: number;
+      skippedProtected: number;
+      skippedChanged: number;
+      complete: boolean;
+      nextCursor: RuleSweepCursor | null;
       legitMatched?: number;
       legitTruncated?: boolean;
       queueTruncated?: boolean;
@@ -336,7 +347,7 @@ export const api = {
     }>("/v1/admin/keyword-rules/apply-to-queue", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ scope }),
+      body: JSON.stringify({ scope, cursor }),
     }),
 };
 

@@ -31,3 +31,14 @@
 实际 workerd/D1 本地运行时输出：`{"passed":true,"runtime":"workerd/D1","variants":25,"states":4,"requests":9,"search":302,"preview":302,"sweep":301,"protected":1,"terminalUnchanged":4}`。真实验证两页扫描、只读预演无审计写入、实际审计/规则计数相等、保护账号留待审。
 
 证据：`.ui-acceptance/2026-09-24-rule-coverage/{red,green-initial,test,typecheck,runtime}.log`；复现：`services/edge/test/keyword-review-queue.test.ts` 和 `services/edge/scripts/smoke-search-rules.mjs`。
+
+## 界面验收
+
+VERDICT: PASS。本地真实 Worker + SQLite 2,101 条模拟待审，实际操作“扫队列”和“全量扫描”各 11 次请求（每次点击最多自动 10 批，再明确续扫 1 批）。两个范围均验证 2,000 条时“扫描未完成”，续扫后 2,101 文字匹配 / 2,100 实际执行 / 1 保护跳过；规则 hit_count 与审计一致。运行中扫描、新增、编辑、开关、删除按钮禁用。结果常驻显示范围、实际计数与保护原因。
+
+- 桌面 1440×900：按钮与结果无溢出；保留原规则表、编辑、启用开关和删除入口。
+- 移动 390×844：页面 scrollWidth=390，未禁止缩放；确认框居中完整、继续按钮可点击，结果换行正常。规则表沿用原版横向滚动，无新增退化。
+- 暗色：标题、结果、保护说明可读；浏览器错误日志为空。
+- 基准 diff：以已部署版本的本地相同模拟数据截图为基准，新增进度结果块、续扫按钮与准确范围说明；其余页面结构不变。
+
+截图与原始断言：`.ui-acceptance/2026-09-24-rule-coverage/` 下 `baseline-{desktop,mobile,dark}.png`、`rules-{desktop,mobile,dark}.png`、`confirm-mobile.png`、`paused-mobile.png`、`ui-behavior.json`、`ui-state.json`。本轮遵循 UI 验收技能，浏览器按当前工具要求使用 CUA 控制真实 Chrome。

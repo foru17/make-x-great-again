@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
@@ -408,9 +408,25 @@ function RuleHitsSection({ onMutated }: { onMutated: () => void }) {
   );
 }
 
+interface SweepProgress {
+  scope: "queue" | "all";
+  cursor?: import("@/lib/adminApi").RuleSweepCursor;
+  scanned: number;
+  textMatched: number;
+  applied: number;
+  protected: number;
+  changed: number;
+  requeued: number;
+  complete: boolean;
+  error?: string;
+}
+
 export function RulesTab({ onAuth, onMutated }: { onAuth: () => void; onMutated: () => void }) {
   const confirm = useConfirm();
   const [rules, setRules] = useState<Rule[]>([]);
+  const [scanning, setScanning] = useState(false);
+  const [progress, setProgress] = useState<SweepProgress>();
+  const scanLock = useRef(false);
   // `undefined` rule + open = 新增；具体 rule = 编辑。
   const [editing, setEditing] = useState<Rule | undefined>();
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -454,36 +470,61 @@ export function RulesTab({ onAuth, onMutated }: { onAuth: () => void; onMutated:
     }
   };
 
+  const runSweep = async (start: SweepProgress) => {
+    if (scanLock.current) return;
+    scanLock.current = true;
+    setScanning(true);
+    let current = { ...start, error: undefined };
+    setProgress(current);
+    try {
+      // Bound automatic work. The remaining cursor is kept for an explicit
+      // continue action; surviving protected/false-positive rows cannot starve the tail.
+      for (let round = 0; round < 10; round++) {
+        const result = await api.rulesApply(current.scope, current.cursor);
+        if (!result.ok) throw new Error("scan_failed");
+        current = {
+          ...current,
+          cursor: result.nextCursor ?? undefined,
+          scanned: current.scanned + (result.scanned?.queue ?? 0) + (result.scanned?.legit ?? 0),
+          textMatched: current.textMatched + result.textMatched,
+          applied: current.applied + result.matched,
+          protected: current.protected + result.skippedProtected,
+          changed: current.changed + result.skippedChanged,
+          requeued: current.requeued + (result.legitMatched ?? 0),
+          complete: result.complete,
+        };
+        setProgress(current);
+        if (result.complete) break;
+        if (!result.nextCursor) throw new Error("missing_cursor");
+      }
+      if (current.complete) toast.success(`扫描完成，实际处理 ${current.applied} 条记录`);
+      else toast.info("扫描尚未完成，请继续扫描剩余记录。");
+    } catch (error) {
+      const changed = error instanceof Error && error.message === "HTTP 409";
+      setProgress({ ...current, cursor: changed ? undefined : current.cursor,
+        error: changed ? "规则或范围已改变，请重新开始扫描。" : "扫描中断；以下为已确认结果，失败批次可能已部分处理。可继续扫描核对剩余记录。" });
+      toast.error("扫描未完成");
+    } finally {
+      scanLock.current = false;
+      setScanning(false);
+      load();
+      onMutated();
+    }
+  };
+
   const applyAll = async (scope: "queue" | "all") => {
+    if (scanLock.current) return;
     const ok = await confirm({
-      title: scope === "all" ? "全量扫描（队列 + 已判正常）" : "扫所有规则到队列",
-      body:
-        scope === "all" ? (
-          <p>
-            用全部启用规则扫一遍待审队列 <b>和 AI 已判正常 / 无法判断（auto_legit / auto_unsure）的账号</b>。
-            已判正常的命中不直接上榜，回到待审队列由你复核；队列命中按各自 action 落地。
-          </p>
-        ) : (
-          <p>用全部启用规则扫一遍当前待审队列，命中按各自 action 落地。</p>
-        ),
+      title: scope === "all" ? "全量扫描" : "扫描全部待审",
+      body: <div className="space-y-2">
+        <p>使用全部启用规则，覆盖未初审、AI 待定、AI 建议拉黑和 AI 建议放行的记录。命中后按规则执行拉黑、白名单或驳回；粉丝达到 10 万或规则判定不属于垃圾类别时，不自动拉黑，保留待审并单独计数。</p>
+        {scope === "all" && <p>另外检查此前 AI 已判正常或无法判断的记录：拉黑规则命中后先回待审复核。</p>}
+        <p>人工终审记录保持不变。数据较多时会分段处理，直到明确显示“扫描完成”。</p>
+      </div>,
       okLabel: "开始扫描",
     });
     if (!ok) return;
-    const id = toast.loading("应用规则中…");
-    try {
-      const j = await api.rulesApply(scope);
-      if (!j.ok) throw new Error();
-      const extra =
-        scope === "all" ? `（其中已判正常回捞 ${j.legitMatched ?? 0} 条）` : "";
-      // Either partition can hit its candidate cap on a very broad rule set —
-      // say so, because the fix is simply to run the sweep again.
-      const cut = j.queueTruncated || j.legitTruncated ? "，候选超上限已截断，可再扫一轮" : "";
-      toast.success(`命中 ${j.matched} 条${extra}${cut}`, { id });
-      load();
-      onMutated();
-    } catch {
-      toast.error("失败", { id });
-    }
+    await runSweep({ scope, scanned:0, textMatched:0, applied:0, protected:0, changed:0, requeued:0, complete:false });
   };
 
   return (
@@ -491,13 +532,14 @@ export function RulesTab({ onAuth, onMutated }: { onAuth: () => void; onMutated:
       <ViewHead
         title="关键字规则"
         count={fmtN(rules.length)}
-        desc="规则在判定阶段先于 AI 匹配。命中 → 跳过 AI，按动作落地（默认进公榜），并按规则的 spam 类别标注。改规则 ≤30s 全局生效。"
+        desc="规则优先于 AI 初审。扫队列覆盖全部待审阶段；命中按规则动作处理，保护条件跳过会单独显示。新规则实时生效最长约 30 秒，历史记录需扫描。"
         actions={
           <>
-            <Button size="sm" variant="outline" onClick={() => applyAll("queue")}>扫队列</Button>
-            <Button size="sm" variant="outline" onClick={() => applyAll("all")}>全量扫描</Button>
+            <Button size="sm" variant="outline" disabled={scanning} onClick={() => applyAll("queue")}>扫队列</Button>
+            <Button size="sm" variant="outline" disabled={scanning} onClick={() => applyAll("all")}>全量扫描</Button>
             <Button
               size="sm"
+              disabled={scanning}
               onClick={() => {
                 setEditing(undefined);
                 setDialogOpen(true);
@@ -508,6 +550,17 @@ export function RulesTab({ onAuth, onMutated }: { onAuth: () => void; onMutated:
           </>
         }
       />
+      {progress && <section aria-label="扫描结果" aria-live="polite" className="mb-4 rounded-lg border bg-muted/30 p-3 text-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="font-medium">{scanning ? "扫描中…" : progress.complete ? "扫描完成" : "扫描未完成"} · {progress.scope === "all" ? "全部待审及此前已判正常 / 无法判断" : "全部待审（含 AI 已初审）"}</p>
+          {!scanning && !progress.complete && !progress.error?.startsWith("规则或范围") &&
+            <Button size="sm" variant="outline" onClick={() => runSweep(progress)}>继续扫描剩余记录</Button>}
+        </div>
+        <p className="mt-2 leading-relaxed">文字命中 {fmtN(progress.textMatched)} 条 · 实际处理 {fmtN(progress.applied)} 条 · 保护跳过 {fmtN(progress.protected)} 条 · 状态已变化 {fmtN(progress.changed)} 条</p>
+        <p className="mt-1 text-xs leading-relaxed text-muted-foreground">已检查 {fmtN(progress.scanned)} 条候选记录{progress.scope === "all" ? `，其中从此前 AI 判定中处理 ${fmtN(progress.requeued)} 条` : ""}。以上按存储记录计数，同一账号的多条记录分别处理。</p>
+        {progress.protected > 0 && <p className="mt-1 text-xs leading-relaxed text-muted-foreground">保护跳过：粉丝达到 10 万，或拉黑规则的判定不属于垃圾类别；这些记录仍保留待审。</p>}
+        {progress.error && <p className="mt-2 text-destructive">{progress.error}</p>}
+      </section>}
       <RuleDialog
         rule={editing}
         open={dialogOpen}
@@ -537,7 +590,7 @@ export function RulesTab({ onAuth, onMutated }: { onAuth: () => void; onMutated:
                 return (
                   <TableRow key={r.id} className={cn(!enabled && "opacity-55")}>
                     <TableCell>
-                      <Switch checked={enabled} onCheckedChange={(v) => toggle(r, v)} />
+                      <Switch disabled={scanning} checked={enabled} onCheckedChange={(v) => toggle(r, v)} />
                     </TableCell>
                     <TableCell>
                       <div className="font-mono text-sm font-semibold">{r.pattern}</div>
@@ -559,6 +612,7 @@ export function RulesTab({ onAuth, onMutated }: { onAuth: () => void; onMutated:
                         <Button
                           size="sm"
                           variant="outline"
+                          disabled={scanning}
                           onClick={() => {
                             setEditing(r);
                             setDialogOpen(true);
@@ -566,7 +620,7 @@ export function RulesTab({ onAuth, onMutated }: { onAuth: () => void; onMutated:
                         >
                           编辑
                         </Button>
-                        <Button size="sm" variant="ghost" className="text-destructive" onClick={() => del(r)}>
+                        <Button size="sm" variant="ghost" className="text-destructive" disabled={scanning} onClick={() => del(r)}>
                           删除
                         </Button>
                       </div>
