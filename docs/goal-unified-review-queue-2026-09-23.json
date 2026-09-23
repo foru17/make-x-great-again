@@ -39,7 +39,12 @@
       "id": "T4",
       "task": "证伪复核与交付",
       "verify": "回归测试、生产基准功能 diff、UI VERDICT、提交记录和预览地址",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "证伪复核：AI 初审及重新初审不减总数、终审才移出；筛选/计数/按筛选批量同口径，已终审写入受守卫保护",
+        "VERDICT PASS；docs/unified-review-queue-verification-2026-09-23.json 和对应 Markdown 功能对照报告",
+        "本地 /admin 实测 HTTP 200；未部署生产、未 push；实现提交 137d317、4900f45"
+      ]
     }
   ]
 }

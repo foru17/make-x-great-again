@@ -9,6 +9,8 @@ X(Twitter) 反垃圾/色情机器人浏览器扩展（`extension/`，WXT+MV3）+
 - 验收环境：`.ui-acceptance/` 内截图由 chrome-devtools 对本地构建 + chrome API stub（种子数据）截取；stub 方法见 ui-acceptance 运行记录（scratchpad `ui-acc/__stub.js` 模式：拷贝 `.output/chrome-mv3`、注入 `__stub.js`、http.server 伺服）。
 - 暗色为默认主题（`prefers-color-scheme` + `html[data-theme]` 覆盖），任何 options/popup 改动必须双主题各验一遍。
 
+- **统一待审候选版（2026-09-23，尚未部署）**：以生产 `92a9dc1` 和 `.ui-acceptance/2026-09-23-unified/baseline-*` 对照，候选截图 `queue-{desktop,mobile,dark}.png`；复现脚本 `scripts/ui-acceptance/unified-review/`（真实 Worker + 本地 SQLite，模拟数据）。验收报告 `docs/unified-review-queue-2026-09-23.md`。
+
 ## 术语口径（用户可见文案）
 
 - 「自动处理策略」：设置页分类别动作配置的统一名称（内部代码/注释仍可叫 per-category policy / 分级策略，但用户可见文案统一用前者）。
