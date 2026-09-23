@@ -1,0 +1,25 @@
+{
+  "version": "dc1e600a-46dd-4a92-a2f9-51a89913ac70",
+  "trafficPercent": 100,
+  "testsPassed": 179,
+  "testsFailed": 0,
+  "ui": {
+    "passes": true,
+    "baselineStoppedAtBatch": 10,
+    "automaticBatches": 21,
+    "startClicks": 1,
+    "manualContinuationClicks": 0,
+    "scanned": 4101,
+    "applied": 4100,
+    "protected": 1,
+    "auditRows": 4100,
+    "ruleHits": 4100,
+    "errorRetryVerified": true,
+    "normalConsoleErrors": 0,
+    "mobileViewport": 390,
+    "mobileScrollWidth": 390
+  },
+  "productionHttpChecks": 10,
+  "productionAssetsMatchBuild": true,
+  "productionAccountMutations": 0
+}

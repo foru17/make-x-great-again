@@ -15,3 +15,11 @@ VERDICT: PASS。使用相同 4,101 条本地 SQLite 模拟记录和真实 Worker
 三截图：`.ui-acceptance/2026-09-24-auto-sweep/rules-{desktop,mobile,dark}.png`；基准为同目录 `baseline-{desktop,mobile,dark}.png`。桌面 1440×900、移动 390×844、暗色桌面均可读；移动 scrollWidth=390、未禁止缩放；原表格继续内部横向滚动。对照差异仅为自动完成、取消常规续扫按钮、异常保留重试和确认说明；其余布局与操作保留。
 
 行为证据：同目录 `ui-verification.json`、`ui-state.json`、`requests.jsonl`；前端构建通过。
+
+## 发布
+
+已发布版本 `dc1e600a-46dd-4a92-a2f9-51a89913ac70`，部署列表确认 100%。仅前端编排和交互变更，后端扫描/数据库/定时配置保持原样；沿用本轮已核验的 $10 预算告警，未新增云资源，未操作生产账号。
+
+生产健康、管理页和 8 个资源共 10 个 HTTP 检查均为 200，管理页及资源与验收构建逐字节一致。证据：`.ui-acceptance/2026-09-24-auto-sweep/{deploy.log,deployments.json,production-assets.json}`。当前打开的管理页刷新后载入新版本。
+
+最终反证复核通过：179 项测试、一次点击跨 21 批、正常无需继续、异常有重试、三种界面截图、线上资源一致与 100% 发布。代码和记录已在工作分支提交，未 push。
