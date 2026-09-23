@@ -1,0 +1,35 @@
+{
+  "goal": "统一待审工作台，AI 初审仅作为状态标记，所有未终审记录共用筛选与批量裁决",
+  "production_base": "92a9dc1 / 679e6c49-b50e-4570-a551-a460a724ceb9",
+  "tasks": [
+    {
+      "id": "T1",
+      "task": "核对生产基准与统一流程",
+      "verify": "生产只读截图；列明现有能力及新旧状态映射",
+      "passes": true,
+      "evidence": [
+        "生产只读代理截图：.ui-acceptance/2026-09-23-unified/baseline-queue-{desktop,mobile,dark}.png 和 baseline-agent-dark.png",
+        "统一范围：auto_pending_review + agent_pending + agent_blacklist + agent_whitelist；保留存储状态，UI 作为 AI 初审标记",
+        "复用原待审搜索、排序、维度过滤、分页和按筛选批量；保留旧 AI tab 链接兼容；不迁移数据、不改 runner 或自动发布策略"
+      ]
+    },
+    {
+      "id": "T2",
+      "task": "统一队列 API、统计和批量筛选范围",
+      "verify": "真实 SQLite / Worker 测试覆盖四种待审状态、筛选计数一致、批量及终审保护",
+      "passes": false
+    },
+    {
+      "id": "T3",
+      "task": "统一待审界面和 AI 初审标记",
+      "verify": "构建、类型检查、桌面/移动/暗色截图及浏览器实际操作",
+      "passes": false
+    },
+    {
+      "id": "T4",
+      "task": "证伪复核与交付",
+      "verify": "回归测试、生产基准功能 diff、UI VERDICT、提交记录和预览地址",
+      "passes": false
+    }
+  ]
+}
