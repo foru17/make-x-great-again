@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
+import { RuleSweepError, sweepAllRules } from "@/lib/ruleSweep";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -477,11 +478,7 @@ export function RulesTab({ onAuth, onMutated }: { onAuth: () => void; onMutated:
     let current = { ...start, error: undefined };
     setProgress(current);
     try {
-      // Bound automatic work. The remaining cursor is kept for an explicit
-      // continue action; surviving protected/false-positive rows cannot starve the tail.
-      for (let round = 0; round < 10; round++) {
-        const result = await api.rulesApply(current.scope, current.cursor);
-        if (!result.ok) throw new Error("scan_failed");
+      await sweepAllRules(current.scope, current.cursor, api.rulesApply, (result) => {
         current = {
           ...current,
           cursor: result.nextCursor ?? undefined,
@@ -494,15 +491,12 @@ export function RulesTab({ onAuth, onMutated }: { onAuth: () => void; onMutated:
           complete: result.complete,
         };
         setProgress(current);
-        if (result.complete) break;
-        if (!result.nextCursor) throw new Error("missing_cursor");
-      }
-      if (current.complete) toast.success(`扫描完成，实际处理 ${current.applied} 条记录`);
-      else toast.info("扫描尚未完成，请继续扫描剩余记录。");
+      });
+      toast.success(`扫描完成，实际处理 ${current.applied} 条记录`);
     } catch (error) {
       const changed = error instanceof Error && error.message === "HTTP 409";
       setProgress({ ...current, cursor: changed ? undefined : current.cursor,
-        error: changed ? "规则或范围已改变，请重新开始扫描。" : "扫描中断；以下为已确认结果，失败批次可能已部分处理。可继续扫描核对剩余记录。" });
+        error: changed ? "规则或范围已改变，请重新开始扫描。" : error instanceof RuleSweepError ? error.message : "扫描中断；以下为已确认结果，失败批次可能已部分处理。请重试剩余记录。" });
       toast.error("扫描未完成");
     } finally {
       scanLock.current = false;
@@ -519,7 +513,7 @@ export function RulesTab({ onAuth, onMutated }: { onAuth: () => void; onMutated:
       body: <div className="space-y-2">
         <p>使用全部启用规则，覆盖未初审、AI 待定、AI 建议拉黑和 AI 建议放行的记录。命中后按规则执行拉黑、白名单或驳回；粉丝达到 10 万或规则判定不属于垃圾类别时，不自动拉黑，保留待审并单独计数。</p>
         {scope === "all" && <p>另外检查此前 AI 已判正常或无法判断的记录：拉黑规则命中后先回待审复核。</p>}
-        <p>人工终审记录保持不变。数据较多时会分段处理，直到明确显示“扫描完成”。</p>
+        <p>人工终审记录保持不变。点击一次后会自动分批扫描全部范围，无需手动继续；请保持页面打开，完成后会显示结果。</p>
       </div>,
       okLabel: "开始扫描",
     });
@@ -553,8 +547,8 @@ export function RulesTab({ onAuth, onMutated }: { onAuth: () => void; onMutated:
       {progress && <section aria-label="扫描结果" aria-live="polite" className="mb-4 rounded-lg border bg-muted/30 p-3 text-sm">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="font-medium">{scanning ? "扫描中…" : progress.complete ? "扫描完成" : "扫描未完成"} · {progress.scope === "all" ? "全部待审及此前已判正常 / 无法判断" : "全部待审（含 AI 已初审）"}</p>
-          {!scanning && !progress.complete && !progress.error?.startsWith("规则或范围") &&
-            <Button size="sm" variant="outline" onClick={() => runSweep(progress)}>继续扫描剩余记录</Button>}
+          {!scanning && !progress.complete && progress.error && !progress.error.startsWith("规则或范围") &&
+            <Button size="sm" variant="outline" onClick={() => runSweep(progress)}>重试剩余记录</Button>}
         </div>
         <p className="mt-2 leading-relaxed">文字命中 {fmtN(progress.textMatched)} 条 · 实际处理 {fmtN(progress.applied)} 条 · 保护跳过 {fmtN(progress.protected)} 条 · 状态已变化 {fmtN(progress.changed)} 条</p>
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">已检查 {fmtN(progress.scanned)} 条候选记录{progress.scope === "all" ? `，其中从此前 AI 判定中处理 ${fmtN(progress.requeued)} 条` : ""}。以上按存储记录计数，同一账号的多条记录分别处理。</p>
