@@ -16,7 +16,12 @@
       "id": "F2",
       "task": "界面验收和发布",
       "verify": "类型/构建、桌面移动暗色、生产版本与资源校验",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "UI VERDICT PASS；docs/queue-no-flash-evidence-2026-09-24.json；桌面/移动/暗色截图已核对",
+        "新版本 8c6d74e4-cf8e-4cf7-908f-bb57a348d787 承载 100% 流量",
+        "10 次线上 HTTP 检查通过；线上 HTML 及全部 8 个 JS/CSS 与验收构建逐字节一致，未操作生产账号裁决"
+      ]
     }
   ]
 }

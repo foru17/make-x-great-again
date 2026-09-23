@@ -1,0 +1,97 @@
+{
+  "verdict": "PASS",
+  "implementation": "b6d2ba1",
+  "baseline_version": "4d513b38-7719-4c9f-9ea8-127df4a219a6",
+  "fixture": "112 simulated accounts, real Worker routes + SQLite, queue read delayed 600 ms, 600-request cap",
+  "before": {
+    "loading_skeleton_insertions": 1,
+    "surviving_row_nodes": 0,
+    "expected_surviving_row_nodes": 99,
+    "expanded_evidence_preserved": false
+  },
+  "after": {
+    "loading_skeleton_insertions": 0,
+    "surviving_row_nodes": 99,
+    "expected_surviving_row_nodes": 99,
+    "expanded_evidence_preserved": true,
+    "consecutive_blacklist_clicks": 2
+  },
+  "behavior": [
+    "confirmed decided row disappears and total decreases",
+    "two consecutive blacklist actions preserve other DOM rows and expanded evidence",
+    "whitelist/reject/remove counters verified: 112 to 107 after five decisions",
+    "last page seven-row bulk rejection returns to page 1/1 with 100 rows and no selection",
+    "page navigation still uses loading state; mutation refresh preserves rows",
+    "390x844: no horizontal overflow and no zoom restriction"
+  ],
+  "checks": [
+    "TypeScript app passed",
+    "lint for both changed files passed",
+    "Vite production build passed",
+    "desktop/mobile/dark screenshots visually inspected; no layout or feature removal"
+  ],
+  "screenshots": [
+    ".ui-acceptance/2026-09-24-no-flash/queue-desktop.png",
+    ".ui-acceptance/2026-09-24-no-flash/queue-mobile.png",
+    ".ui-acceptance/2026-09-24-no-flash/queue-dark.png"
+  ],
+  "production_mutations": 0,
+  "production": {
+    "passed": true,
+    "version": "8c6d74e4-cf8e-4cf7-908f-bb57a348d787",
+    "checks": [
+      {
+        "path": "/v1/health",
+        "status": 200,
+        "buildMatches": false
+      },
+      {
+        "path": "/admin",
+        "status": 200,
+        "buildMatches": true
+      },
+      {
+        "path": "/app/assets/AdminPage-Mvg3CddJ.js",
+        "status": 200,
+        "buildMatches": true
+      },
+      {
+        "path": "/app/assets/LandingPage-CRJ-6LW-.js",
+        "status": 200,
+        "buildMatches": true
+      },
+      {
+        "path": "/app/assets/ListPage-DEE_0st2.js",
+        "status": 200,
+        "buildMatches": true
+      },
+      {
+        "path": "/app/assets/ThemeToggle-tWauNhRD.js",
+        "status": 200,
+        "buildMatches": true
+      },
+      {
+        "path": "/app/assets/dialog-BwGXkCHy.js",
+        "status": 200,
+        "buildMatches": true
+      },
+      {
+        "path": "/app/assets/index-B4v8G9Pr.js",
+        "status": 200,
+        "buildMatches": true
+      },
+      {
+        "path": "/app/assets/index-zST2yjCn.css",
+        "status": 200,
+        "buildMatches": true
+      },
+      {
+        "path": "/app/assets/publicApi-S5Aew_LC.js",
+        "status": 200,
+        "buildMatches": true
+      }
+    ]
+  },
+  "active_traffic_percent": 100,
+  "budget_alert": "Existing USD 10 / 1 recipient alert verified earlier in this same release session; no configuration or resource additions"
+}
