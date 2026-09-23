@@ -29,13 +29,16 @@ export function useFilteredList<T>(
   fetchPage: (qs: string) => Promise<{ rows: T[]; total?: number | null; sort?: string }>,
   defaultSort: string,
   onAuth: () => void,
+  initialFilters: Filters = {},
 ) {
   const [rows, setRows] = useState<T[]>([]);
-  const [filters, setFilters] = useState<Filters>({});
+  const [filters, setFilters] = useState<Filters>(initialFilters);
   const [sort, setSort] = useState(defaultSort);
   const [page, setPage] = useState(0);
   const [total, setTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const requestId = useRef(0);
   // The fetch closes over tab state; keep it in a ref so `run` stays stable and
   // a re-render can't schedule a duplicate initial load.
   const fetchRef = useRef(fetchPage);
@@ -43,16 +46,28 @@ export function useFilteredList<T>(
 
   const run = useCallback(
     async (f: Filters, so: string, p: number, withTotal: boolean) => {
+      const id = ++requestId.current;
       setLoading(true);
+      setError(false);
       try {
-        const r = await fetchRef.current(filterQuery(f, so, p, withTotal));
+        let r = await fetchRef.current(filterQuery(f, so, p, withTotal));
+        if (id !== requestId.current) return;
+        if (withTotal && typeof r.total === "number" && p > 0 && p * PAGE_SIZE >= r.total) {
+          const last = Math.max(0, Math.ceil(r.total / PAGE_SIZE) - 1);
+          setPage(last);
+          r = await fetchRef.current(filterQuery(f, so, last, true));
+          if (id !== requestId.current) return;
+        }
         setRows(r.rows);
         if (withTotal && typeof r.total === "number") setTotal(r.total);
         if (r.sort) setSort(r.sort);
       } catch (e) {
+        if (id !== requestId.current) return;
+        setError(true);
+        setRows([]);
         if (e instanceof AuthError) onAuth();
       } finally {
-        setLoading(false);
+        if (id === requestId.current) setLoading(false);
       }
     },
     [onAuth],
@@ -60,7 +75,8 @@ export function useFilteredList<T>(
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: mount-only initial load
   useEffect(() => {
-    run({}, defaultSort, 0, true);
+    run(initialFilters, defaultSort, 0, true);
+    return () => { requestId.current++; };
   }, []);
 
   const apply = useCallback(
@@ -86,5 +102,5 @@ export function useFilteredList<T>(
   const reload = useCallback(() => run(filters, sort, page, true), [run, filters, sort, page]);
 
   const pageCount = total == null ? null : Math.max(1, Math.ceil(total / PAGE_SIZE));
-  return { rows, setRows, filters, sort, page, total, pageCount, loading, apply, goPage, reload };
+  return { rows, setRows, filters, sort, page, total, pageCount, loading, error, apply, goPage, reload };
 }

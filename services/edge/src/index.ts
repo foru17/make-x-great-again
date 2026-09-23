@@ -3360,11 +3360,12 @@ function buildDecideStatements(
 async function decideQueueItems(
   env: Bindings,
   items: { handle: string; xUserId?: string }[],
-  action: DecideAction,
+  action: DecideAction | "requeue",
   now: number,
   note: string,
   category?: SpamCategory,
 ): Promise<number> {
+  const destination = action === "requeue" ? "auto_pending_review" : statusForAction(action);
   let processed = 0;
   for (let offset = 0; offset < items.length; offset += 30) {
     const stmts: D1PreparedStatement[] = [];
@@ -3372,7 +3373,7 @@ async function decideQueueItems(
     for (const item of items.slice(offset, offset + 30)) {
       const handle = normalizeHandle(item.handle);
       const uid = item.xUserId ?? null;
-      const predicate = `lower(handle)=? AND x_user_id IS ? AND ${reviewStatusSql("")}`;
+      const predicate = `lower(handle)=? AND x_user_id IS ? AND ${reviewStatusSql("", action === "requeue" ? "reviewed" : "")}`;
       auditIndexes.push(stmts.length);
       stmts.push(env.DB.prepare(
         `INSERT INTO review_log (x_user_id,handle,action,actor,note,at)
@@ -3382,12 +3383,13 @@ async function decideQueueItems(
         `UPDATE accounts SET status=?, published_at=?, published_tier=?,
            category=${action === "whitelist" ? "NULL" : "COALESCE(?, category)"},
            last_decided_by='human:admin', last_decided_at=?
+           ${action === "requeue" ? ", agent_id=NULL, agent_label=NULL, agent_confidence=NULL, agent_reasons=NULL, agent_signals=NULL, agent_evidence=NULL, agent_action=NULL, agent_model=NULL, agent_at=NULL, agent_signals_hash=NULL, agent_attempts=0, agent_error=NULL" : ""}
            ${action === "whitelist" ? ", verdict_label='legit', confidence=1, reasons='[\"whitelisted by admin\"]', signals_hash=NULL, source='admin_whitelist'" : ""}
          WHERE ${predicate}`,
-      ).bind(statusForAction(action), action === "approve" ? now : null,
+      ).bind(destination, action === "approve" ? now : null,
         action === "approve" ? "human" : null,
         ...(action === "whitelist" ? [] : [category ?? null]), now, handle, uid));
-      if (uid) {
+      if (uid && action !== "requeue") {
         stmts.push(env.DB.prepare(
           `UPDATE accounts SET status=?, published_at=NULL, published_tier=NULL,
              last_decided_by='human:admin', last_decided_at=?
@@ -3446,7 +3448,7 @@ const DecideBody = z.object({
   xUserId: optionalNumericId,
   // Unknown actions used to silently map to "rejected" via statusForAction —
   // they are an explicit 400 now.
-  action: z.enum(["approve", "reject", "remove", "whitelist"]),
+  action: z.enum(["approve", "reject", "remove", "whitelist", "requeue"]),
   // Optional human-assigned spam category, stamped alongside the decision so
   // the maintainer can approve-and-categorize in one step. Ignored for
   // whitelist (which clears category).
@@ -3467,8 +3469,9 @@ app.post("/v1/admin/decide", async (c) => {
   const now = Date.now();
   if (body.scope === "queue") {
     const processed = await decideQueueItems(c.env, [{ handle, xUserId }], action, now, "unified_queue", body.category);
-    return c.json({ ok: true, processed, status: processed ? statusForAction(action) : null });
+    return c.json({ ok: true, processed, status: processed ? (action === "requeue" ? "auto_pending_review" : statusForAction(action)) : null });
   }
+  if (action === "requeue") return c.json({ error: "requeue_requires_queue_scope" }, 400);
   const stmts = buildDecideStatements(c.env, handle, xUserId, action, now, body.category);
   stmts.push(
     reviewLogStmt(
@@ -3495,7 +3498,7 @@ app.post("/v1/admin/decide", async (c) => {
 //         items: [{ handle: string, xUserId?: string }, ...] }
 const DecideBatchBody = z.object({
   scope: z.literal("queue").optional(),
-  action: z.enum(["approve", "reject", "remove", "whitelist"]),
+  action: z.enum(["approve", "reject", "remove", "whitelist", "requeue"]),
   category: z.enum(SPAM_CATEGORIES).optional(),
   items: z
     .array(
@@ -3521,8 +3524,9 @@ app.post("/v1/admin/decide-batch", async (c) => {
   const batchNote = body.category ? `panel_batch category=${body.category}` : "panel_batch";
   if (body.scope === "queue") {
     const processed = await decideQueueItems(c.env, body.items, body.action, now, batchNote, body.category);
-    return c.json({ ok: true, processed, skipped: body.items.length - processed, status: statusForAction(body.action) });
+    return c.json({ ok: true, processed, skipped: body.items.length - processed, status: body.action === "requeue" ? "auto_pending_review" : statusForAction(body.action) });
   }
+  if (body.action === "requeue") return c.json({ error: "requeue_requires_queue_scope" }, 400);
   for (const it of body.items) {
     const h = normalizeHandle(it.handle);
     stmts.push(...buildDecideStatements(c.env, h, it.xUserId, body.action, now, body.category));

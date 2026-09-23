@@ -1,3 +1,4 @@
+import { reviewStage } from "../../../shared/review-queue";
 import { SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -40,7 +41,7 @@ const TEXT_CHIP_LABEL: Record<string, string> = {
   reasons: "判定理由",
 };
 
-export const FILTER_KEYS = ["q", ...TEXT_FIELDS.map((f) => f.k), ...DIM_KEYS];
+export const FILTER_KEYS = ["review_stage", "q", ...TEXT_FIELDS.map((f) => f.k), ...DIM_KEYS];
 export const EMPTY_FILTERS: Filters = Object.fromEntries(FILTER_KEYS.map((k) => [k, ""]));
 
 /** Human-readable chips for the currently applied conditions. */
@@ -50,6 +51,7 @@ export function chipList(filters: Filters): { key: string; text: string }[] {
       .filter((k) => filters[k])
       .map((k) => ({ key: k, text: `${TEXT_CHIP_LABEL[k]}：${filters[k]}` })),
     ...dimChipList(filters),
+    ...(filters.review_stage ? [{ key: "review_stage", text: `初审状态：${reviewStage(filters.review_stage)?.label ?? filters.review_stage}` }] : []),
   ];
 }
 

@@ -48,6 +48,8 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export interface Account {
+  status?: string;
+  agent_model?: string;
   x_user_id?: string;
   handle: string;
   display_name?: string;
@@ -197,14 +199,14 @@ export const api = {
   log: (qs: string) => req<{ log: LogEntry[]; nextCursor: number | null }>(`/v1/admin/log${qs}`),
   rules: () => req<{ rules: Rule[] }>("/v1/admin/keyword-rules"),
 
-  decide: (handle: string, xUserId: string | undefined | null, action: string) =>
-    req<{ ok: boolean }>("/v1/admin/decide", {
+  decide: (handle: string, xUserId: string | undefined | null, action: string, scope?: "queue") =>
+    req<{ ok: boolean; processed?: number }>("/v1/admin/decide", {
       method: "POST",
       headers: { "content-type": "application/json" },
       // List endpoints return x_user_id: null for accounts without a numeric
       // id; coerce null/"" to undefined so JSON.stringify drops the key
       // (the API's zod schema accepts undefined but rejects null).
-      body: JSON.stringify({ handle, xUserId: xUserId || undefined, action }),
+      body: JSON.stringify({ handle, xUserId: xUserId || undefined, action, scope }),
     }),
   decideByFilter: (body: {
     /** 'categorize' only stamps the category — status is untouched. */
@@ -228,11 +230,11 @@ export const api = {
       headers: { "content-type": "application/json" },
       body: JSON.stringify(body),
     }),
-  decideBatch: (action: string, items: Item[], category?: string) =>
-    req<{ ok: boolean; error?: string }>("/v1/admin/decide-batch", {
+  decideBatch: (action: string, items: Item[], category?: string, scope?: "queue") =>
+    req<{ ok: boolean; processed?: number; skipped?: number; error?: string }>("/v1/admin/decide-batch", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ action, items, category }),
+      body: JSON.stringify({ action, items, category, scope }),
     }),
   categoryBatch: (category: string, items: Item[]) =>
     req<{ ok: boolean; error?: string }>("/v1/admin/category-batch", {

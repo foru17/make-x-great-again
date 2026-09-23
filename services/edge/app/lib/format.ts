@@ -42,6 +42,7 @@ export type ActionKey = keyof typeof ACTION_ZH;
 export const batchZh = (key: ActionKey): string => `批量${ACTION_ZH[key]}`;
 
 const LOG_ACTION_ZH: Record<string, string> = {
+  requeue: "重新初审",
   approve: "拉黑（进公榜）",
   reject: "驳回",
   remove: "移除",
