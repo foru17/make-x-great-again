@@ -17,7 +17,12 @@
       "id": "R2",
       "task": "构建并发布已验收实现",
       "verify": "构建/发布日志、新版本 ID、HTTP 响应",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "Vite 构建、160/160 Edge 测试、前后端 TypeScript 均通过；Wrangler dry-run 通过",
+        "发布日志 .ui-acceptance/2026-09-24-release/deploy.log；新版本 4d513b38-7719-4c9f-9ea8-127df4a219a6",
+        "生产 /v1/health、/admin 返回 200，HTML 和全部 8 个 JS/CSS 资源与本地构建逐字节一致"
+      ]
     },
     {
       "id": "R3",
