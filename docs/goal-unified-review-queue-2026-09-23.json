@@ -17,7 +17,12 @@
       "id": "T2",
       "task": "统一队列 API、统计和批量筛选范围",
       "verify": "真实 SQLite / Worker 测试覆盖四种待审状态、筛选计数一致、批量及终审保护",
-      "passes": false
+      "passes": true,
+      "evidence": [
+        "真实 SQLite 路由集成 7/7，通过四状态、Agent 不减总数、终审生效、并发跳过、去重、分页与2000上限断言",
+        "完整 Edge 159/159、TypeScript 检查通过；.ui-acceptance/2026-09-23-unified/edge-tests.log",
+        "无数据库迁移；新增 review_stage 过滤与 queue scope 裁决守卫，终审保留 AI 注释并记录 human:admin"
+      ]
     },
     {
       "id": "T3",

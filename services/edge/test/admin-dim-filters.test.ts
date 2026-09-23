@@ -227,15 +227,15 @@ test("decide-by-filter executes per matched row with an audit note", async () =>
   // The uid-bearing row also gets a handle-only sibling-cleanup UPDATE, so
   // match the primary decide statement by its published_tier stamp.
   const updates = db.batches.filter(
-    (s) => s.sql.includes("UPDATE accounts SET status=?") && s.sql.includes("published_tier"),
+    (s) => s.sql.includes("UPDATE accounts SET status=?") && s.sql.includes("published_tier=?"),
   );
   assert.equal(updates.length, 2);
   assert.equal(updates[0].args[0], "human_confirmed");
   assert.equal(updates[0].args[2], "human"); // published_tier stamped as a human decision
   const logs = db.batches.filter((s) => s.sql.includes("INSERT INTO review_log"));
   assert.equal(logs.length, 2);
-  assert.ok(String(logs[0].args[4]).includes("filter_batch"));
-  assert.ok(String(logs[0].args[4]).includes("比她好看"));
+  assert.ok(String(logs[0].args[1]).includes("filter_batch"));
+  assert.ok(String(logs[0].args[1]).includes("比她好看"));
 });
 
 test("decide-by-filter rejects an unknown action", async () => {
@@ -286,7 +286,7 @@ test("queue and blacklist build an identical text WHERE clause", async () => {
     const s = db.queries.find((x) => x.sql.includes(marker));
     assert.ok(s, `${path} main query`);
     // Everything between the status predicate and the dimension block.
-    const m = s.sql.match(/status='[a-z_]+'\n([\s\S]*?)\n\s+AND \(\? IS NULL OR a\.followers_count/);
+    const m = s.sql.match(/status(?:='[a-z_]+'| IN \([^\n]+\))\n([\s\S]*?)\n\s+AND \(\? IS NULL OR a\.followers_count/);
     return m?.[1].replace(/\s+/g, " ").trim();
   };
   const queue = await grab("/v1/admin/queue", "WITH ranked");

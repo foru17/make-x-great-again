@@ -11,7 +11,7 @@ class DB {
   constructor() {
     this.sqlite.exec(readFileSync(new URL("../schema.sql", import.meta.url), "utf8"));
     this.sqlite.exec(
-      "ALTER TABLE accounts ADD COLUMN agent_id TEXT; ALTER TABLE accounts ADD COLUMN agent_label TEXT; ALTER TABLE accounts ADD COLUMN last_decided_by TEXT; ALTER TABLE accounts ADD COLUMN last_decided_at INTEGER;",
+      readFileSync(new URL("../migrations/2026-05-27-agent-pipeline.sql", import.meta.url), "utf8"),
     );
   }
   prepare(sql: string) {

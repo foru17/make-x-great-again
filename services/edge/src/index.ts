@@ -1,3 +1,4 @@
+import { reviewStage, reviewStatusSql } from "../shared/review-queue";
 import { keywordIndex, stripInvisibleText } from "../../../src/text-normalization";
 import { stripInvisibleSql } from "./text-normalization";
 import { type Context, Hono } from "hono";
@@ -3097,6 +3098,8 @@ app.get("/v1/admin/queue", async (c) => {
   // so search returns one canonical row per handle, not all variants). The
   // text half is built by textFilterWhere and is byte-identical to the one
   // /v1/admin/blacklist and /v1/admin/decide-by-filter use.
+  const stage = c.req.query("review_stage") ?? "";
+  if (!reviewStage(stage)) return c.json({ error: "invalid_review_stage" }, 400);
   const sort = adminSort(c.req.query("sort"));
   const cursor = decodeSortCursor(c.req.query("before") || null);
   const limit = Math.min(200, Math.max(1, Number(c.req.query("limit")) || 100));
@@ -3134,7 +3137,7 @@ app.get("/v1/admin/queue", async (c) => {
               ) AS rn
          FROM accounts a
          ${repJoin}
-        WHERE a.status='auto_pending_review'
+        WHERE ${reviewStatusSql("a", stage)}
           ${textWhere.sql}
           ${dimWhere.sql}
      )`;
@@ -3148,6 +3151,8 @@ app.get("/v1/admin/queue", async (c) => {
             a.x_user_id, a.handle, a.display_name, a.avatar_url, a.verdict_label, a.confidence,
             a.account_created_at, a.account_age_days, a.followers_count, a.following_count,
             a.reasons, a.evidence_text, a.last_scored, a.source, a.category,
+            a.status, a.agent_id, a.agent_label, a.agent_confidence, a.agent_at,
+            a.agent_reasons, a.agent_signals, a.agent_evidence, a.agent_model,
             (SELECT count(DISTINCT reporter_fp) FROM reports r
               WHERE lower(r.handle)=lower(a.handle)
                 AND (a.x_user_id IS NULL OR r.x_user_id IS NULL OR r.x_user_id=a.x_user_id)
@@ -3169,7 +3174,7 @@ app.get("/v1/admin/queue", async (c) => {
     offset,
     // Echo back the effective filter set so the UI can keep the inputs in
     // sync (especially after the smart `q` → `uid` rewrite above).
-    appliedFilters: { ...textFiltersEcho(text), sort, ...dimFiltersEcho(dims) },
+    appliedFilters: { ...textFiltersEcho(text), sort, ...dimFiltersEcho(dims), review_stage: stage },
   });
 });
 
@@ -3186,7 +3191,7 @@ app.get("/v1/admin/stats", async (c) => {
   const queueRow = await c.env.DB.prepare(
     `SELECT count(*) AS n FROM (
        SELECT 1 FROM accounts
-        WHERE status='auto_pending_review'
+        WHERE ${reviewStatusSql("")}
         GROUP BY lower(handle)
      )`,
   ).first<{ n: number }>();
@@ -3350,6 +3355,55 @@ function buildDecideStatements(
   return stmts;
 }
 
+// Keep each account's conditional audit, decision and sibling cleanup in one
+// transaction. A row already settled by another reviewer is skipped, not overwritten.
+async function decideQueueItems(
+  env: Bindings,
+  items: { handle: string; xUserId?: string }[],
+  action: DecideAction,
+  now: number,
+  note: string,
+  category?: SpamCategory,
+): Promise<number> {
+  let processed = 0;
+  for (let offset = 0; offset < items.length; offset += 30) {
+    const stmts: D1PreparedStatement[] = [];
+    const auditIndexes: number[] = [];
+    for (const item of items.slice(offset, offset + 30)) {
+      const handle = normalizeHandle(item.handle);
+      const uid = item.xUserId ?? null;
+      const predicate = `lower(handle)=? AND x_user_id IS ? AND ${reviewStatusSql("")}`;
+      auditIndexes.push(stmts.length);
+      stmts.push(env.DB.prepare(
+        `INSERT INTO review_log (x_user_id,handle,action,actor,note,at)
+         SELECT x_user_id,handle,?,'admin',?,? FROM accounts WHERE ${predicate}`,
+      ).bind(action, note, now, handle, uid));
+      stmts.push(env.DB.prepare(
+        `UPDATE accounts SET status=?, published_at=?, published_tier=?,
+           category=${action === "whitelist" ? "NULL" : "COALESCE(?, category)"},
+           last_decided_by='human:admin', last_decided_at=?
+           ${action === "whitelist" ? ", verdict_label='legit', confidence=1, reasons='[\"whitelisted by admin\"]', signals_hash=NULL, source='admin_whitelist'" : ""}
+         WHERE ${predicate}`,
+      ).bind(statusForAction(action), action === "approve" ? now : null,
+        action === "approve" ? "human" : null,
+        ...(action === "whitelist" ? [] : [category ?? null]), now, handle, uid));
+      if (uid) {
+        stmts.push(env.DB.prepare(
+          `UPDATE accounts SET status=?, published_at=NULL, published_tier=NULL,
+             last_decided_by='human:admin', last_decided_at=?
+           WHERE lower(handle)=? AND x_user_id IS NULL AND ${reviewStatusSql("")}
+             AND EXISTS (SELECT 1 FROM accounts decided WHERE decided.x_user_id=?
+               AND decided.last_decided_by='human:admin' AND decided.last_decided_at=?)`,
+        ).bind(action === "approve" || action === "whitelist" ? "removed" : statusForAction(action),
+          now, handle, uid, now));
+      }
+    }
+    const results = await env.DB.batch(stmts);
+    for (const index of auditIndexes) processed += results[index].meta?.changes ?? 0;
+  }
+  return processed;
+}
+
 function reviewLogStmt(
   env: Bindings,
   xUserId: string | null,
@@ -3387,6 +3441,7 @@ const optionalNumericId = z
   .transform((v) => v ?? undefined);
 
 const DecideBody = z.object({
+  scope: z.literal("queue").optional(),
   handle: z.string().min(1),
   xUserId: optionalNumericId,
   // Unknown actions used to silently map to "rejected" via statusForAction —
@@ -3410,6 +3465,10 @@ app.post("/v1/admin/decide", async (c) => {
   const xUserId = body.xUserId;
   const action = body.action;
   const now = Date.now();
+  if (body.scope === "queue") {
+    const processed = await decideQueueItems(c.env, [{ handle, xUserId }], action, now, "unified_queue", body.category);
+    return c.json({ ok: true, processed, status: processed ? statusForAction(action) : null });
+  }
   const stmts = buildDecideStatements(c.env, handle, xUserId, action, now, body.category);
   stmts.push(
     reviewLogStmt(
@@ -3435,6 +3494,7 @@ app.post("/v1/admin/decide", async (c) => {
 //         category?: SpamCategory,
 //         items: [{ handle: string, xUserId?: string }, ...] }
 const DecideBatchBody = z.object({
+  scope: z.literal("queue").optional(),
   action: z.enum(["approve", "reject", "remove", "whitelist"]),
   category: z.enum(SPAM_CATEGORIES).optional(),
   items: z
@@ -3459,6 +3519,10 @@ app.post("/v1/admin/decide-batch", async (c) => {
   const now = Date.now();
   const stmts: D1PreparedStatement[] = [];
   const batchNote = body.category ? `panel_batch category=${body.category}` : "panel_batch";
+  if (body.scope === "queue") {
+    const processed = await decideQueueItems(c.env, body.items, body.action, now, batchNote, body.category);
+    return c.json({ ok: true, processed, skipped: body.items.length - processed, status: statusForAction(body.action) });
+  }
   for (const it of body.items) {
     const h = normalizeHandle(it.handle);
     stmts.push(...buildDecideStatements(c.env, h, it.xUserId, body.action, now, body.category));
@@ -3508,6 +3572,8 @@ app.post("/v1/admin/decide-by-filter", async (c) => {
   if (body.scope === "blacklist" && body.action === "approve") {
     return c.json({ error: "bad_request", detail: "approve is not valid on the blacklist" }, 400);
   }
+  const stage = body.filters.review_stage ?? "";
+  if (!reviewStage(stage)) return c.json({ error: "invalid_review_stage" }, 400);
   const get = (k: string) => body.filters[k];
   const text = parseTextFilters(get);
   const textWhere = textFilterWhere("a", text);
@@ -3530,7 +3596,7 @@ app.post("/v1/admin/decide-by-filter", async (c) => {
                          a.last_scored DESC
               ) AS rn
          FROM accounts a
-        WHERE a.status='auto_pending_review'
+        WHERE ${reviewStatusSql("a", stage)}
           ${textWhere.sql}
           ${dimWhere.sql}
      )`
@@ -3563,6 +3629,13 @@ app.post("/v1/admin/decide-by-filter", async (c) => {
   const note = `filter_batch scope=${body.scope}${
     body.category ? ` category=${body.category}` : ""
   } filters=${filterNote}`;
+  if (onQueue && body.action !== "categorize") {
+    const processed = await decideQueueItems(c.env,
+      targets.map((t) => ({ handle: t.handle, xUserId: t.x_user_id ?? undefined })),
+      body.action, now, note, body.category);
+    return c.json({ ok: true, status: statusForAction(body.action), scope: body.scope,
+      matched, processed, skipped: targets.length - processed, truncated: matched > targets.length });
+  }
   const stmts: D1PreparedStatement[] = [];
   for (const t of targets) {
     const h = normalizeHandle(t.handle);
