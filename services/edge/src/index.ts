@@ -1,4 +1,4 @@
-import { reviewStage, reviewStatusSql } from "../shared/review-queue";
+import { REVIEW_STATUSES, reviewStage, reviewStatusSql } from "../shared/review-queue";
 import { keywordIndex, stripInvisibleText } from "../../../src/text-normalization";
 import { stripInvisibleSql } from "./text-normalization";
 import { type Context, Hono } from "hono";
@@ -1454,8 +1454,8 @@ function statusForRuleAction(action: string): "human_confirmed" | "whitelisted" 
 }
 
 // Only machine-made, non-terminal verdicts may be overturned by a newly-added
-// keyword rule. Human decisions and Agent staging remain authoritative.
-const RULE_OVERRIDABLE_STATUSES = new Set(["auto_pending_review", "auto_legit", "auto_unsure"]);
+// keyword rule. AI staging is advisory; terminal human decisions remain authoritative.
+const RULE_OVERRIDABLE_STATUSES = new Set<string>([...REVIEW_STATUSES, "auto_legit", "auto_unsure"]);
 /** Terminal human decisions that RETRACT an earlier spam verdict. /v1/classify
  *  must never echo the retracted verdict back to a client. */
 const WITHDRAWN_STATUSES = new Set(["removed", "rejected"]);
@@ -4075,7 +4075,7 @@ function storedRuleMatches(row: StoredRuleText, rule: Pick<KeywordRule, "pattern
 // SQLite lower() only folds ASCII. For cased Unicode rules admit non-ASCII
 // candidates as a conservative superset; the shared JS matcher is final.
 function hasCasedUnicode(pattern: string): boolean {
-  return Array.from(pattern).some(c => c.codePointAt(0)! > 127 && c.toLowerCase() !== c.toUpperCase());
+  return Array.from(pattern).some(c => (c.codePointAt(0) ?? 0) > 127 && c.toLowerCase() !== c.toUpperCase());
 }
 
 // Preview: how many *currently pending* queue rows would this rule catch?
@@ -4098,7 +4098,7 @@ app.post("/v1/admin/keyword-rules/preview", async (c) => {
   const haystack = `lower(${stripInvisibleSql(expression)})`;
   const where = `instr(${haystack},?)>0${hasCasedUnicode(p) ? ` OR (${expression}) GLOB '*[^ -~]*'` : ""}`;
   let cursor = 0;
-  let count = 0;
+  const handles = new Set<string>();
   const samples: StoredRuleText[] = [];
   const deadline = Date.now() + 25_000;
   // At most 40 pages / 20K candidates. Never present a partial scan as an
@@ -4106,270 +4106,259 @@ app.post("/v1/admin/keyword-rules/preview", async (c) => {
   for (let page = 0; page < 40; page++) {
     const result = await c.env.DB.prepare(
       `SELECT rowid, handle, display_name, evidence_text FROM accounts
-       WHERE status='auto_pending_review' AND rowid>? AND (${where}) ORDER BY rowid LIMIT 500`,
+       WHERE ${reviewStatusSql("")} AND rowid>? AND (${where}) ORDER BY rowid LIMIT 500`,
     ).bind(cursor, p).all<StoredRuleText & { rowid: number }>();
     const rows = result.results ?? [];
     for (const row of rows) {
       if (!storedRuleMatches(row, { pattern: p, field: body.field })) continue;
-      count++;
+      if (!row.handle) continue;
+      const handle = row.handle.toLowerCase();
+      if (handles.has(handle)) continue;
+      handles.add(handle);
       if (samples.length < 5) samples.push({ handle: row.handle, display_name: row.display_name, evidence_text: row.evidence_text });
     }
-    if (rows.length < 500) return c.json({ count, samples });
+    if (rows.length < 500) return c.json({ count: handles.size, samples });
     cursor = rows[rows.length - 1].rowid;
     if (Date.now() >= deadline) break;
   }
   return c.json({ error: "预览范围过大，请缩小关键词范围后重试。", truncated: true }, 422);
 });
 
-// Apply all enabled rules to existing rows. Default sweeps
-// status='auto_pending_review' only; body {scope:'all'} additionally rescans
-// auto_legit rows (an account the AI once cleared never re-enters the live
-// rule path until its 30d TTL lapses, so a new rule could otherwise never
-// catch it). For each row that matches any rule, moves it to that rule's
-// destination status, records a review_log audit, and bumps the rule's
-// hit_count. Returns a summary so the maintainer can see how much the new
-// rule cleaned up.
+// Sweep every unresolved review stage. Bounded keyset pages can be continued
+// without rescanning surviving false positives or counting overlapping rule chunks twice.
+const RuleSweepBody = z.object({
+  scope: z.enum(["queue", "all"]).default("queue"),
+  dryRun: z.boolean().default(false),
+  cursor: z
+    .object({
+      partition: z.number().int().min(0).max(2),
+      after: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER),
+      fingerprint: z.string().length(64),
+    })
+    .optional(),
+});
 app.post("/v1/admin/keyword-rules/apply-to-queue", async (c) => {
   if (!(await admin(c))) return c.json({ error: "forbidden" }, 403);
-  const body = (await c.req.json().catch(() => ({}))) as { scope?: string } | null;
-  const scope = body?.scope === "all" ? "all" : "queue";
+  const parsed = RuleSweepBody.safeParse(await c.req.json().catch(() => ({})));
+  if (!parsed.success) return c.json({ error: "invalid_sweep_request" }, 400);
+  const { scope, dryRun, cursor } = parsed.data;
   const rules = await getKeywordRules(c.env);
-  if (!rules.length) return c.json({ ok: true, matched: 0, perRule: [], scope });
-
+  // Counters/timestamps are intentionally excluded: our own writes must not
+  // invalidate continuation. Changes to enabled rules require a fresh scan.
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(
+      JSON.stringify({
+        scope,
+        dryRun,
+        rules: rules.map(({ id, pattern, field, action, verdict_label, category }) => ({
+          id,
+          pattern,
+          field,
+          action,
+          verdict_label,
+          category,
+        })),
+      }),
+    ),
+  );
+  const fingerprint = Array.from(new Uint8Array(digest), (b) =>
+    b.toString(16).padStart(2, "0"),
+  ).join("");
+  if (cursor && cursor.fingerprint !== fingerprint) {
+    return c.json({ error: "规则或扫描范围已改变，请重新开始扫描。" }, 409);
+  }
+  const partitions = [
+    reviewStatusSql(""),
+    ...(scope === "all" ? ["status='auto_legit'", "status='auto_unsure'"] : []),
+  ];
+  if (cursor && cursor.partition >= partitions.length)
+    return c.json({ error: "invalid_sweep_cursor" }, 400);
   interface SweepRow {
     rowid: number;
     x_user_id: string | null;
     handle: string;
     display_name: string | null;
     evidence_text: string | null;
-    reasons: string | null;
     status: string;
     followers_count: number | null;
+    last_scored: number;
   }
-
-  // Candidate rows come from an instr() prefilter (substring, case-insensitive
-  // — a strict superset of the word-boundary matcher applied in JS below), for
-  // BOTH partitions. Two hard constraints shape this query:
-  //
-  //   1. D1 caps a statement at 100 bound parameters. The old prefilter bound
-  //      each pattern three times (one per field), so at 66 enabled rules it
-  //      bound 198 and every scope:'all' sweep died with
-  //      "D1_ERROR: too many SQL variables" — the 全量扫描 button 500'd 100%
-  //      of the time. Match one concatenated haystack instead: 1 bind/pattern,
-  //      and chunk the patterns so any rule count stays under the cap.
-  //   2. The queue is no longer the ~600 rows this endpoint was written for
-  //      (102K as of 2026-07-28). Pulling it wholesale burned ~14s and tens of
-  //      MB of Worker memory per sweep, so the queue gets the same prefilter.
-  //
-  // Both partitions are capped and report truncation rather than silently
-  // covering a prefix.
-  const CAND_MAX = 20_000; // per partition; ~10MB of rows at worst
-  const PAGE = 500; // rows per statement — D1 caps a response at 10MB
-  const DEADLINE = Date.now() + 40_000; // leave room to write before the client gives up
-  const PAT_BINDS_PER_CHUNK = 90; // headroom under D1's 100-variable ceiling
-  const RAW_HAYSTACK =
-    "coalesce(handle,'')||' '||coalesce(display_name,'')||' '||coalesce(evidence_text,'')";
-  const HAYSTACK = `lower(${stripInvisibleSql(RAW_HAYSTACK)})`;
-
-  // Refer to the normalized CTE column so the SQL text stays below D1's
-  // 100KB statement limit even with 90 patterns in one chunk.
-  const terms: { sql: string; bind: string }[] = [];
-  const seen = new Set<string>();
-  for (const r of rules) {
-    const low = stripInvisibleText(r.pattern).toLowerCase();
-    if (!low || seen.has(low)) continue;
-    seen.add(low);
-    const unicodeFallback = hasCasedUnicode(low) ? " OR normalized_haystack GLOB '*[^ -~]*'" : "";
-    terms.push({ sql: `(instr(normalized_haystack,?)>0${unicodeFallback})`, bind: low });
-  }
-
-  // Walk a partition by rowid cursor. A plain `LIMIT n` would hand back the
-  // same leading window on every run, so a sweep could never reach candidates
-  // past that window no matter how many times it was clicked — "全量扫描"
-  // would only ever cover the front of the table. Paging forward covers the
-  // whole partition in one request for roughly the cost of one scan, and stops
-  // on an explicit cap/deadline that is reported rather than hidden.
-  //
-  // `status` is a code-controlled literal (never user input) so it is inlined
-  // rather than bound — one more bind slot for patterns, and the status stays
-  // visible to the query planner's partial indexes.
-  let scanQueries = 0;
+  const PAGE = 200;
+  const MAX_CANDIDATES = 200;
   const MAX_SCAN_QUERIES = 120;
-  async function prefilter(status: "auto_pending_review" | "auto_legit" | "auto_unsure") {
+  const deadline = Date.now() + 25_000;
+  const rawHaystack =
+    "coalesce(handle,'')||' '||coalesce(display_name,'')||' '||coalesce(evidence_text,'')";
+  const haystack = `lower(${stripInvisibleSql(rawHaystack)})`;
+  const patterns = [
+    ...new Set(rules.map((r) => stripInvisibleText(r.pattern).toLowerCase()).filter(Boolean)),
+  ];
+  const groups: string[][] = [];
+  for (let i = 0; i < patterns.length; i += 90) groups.push(patterns.slice(i, i + 90));
+  // All rule chunks must be queried before advancing a page. Otherwise a
+  // later chunk could contain an earlier row that would be skipped forever.
+  if (groups.length > MAX_SCAN_QUERIES)
+    return c.json({ error: "启用规则过多，无法完整扫描，请减少规则后重试。" }, 422);
+  let partition = cursor?.partition ?? 0;
+  let after = cursor?.after ?? 0;
+  let queries = 0;
+  const rows: SweepRow[] = [];
+  while (partition < partitions.length && rows.length < MAX_CANDIDATES && patterns.length) {
+    if (queries + groups.length > MAX_SCAN_QUERIES || Date.now() >= deadline) break;
     const found = new Map<number, SweepRow>();
-    let truncated = false;
-    if (!terms.length) return { rows: [] as SweepRow[], truncated };
-    chunks: for (let i = 0; i < terms.length; i += PAT_BINDS_PER_CHUNK) {
-      const group = terms.slice(i, i + PAT_BINDS_PER_CHUNK);
-      const cond = group.map((t) => t.sql).join(" OR ");
-      let cursor = 0;
-      for (;;) {
-        if (scanQueries >= MAX_SCAN_QUERIES || Date.now() > DEADLINE) {
-          truncated = true;
-          break chunks;
-        }
-        scanQueries++;
-        const res = await c.env.DB.prepare(
-          `WITH candidates AS (
-             SELECT rowid, x_user_id, handle, display_name, evidence_text, reasons, status, followers_count,
-                    ${HAYSTACK} AS normalized_haystack
-             FROM accounts WHERE status='${status}' AND rowid>?
-           ) SELECT rowid, x_user_id, handle, display_name, evidence_text, reasons, status, followers_count
-             FROM candidates WHERE (${cond}) ORDER BY rowid LIMIT ?`,
-        )
-          .bind(cursor, ...group.map((t) => t.bind), PAGE)
-          .all<SweepRow>();
-        const page = res.results ?? [];
-        for (const r of page) found.set(r.rowid, r);
-        if (page.length < PAGE) break; // partition exhausted for this chunk
-        cursor = page[page.length - 1].rowid;
-        if (found.size >= CAND_MAX || Date.now() > DEADLINE) {
-          truncated = true;
-          break chunks;
-        }
+    let exhausted = true;
+    let pageComplete = true;
+    for (const group of groups) {
+      if (Date.now() >= deadline) {
+        pageComplete = false;
+        break;
       }
+      const condition = group
+        .map(
+          (p) =>
+            `(instr(normalized_haystack,?)>0${hasCasedUnicode(p) ? " OR normalized_haystack GLOB '*[^ -~]*'" : ""})`,
+        )
+        .join(" OR ");
+      queries++;
+      const result = await c.env.DB.prepare(`WITH candidates AS (
+        SELECT rowid,x_user_id,handle,display_name,evidence_text,status,followers_count,last_scored,
+          ${haystack} AS normalized_haystack FROM accounts WHERE ${partitions[partition]} AND rowid>?
+        ) SELECT rowid,x_user_id,handle,display_name,evidence_text,status,followers_count,last_scored
+          FROM candidates WHERE (${condition}) ORDER BY rowid LIMIT ?`)
+        .bind(after, ...group, PAGE)
+        .all<SweepRow>();
+      const page = result.results ?? [];
+      if (page.length === PAGE) exhausted = false;
+      for (const row of page) found.set(row.rowid, row);
     }
-    return { rows: [...found.values()], truncated };
+    if (!pageComplete) break; // discard partial group results; cursor stays before this page
+    const ordered = [...found.values()].sort((a, b) => a.rowid - b.rowid);
+    const page = ordered.slice(0, MAX_CANDIDATES - rows.length);
+    rows.push(...page);
+    if (page.length) after = page[page.length - 1].rowid;
+    if (exhausted && page.length === ordered.length) {
+      partition++;
+      after = 0;
+    }
   }
-
-  const queueScan = await prefilter("auto_pending_review");
-  const candidates = queueScan.rows;
-  // scope:'all' also rescans the two "AI did not flag it" partitions —
-  // auto_legit and auto_unsure — so a new rule can still catch an account
-  // the model once waved through.
-  const legitScan =
-    scope === "all"
-      ? await prefilter("auto_legit")
-      : { rows: [] as SweepRow[], truncated: false };
-  const unsureScan =
-    scope === "all"
-      ? await prefilter("auto_unsure")
-      : { rows: [] as SweepRow[], truncated: false };
-  const legitCandidates = [...legitScan.rows, ...unsureScan.rows];
-  const legitTruncated = legitScan.truncated || unsureScan.truncated;
+  if (!patterns.length) partition = partitions.length;
+  const complete = partition >= partitions.length;
+  const nextCursor = complete ? null : { partition, after, fingerprint };
   const now = Date.now();
-
-  // Per-rule hit count, returned to the UI so the maintainer can see which
-  // rule did the heavy lifting.
-  const perRule: Record<number, number> = {};
-  for (const r of rules) perRule[r.id] = 0;
-
-  const stmts: D1PreparedStatement[] = [];
+  let textMatched = 0;
+  let skippedProtected = 0;
+  let skippedChanged = 0;
   let totalHit = 0;
   let legitHit = 0;
-  for (const row of [...candidates, ...legitCandidates]) {
+  const perRule: Record<number, number> = {};
+  const plans: { row: SweepRow; hit: KeywordRule; fromLegit: boolean }[] = [];
+  for (const row of rows) {
     const hit = rules.find((r) => storedRuleMatches(row, r));
     if (!hit) continue;
+    textMatched++;
     const fromLegit = row.status === "auto_legit" || row.status === "auto_unsure";
-    // Same auto-publish gate as the live fast-path: a 'blacklist' rule can't
-    // publish a non-spam-labeled or known-high-follower row from the sweep —
-    // the row is already exactly where it should be (the queue), so skip it.
     if (
       !fromLegit &&
-      statusForRuleAction(hit.action) === "human_confirmed" &&
+      hit.action === "blacklist" &&
       !autoPublishEligible(hit.verdict_label, row.followers_count)
     ) {
+      skippedProtected++;
       continue;
     }
-    totalHit++;
-    if (fromLegit) legitHit++;
-    perRule[hit.id] = (perRule[hit.id] ?? 0) + 1;
-    // auto_legit + blacklist rule = the AI and the rule disagree, and the
-    // sweep matches against a stored evidence snapshot (no translate guard,
-    // no live signals) — park it in the queue for a human look instead of
-    // publishing straight from a rescan.
-    const status =
-      fromLegit && statusForRuleAction(hit.action) === "human_confirmed"
-        ? "auto_pending_review"
-        : statusForRuleAction(hit.action);
-    if (hit.action === "whitelist") {
-      stmts.push(
-        c.env.DB.prepare(
-          `UPDATE accounts
-              SET status='whitelisted', source='auto_keyword',
-                  verdict_label='legit', confidence=1.0,
-                  reasons=?, signals_hash=NULL, last_scored=?, published_at=NULL
-            WHERE rowid=?`,
-        ).bind(
-          JSON.stringify([`matched keyword rule "${hit.pattern}" on ${hit.field}`]),
+    plans.push({ row, hit, fromLegit });
+  }
+  // Each row's counter, audit and update share the same snapshot predicate
+  // within one D1 transaction. A concurrent final decision/evidence update
+  // causes all three to do nothing; returned counts use actual DB changes.
+  for (let offset = 0; !dryRun && offset < plans.length; offset += 30) {
+    const batch = plans.slice(offset, offset + 30);
+    const statements: D1PreparedStatement[] = [];
+    for (const { row, hit, fromLegit } of batch) {
+      const guard =
+        "rowid=? AND status=? AND last_scored IS ? AND evidence_text IS ? AND display_name IS ? AND followers_count IS ? AND handle=? AND x_user_id IS ?";
+      const args = [
+        row.rowid,
+        row.status,
+        row.last_scored,
+        row.evidence_text,
+        row.display_name,
+        row.followers_count,
+        row.handle,
+        row.x_user_id,
+      ];
+      const status =
+        fromLegit && hit.action === "blacklist"
+          ? "auto_pending_review"
+          : statusForRuleAction(hit.action);
+      const actor = `rule:${hit.id}`;
+      statements.push(
+        c.env.DB.prepare(`UPDATE keyword_rules SET hit_count=hit_count+1,last_hit_at=?
+        WHERE id=? AND EXISTS (SELECT 1 FROM accounts WHERE ${guard})`).bind(now, hit.id, ...args),
+      );
+      statements.push(
+        c.env.DB.prepare(`INSERT INTO review_log (x_user_id,handle,action,actor,note,at)
+        SELECT x_user_id,handle,?,?,?,? FROM accounts WHERE ${guard}`).bind(
+          `keyword_${hit.action}`,
+          actor,
+          `apply-to-queue matched "${hit.pattern}" on ${hit.field}${fromLegit ? " · rescanned AI verdict" : ""}`,
           now,
-          row.rowid,
+          ...args,
         ),
       );
-    } else {
-      stmts.push(
-        c.env.DB.prepare(
-          // category was missing here: the sweep rewrote the verdict but left
-          // whatever category the LLM had guessed earlier, so a 色情 rule
-          // hitting an account the LLM had filed under 网盘资源 published it as
-          // porn_bot/资源 — the client then labelled the spam wrongly. Stamp the
-          // rule's category (COALESCE so a rule without one keeps the old value
-          // instead of blanking it).
-          `UPDATE accounts
-              SET status=?, source='auto_keyword',
-                  verdict_label=?, confidence=1.0, reasons=?,
-                  category=COALESCE(?, category),
-                  last_scored=?, published_at=?, published_tier=?
-            WHERE rowid=?`,
-        ).bind(
+      statements.push(
+        c.env.DB.prepare(`UPDATE accounts SET status=?,source='auto_keyword',
+        verdict_label=?,confidence=1.0,reasons=?,category=COALESCE(?, category),
+        last_scored=?,published_at=?,published_tier=?,last_decided_by=?,last_decided_at=?
+        ${hit.action === "whitelist" ? ", signals_hash=NULL" : ""}
+        WHERE ${guard}`).bind(
           status,
-          hit.verdict_label,
+          hit.action === "whitelist" ? "legit" : hit.verdict_label,
           JSON.stringify([`matched keyword rule "${hit.pattern}" on ${hit.field}`]),
           categoryForRule(hit),
           now,
           status === "human_confirmed" ? now : null,
           status === "human_confirmed" ? "rule" : null,
-          row.rowid,
+          actor,
+          now,
+          ...args,
         ),
       );
     }
-    stmts.push(
-      c.env.DB.prepare(
-        "INSERT INTO review_log (x_user_id, handle, action, actor, note, at) VALUES (?,?,?,?,?,?)",
-      ).bind(
-        row.x_user_id,
-        row.handle,
-        `keyword_${hit.action}`,
-        `rule:${hit.id}`,
-        `apply-to-queue matched "${hit.pattern}" on ${hit.field}${
-          fromLegit ? " · rescanned auto_legit → queued for review" : ""
-        }`,
-        now,
-      ),
-    );
-  }
-  // Per-rule hit_count bump (batched alongside the row updates).
-  for (const [ridStr, n] of Object.entries(perRule)) {
-    if (!n) continue;
-    stmts.push(
-      c.env.DB.prepare(
-        "UPDATE keyword_rules SET hit_count=hit_count+?, last_hit_at=? WHERE id=?",
-      ).bind(n, now, Number(ridStr)),
-    );
-  }
-
-  // D1 batch size cap — chunk if we collected a lot of statements. Each row
-  // contributes 2 statements; cap each batch at ~100 statements to stay
-  // comfortably within D1 limits.
-  if (stmts.length) {
-    const CHUNK = 100;
-    for (let i = 0; i < stmts.length; i += CHUNK) {
-      await c.env.DB.batch(stmts.slice(i, i + CHUNK));
+    const results = await c.env.DB.batch(statements);
+    for (let i = 0; i < batch.length; i++) {
+      const changes = results[i * 3 + 2].meta?.changes ?? 0;
+      if (!changes) {
+        skippedChanged++;
+        continue;
+      }
+      totalHit += changes;
+      if (batch[i].fromLegit) legitHit += changes;
+      perRule[batch[i].hit.id] = (perRule[batch[i].hit.id] ?? 0) + changes;
     }
   }
-  invalidateRuleCache();
+  if (!dryRun) invalidateRuleCache();
   return c.json({
     ok: true,
-    matched: totalHit,
     scope,
-    // Candidate counts (rows the SQL prefilter surfaced), not partition sizes.
-    scanned: { queue: candidates.length, legit: legitCandidates.length },
+    dryRun,
+    complete,
+    nextCursor,
+    matched: totalHit,
+    wouldApply: plans.length,
+    textMatched,
+    skippedProtected,
+    skippedChanged,
+    scanned: {
+      queue: rows.filter((r) =>
+        REVIEW_STATUSES.includes(r.status as (typeof REVIEW_STATUSES)[number]),
+      ).length,
+      legit: rows.filter((r) => r.status === "auto_legit" || r.status === "auto_unsure").length,
+    },
     legitMatched: legitHit,
-    legitTruncated,
-    queueTruncated: queueScan.truncated,
-    perRule: Object.entries(perRule)
-      .map(([id, n]) => ({ id: Number(id), hits: n }))
-      .filter((x) => x.hits > 0),
+    queueTruncated: !complete && partition === 0,
+    legitTruncated: !complete && scope === "all",
+    perRule: Object.entries(perRule).map(([id, hits]) => ({ id: Number(id), hits })),
   });
 });
 

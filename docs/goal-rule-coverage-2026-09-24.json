@@ -11,7 +11,7 @@
       "id": "K2",
       "task": "修复覆盖范围与扫描结果的准确性",
       "verify": "真实 SQLite 回归：四阶段、隐藏字符、终审保护、截断及实际写入计数",
-      "passes": false
+      "passes": true
     },
     {
       "id": "K3",

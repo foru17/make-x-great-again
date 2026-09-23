@@ -36,7 +36,9 @@ class DB {
     return wrapped;
   }
   async batch(stmts: ReturnType<DB["prepare"]>[]) {
-    return Promise.all(stmts.map((s) => s.all()));
+    const results = [];
+    for (const statement of stmts) results.push(await statement.run());
+    return results;
   }
 }
 const plain = "我福不黑";

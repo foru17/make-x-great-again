@@ -88,7 +88,7 @@ class Stmt {
   }
   async all<T>(): Promise<{ results?: T[] }> {
     if (this.sql.includes("FROM keyword_rules")) return { results: RULES as T[] };
-    if (this.sql.includes("status='auto_pending_review'")) return { results: QUEUE_ROWS as T[] };
+    if (this.sql.includes("status IN ('auto_pending_review'")) return { results: QUEUE_ROWS as T[] };
     if (this.sql.includes("status='auto_legit'")) {
       this.db.legitScans++;
       return { results: LEGIT_ROWS as T[] };
@@ -159,14 +159,13 @@ test("scope:'all' rescans auto_legit and parks hits in the queue instead of publ
     (w) => w.sql.includes("UPDATE accounts") && !w.sql.includes("hit_count"),
   );
   assert.equal(updates.length, 2);
-  const legitUpdate = updates.find((w) => w.args[w.args.length - 1] === 3);
+  const legitUpdate = updates.find((w) => w.args[9] === 3);
   assert.ok(legitUpdate, "the auto_legit row must be rewritten");
   assert.equal(legitUpdate.args[0], "auto_pending_review"); // parked, not published
-  // Positional from the end (…, published_at, published_tier, rowid) so adding
-  // a column to the SET list doesn't silently re-point these assertions.
+  // Publication fields remain empty when returning a cleared account to review.
   const a = legitUpdate.args;
-  assert.equal(a[a.length - 3], null); // published_at stays null
-  assert.equal(a[a.length - 2], null); // published_tier stays null
+  assert.equal(a[5], null); // published_at stays null
+  assert.equal(a[6], null); // published_tier stays null
 });
 
 // Regression (2026-07-28): the sweep rewrote status/verdict but never touched

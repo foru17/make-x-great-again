@@ -383,3 +383,12 @@ test("classify: invisible formatting in a bio still reaches the real keyword fas
   assert.equal(result.matchedRule?.id, 1);
   assert.equal(llmCalls, 0);
 });
+
+for (const [i,status] of ["agent_pending","agent_blacklist","agent_whitelist"].entries()) test(`classify: ${status} does not shield a cached account from a keyword rule`,async()=>{
+  llmCalls=0;const uid=String(950+i);const handle=`reviewed_${i}`;
+  db.accounts.push({rowid:150+i,x_user_id:uid,handle,status,verdict_label:"uncertain",confidence:0.4,signals_hash:"cached",last_scored:Date.now()-1000});
+  const res=await worker.fetch(post("/v1/classify",{userId:uid,handle,displayName:"测试",bio:"看\u2060我主页",recentTweets:[]}),env);
+  assert.equal(res.status,200);const body=await res.json() as any;
+  assert.equal(body.matchedRule?.id,1);assert.equal(body.cached,false);assert.equal(llmCalls,0);
+  assert.equal(db.accounts.find(a=>a.x_user_id===uid)?.status,"human_confirmed");
+});

@@ -59,7 +59,7 @@ class Stmt {
   }
   async all<T>(): Promise<{ results?: T[] }> {
     if (this.sql.includes("FROM keyword_rules")) return { results: this.db.rules as T[] };
-    if (this.sql.includes("status='auto_pending_review'")) {
+    if (this.sql.includes("status IN ('auto_pending_review'")) {
       this.db.queueScans++;
       return { results: this.db.page(this.args, "auto_pending_review") as T[] };
     }
@@ -162,12 +162,21 @@ test("sweep pages past the first window instead of rescanning it forever", async
     }
   }
   const db = new DeepDB();
-  const res = await worker.fetch(sweep("all"), { DB: db, ADMIN_TOKEN: "admin" });
-  assert.equal(res.status, 200);
-  const j = (await res.json()) as { legitMatched: number; legitTruncated: boolean };
-  assert.equal(db.legitScans, 2, "one full page then the remainder");
-  assert.equal(j.legitMatched, 1, "the tail row must be reached");
-  assert.equal(j.legitTruncated, false);
+  let cursor: unknown;
+  let matched = 0;
+  let complete = false;
+  for (let i = 0; i < 10; i++) {
+    const req = sweep("all");
+    const res = await worker.fetch(new Request(req, {body:JSON.stringify({scope:"all",cursor})}), { DB: db, ADMIN_TOKEN: "admin" });
+    assert.equal(res.status,200);
+    const j = await res.json() as any;
+    matched += j.legitMatched;
+    if (j.complete) { complete=true; break; }
+    cursor = j.nextCursor;
+  }
+  assert.equal(db.legitScans,3,"bounded pages reach the remainder");
+  assert.equal(matched,1,"the tail row must be reached");
+  assert.ok(complete);
 });
 
 test("a cased non-ASCII pattern admits Unicode candidates for the exact JS matcher", async () => {

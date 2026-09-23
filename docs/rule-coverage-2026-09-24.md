@@ -17,3 +17,17 @@
 其他扫描风险：旧结果只显示计划处理数，未解释保护条件跳过；写入未再次校验状态；达到候选上限后重新扫描会从头开始，不能保证覆盖尾部。
 
 原始只读证据（忽略目录，不提交生产账号信息）：`.ui-acceptance/2026-09-24-rule-coverage/{before,configured-before,rules-before}.json`。此次核查没有执行生产拉黑扫描。
+
+## 修复与后端验证
+
+- 预览、扫描、实时规则覆盖使用共享四状态集合；人工终审状态仍受保护。
+- 预览按 handle 去重；扫描按物理记录执行并报告，避免混淆列表账号数与存储记录数。
+- 每次最多 200 条候选、120 次查询，规则每组不超过 90 个绑定值；合并所有规则组后再推进 rowid，避免跨组重叠重复计数或遗漏尾部。继续扫描携带范围与规则指纹，规则变化要求重新开始。
+- 增加无写入的 dryRun。返回文字命中、预计执行、实际执行、保护跳过、并发变更跳过及是否完成；保留高粉/非垃圾类别保护，以及原“已判正常/无法判断 → 回待审”策略。
+- 每条计数、审计、更新在同一 D1 事务中校验状态和证据快照；以实际写入数计数，并标记规则来源。
+
+新增回归在旧代码下失败；修复后 `npm --prefix services/edge test`：170 / 170 通过；Worker 类型检查和目标文件 lint 通过。
+
+实际 workerd/D1 本地运行时输出：`{"passed":true,"runtime":"workerd/D1","variants":25,"states":4,"requests":9,"search":302,"preview":302,"sweep":301,"protected":1,"terminalUnchanged":4}`。真实验证两页扫描、只读预演无审计写入、实际审计/规则计数相等、保护账号留待审。
+
+证据：`.ui-acceptance/2026-09-24-rule-coverage/{red,green-initial,test,typecheck,runtime}.log`；复现：`services/edge/test/keyword-review-queue.test.ts` 和 `services/edge/scripts/smoke-search-rules.mjs`。
