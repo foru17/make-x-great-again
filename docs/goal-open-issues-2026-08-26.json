@@ -1,0 +1,87 @@
+{
+  "run_at": "2026-09-23T05:10:26Z",
+  "scope": "Open GitHub issues at run start: #442 was a single-account appeal; #436 was an unrelated Chinese UI-copy request and was not part of the moderation run.",
+  "source": {
+    "github_repo": "https://github.com/foru17/make-x-great-again",
+    "github_issue": "https://github.com/foru17/make-x-great-again/issues/442",
+    "production_api": "https://x.zuoluo.tv",
+    "governance": "GOVERNANCE.md"
+  },
+  "verification": {
+    "open_issues": "The repository had two open issues at triage: #442, titled '[Appeal] @kevinwongtsgq wrongly listed', and #436, titled '[Bug] 判定提示中，希望能有中文的提示'. Only #442 identified a single-account appeal with a handle and numeric X user ID.",
+    "x_profile": "The current public profile resolver maps @kevinwongtsgq to structured UID 2093871970748334081, matching the submitted UID. The profile is named kevin wong, has an empty bio, joined 2026-08-30, and reports 18 followers, 41 following, and 212 statuses. Four visible author-owned posts repeat the same Muse referral copy, invite code JIQIPB, and muse.ai/join link between 2026-09-20 and 2026-09-22; this is repeatable commercial promotion/spam, not ordinary personal expression.",
+    "pre_decision": "Authenticated production admin queries for blacklist, queue, whitelist, agent blacklist, agent whitelist, and agent pending returned no matching handle or UID. The public /v1/check?ids=2093871970748334081 returned hits={}; a recent public whitelist query returned no match; current lite and shards artifacts also contained neither identity.",
+    "decision_basis": "The X evidence does not support an upheld false-positive appeal: the account repeatedly advertises a referral code and commercial destination. However, the current production D1-backed admin surfaces and published artifacts contain no matching account, so there was no human_confirmed row to maintain, no false-positive row to whitelist, and no safe basis to create or restore a production entry.",
+    "post_decision": "No production mutation was performed. The targeted blacklist/queue/whitelist and agent-bucket searches remained empty, /v1/check remained hits={}, and no matching review_log row or audit ID was created. The production data therefore remained unchanged.",
+    "mirror_sync": "Not run because no D1 state changed; there was no whitelist_add or appeal_rejected mutation to mirror.",
+    "artifact_check": "The current /v1/list/meta advertised version v-_____f_________-176227 with count 176227; its lite and shards artifacts contained neither the target UID nor handle. The data-mirror blacklist v2-lite snapshots at 2026-09-21 23:17, 2026-09-22 02:01/08:01/13:40/14:02/20:02, and 2026-09-23 02:02/08:01 +08 likewise contained no match.",
+    "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/442#issuecomment-5789440574",
+    "github_state": "closed",
+    "github_state_reason": "not_planned"
+  },
+  "records": [
+    {
+      "issue": 436,
+      "handle": null,
+      "submitted_handle": null,
+      "decision": "not_planned",
+      "uid": null,
+      "submitted_uid": null,
+      "rowid": null,
+      "audit_id": null,
+      "audit_action": null,
+      "github_comment_id": null,
+      "github_comment_url": null,
+      "github_state": "open",
+      "github_state_reason": "not_planned_for_moderation_automation",
+      "result": "not_planned",
+      "evidence": "The issue requests Chinese UI copy for a verdict prompt and does not identify a misclassified account or request removal from the public list. It was intentionally left open and no account-level review or production change was performed.",
+      "sources": [
+        "https://github.com/foru17/make-x-great-again/issues/436",
+        "GOVERNANCE.md"
+      ]
+    },
+    {
+      "issue": 442,
+      "handle": "kevinwongtsgq",
+      "submitted_handle": "kevinwongtsgq",
+      "decision": "not_listed",
+      "appeal_decision": "rejected",
+      "uid": "2093871970748334081",
+      "submitted_uid": "2093871970748334081",
+      "rowid": null,
+      "rowid_note": "No matching production account was returned by the authenticated admin surfaces; the production API does not expose a D1 rowid for an absent row.",
+      "audit_id": null,
+      "audit_action": null,
+      "github_comment_id": 5789440574,
+      "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/442#issuecomment-5789440574",
+      "github_state": "closed",
+      "github_state_reason": "not_planned",
+      "result": "not_planned",
+      "evidence": "The submitted UID matches the current public profile. Four author-owned posts repeat the same Muse referral promotion, invite code, and commercial join link, establishing repeatable commercial spam. Because the production blacklist, queue, whitelist, agent buckets, /v1/check, and current lite/shards artifacts all lack the target, no D1 row was changed or created.",
+      "sources": [
+        "https://github.com/foru17/make-x-great-again/issues/442",
+        "https://x.com/kevinwongtsgq",
+        "https://api.fxtwitter.com/2/profile/kevinwongtsgq",
+        "https://api.fxtwitter.com/2/profile/kevinwongtsgq/statuses?count=100",
+        "https://x.zuoluo.tv/v1/check?ids=2093871970748334081",
+        "https://x.zuoluo.tv/v1/list/meta",
+        "https://x.zuoluo.tv/v1/artifacts/lite-v-_____f_________-176227.json",
+        "https://x.zuoluo.tv/v1/artifacts/shards-v-_____f_________-176227.json",
+        "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v2-lite.json"
+      ],
+      "pre_check_hit": false,
+      "check_hit": false,
+      "whitelist_present": false,
+      "blacklist_present": false,
+      "queue_present": false,
+      "agent_present_before": false,
+      "agent_present_after": false,
+      "lite_artifact_present_before": false,
+      "shards_artifact_present_before": false,
+      "artifact_present_after": false,
+      "mirror_whitelist_present": false,
+      "mirror_blacklist_present": false
+    }
+  ]
+}
