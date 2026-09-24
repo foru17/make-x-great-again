@@ -1,0 +1,272 @@
+{
+  "schema_version": 1,
+  "runs": [
+    {
+      "run_id": "ZUO-39-2026-09-24",
+      "multica_issue_id": "01a0d235-4e15-775b-82ed-57bea7a0edd5",
+      "recorded_at": "2026-09-24T07:03:26.580228+00:00",
+      "base_commit": "b5b32fda2225c272e961ab93dfd65ab302fd5c8d",
+      "status": "blocked",
+      "scope": {
+        "open_issue_numbers": [
+          436,
+          444,
+          445
+        ],
+        "appeal_issue_numbers": [
+          444,
+          445
+        ],
+        "excluded": [
+          {
+            "number": 436,
+            "reason": "UI bug report, not an appeal"
+          }
+        ],
+        "max_issues": 20,
+        "prior_review_comment": "https://github.com/foru17/make-x-great-again/issues/444#issuecomment-5808773928",
+        "prior_review_note": "Prior review of #444 was blocked, without final decision. New readable X evidence was obtained this run and reported in a follow-up comment."
+      },
+      "access_check": {
+        "command": "npx --yes wrangler@4.110.0 whoami",
+        "result": "You are not authenticated. Please run `wrangler login`.",
+        "database_queries_performed": false,
+        "database_writes_performed": false
+      },
+      "public_snapshot": {
+        "meta": {
+          "count": 181971,
+          "day": 5724,
+          "week": 6369,
+          "pending": 11,
+          "generatedAt": 1790230250398,
+          "latestAt": 1790230139576,
+          "version": "v-_____f_________-181971",
+          "artifacts": {
+            "bloom": "/v1/artifacts/bloom-v-_____f_________-181971.b64",
+            "shards": "/v1/artifacts/shards-v-_____f_________-181971.json",
+            "meta": "/v1/artifacts/meta-v-_____f_________-181971.json",
+            "lite": "/v1/artifacts/lite-v-_____f_________-181971.json"
+          }
+        },
+        "artifacts": {
+          "lite": {
+            "version": "v-_____f_________-181971",
+            "matches": [
+              [
+                "2099119416122466304",
+                "xsbebi",
+                "pph"
+              ],
+              [
+                "",
+                "little_morichan",
+                "ppa"
+              ]
+            ],
+            "url": "https://x.zuoluo.tv/v1/artifacts/lite-v-_____f_________-181971.json"
+          },
+          "shards": {
+            "version": "v-_____f_________-181971",
+            "matches": {
+              "2099119416122466304": {
+                "userId": "2099119416122466304",
+                "handle": "xsbebi",
+                "label": "porn_bot",
+                "confidence": 0.88,
+                "published_at": 1789983207612,
+                "tier": "human"
+              },
+              "handle:xsbebi": {
+                "userId": "2099119416122466304",
+                "handle": "xsbebi",
+                "label": "porn_bot",
+                "confidence": 0.88,
+                "published_at": 1789983207612,
+                "tier": "human"
+              },
+              "handle:little_morichan": {
+                "userId": null,
+                "handle": "little_morichan",
+                "label": "porn_bot",
+                "confidence": 1,
+                "published_at": 1784907006603,
+                "tier": "auto"
+              }
+            },
+            "url": "https://x.zuoluo.tv/v1/artifacts/shards-v-_____f_________-181971.json"
+          }
+        },
+        "whitelist": {
+          "matches": [],
+          "pages": [
+            {
+              "since": 0,
+              "count": 2000,
+              "latestAt": 1785658983000
+            },
+            {
+              "since": 1785658983000,
+              "count": 476,
+              "latestAt": 1790081504093
+            }
+          ],
+          "pagination_note": "API uses strict last_scored > since; timestamp ties at full page boundaries cannot be ruled out"
+        },
+        "check": {
+          "hits": {
+            "2099119416122466304": {
+              "label": "porn_bot",
+              "confidence": 0.88
+            }
+          }
+        }
+      },
+      "issues": [
+        {
+          "issue_number": 445,
+          "issue_url": "https://github.com/foru17/make-x-great-again/issues/445",
+          "handle": "XSbebi",
+          "submitted_uid": "2099119416122466304",
+          "verified_uid": "2099119416122466304",
+          "decision": "pending_human_review",
+          "recommendation": "Review original D1 evidence; current readable public sample is insufficient to uphold the listing. Consider whitelist only after authorized human review.",
+          "production_change_applied": false,
+          "rowid": null,
+          "audit_ids": [],
+          "d1_status": null,
+          "d1_verification": "blocked: Wrangler is not authenticated; accounts and review_log were not queried",
+          "x_evidence": {
+            "url": "https://x.com/XSbebi",
+            "http_status": 200,
+            "uid_source": "SSR User.rest_id",
+            "bio": "可约拍 不商务 不互动 不互勉不互勉",
+            "readable_post_count": 4,
+            "summary": "4 readable posts concern photography, photo delivery, gaming and daily life. Bio advertises photography availability; no repeatable commercial spam or pornographic-advertising bot evidence established in the readable sample.",
+            "example_post_urls": [
+              "https://x.com/XSbebi/status/2102992455104954477"
+            ],
+            "html_sha256": "1b351e690a6f6cbf7b58ef126100f53ae39e87b01522ffcc38ef4663e07ef490",
+            "retrieved_at": "2026-09-24T07:01:43.351724+00:00",
+            "limitations": "Only returned SSR text was reviewed; media was not inspected; sample is not complete account history."
+          },
+          "public_verification": {
+            "check_url": "https://x.zuoluo.tv/v1/check?ids=2099119416122466304",
+            "check_hit": {
+              "label": "porn_bot",
+              "confidence": 0.88
+            },
+            "lite_rows": [
+              [
+                "2099119416122466304",
+                "xsbebi",
+                "pph"
+              ]
+            ],
+            "shards_entries": {
+              "2099119416122466304": {
+                "userId": "2099119416122466304",
+                "handle": "xsbebi",
+                "label": "porn_bot",
+                "confidence": 0.88,
+                "published_at": 1789983207612,
+                "tier": "human"
+              },
+              "handle:xsbebi": {
+                "userId": "2099119416122466304",
+                "handle": "xsbebi",
+                "label": "porn_bot",
+                "confidence": 0.88,
+                "published_at": 1789983207612,
+                "tier": "human"
+              }
+            },
+            "whitelist_match_in_returned_pages": false,
+            "interpretation": "Public API/artifact observations are existing publication state, not an independent moderation verdict. /v1/check only returns human-tier rows."
+          },
+          "github_comment_id": 5809393968,
+          "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/445#issuecomment-5809393968",
+          "github_state_after": "OPEN",
+          "github_close_reason": null
+        },
+        {
+          "issue_number": 444,
+          "issue_url": "https://github.com/foru17/make-x-great-again/issues/444",
+          "handle": "Little_Morichan",
+          "submitted_uid": "1636035343370838017",
+          "verified_uid": "1636035343370838017",
+          "decision": "pending_human_review",
+          "recommendation": "Review original D1 evidence; current readable public sample is insufficient to uphold the listing. Consider whitelist only after authorized human review.",
+          "production_change_applied": false,
+          "rowid": null,
+          "audit_ids": [],
+          "d1_status": null,
+          "d1_verification": "blocked: Wrangler is not authenticated; accounts and review_log were not queried",
+          "x_evidence": {
+            "url": "https://x.com/Little_Morichan",
+            "http_status": 200,
+            "uid_source": "SSR User.rest_id",
+            "bio": "ただの普通の学生/coserです，不定期发推\n中文/日本語/English ok\nthank you for following me！",
+            "readable_post_count": 5,
+            "summary": "5 readable posts concern cosplay, job hunting and daily life, including crude expression. Personal expression and cosplay alone are outside governance scope; no repeatable commercial spam or pornographic-advertising bot evidence established in the readable sample.",
+            "example_post_urls": [
+              "https://x.com/Little_Morichan/status/2089734049795567804"
+            ],
+            "html_sha256": "1c8e65af5d34e4c8b250641af69ee1f299cc04831dda65916279891a2f0ee1f0",
+            "retrieved_at": "2026-09-24T07:01:45.435095+00:00",
+            "limitations": "Only returned SSR text was reviewed; media was not inspected; sample is not complete account history."
+          },
+          "public_verification": {
+            "check_url": "https://x.zuoluo.tv/v1/check?ids=1636035343370838017",
+            "check_hit": null,
+            "lite_rows": [
+              [
+                "",
+                "little_morichan",
+                "ppa"
+              ]
+            ],
+            "shards_entries": {
+              "handle:little_morichan": {
+                "userId": null,
+                "handle": "little_morichan",
+                "label": "porn_bot",
+                "confidence": 1,
+                "published_at": 1784907006603,
+                "tier": "auto"
+              }
+            },
+            "whitelist_match_in_returned_pages": false,
+            "interpretation": "Public API/artifact observations are existing publication state, not an independent moderation verdict. /v1/check only returns human-tier rows."
+          },
+          "github_comment_id": 5809394356,
+          "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/444#issuecomment-5809394356",
+          "github_state_after": "OPEN",
+          "github_close_reason": null
+        }
+      ],
+      "acceptance": {
+        "commands": [
+          {
+            "command": "pnpm typecheck && pnpm test && pnpm lint",
+            "result": "PASS: typecheck; 23 tests; lint 71 files"
+          },
+          {
+            "command": "python3 -m json.tool docs/goal-open-issues-2026-08-26.json > /dev/null",
+            "result": "PASS"
+          },
+          {
+            "command": "git diff --check",
+            "result": "PASS"
+          }
+        ],
+        "production_row_and_audit_check": "BLOCKED: not authenticated",
+        "post_mutation_publication_verification": "NOT APPLICABLE: no mutations; observed existing publication only"
+      },
+      "next_steps": [
+        "Use an authenticated, authorized maintainer session to query both accounts by handle and verified UID and inspect original evidence and review_log.",
+        "Complete human review, apply only the approved per-account decision with audit, then verify D1, /v1/check, whitelist and freshly published lite/shards before closing appeals."
+      ]
+    }
+  ]
+}
