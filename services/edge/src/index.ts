@@ -6095,13 +6095,30 @@ async function publishArtifacts(env: Bindings): Promise<void> {
     }
   }
 
-  // base64 includes '+' and '/', which would land in the artifact object
-  // keys (bloom-<version>.b64 etc.) and the /v1/artifacts/<key> URLs that
-  // /v1/list/meta advertises. The artifacts route rejects any key with a
-  // '/' (path-traversal guard), so a slash in the version made every
-  // published artifact URL 404. Use the URL-safe base64 alphabet for the
-  // version prefix so keys are always single path segments.
-  const versionPrefix = bloomB64.slice(0, 16).replace(/\+/g, "-").replace(/\//g, "_");
+  // The version must change whenever the published set changes. It used to be
+  // the first 16 base64 chars of the bloom, but the bloom is saturated at this
+  // size so that prefix is constant ("-_____f_________") and the version
+  // degenerated to the account count alone. A whitelist that drops the count
+  // back to a value published earlier then collided with that old version:
+  // the ledger's ON CONFLICT keeps the old published_at, so /v1/list/meta kept
+  // advertising the previous (larger) version and the whitelisted accounts
+  // stayed in the served artifacts. Hash the full identity/label set instead.
+  // Rows are sorted first because published_at ties come back in no fixed
+  // order, and a version that churns every tick would re-upload ~23 MB of
+  // artifacts each run. Hex keeps keys single URL path segments (the
+  // artifacts route rejects '/').
+  const identityRows = accounts
+    .map((a) =>
+      JSON.stringify([a.x_user_id ?? "", a.handle, a.verdict_label, a.category, a.published_tier]),
+    )
+    .sort();
+  const identityDigest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(identityRows.join("\n")),
+  );
+  const versionPrefix = [...new Uint8Array(identityDigest).slice(0, 8)]
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
   const version = `v${versionPrefix}-${accounts.length}`;
   const now = Date.now();
   const bloomKey = `bloom-${version}.b64`;
