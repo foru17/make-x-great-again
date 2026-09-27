@@ -18,6 +18,10 @@ export interface XActionAttempt {
   status?: number;
   retryable?: boolean;
   retryAfterMs?: number;
+  /** Human-readable failure cause. Diagnostic only — never sent anywhere.
+   *  Without this a failed mute/block is completely silent (the caller just
+   *  returns false), which makes "auto-block does nothing" undebuggable. */
+  reason?: string;
 }
 
 // X web's long-standing public bearer (same one the site itself sends).
@@ -41,23 +45,33 @@ const RATE_LIMIT_COOLDOWN_MS = 45_000;
 const TRANSIENT_COOLDOWN_MS = 8_000;
 const LS_LAST_ACTION = "mxga:last-x-action";
 const LS_ACTION_ROUND = "mxga:x-action-round";
-const LOCK_NAME = "mxga-x-action";
 
 interface ActionRound {
   count: number;
   cooldownUntil: number;
 }
 
-type LockCapableNavigator = Navigator & {
-  locks?: {
-    request<T>(name: string, callback: () => T | Promise<T>): Promise<T>;
-  };
-};
-
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
+/** Safely stringify a thrown value. Reading `.message` on an object from a
+ *  foreign JS compartment can itself throw in Firefox, so guard both the
+ *  property read and the String() coercion. */
+function errText(e: unknown): string {
+  try {
+    const m = (e as { message?: unknown } | null)?.message;
+    if (typeof m === "string" && m) return m;
+    return String(e);
+  } catch {
+    return "unknown error";
+  }
+}
+
 function ct0() {
-  return document.cookie.match(/ct0=([^;]+)/)?.[1] ?? "";
+  try {
+    return document.cookie.match(/ct0=([^;]+)/)?.[1] ?? "";
+  } catch {
+    return "";
+  }
 }
 
 function apiOrigin() {
@@ -174,9 +188,87 @@ async function waitForSlot() {
   setStorageNumber(LS_LAST_ACTION, Date.now());
 }
 
+// Serialization for X write actions.
+//
+// We deliberately do NOT use the Web Locks API (navigator.locks). In a Firefox
+// content script the LockManager belongs to the page's JS compartment, so
+// `locks.request()` returns a FOREIGN-compartment Promise. Every way of
+// consuming such a promise — `await`, `.then()`, `.catch()`, and even
+// `Promise.resolve()` — has to read its `then` property, which throws:
+//     Error: Permission denied to access property "then"
+// Promise.resolve() does NOT help: it only short-circuits when the value's
+// constructor is the *same* Promise object, which is false across
+// compartments. It just converts the synchronous throw into a rejection that
+// then surfaces as "[MXGA] 自动拉黑处理异常 … property \"then\"".
+//
+// A local promise chain gives the same serialization inside this context.
+// Cross-tab pacing is already handled by waitForSlot(), which coordinates
+// through localStorage timestamps.
+let mutexChain: Promise<unknown> = Promise.resolve();
+
 async function withLock<T>(fn: () => Promise<T>): Promise<T> {
-  const locks = (navigator as LockCapableNavigator).locks;
-  return locks ? locks.request(LOCK_NAME, fn) : fn();
+  const run = mutexChain.then(fn, fn);
+  // Keep the chain alive across failures (otherwise one rejection would poison
+  // every later action); the caller still sees `run`'s own rejection.
+  mutexChain = run.catch(() => {});
+  return run;
+}
+
+interface XhrResult {
+  status: number;
+  header(name: string): string | null;
+}
+
+/**
+ * POST via XMLHttpRequest rather than fetch.
+ *
+ * fetch() in a Firefox content script can return a Promise created in the
+ * page's JS compartment, which cannot be consumed (see withLock above —
+ * reading `.then` throws "Permission denied to access property \"then\"").
+ * XHR is callback-based, so we construct the Promise ourselves, in OUR
+ * compartment, and never touch a foreign one.
+ */
+function xhrPost(
+  url: string,
+  headers: Record<string, string>,
+  body: string,
+  timeoutMs: number,
+): Promise<XhrResult> {
+  return new Promise<XhrResult>((resolve, reject) => {
+    let xhr: XMLHttpRequest;
+    try {
+      xhr = new XMLHttpRequest();
+    } catch (e) {
+      reject(e);
+      return;
+    }
+    try {
+      xhr.open("POST", url, true);
+      // Send the x.com session cookies (ct0 among them). Same-origin from the
+      // content script's point of view, so no CORS preflight.
+      xhr.withCredentials = true;
+      xhr.timeout = timeoutMs;
+      for (const [k, v] of Object.entries(headers)) xhr.setRequestHeader(k, v);
+      xhr.onload = () =>
+        resolve({
+          status: xhr.status,
+          header: (name: string) => {
+            try {
+              return xhr.getResponseHeader(name);
+            } catch {
+              return null;
+            }
+          },
+        });
+      xhr.onerror = () => reject(new Error("网络错误"));
+      xhr.ontimeout = () => reject(new Error(`请求超时（${timeoutMs}ms）`));
+      xhr.onabort = () => reject(new Error("请求被中止"));
+      xhr.send(body);
+    } catch (e) {
+      // e.g. the page CSP blocks the request, or open()/send() throws.
+      reject(e);
+    }
+  });
 }
 
 /** Single first-party mute/block call. Returns ok/false + retry hints. */
@@ -187,39 +279,58 @@ async function rawAction(
 ): Promise<XActionAttempt> {
   try {
     const csrf = ct0();
-    if (!csrf) return { ok: false, retryable: false };
+    if (!csrf) {
+      return {
+        ok: false,
+        retryable: false,
+        reason: "未取到 ct0（未登录 X，或浏览器阻止了 content script 读取 cookie）",
+      };
+    }
     const screenName = normalizeHandle(handle);
     const body = new URLSearchParams();
     // Prefer the immutable numeric user_id: handles rename, and a wrongly
     // extracted pseudo-handle 404s silently — the id never lies.
     if (userId && /^\d+$/.test(userId)) body.set("user_id", userId);
     else if (screenName) body.set("screen_name", screenName);
-    else return { ok: false, retryable: false };
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 15_000);
-    const res = await fetch(`${apiOrigin()}${ENDPOINT[kind]}`, {
-      method: "POST",
-      credentials: "include",
-      signal: controller.signal,
-      headers: {
-        authorization: FALLBACK_X_BEARER,
-        "x-csrf-token": csrf,
-        "x-twitter-auth-type": "OAuth2Session",
-        "x-twitter-active-user": "yes",
-        "content-type": "application/x-www-form-urlencoded",
-      },
-      body: body.toString(),
-    }).finally(() => clearTimeout(timer));
+    else
+      return {
+        ok: false,
+        retryable: false,
+        reason: "既无合法 user_id 也无 screen_name，无法定位账号",
+      };
+    let res: XhrResult;
+    try {
+      res = await xhrPost(
+        `${apiOrigin()}${ENDPOINT[kind]}`,
+        {
+          authorization: FALLBACK_X_BEARER,
+          "x-csrf-token": csrf,
+          "x-twitter-auth-type": "OAuth2Session",
+          "x-twitter-active-user": "yes",
+          "content-type": "application/x-www-form-urlencoded",
+        },
+        body.toString(),
+        15_000,
+      );
+    } catch (e) {
+      return { ok: false, retryable: true, reason: `请求异常：${errText(e)}` };
+    }
     const status = res.status;
+    const ok = status >= 200 && status < 300;
+    const retryable =
+      status === 408 || status === 425 || status === 429 || status >= 500;
     return {
-      ok: res.ok,
+      ok,
       status,
-      retryAfterMs: parseRetryAfterMs(res.headers.get("retry-after")),
-      retryable:
-        status === 408 || status === 425 || status === 429 || status >= 500,
+      retryAfterMs: parseRetryAfterMs(res.header("retry-after")),
+      retryable,
+      // 403/401 from X almost always means the CSRF token or session is not
+      // accepted (or X now wants a transaction id) — surface it instead of
+      // failing silently.
+      reason: ok ? undefined : `X 返回 HTTP ${status}`,
     };
-  } catch {
-    return { ok: false, retryable: true };
+  } catch (e) {
+    return { ok: false, retryable: true, reason: `请求异常：${errText(e)}` };
   }
 }
 
