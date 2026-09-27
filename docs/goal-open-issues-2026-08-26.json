@@ -1,0 +1,120 @@
+{
+  "schema": 1,
+  "runs": [
+    {
+      "issue": "ZUO-47",
+      "multicaIssueId": "01a0e346-7cde-76fd-9508-dd24fe10481d",
+      "checkedAt": "2026-09-27T14:33:22.037606+00:00",
+      "scope": "Read-only publication follow-up for previously upheld appeals; no new account adjudication or production writes.",
+      "concurrencyCheck": "No other in_progress issue in the project. No specific new GitHub trigger was provided.",
+      "xEvidence": "Prior completed profile/UID verification cited by the existing whitelist audit. Current direct web reads failed (403/cache miss); no fresh X profile verification or new adjudication claimed.",
+      "apiAccess": "GET admin/public requests succeeded with Mozilla/5.0 User-Agent after default urllib requests were rejected with 403. No production authorization blocker.",
+      "skippedNeedsMaintainer": [
+        447,
+        448,
+        450
+      ],
+      "skippedOutOfScope": [
+        436
+      ],
+      "artifacts": [
+        {
+          "path": "/v1/artifacts/lite-vdab7f1f3fcb60b0a-182484.json",
+          "status": 200,
+          "version": "vdab7f1f3fcb60b0a-182484",
+          "generatedAt": 1790519418592,
+          "count": 182484,
+          "entriesCount": 182484,
+          "matches": [],
+          "verificationMethod": "Decoded lite tuples [userId, handle, ...]; matched both identity fields."
+        },
+        {
+          "path": "/v1/artifacts/shards-vdab7f1f3fcb60b0a-182484.json",
+          "status": 200,
+          "version": "vdab7f1f3fcb60b0a-182484",
+          "generatedAt": 1790519418592,
+          "count": 182484,
+          "entriesCount": 355069,
+          "matches": [],
+          "verificationMethod": "Checked numeric-ID and handle keys plus entry userId/handle fields."
+        }
+      ],
+      "records": [
+        {
+          "issue": 444,
+          "url": "https://github.com/foru17/make-x-great-again/issues/444",
+          "handle": "Little_Morichan",
+          "uid": "1636035343370838017",
+          "decision": "close_completed_after_publication_verified",
+          "productionStatus": "whitelisted",
+          "rowid": 506954,
+          "rowidSource": "https://github.com/foru17/make-x-great-again/issues/444#issuecomment-5855378635",
+          "rowidVerification": "Historical value only; current admin whitelist projection omits rowid. Current handle/UID whitelist membership was re-read.",
+          "audit": {
+            "id": 783188,
+            "x_user_id": "1636035343370838017",
+            "handle": "little_morichan",
+            "action": "whitelist_add",
+            "actor": "admin",
+            "note": "ZUO-45 GitHub #444: 当前 X 结构化 UID 已核实；原证据仅他人粗俗帖 @提及，本人学生/coser日常内容，明确范围外误报，按治理规范移除。",
+            "at": 1790507804714
+          },
+          "newAuditIds": [],
+          "githubComment": {
+            "issue": 444,
+            "commentUrl": "https://github.com/foru17/make-x-great-again/issues/444#issuecomment-5856760907",
+            "commentId": 5856760907
+          },
+          "verification": {
+            "adminWhitelist": true,
+            "adminBlacklistExactAccountMatches": 0,
+            "publicWhitelist": true,
+            "humanConfirmedCheckHits": 0,
+            "liteAbsent": true,
+            "shardsAbsent": true,
+            "artifactGeneratedAfterWhitelistWrite": true,
+            "githubState": "CLOSED",
+            "githubStateReason": "COMPLETED"
+          }
+        },
+        {
+          "issue": 445,
+          "url": "https://github.com/foru17/make-x-great-again/issues/445",
+          "handle": "XSbebi",
+          "uid": "2099119416122466304",
+          "decision": "close_completed_after_publication_verified",
+          "productionStatus": "whitelisted",
+          "rowid": 1081555,
+          "rowidSource": "https://github.com/foru17/make-x-great-again/issues/445#issuecomment-5855378837",
+          "rowidVerification": "Historical value only; current admin whitelist projection omits rowid. Current handle/UID whitelist membership was re-read.",
+          "audit": {
+            "id": 783189,
+            "x_user_id": "2099119416122466304",
+            "handle": "xsbebi",
+            "action": "whitelist_add",
+            "actor": "admin",
+            "note": "ZUO-45 GitHub #445: 当前 X 结构化 UID 已核实；原证据为模特/摄影署名，本人约拍及日常内容，不构成色情广告 bot，按治理规范移除。",
+            "at": 1790507813123
+          },
+          "newAuditIds": [],
+          "githubComment": {
+            "issue": 445,
+            "commentUrl": "https://github.com/foru17/make-x-great-again/issues/445#issuecomment-5856761588",
+            "commentId": 5856761588
+          },
+          "verification": {
+            "adminWhitelist": true,
+            "adminBlacklistExactAccountMatches": 0,
+            "publicWhitelist": true,
+            "humanConfirmedCheckHits": 0,
+            "liteAbsent": true,
+            "shardsAbsent": true,
+            "artifactGeneratedAfterWhitelistWrite": true,
+            "githubState": "CLOSED",
+            "githubStateReason": "COMPLETED"
+          }
+        }
+      ]
+    }
+  ]
+}
