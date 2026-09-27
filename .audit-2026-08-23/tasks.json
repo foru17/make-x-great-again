@@ -1,0 +1,42 @@
+{
+  "goal": "线上自动进入黑名单数量极低（20h 无大批量）——查因并修复",
+  "diagnosis": {
+    "symptom": "近72h published_tier 分布: rule=398, human=252, ai=1。AI 高置信自动上榜通道实际关闭。队列积压 106K（其中 porn_bot>=0.90 约 3020 条）",
+    "root_cause_1": "扩展 content script 跑在 isolated world（构建产物 manifest 无 world:MAIN），readFiberUser() 永远返回 {}。CDP 实测: isolated world 下 Object.keys(el) 为空，读不到 __reactFiber$。时间线路径的 userId/bio/followersCount/accountAgeDays 全部来自 fiber → 98% 载荷是 handle-only 瘦载荷 → AI 自动上榜的 uid!==null 门必然失败。旁证: account_created_at（仅 fiber 可得）全历史仅约1%",
+    "root_cause_2": "AUTO_AI_PUBLISH_CONF=0.95 高于模型实际置信上限。24h 实测 porn_bot 置信分布: 0.92=953 条, 0.95=5 条 → 阈值几乎不可达",
+    "secondary": "LLM 拿不到 bio/粉丝/账龄，只能看单条推文 → 队列 49K uncertain"
+  },
+  "tasks": [
+    {
+      "id": 1,
+      "title": "edge: AUTO_AI_PUBLISH_CONF 0.95 -> 0.92（按实测分布校准）",
+      "verify": "grep 常量值 + 单测",
+      "passes": true
+    },
+    {
+      "id": 2,
+      "title": "edge: handle-only 佐证通道——同 handle 被 N 个不同已认证身份独立判定 porn_bot>=0.92 时允许免 uid 自动上榜",
+      "verify": "新表迁移 + 单测覆盖 1 个身份不发布 / N 个身份发布",
+      "passes": true
+    },
+    {
+      "id": 3,
+      "title": "extension: 新增 world:MAIN 桥接脚本，恢复 userId/bio/followers/accountAge 采集",
+      "verify": "构建产物 manifest 含 world:MAIN；单测覆盖桥接协议",
+      "passes": true
+    },
+    {
+      "id": 4,
+      "title": "edge: 积压回补——不做批量 sweep（见 resolution）",
+      "verify": "dry-run 计数 + 实跑后 D1 published_tier=ai 增量",
+      "passes": true,
+      "resolution": "按设计取消。积压中的 porn_bot 行会在被再次遇到时经佐证通道自然上榜（缓存路径与 LLM 路径都累计佐证），无需新代码；而 2026-08-17 存量审计的结论正是「ai tier 高粉行普遍缺人工佐证」，盲目批量发布 3000 行恰恰是该审计警告的动作。"
+    },
+    {
+      "id": 5,
+      "title": "observability: admin stats 暴露「够格但被门挡下」计数，防止再次静默腐化",
+      "verify": "GET /v1/admin/stats 返回新字段",
+      "passes": true
+    }
+  ]
+}

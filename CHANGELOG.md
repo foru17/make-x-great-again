@@ -8,22 +8,209 @@ otherwise.
 
 ## [Unreleased]
 
+_Nothing yet._
+
+## [0.6.1] - 2026-09-06
+
+The false-positive release. The 2026-09-04 audit (eight upheld appeals,
+ten audited mislabels among the latest fifty spam verdicts, an 80%-noise
+review queue) traced most misfires to input the classifier never received,
+verdicts that outlived their withdrawal, and rule hits promoted blind. 0.6.1
+closes each of those paths, adds a user-owned whitelist that outranks
+everything, and ships the MAIN-world profile bridge that 0.6.0 missed.
+
 ### Added
 
-- iOS / iPadOS 18+ Safari Web Extension container with a SwiftUI setup guide,
-  Simulator build script, shared MV3 resources, and iPhone/iPad icons.
-- Touch-first badge popovers plus an iOS hamburger drawer, single-column dashboard cards,
-  and responsive Safari popup/options layouts for compact screens.
-- A shared optional Xcode signing configuration that injects local Team settings into all
-  Apple platform targets without committing developer credentials.
+- **Local whitelist** (设置 → 白名单): the user's own never-touch list,
+  highest priority of the whole chain — accounts on it are never badged,
+  rule-matched, sent for online detection or auto-processed, even when the
+  public list or an official rule says spam. Followed accounts join
+  automatically (`followingWhitelist`, default on) as they scroll past:
+  every standalone post in the home **Following** feed (reposts, thread-pair
+  parents and replies excluded), any author X's own profile object marks as
+  followed (fiber bridge), and the viewer's own /following page; any handle
+  can be added from the badge popover (加入白名单) or the options tab. Removing
+  an entry also excludes it from automatic re-adding (a followed account you
+  deliberately removed stays out until you add it back by hand; the tab can
+  clear all exclusions). The list shows avatars and pages by 50. Local
+  storage only, never uploaded.
+- The fiber/bridge reader understands X's 2025 GraphQL user shape (`core`,
+  `relationship_perspectives`, `verification`, `location`, `avatar`) as
+  well as the legacy one — without this the bridge found no user at all on
+  current X.
+- **MAIN-world profile bridge** (`x-bridge.content.ts`): a page-world script
+  reads the author profile X already holds in its React state and stamps it
+  onto the article as a DOM attribute, so the isolated content script can
+  send uid / bio / follower counts / account age (92% of live payloads had
+  none of them). Read-and-annotate only — no network requests, no page
+  globals touched. Disclosed in PRIVACY A.4.
+- **Rendering context** sent with every online check: `surface`
+  (home/thread/profile/search), `isReply`, `replyToHandle`,
+  `rootAuthorHandle` — the classifier's reply-section-bot vs own-timeline
+  boundary was undecidable from a bare tweet.
+- **Profile facts** X already holds: verified, post / media / like counts,
+  location, and X's own default-avatar flag (the DOM heuristic flagged real
+  avatars that failed to lazy-load; the prompt now trusts only the profile
+  source).
+- **Template repeats**: a local, hash-only, 14-day memory of each author's
+  recent comments reports how many earlier times this browser saw the same
+  text — the cross-thread repetition the prompt asks for and never got.
+  Only the count leaves the device.
+- **Profile pages** now send the account's own visible posts as history
+  (the profile path used to send no text at all).
+- **举报 asks which kind of spam first** (category chips, two taps); the
+  claim travels with the report and seeds the queued row's category.
+- **Rule-hit telemetry carries evidence**: which field matched and a
+  ≤200-char excerpt of the spam account's own text (server-verified to
+  contain the pattern), shown in the admin drill-down before promotion.
+  Disclosed in PRIVACY A.4b and the settings copy.
+- **Backup & migration** (设置 → 备份): export the user's own local data
+  (settings, local whitelist, custom / disabled rules, hidden accounts +
+  处理记录, local stats, optionally the detection cache) to a JSON file and
+  import it on another browser — merge (union lists, sum counters) or
+  replace per section, with a content preview first. The file never
+  contains the GitHub login or the synced public lists; import validates
+  every field and can only write those known keys.
+- **Frozen classifier eval set** (`docs/eval/cases.json`, 42 cases) and an
+  offline runner with a hard call cap; the 0.6.1 prompt scores 42/42.
+- **In-page UI acceptance harness** (`scripts/ui-acceptance/inpage`): real
+  build on simulated X pages, three X themes × two viewports.
+
+### Fixed
+
+- **Withdrawn verdicts resurfaced**: `/v1/classify` served the original spam
+  verdict for accounts a moderator had removed or whose report was rejected,
+  and the client re-cached it for 30 days — every appeal you won stayed red
+  in your own browser. The edge now serves the withdrawal as legit; the
+  client folds removed / rejected / whitelisted into a clean verdict,
+  overwrites the stale cache entry, and re-checks day-old cached spam.
+- **Fabricated repetition**: the article path copied the tweet text into
+  both `triggeringComment` and `recentTweets[0]`; the model read two
+  identical strings as "posts the same thing repeatedly" (#371).
+- **Uncertain verdicts badged**: an "uncertain 40%" red mark was a
+  user-visible false positive (#367); uncertain and low-confidence
+  likely_spam now stay silent.
+- **Rule hits could fire X mute/block**: local keyword-rule hits (a
+  substring match with zero review) are now capped at the reversible local
+  hide in every autoTierMode; X mute/block stays for published list entries.
+- **Spam cache lived 30 days across all later tweets**: 7 days now, and
+  reused across new tweets only while fresh or when the client cannot
+  re-check.
+- **UI followed the OS scheme, not X's theme**: X's Default / Dim / Lights
+  out are chosen in-app; a light OS with X in Lights out got grey ghost
+  badges and slate popover text on black. The page's real background now
+  decides, restamped when X switches theme.
+- Desktop bubble pill sat on the right end of X's pinned search box; the
+  two-character 误判 link in bubble rows could split across lines.
+
+### Service (deployed 2026-09-06, x.zuoluo.tv, version 943b8b34)
+
+- Review-queue split: legit at any confidence → `auto_legit`, uncertain →
+  new `auto_unsure` (3-day TTL, never listed, rule-overridable, rescanned
+  by scope:'all' sweeps); only spam-family labels queue. 80% of the queue
+  was non-spam labels burying the real false positives.
+- Prompt: repetition means distinct posts; one ordinary sentence with
+  missing profile data is not spam; context and profile-fact semantics;
+  avatar caveat keyed to provenance.
+- `rule_hit_stats` gained `field` / `sample_text` (migration
+  `2026-09-06-rule-hit-evidence.sql`); `/v1/report` accepts
+  `reportCategory`; `/v1/classify` accepts the new context / profile /
+  template-repeat fields.
+
+## [0.6.0] - 2026-08-14
+
+The contribution-funnel release. v0.5's passive zero-remote architecture
+quietly starved the shared spam-collection pipeline (users upgraded off the
+always-classify ≤0.4 builds while `/v1/classify` went GitHub-gated), so 0.6
+rebuilds the contribution loop through explicit, privacy-bounded channels —
+and fixes a silent whitelist truncation that had dropped false-positive
+protection for 3/4 of the whitelisted accounts.
+
+### Added
+
+- **Detection-rules panel** (设置 → 检测规则): inspect the synced official
+  keyword rules (pattern / matched field / category), flip a master switch,
+  or disable individual rules — rule behavior is finally visible and
+  controllable from the UI instead of being an invisible engine.
+- **Custom local rules**: author your own keyword rules (field + category)
+  that run with the same whitelist-first and translate-guard semantics as
+  official rules. Stored only on this machine; never uploaded, never part of
+  telemetry.
+- **Anonymous rule-hit telemetry** (default on, one switch to off, disclosed
+  in PRIVACY A.4b): when an official rule catches a spam account locally,
+  the extension reports only {matched pattern, spam account handle, its
+  public numeric id, category} — no user identity, no page content. Deduped
+  per (rule, account) for 7 days, batched ≤50 every 30 minutes. Server-side
+  the rows land in an isolated stats table that cannot create queue or list
+  entries; a maintainer explicitly reviews and promotes accounts into the
+  normal review queue from the admin console.
+- **Contribution status card** (概览): logged-out users see exactly what
+  GitHub login enables (online AI detection + one-click reporting) with a
+  direct login CTA; logged-in users see a live status line and their local
+  contribution counters.
+- **Online AI detection**: after GitHub login, accounts that miss the local
+  list, cache and rules are automatically submitted to `/v1/classify`
+  (≤40 per page, 3 concurrent, verdicts cached locally); clean results stay
+  visually silent instead of badging every checked account.
+- **举报为 spam**: one-click GitHub-authenticated report into the public
+  review queue, sent from the background worker so x.com's CSP/CORS can't
+  block it.
+- **Manual action ladder + prefilled appeal**: the badge popover exposes the
+  full 仅标记/本地隐藏/X 静音/X 拉黑 ladder per account, and 误判申诉 opens a
+  GitHub issue template prefilled with the account's identity.
+- iOS / iPadOS 18+ Safari Web Extension container with a SwiftUI setup
+  guide, Simulator build script, shared MV3 resources, and iPhone/iPad
+  icons; touch-first badge popovers, an iOS hamburger drawer and responsive
+  Safari popup/options layouts; a shared optional Xcode signing config that
+  keeps local Team settings out of the repo.
+
+### Fixed
+
+- **Whitelist truncation (critical)**: `/v1/whitelist` served a default page
+  of 500 rows while the whitelist had grown past 2000, and the client stored
+  that first page as the complete set — silently dropping false-positive
+  protection for every account whitelisted since late July. The server-side
+  default page now exceeds the full set (already-deployed clients heal on
+  their next 6h sync), and the client now walks the since/limit cursor to a
+  short page with a hard page fuse.
+- Interrupted auto-processing (tab close, SPA navigation mid-queue) no
+  longer records actions that never fired as 已处理; pending X actions are
+  re-attempted on the next load.
+- Auto-processing hides the real tweet instantly; the collapse animation
+  plays only in the bubble, not on the page DOM fighting X's virtualizer.
+- Profile-page badge hide-target resolution, pending-timer cleanup, and
+  badge-popover anchoring/closing fixes.
+- The whitelist self-service page renders the real membership state instead
+  of offering an application to already-whitelisted accounts.
+- Firefox: consent compatibility baselines, background sync receiver gaps,
+  absent content styles, live account surfaces, and online-detection
+  disclosure preserved through the data-permission flow.
 
 ### Changed
 
-- Consolidated the macOS and iOS containers and Safari extensions into one Xcode project with
-  four platform-specific targets; deployment baselines are now macOS 15 and iOS 18.
-- Safari's in-page blacklist index now retains compact lite rows and expands display data only
-  on a hit, reducing the measured retained heap for the current 134k snapshot from roughly
-  55 MB to 32 MB per page context.
+- 处理记录 persists across SPA navigations and hard reloads, scoped to the
+  session so a fresh visit to X no longer replays the previous session's
+  history into the bubble.
+- Options-panel terminology and layout pass: the four-action vocabulary
+  (仅标记 / 本地隐藏 / X 静音 / X 拉黑) is now identical between manual and
+  automatic settings, and official keyword-rule hits count toward the
+  autoTierMode cap exactly like auto-published list entries.
+- Safari's in-page blacklist index retains compact lite rows and expands
+  display data only on a hit (~55 MB → ~32 MB retained heap per page
+  context on the 134k snapshot); the macOS and iOS containers are one Xcode
+  project with four platform targets (baselines macOS 15 / iOS 18).
+
+### Service (deployed 2026-08-14, x.zuoluo.tv)
+
+- `POST /v1/rule-hits` telemetry ingest: pattern must match a currently
+  enabled blacklist rule, per-IP salted-fingerprint rate limit, 50k rows/day
+  fuse, and a hard wall between the stats table and the moderation surface.
+- Admin console: rule-hit review workbench (per-rule aggregates, per-account
+  drill-down, explicit 提审 into the review queue) and a 共建活跃 dashboard
+  (`/v1/admin/contrib`) tracking daily distinct contributors by channel —
+  the metric for whether the login-narrative work moves the needle.
+- `/v1/whitelist` gained the larger default page plus an explicit edge cache
+  keyed by query string.
 
 ## [0.5.0] - 2026-07-18
 

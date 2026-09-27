@@ -1,0 +1,73 @@
+{
+  "verdict": "PASS",
+  "base_commit": "92a9dc1",
+  "implementation_commit": "4900f45",
+  "production_deployed": false,
+  "validation": {
+    "edge_tests": {
+      "passed": 160,
+      "failed": 0
+    },
+    "sqlite_route_tests": 8,
+    "typecheck_backend": true,
+    "typecheck_app": true,
+    "vite_build": true,
+    "changed_ui_lint": true,
+    "workerd_smoke_routes": 6,
+    "browser": {
+      "verdict": "PASS",
+      "commands": 166,
+      "checks": [
+        "one unified tab, no separate AI queues",
+        "stage 未初审",
+        "stage AI 已初审",
+        "stage AI 待定",
+        "stage AI 建议拉黑",
+        "stage AI 建议放行",
+        "stage 全部待审",
+        "filter changes clear hidden selection",
+        "AI evidence expands",
+        "stage + search combine",
+        "pagination uses offset, twelve rows on last page",
+        "filter resets pagination",
+        "sort selection reloads queue",
+        "same structured filters available to AI records",
+        "batch dialog includes stage and exact count",
+        "cancel writes nothing",
+        "filter batch resolves only AI pending",
+        "selected AI whitelist applies and recounts",
+        "selected AI blacklist + category applies",
+        "selected remove recounts",
+        "load failure cannot expose stale selection",
+        "resolving the last page returns to a valid page",
+        "re-review stays in unified queue and becomes unreviewed",
+        "old AI pending link opens unified stage",
+        "clear selection",
+        "mobile has no horizontal overflow or disabled zoom",
+        "mobile confirmation stays within viewport",
+        "system dark theme applies",
+        "explicit light overrides system dark",
+        "explicit dark works"
+      ],
+      "fixture": "112 simulated accounts; actual Worker routes + SQLite; no production writes",
+      "screenshots": [
+        "queue-desktop.png",
+        "queue-mobile.png",
+        "queue-dark.png",
+        "queue-dark-toggle.png",
+        "queue-confirm-desktop.png",
+        "queue-confirm-mobile.png"
+      ]
+    },
+    "dark_contrast": {
+      "foreground_on_background": 18.96,
+      "muted_on_card": 7.41
+    }
+  },
+  "evidence_directory": ".ui-acceptance/2026-09-23-unified",
+  "limitations": [
+    "Browser data is synthetic; production was inspected read-only.",
+    "No deployment or load testing against the production database.",
+    "Repository-wide lint has an existing non-null assertion in the production source; changed UI/shared files pass."
+  ]
+}

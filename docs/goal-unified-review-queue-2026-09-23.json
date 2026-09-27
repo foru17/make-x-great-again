@@ -1,0 +1,50 @@
+{
+  "goal": "统一待审工作台，AI 初审仅作为状态标记，所有未终审记录共用筛选与批量裁决",
+  "production_base": "92a9dc1 / 679e6c49-b50e-4570-a551-a460a724ceb9",
+  "tasks": [
+    {
+      "id": "T1",
+      "task": "核对生产基准与统一流程",
+      "verify": "生产只读截图；列明现有能力及新旧状态映射",
+      "passes": true,
+      "evidence": [
+        "生产只读代理截图：.ui-acceptance/2026-09-23-unified/baseline-queue-{desktop,mobile,dark}.png 和 baseline-agent-dark.png",
+        "统一范围：auto_pending_review + agent_pending + agent_blacklist + agent_whitelist；保留存储状态，UI 作为 AI 初审标记",
+        "复用原待审搜索、排序、维度过滤、分页和按筛选批量；保留旧 AI tab 链接兼容；不迁移数据、不改 runner 或自动发布策略"
+      ]
+    },
+    {
+      "id": "T2",
+      "task": "统一队列 API、统计和批量筛选范围",
+      "verify": "真实 SQLite / Worker 测试覆盖四种待审状态、筛选计数一致、批量及终审保护",
+      "passes": true,
+      "evidence": [
+        "真实 SQLite 路由集成 8/8，通过四状态、Agent 不减总数、终审生效、并发跳过、去重、分页、2000 上限及重新初审断言",
+        "完整 Edge 160/160、服务端和前端 TypeScript 检查通过；.ui-acceptance/2026-09-23-unified/edge-tests.log",
+        "无数据库迁移；新增 review_stage 过滤与 queue scope 裁决守卫，终审保留 AI 注释并记录 human:admin"
+      ]
+    },
+    {
+      "id": "T3",
+      "task": "统一待审界面和 AI 初审标记",
+      "verify": "构建、类型检查、桌面/移动/暗色截图及浏览器实际操作",
+      "passes": true,
+      "evidence": [
+        "浏览器 30 项行为断言通过，166 次有上限操作；.ui-acceptance/2026-09-23-unified/behavior.json",
+        "桌面 1440×900、移动 390×844、暗色及批量确认弹窗截图已目视核对；无横向溢出，弹窗位于视口内",
+        "Vite 构建通过，修改的 UI/shared 文件 lint 通过；保留单条/已选/按筛选裁决、重新初审和旧 AI 链接兼容"
+      ]
+    },
+    {
+      "id": "T4",
+      "task": "证伪复核与交付",
+      "verify": "回归测试、生产基准功能 diff、UI VERDICT、提交记录和预览地址",
+      "passes": true,
+      "evidence": [
+        "证伪复核：AI 初审及重新初审不减总数、终审才移出；筛选/计数/按筛选批量同口径，已终审写入受守卫保护",
+        "VERDICT PASS；docs/unified-review-queue-verification-2026-09-23.json 和对应 Markdown 功能对照报告",
+        "本地 /admin 实测 HTTP 200；未部署生产、未 push；实现提交 137d317、4900f45"
+      ]
+    }
+  ]
+}

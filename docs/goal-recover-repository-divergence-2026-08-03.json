@@ -1,0 +1,79 @@
+{
+  "goal": "恢复代码仓库分叉期间遗漏的生产修复，并重新建立可验证的单一发布基线",
+  "created_at": "2026-08-03",
+  "base": "codex/release-admin-review-ux-2026-08-03@e87fbc4",
+  "tasks": [
+    {
+      "id": "baseline-and-guardrails",
+      "scope": "记录生产基线、公开测试边界和可重复的能力差异探针",
+      "verification": "2026-08-03 实测：c49760c 的 pager_files/queue/blacklist/total_offset_api 均为 yes，生产基线 HEAD 均为 no；Wrangler deployments list 确认当前生产版本为 4dbf2b54-fa64-4c51-abcc-303c4dbf4a87",
+      "passes": true
+    },
+    {
+      "id": "whitelist-identity-convergence",
+      "scope": "恢复白名单幂等写入、UID 身份隔离、handle-only 重复行清理及迁移/schema 文件",
+      "verification": "2026-08-03 实测：realChainDoctor 通过本地 Wrangler+D1 连续 POST 两次均为 HTTP 200，有效白名单行仍为 1；22 项身份/申请/迁移测试通过；services/edge typecheck 通过",
+      "passes": true
+    },
+    {
+      "id": "bounded-d1-batches",
+      "scope": "所有审核批量写入按 D1 安全上限分块，并返回实际变更数",
+      "verification": "2026-08-03 实测：分类、白名单移除、审核决定和 Agent 提升的 120-240 条语句均按最多 100 条分批；未命中分类返回 updated=0；3 项回归测试与 services/edge typecheck 通过",
+      "passes": true
+    },
+    {
+      "id": "keyword-rule-correctness",
+      "scope": "规则优先于机器缓存、覆盖举报路径，并在命中时写入正确类别",
+      "verification": "2026-08-03 实测：fresh auto_legit 被新规则纠正，同目标状态不重复写，人工终态不覆盖；举报规则发布/高粉降级与规则分类均通过；42 项相关回归和 services/edge typecheck 通过",
+      "passes": true
+    },
+    {
+      "id": "keyword-sweep-safety",
+      "scope": "恢复 queue/all 扫描、D1 bind 上限、分区游标覆盖、Unicode 预筛选与截断反馈",
+      "verification": "2026-08-03 实测：queue/all、100+ 规则分块、rowid 跨窗口、非 ASCII 大小写预筛选、分类写入和 auto_legit 回待审共 8 项核心测试通过；Worker 全量 92 项与 typecheck 通过",
+      "passes": true
+    },
+    {
+      "id": "admin-filtered-pagination",
+      "scope": "恢复待审队列和黑名单的多维筛选、筛选范围批处理、offset/total 页码分页",
+      "verification": "2026-08-03 实测：筛选/文本一致性、同源 total+offset、筛选 dry-run/执行/分类/非法动作共 12 项 API 测试通过；恢复页码与筛选面板；Worker 全量 104 项、双 typecheck 与 Vite build 通过",
+      "passes": true
+    },
+    {
+      "id": "admin-secondary-workflows",
+      "scope": "恢复白名单申请数量/头像/批量操作、规则编辑、审核日志汉化，同时保留局部更新与新版判断来源展示",
+      "verification": "2026-08-03 实测：单条驳回只发 1 次 POST、无列表 GET，剩余申请原位保留；200 条申请头像补全按 90/90/20 分块；恢复批量审批、规则编辑、中文审计动作和申请数量；桌面与 390px 三页截图无横向溢出；Worker 全量 106 项、双 typecheck 与 Vite build 通过",
+      "passes": true
+    },
+    {
+      "id": "mirror-main-isolation",
+      "scope": "GitHub 名单镜像写入独立数据分支，代码 main 不再被运行时数据提交直接写入",
+      "verification": "2026-08-03 实测：4 项镜像隔离测试通过；未配置分支返回 503；独立分支 GET ref 与 PUT branch 均显式绑定；分支等于默认分支或不存在时在读取 D1/写文件前返回 502；Worker 全量 110 项与 typecheck 通过",
+      "passes": true
+    },
+    {
+      "id": "agent-review-recovery",
+      "scope": "恢复预算化批量审核、过期写入保护、推理 token 上限和风险优先重审",
+      "verification": "2026-08-03 实测：Python runner 26 项、Agent 队列 2 项、Worker 全量 112 项及 typecheck 通过；每轮最多 100 账号/10 次模型调用，输入/输出/UTC 日预算与解析失败均有硬熔断；过期 signals 写入被跳过，旧 Agent 结果按风险重审",
+      "passes": true
+    },
+    {
+      "id": "extension-online-detection",
+      "scope": "恢复已登录用户的在线检测、并发/每页上限、缓存与正常结果静默展示",
+      "verification": "2026-08-03 实测：扩展全量 31 项、compile 与 Chrome MV3 生产构建通过；未登录和本地已知账号不发在线请求；每页最多 40 次、默认并发 3；结果写缓存，legit 正常账号保持静默，其余待复核判定显示提示",
+      "passes": true
+    },
+    {
+      "id": "firefox-runtime-recovery",
+      "scope": "恢复 Firefox 同步异常处理、账号表面恢复、权限基线和手动 CSS 注入",
+      "verification": "2026-08-03 实测：扩展全量 34 项、compile、Chrome/Firefox MV3 build 与 Firefox ZIP 通过；Firefox 152.0.6 隔离配置安装当前 0.5.1 ZIP，后台健康、popup/options、设置持久化及恢复均通过，扩展相关错误 0；截图与 runtime-smoke.json 已保存；manifest 含 140/142 基线、可选 websiteContent 声明且无缺失 CSS",
+      "passes": true
+    },
+    {
+      "id": "final-adversarial-verification",
+      "scope": "逐项证伪复核、全量测试、类型检查、构建、敏感信息和生产差异检查",
+      "verification": "2026-08-03 证伪复核：Edge 112、Agent 26、扩展 34 项全绿；Worker/App/Extension 类型检查、管理台/Chrome/Firefox 构建和 Firefox ZIP 均通过；Firefox 真实运行时通过；生产依赖漏洞 0；63 个变更文件无 data/、token/key/隐私；本地服务/浏览器/临时文件已清理；未推送、未部署。发布前仍需创建远端独立数据分支并配置 WHITELIST_SYNC_BRANCH（当前二者均不存在）",
+      "passes": true
+    }
+  ]
+}

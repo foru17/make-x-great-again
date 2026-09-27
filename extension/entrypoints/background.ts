@@ -47,6 +47,11 @@ async function ghPoll(deviceCode: string) {
 }
 
 const SYNC_ALARM = "xss:list-sync";
+// Anonymous official-rule-hit telemetry flush (lib/rule-telemetry.ts owns the
+// queue/dedup; this alarm just drains it). 30min keeps a lost eager-flush
+// from stranding rows for long while staying far from a request storm.
+const RULE_HITS_ALARM = "xss:rule-hits";
+const RULE_HITS_PERIOD_MIN = 30;
 // 6h cadence matches the server's mirror cron; the artifact itself only
 // changes when the confirmed set changes, and version-match syncs are a
 // single small meta GET.
@@ -58,6 +63,10 @@ export default defineBackground(() => {
       chrome.alarms.create(SYNC_ALARM, {
         periodInMinutes: SYNC_PERIOD_MIN,
         delayInMinutes: 1,
+      });
+      chrome.alarms.create(RULE_HITS_ALARM, {
+        periodInMinutes: RULE_HITS_PERIOD_MIN,
+        delayInMinutes: 5,
       });
     } catch {
       /* non-fatal */
@@ -74,13 +83,19 @@ export default defineBackground(() => {
   });
   chrome.alarms.onAlarm.addListener((a) => {
     if (a.name === SYNC_ALARM) void syncList();
+    if (a.name === RULE_HITS_ALARM) {
+      void import("../lib/rule-telemetry").then(({ flushRuleHits }) => flushRuleHits());
+    }
   });
 
   chrome.runtime.onMessage.addListener(
     (msg: BgRequest, _s: chrome.runtime.MessageSender, sendResponse: (r: BgResponse) => void) => {
       (async () => {
         try {
-          if (msg.type === "health") {
+          if (msg.type === "local-data") {
+            const { handleLocalDataMutation } = await import("../lib/local-data-background");
+            sendResponse({ ok: true, data: await handleLocalDataMutation(msg.mutation) });
+          } else if (msg.type === "health") {
             const { indexSize, warmLocalIndex } = await import("../lib/local-index");
             const { getStoredList } = await import("../lib/list-sync");
             await warmLocalIndex();
@@ -100,13 +115,32 @@ export default defineBackground(() => {
             sendResponse({ ok: true, data: await getStats() });
           } else if (msg.type === "records") {
             sendResponse({ ok: true, data: { records: [] } });
+          } else if (msg.type === "rule-hit") {
+            const { enqueueRuleHit, flushRuleHits } = await import("../lib/rule-telemetry");
+            const pressured = await enqueueRuleHit(msg.hit);
+            if (pressured) void flushRuleHits();
+            sendResponse({ ok: true });
           } else if (msg.type === "gh_start") {
             sendResponse({ ok: true, data: await ghStart() });
           } else if (msg.type === "gh_poll") {
             sendResponse({ ok: true, data: await ghPoll(msg.deviceCode) });
+          } else if (msg.type === "auth_status") {
+            const { getGhToken } = await import("../lib/auth");
+            sendResponse({ ok: true, data: { authenticated: !!(await getGhToken()) } });
           } else if (msg.type === "open_options") {
             chrome.runtime.openOptionsPage();
             sendResponse({ ok: true });
+          } else if (msg.type === "classify") {
+            const { getGhToken } = await import("../lib/auth");
+            const { edgeBase } = await import("../lib/list-sync");
+            const { postOnlineClassification } = await import("../lib/online-detection");
+            sendResponse(
+              await postOnlineClassification({
+                base: await edgeBase(),
+                token: (await getGhToken()) || null,
+                sig: msg.sig,
+              }),
+            );
           } else if (msg.type === "report") {
             // Authenticated POST /v1/report from the SHARED extension origin
             // (same path the whitelist-apply flow uses), not the content
@@ -124,7 +158,13 @@ export default defineBackground(() => {
                   authorization: `Bearer ${token}`,
                   "content-type": "application/json",
                 },
-                body: JSON.stringify(msg.sig),
+                // The reporter's own category claim rides along as
+                // reportCategory (edge: stored in the report evidence and
+                // used as the queued row's category when nothing else set one).
+                body: JSON.stringify({
+                  ...msg.sig,
+                  ...(msg.category ? { reportCategory: msg.category } : {}),
+                }),
               });
               let body: unknown = {};
               try {

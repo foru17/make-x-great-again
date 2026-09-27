@@ -1,0 +1,66 @@
+{
+  "version": "9f1830cf-3621-425f-88c3-b176654eb3ec",
+  "trafficPercent": 100,
+  "previewComparison": [
+    {
+      "pattern": "没人比我",
+      "field": "any",
+      "queueCount": 686,
+      "previewCount": 686
+    },
+    {
+      "pattern": "应该没人",
+      "field": "tweet",
+      "queueCount": 527,
+      "previewCount": 527
+    },
+    {
+      "pattern": "没我骚",
+      "field": "tweet",
+      "queueCount": 753,
+      "previewCount": 753
+    }
+  ],
+  "hiddenPreview": 686,
+  "dryRun": {
+    "complete": true,
+    "pages": 20,
+    "scanned": 3965,
+    "textMatched": 3002,
+    "wouldApply": 3002,
+    "skippedProtected": 0,
+    "actualMutations": 0
+  },
+  "tests": {
+    "passed": 170,
+    "failed": 0
+  },
+  "runtime": {
+    "passed": true,
+    "runtime": "workerd/D1",
+    "variants": 25,
+    "states": 4,
+    "requests": 9,
+    "search": 302,
+    "preview": 302,
+    "sweep": 301,
+    "protected": 1,
+    "terminalUnchanged": 4
+  },
+  "ui": {
+    "passes": true,
+    "queueRequests": 11,
+    "allRequests": 11,
+    "cursorRequests": 20,
+    "scanHttp200": 22,
+    "scanned": 2101,
+    "applied": 2100,
+    "protected": 1,
+    "mobileWidth": 390,
+    "mobileScrollWidth": 390,
+    "runtimeButtonDisabled": true,
+    "consoleErrors": 0
+  },
+  "httpChecks": 10,
+  "adminAssetsMatchBuild": true
+}

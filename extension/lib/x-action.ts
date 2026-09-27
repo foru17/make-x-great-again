@@ -228,9 +228,13 @@ export async function performXAction(
   kind: XActionKind,
   userId?: string,
   handle?: string,
+  shouldProceed: () => boolean = () => true,
 ): Promise<XActionAttempt> {
   return withLock(async () => {
+    if (!shouldProceed()) return { ok: false, retryable: false };
     await waitForSlot();
+    // Whitelist/settings may change while waiting for a cross-tab slot.
+    if (!shouldProceed()) return { ok: false, retryable: false };
     const attempt = await rawAction(kind, userId, handle);
     if (attempt.ok) recordSuccess();
     else recordFailure(attempt);

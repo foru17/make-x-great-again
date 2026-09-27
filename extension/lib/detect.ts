@@ -1,6 +1,7 @@
 // Passive DOM extraction. Reads only what X already rendered — no scraping,
 // no navigation, no extra requests to X.
-import type { Signals } from "./types";
+import type { Signals, Surface } from "./types";
+import { type BridgeUser, readBridgeUser } from "./x-user-bridge";
 
 /** Everything the passive extractors could learn about an author, merged
  *  from React fiber, action-button metadata and page JSON-LD. */
@@ -13,6 +14,12 @@ export interface KnownUser {
   accountAgeDays?: number;
   displayName?: string;
   avatarUrl?: string;
+  isVerified?: boolean;
+  statusesCount?: number;
+  mediaCount?: number;
+  favouritesCount?: number;
+  location?: string;
+  profileDefaultImage?: boolean;
   viewerFollowing?: true;
   viewerBlocking?: true;
   viewerMuting?: true;
@@ -133,6 +140,13 @@ export interface FiberUser {
   followingCount?: number;
   accountCreatedAt?: string;
   accountAgeDays?: number;
+  isVerified?: boolean;
+  statusesCount?: number;
+  mediaCount?: number;
+  favouritesCount?: number;
+  location?: string;
+  /** X's own default_profile_image flag — the reliable avatar signal. */
+  profileDefaultImage?: boolean;
   viewerFollowing?: true;
   viewerBlocking?: true;
   viewerMuting?: true;
@@ -231,9 +245,13 @@ function readFiberUserUncached(el: Element, expectedHandle?: string): FiberUser 
         const u = findUser(bag, seen, 0, budget, expectedHandle);
         if (u) {
           const legacy = u.legacy ?? u;
-          const created = legacy.created_at
-            ? Date.parse(legacy.created_at)
-            : NaN;
+          // 2025 GraphQL shape: identity in `core`, viewer relationship in
+          // `relationship_perspectives`, verification/location/avatar in
+          // their own sub-objects. Read both old and new locations.
+          const core = u.core ?? {};
+          const rel = u.relationship_perspectives ?? {};
+          const createdRaw = legacy.created_at ?? core.created_at;
+          const created = createdRaw ? Date.parse(createdRaw) : NaN;
           const userId = fiberUserId(u, legacy);
           const accountAgeDays = Number.isNaN(created)
             ? undefined
@@ -241,6 +259,41 @@ function readFiberUserUncached(el: Element, expectedHandle?: string): FiberUser 
           const accountCreatedAt = Number.isNaN(created)
             ? undefined
             : new Date(created).toISOString();
+          const count = (v: unknown) =>
+            typeof v === "number" && Number.isFinite(v) ? v : undefined;
+          const statusesCount = count(legacy.statuses_count);
+          const mediaCount = count(legacy.media_count);
+          const favouritesCount = count(legacy.favourites_count);
+          const isVerified =
+            trueFlag(u.is_blue_verified) ||
+            trueFlag(legacy.verified) ||
+            trueFlag(legacy.is_blue_verified) ||
+            trueFlag(u.verification?.verified)
+              ? true
+              : undefined;
+          const locationRaw =
+            typeof legacy.location === "string" ? legacy.location : u.location?.location;
+          const location =
+            typeof locationRaw === "string" && locationRaw.trim()
+              ? locationRaw.trim().slice(0, 100)
+              : undefined;
+          const avatarUrl: string | undefined =
+            typeof legacy.profile_image_url_https === "string"
+              ? legacy.profile_image_url_https
+              : typeof u.avatar?.image_url === "string"
+                ? u.avatar.image_url
+                : undefined;
+          const profileDefaultImage =
+            typeof legacy.default_profile_image === "boolean"
+              ? legacy.default_profile_image
+              : avatarUrl
+                ? /default_profile/.test(avatarUrl)
+                : undefined;
+          const following = trueFlag(legacy.following) || trueFlag(rel.following);
+          const blocking = trueFlag(legacy.blocking) || trueFlag(rel.blocking);
+          const muting = trueFlag(legacy.muting) || trueFlag(rel.muting);
+          const followRequestSent =
+            trueFlag(legacy.follow_request_sent) || trueFlag(rel.follow_request_sent);
           return {
             bio: typeof legacy.description === "string" ? legacy.description : "",
             ...(userId ? { userId } : {}),
@@ -248,12 +301,16 @@ function readFiberUserUncached(el: Element, expectedHandle?: string): FiberUser 
             followingCount: legacy.friends_count,
             ...(accountCreatedAt ? { accountCreatedAt } : {}),
             ...(accountAgeDays !== undefined ? { accountAgeDays } : {}),
-            ...(trueFlag(legacy.following) ? { viewerFollowing: true as const } : {}),
-            ...(trueFlag(legacy.blocking) ? { viewerBlocking: true as const } : {}),
-            ...(trueFlag(legacy.muting) ? { viewerMuting: true as const } : {}),
-            ...(trueFlag(legacy.follow_request_sent)
-              ? { viewerFollowRequestSent: true as const }
-              : {}),
+            ...(isVerified ? { isVerified } : {}),
+            ...(statusesCount !== undefined ? { statusesCount } : {}),
+            ...(mediaCount !== undefined ? { mediaCount } : {}),
+            ...(favouritesCount !== undefined ? { favouritesCount } : {}),
+            ...(location ? { location } : {}),
+            ...(profileDefaultImage !== undefined ? { profileDefaultImage } : {}),
+            ...(following ? { viewerFollowing: true as const } : {}),
+            ...(blocking ? { viewerBlocking: true as const } : {}),
+            ...(muting ? { viewerMuting: true as const } : {}),
+            ...(followRequestSent ? { viewerFollowRequestSent: true as const } : {}),
           };
         }
       }
@@ -273,7 +330,7 @@ function fiberUserId(u: any, legacy: any): string | undefined {
     console.warn("[MXGA] conflicting X user ids in fiber; dropping uid", {
       legacyId: fromLegacy,
       restId: fromRest,
-      screenName: legacy?.screen_name,
+      screenName: legacy?.screen_name ?? u?.core?.screen_name,
     });
     return undefined;
   }
@@ -315,14 +372,26 @@ function findUser(
   seen.add(o);
   try {
     const legacy = o.legacy ?? o;
-    if (
-      o.__typename === "User" &&
+    // Three shapes seen in X's React state:
+    //  - GraphQL `{__typename:"User", rest_id, legacy:{…}}`;
+    //  - the 2025 variant with `core` / `relationship_perspectives`;
+    //  - the timeline's `props.tweet.user`: a FLAT legacy-style object
+    //    (screen_name, id_str, followers_count, following…) with NO
+    //    __typename at all — measured on production 2026-09-07; requiring
+    //    __typename meant the walk never found a user on current X.
+    // Identify a user by its field signature, not its type tag.
+    const core = o.core ?? {};
+    const screenRaw = legacy?.screen_name ?? core.screen_name;
+    const userLike =
       legacy &&
       typeof legacy === "object" &&
-      typeof legacy.description === "string" &&
-      ("followers_count" in legacy || "screen_name" in legacy)
-    ) {
-      const screenName = normalizeHandle(legacy.screen_name);
+      typeof screenRaw === "string" &&
+      (typeof legacy.followers_count === "number" ||
+        typeof legacy.id_str === "string" ||
+        typeof o.rest_id === "string" ||
+        o.__typename === "User");
+    if (userLike) {
+      const screenName = normalizeHandle(screenRaw);
       if (!expectedHandle || screenName === expectedHandle) return o;
     }
     for (const k of Object.keys(o)) {
@@ -333,6 +402,29 @@ function findUser(
     /* getter threw — skip this branch */
   }
   return null;
+}
+
+/** The handle whose profile page we are on, or undefined anywhere else.
+ *  Exported so the MAIN-world bridge scopes its profile stamp to the same
+ *  account extractProfile() will ask about. */
+export function profileHandle(): string | undefined {
+  const seg = location.pathname.split("/").filter(Boolean);
+  if (seg.length !== 1) return undefined;
+  const h = seg[0] ?? "";
+  return NON_PROFILE.has(h) || !/^[A-Za-z0-9_]{1,15}$/.test(h) ? undefined : h;
+}
+
+/** Author handle of a timeline article, read from the byline permalink.
+ *  Shared by the scan loop and the MAIN-world bridge so both agree on which
+ *  account an <article> currently belongs to (X recycles these nodes). */
+export function handleFromArticle(art: HTMLElement): string | undefined {
+  const nameBlock = art.querySelector<HTMLElement>('[data-testid="User-Name"]');
+  if (!nameBlock) return undefined;
+  for (const a of nameBlock.querySelectorAll<HTMLAnchorElement>('a[href^="/"]')) {
+    const s = (a.getAttribute("href") ?? "").split("/").filter(Boolean);
+    if (s.length === 1 && /^[A-Za-z0-9_]{1,15}$/.test(s[0] ?? "")) return s[0];
+  }
+  return undefined;
 }
 
 export function extractProfile(): Signals | null {
@@ -364,6 +456,7 @@ export function extractProfile(): Signals | null {
   const actionUser = actionUserInfo(profileScope, handle);
   const fu: KnownUser = {
     ...readFiberUser(profileScope, handle),
+    ...readBridgeUser(profileScope, handle),
     ...(actionUser.userId ? { userId: actionUser.userId } : {}),
     ...(actionUser.viewerFollowing ? { viewerFollowing: true as const } : {}),
     ...(isViewerHandle(handle) || profileScope.querySelector('[data-testid="editProfileButton"]')
@@ -382,13 +475,19 @@ export function extractProfile(): Signals | null {
 
   return {
     isProfile: true,
+    surface: "profile",
     handle,
     displayName,
     bio: bioEl ? bioEl.innerText.trim() : "",
-    hasDefaultAvatar,
-    recentTweets: [],
+    ...avatarSignal(hasDefaultAvatar, fu),
+    // The profile page renders the account's own recent posts — until now the
+    // profile path sent NO text at all (upheld appeal #367: "no posts, no
+    // bio, no comment"). Own posts only (reposts carry the original author's
+    // handle), deduped, bounded.
+    recentTweets: profileTweets(profileScope, handle),
     ...(avatarUrl ? { avatarUrl } : {}),
     ...(userId ? { userId } : {}),
+    ...profileFacts(fu),
     ...(fu.viewerFollowing ? { viewerFollowing: true as const } : {}),
     ...(fu.viewerBlocking ? { viewerBlocking: true as const } : {}),
     ...(fu.viewerMuting ? { viewerMuting: true as const } : {}),
@@ -400,6 +499,54 @@ export function extractProfile(): Signals | null {
       : {}),
     ...(followers !== undefined ? { followersCount: followers } : {}),
     ...(following !== undefined ? { followingCount: following } : {}),
+  };
+}
+
+/** Up to this many of the account's own visible posts ride along from a
+ *  profile page. The edge schema accepts 20; ten is plenty of history. */
+const PROFILE_TWEETS_MAX = 10;
+
+export function profileTweets(scope: Element | Document, handle: string): string[] {
+  const want = handle.toLowerCase();
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const art of scope.querySelectorAll<HTMLElement>('article[data-testid="tweet"]')) {
+    if (out.length >= PROFILE_TWEETS_MAX) break;
+    if (handleFromArticle(art)?.toLowerCase() !== want) continue; // repost of someone else
+    if (isPromoted(art)) continue;
+    const text = art.querySelector<HTMLElement>('[data-testid="tweetText"]')?.innerText.trim();
+    if (!text) continue;
+    const t = text.slice(0, 500);
+    if (seen.has(t)) continue;
+    seen.add(t);
+    out.push(t);
+  }
+  return out;
+}
+
+/** hasDefaultAvatar with provenance: X's own default_profile_image flag when
+ *  the fiber/bridge delivered it (reliable), else the DOM heuristic (an
+ *  <img> that failed to lazy-load reads as "default" — unreliable, and the
+ *  classifier is told so). */
+function avatarSignal(
+  domDefault: boolean,
+  fu: { profileDefaultImage?: boolean },
+): Pick<Signals, "hasDefaultAvatar" | "avatarSource"> {
+  return fu.profileDefaultImage !== undefined
+    ? { hasDefaultAvatar: fu.profileDefaultImage, avatarSource: "profile" }
+    : { hasDefaultAvatar: domDefault, avatarSource: "dom" };
+}
+
+/** The extra profile facts X already holds in the page. */
+function profileFacts(
+  fu: Pick<FiberUser, "isVerified" | "statusesCount" | "mediaCount" | "favouritesCount" | "location">,
+): Pick<Signals, "isVerified" | "statusesCount" | "mediaCount" | "favouritesCount" | "location"> {
+  return {
+    ...(fu.isVerified ? { isVerified: true } : {}),
+    ...(fu.statusesCount !== undefined ? { statusesCount: fu.statusesCount } : {}),
+    ...(fu.mediaCount !== undefined ? { mediaCount: fu.mediaCount } : {}),
+    ...(fu.favouritesCount !== undefined ? { favouritesCount: fu.favouritesCount } : {}),
+    ...(fu.location ? { location: fu.location } : {}),
   };
 }
 
@@ -432,6 +579,39 @@ function articleShowsTranslation(article: HTMLElement, tweetEl: HTMLElement | nu
   return TRANSLATION_MARKER_RE.test(article.textContent ?? "");
 }
 
+/** Which X surface the current page is. Cheap (pathname only). */
+export function pageSurface(): Surface {
+  const p = location.pathname;
+  if (p === "/home" || p === "/" || p.startsWith("/i/lists/") || p === "/explore") return "home";
+  if (/^\/[^/]+\/status\/\d+/.test(p)) return "thread";
+  if (p.startsWith("/search")) return "search";
+  if (p.startsWith("/notifications")) return "notifications";
+  if (/^\/[A-Za-z0-9_]{1,15}(\/(with_replies|media|likes|highlights|articles))?\/?$/.test(p)) {
+    return "profile";
+  }
+  return "other";
+}
+
+// X's "Replying to @a @b" line above the body (home / search / profile
+// feeds; not shown for replies inside the conversation view — those are
+// recognised by the caller via the focal status id). Wording per X locale.
+const REPLYING_TO_RE =
+  /^(replying to|回复|回覆|返信先|답글|antwort an|en réponse à|respondiendo a|em resposta a|in risposta a|antwoord aan)\b/i;
+
+/** Handle a feed article replies to, from X's own "Replying to" line. */
+export function replyTarget(article: HTMLElement, tweetEl: HTMLElement | null): string | undefined {
+  for (const el of article.querySelectorAll<HTMLElement>("div, span")) {
+    if (tweetEl?.contains(el)) continue;
+    const t = (el.textContent ?? "").trim();
+    if (!t || t.length > 200 || !REPLYING_TO_RE.test(t)) continue;
+    for (const a of el.querySelectorAll<HTMLAnchorElement>('a[href^="/"]')) {
+      const s = (a.getAttribute("href") ?? "").split("/").filter(Boolean);
+      if (s.length === 1 && /^[A-Za-z0-9_]{1,15}$/.test(s[0] ?? "")) return s[0];
+    }
+  }
+  return undefined;
+}
+
 export function extractFromArticle(article: HTMLElement): Signals | null {
   if (isPromoted(article)) return null; // official X ad → not spam
   const { hasDefaultAvatar, avatarUrl } = avatarInfo(article);
@@ -453,11 +633,22 @@ export function extractFromArticle(article: HTMLElement): Signals | null {
   const tweetEl = article.querySelector<HTMLElement>('[data-testid="tweetText"]');
   const tweetText = tweetEl ? tweetEl.innerText.trim() : "";
   const tweetsTranslated = articleShowsTranslation(article, tweetEl);
+  const replyTo = replyTarget(article, tweetEl);
+  // Profile signals, best source first:
+  //  1. the MAIN-world bridge, which CAN read X's React fiber (see
+  //     lib/x-user-bridge.ts — the isolated world cannot, so without this the
+  //     next line yields nothing and the payload goes out handle-only),
+  //  2. the direct fiber read, which still works in tests and in any context
+  //     where this module runs in the page world,
+  //  3. the follow-button's data-testid, which carries a bare uid.
+  const bridgeUser = readBridgeUser(article, handle);
   const fiberUser = readFiberUser(article, handle);
   const actionUser = actionUserInfo(article, handle);
+  const known: BridgeUser = { ...fiberUser, ...bridgeUser };
   const fu: KnownUser = {
     ...fiberUser,
-    ...(!fiberUser.userId && actionUser.userId
+    ...bridgeUser,
+    ...(!known.userId && actionUser.userId
       ? { userId: actionUser.userId }
       : {}),
     ...(actionUser.viewerFollowing ? { viewerFollowing: true as const } : {}),
@@ -468,12 +659,24 @@ export function extractFromArticle(article: HTMLElement): Signals | null {
     handle,
     displayName,
     bio: fu.bio ?? "",
-    hasDefaultAvatar,
-    recentTweets: tweetText ? [tweetText] : [],
+    ...avatarSignal(hasDefaultAvatar, fu),
+    ...profileFacts(fu),
+    // The article's own text is the TRIGGERING comment and nothing else.
+    // Copying it into recentTweets[0] as well made the classifier read
+    // "two identical texts" as "posts the same thing repeatedly" — a fake
+    // repetition signal behind several upheld appeals (2026-09-04 audit,
+    // root cause #2). recentTweets is reserved for genuinely separate posts
+    // (the profile path collects them).
+    recentTweets: [],
     ...(avatarUrl ? { avatarUrl } : {}),
     ...(fu.userId ? { userId: fu.userId } : {}),
     ...(tweetText ? { triggeringComment: tweetText } : {}),
     ...(tweetsTranslated ? { tweetsTranslated: true as const } : {}),
+    // Context the classifier's reply-section-vs-own-timeline boundary needs.
+    // The scan loop refines isReply / rootAuthorHandle on /status/ pages,
+    // where in-conversation replies carry no "Replying to" line.
+    surface: pageSurface(),
+    ...(replyTo ? { isReply: true, replyToHandle: replyTo } : {}),
     ...(fu.accountCreatedAt ? { accountCreatedAt: fu.accountCreatedAt } : {}),
     ...(fu.accountAgeDays !== undefined ? { accountAgeDays: fu.accountAgeDays } : {}),
     ...(fu.followersCount !== undefined ? { followersCount: fu.followersCount } : {}),

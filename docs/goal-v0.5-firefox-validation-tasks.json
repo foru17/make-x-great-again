@@ -1,0 +1,146 @@
+{
+  "goal": "Validate the MXGA v0.5 Firefox extension on a real Firefox runtime and retain reproducible evidence",
+  "updatedAt": "2026-07-24T19:30:58+08:00",
+  "constraints": {
+    "browser": "Firefox with an isolated temporary profile",
+    "releaseVersion": "0.5.0",
+    "externalActionCap": {
+      "mute": 1,
+      "block": 1
+    },
+    "cleanup": "Remove temporary profiles and reverse every test-only setting or X action",
+    "apiLoopLimit": 20,
+    "evidence": "Every passed task must cite command output, a screenshot path, or both"
+  },
+  "tasks": [
+    {
+      "id": "firefox-baseline",
+      "task": "Establish the exact v0.5 source, toolchain, Firefox runtime, existing test surface, and generated-manifest expectations",
+      "verify": "Inspect Git state, package versions, Firefox binary/version, build scripts, WXT Firefox configuration, and existing Firefox claims before changing runtime code",
+      "passes": true,
+      "evidence": [
+        "Git baseline: d2087403ab765e46ec6f80133a81ccf7796dd763 on codex/firefox-v0.5-validation; worktree contained only this new checklist",
+        "extension/package.json and extension/package-lock.json both report 0.5.0; WXT requirement is ^0.20.27",
+        "Installed real browser: Mozilla Firefox 150.0.3 at /Applications/Firefox.app/Contents/MacOS/firefox",
+        "Toolchain: Node v26.5.0, pnpm 10.29.2, npm 11.17.0",
+        "Firefox scripts exist for compile, seven targeted test files, production build, development runtime, and ZIP packaging",
+        "WXT source explicitly generates Firefox Manifest V3 with gecko ID x-spam-sentinel@zuoluo.tv, minimum Firefox 109.0, host patterns in optional_permissions, and required data collection set to none",
+        "No inherited extension/node_modules or extension/.output artifacts were present; geckodriver and web-ext were not on PATH",
+        "Existing personal Firefox profiles were detected but not opened or modified; runtime validation is constrained to an isolated temporary profile"
+      ]
+    },
+    {
+      "id": "firefox-artifact",
+      "task": "Compile, test, build, package, and lint the production Firefox artifact",
+      "verify": "Extension compile/tests/build/zip pass; generated manifest contains the intended Firefox MV3 ID, minimum version, permissions, data-collection declaration, and no unsupported Chrome-only permission shape",
+      "passes": true,
+      "evidence": [
+        "npm run compile passed; extension test suite passed 26/26, including a new Firefox manifest regression",
+        "npm run build:firefox passed: Firefox MV3 production tree is 460.09 kB",
+        "npm run zip:firefox passed: install ZIP is 159,503 bytes and source ZIP is 387,643 bytes; unzip -t reported no compressed-data errors",
+        "Generated manifest is v0.5.0 MV3 with background.scripts, gecko ID x-spam-sentinel@zuoluo.tv, desktop minimum 140.0, Android minimum 142.0, required data collection none, and X/Twitter/GitHub patterns only in optional_permissions",
+        "web-ext 10.3.0 lint: 0 errors, 15 generic innerHTML warnings, and 0 Firefox/minimum-version/API compatibility warnings",
+        "Source inspection confirmed page/list-derived values used by the flagged content-script templates are escaped; the remaining lint code is UNSAFE_VAR_ASSIGNMENT, including generated React runtime",
+        "Production dependency audit: 0 vulnerabilities",
+        "SHA-256: manifest 883b2b0afcc8a11a22abb38b4eb4ab28b9cf1131878d1a36e145cb8370279100; install ZIP 2b6e05c407729224f864995fce1d60be5fb9236753707ab8eea77b6caf21abcb; source ZIP 413e51269ec944c3ec1e8c1ab4b5d4241cc51d2d5d46af1548656b761a13d653"
+      ]
+    },
+    {
+      "id": "firefox-runtime-smoke",
+      "task": "Install the exact unpacked artifact into an isolated real Firefox profile and exercise background, popup, options, and local storage",
+      "verify": "Firefox accepts the temporary add-on; popup and options render and interact; persisted settings survive reload; runtime and browser consoles contain no new MXGA errors; screenshots are captured",
+      "passes": true,
+      "evidence": [
+        "GeckoDriver 0.36.0 installed the exact production ZIP as temporary add-on x-spam-sentinel@zuoluo.tv in a GeckoDriver-created isolated profile",
+        "The pending Firefox application update completed during the first isolated launch; the successful runtime was Mozilla Firefox 152.0.6 on macOS arm64",
+        "Firefox background health messaging returned ok; the popup rendered, and clicking 打开管理面板 created the real moz-extension options tab",
+        "Options overview and settings rendered; 显示角标气泡 changed true → false, storage key xss:settings persisted false across a full page reload, then both UI and storage were restored to true",
+        "Extension-origin console errors after the fix: 0. Firefox 152 logged one resource:// ConduitsChild internal closed-conduit teardown message during the forced options reload; it is retained separately in the runtime report",
+        "Runtime report: .ui-acceptance/2026-07-24-firefox/runtime-smoke/runtime-smoke.json (SHA-256 cb511ca1e8acf534eb4418cb557a35da2b03a0a7c9be8002a039e32aefdb6bee)",
+        "Popup screenshot: .ui-acceptance/2026-07-24-firefox/runtime-smoke/firefox-popup.png (520x635 PNG; SHA-256 ea7a4a67d48ed827f8b66a251e3c9d024b5e53346fd08eb254f42f0b8f853122)",
+        "Options screenshot: .ui-acceptance/2026-07-24-firefox/runtime-smoke/firefox-options-settings.png (1440x815 PNG; SHA-256 445f62c27e1512b983a2963371dfd4c251b43b63118a16aa0b8f783d23212c81)",
+        "Both screenshots were visually inspected: v0.5.0 is visible, text and controls are legible, the restored bubble switch is on, and no clipping or drift is visible",
+        "The generated temporary Firefox profile no longer existed after session deletion; no GeckoDriver or rust_mozprofile Firefox process remained",
+        "Post-fix extension compile passed; complete extension suite passed 27/27; Firefox production build and ZIP passed",
+        "Tested install ZIP SHA-256: f7de2ce899eeb8756c34a5207284e125b23c5b731be99cf10b9ffb29bf545d63"
+      ]
+    },
+    {
+      "id": "firefox-x-surface",
+      "task": "Validate content-script detection, badge/bubble interaction, local hide, undo, and processed-record recovery on an X page",
+      "verify": "A deterministic or real X surface produces the expected v0.5 states in Firefox, including the repaired profile-header hide path, with before/after screenshots and no extension runtime error",
+      "passes": false,
+      "evidence": []
+    },
+    {
+      "id": "firefox-permissions",
+      "task": "Validate Firefox-specific optional permission and action-mode behavior",
+      "verify": "X/GitHub permissions are absent after install, requested only at the documented interaction, denial falls back safely, and any explicitly authorized native X action is capped and reversed",
+      "passes": false,
+      "evidence": []
+    },
+    {
+      "id": "firefox-responsive-accessibility",
+      "task": "Validate popup/options desktop and compact layouts, dark mode, keyboard reachability, and accessible names in Firefox",
+      "verify": "Desktop and compact Firefox screenshots show no clipping or drift; focus order and accessible labels are directly checked; console remains clean",
+      "passes": false,
+      "evidence": []
+    },
+    {
+      "id": "firefox-final-review",
+      "task": "Attempt to falsify every prior Firefox pass and publish a concise compatibility report",
+      "verify": "Re-run critical checks from the committed source, inspect all evidence files and hashes, confirm clean secret/diff review, and list any user-only or store-signing gaps",
+      "passes": false,
+      "evidence": []
+    }
+  ],
+  "findings": [
+    {
+      "id": "firefox-consent-minimum-version",
+      "severity": "resolved-medium",
+      "status": "resolved",
+      "area": "Firefox manifest compatibility",
+      "expected": "The declared Firefox minimum versions support every manifest key and permission API used by v0.5",
+      "actual": "The source declared Firefox 109.0 while data_collection_permissions starts at Firefox desktop 140 and Android 142; web-ext also flagged permissions.request as unsupported on Firefox Android 109",
+      "resolution": "Raised the generated desktop minimum to 140.0 and Android minimum to 142.0, then added a manifest regression test and rebuilt both Firefox ZIPs",
+      "evidence": [
+        "Before fix: web-ext 10.3.0 reported 20 warnings including KEY_FIREFOX_UNSUPPORTED_BY_MIN_VERSION, KEY_FIREFOX_ANDROID_UNSUPPORTED_BY_MIN_VERSION, and ANDROID_INCOMPATIBLE_API",
+        "After fix: web-ext 10.3.0 reported 0 errors and 0 Firefox/minimum-version/API compatibility warnings",
+        "Mozilla Firefox built-in consent documentation identifies desktop 140 and Android 142 as the supported baselines"
+      ]
+    },
+    {
+      "id": "amo-dynamic-html-lint",
+      "severity": "review-warning",
+      "status": "triaged",
+      "area": "AMO static lint",
+      "expected": "AMO lint findings are recorded and reviewed rather than silently treated as a clean report",
+      "actual": "web-ext reports 15 UNSAFE_VAR_ASSIGNMENT warnings in bundled UI/React code and no errors",
+      "resolution": "No runtime behavior was changed in this artifact task; source review confirmed untrusted display names, handles, snippets, reasons, notes, IDs, and avatar URLs are escaped or allowlisted before template insertion. Retain the warnings for final adversarial review."
+    },
+    {
+      "id": "firefox-background-self-message",
+      "severity": "resolved-medium",
+      "status": "resolved",
+      "area": "Firefox background runtime",
+      "expected": "A fresh Firefox profile can warm an empty local index without emitting an unhandled runtime error",
+      "actual": "requestBackgroundSync discarded the Promise returned by chrome.runtime.sendMessage. When warmLocalIndex ran inside the Firefox background itself, Firefox rejected it with 'Could not establish connection. Receiving end does not exist.'",
+      "resolution": "requestBackgroundSync now awaits and consumes both synchronous and asynchronous unavailable-receiver failures; a targeted regression covers Firefox's rejected Promise",
+      "evidence": [
+        "Before fix: the real Firefox browser console recorded two background.js missing-receiver errors during popup/health startup",
+        "After fix: the same isolated Firefox flow reports zero extension-origin errors",
+        "Complete extension suite passed 27/27, including background sync request consumes Firefox's missing-receiver rejection"
+      ]
+    },
+    {
+      "id": "firefox-closed-conduit-teardown",
+      "severity": "informational",
+      "status": "upstream-runtime-noise",
+      "area": "Firefox browser internals",
+      "expected": "A forced options-page reload tears down extension API listeners without browser-internal noise",
+      "actual": "Firefox 152.0.6 logged one sendRemoveListener on closed conduit message from resource://gre/modules/ConduitsChild.sys.mjs while destroying the old extension page context",
+      "resolution": "Recorded separately from extension-origin errors; storage persistence, the reloaded page, and the restored setting all completed successfully"
+    }
+  ],
+  "needsUserAction": []
+}

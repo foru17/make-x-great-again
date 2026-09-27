@@ -174,6 +174,7 @@ const env = {
   DB: db,
   REPORT_SALT: "test-report-salt",
   REQUIRE_AUTH: "1",
+  AI_AUTO_PUBLISH_ENABLED: "1",
   LLM_API_BASE: "https://llm.invalid",
   LLM_API_KEY: "test",
   LLM_API_MODEL: "test-model",
@@ -307,4 +308,24 @@ test("porn_bot AI auto-publish still fires for a low-follower account", async ()
   assert.ok(acc);
   assert.equal(acc.status, "human_confirmed");
   assert.equal(acc.published_tier, "ai");
+});
+
+test("production policy keeps a low-follower AI verdict in review", async () => {
+  llmCalls = 0;
+  llmContent = '{"label":"porn_bot","confidence":0.97,"reasons":["solicitation"],"category":"porn"}';
+  const res = await worker.fetch(
+    classify({
+      userId: "706",
+      handle: "policyqueue706",
+      displayName: "dm me",
+      followersCount: 12,
+      recentTweets: ["check my page"],
+    }),
+    { ...env, AI_AUTO_PUBLISH_ENABLED: "0" },
+  );
+  assert.equal(res.status, 200);
+  const acc = db.accounts.find((a) => a.x_user_id === "706");
+  assert.ok(acc);
+  assert.equal(acc.status, "auto_pending_review");
+  assert.equal(acc.published_tier ?? null, null);
 });

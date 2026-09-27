@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { type Account, type AgentItem, api, AuthError, rowKey, selToItems } from "@/lib/adminApi";
+import { summarizeAgentReview } from "@/lib/agentReview";
 import { ago, fmtN, verdictZh, VERDICTS } from "@/lib/format";
 import { BATCH_CHUNK, chunk } from "@/lib/adminApi";
 import { useSelection } from "@/lib/useSelection";
@@ -14,19 +15,10 @@ import { ViewHead } from "./ViewHead";
 type Bucket = "pending" | "blacklist" | "whitelist";
 const BUCKET_ZH: Record<Bucket, string> = { pending: "待定", blacklist: "拟拉黑", whitelist: "拟加白" };
 const DESC: Record<Bucket, string> = {
-  pending: "agent 看过但拿不准的条目。可能信号薄弱、可能账号已被 X 封、可能你需要亲眼看一眼。",
-  blacklist: "agent 给出高置信 spam 判定，尚未公开。点「确认拉黑」升级到公榜（公开拉黑）。",
-  whitelist: "agent 给出高置信 legit 判定，尚未进白名单。点「确认加白」才会真正入官方白名单。",
+  pending: "AI 已审查但证据不足的条目。可能可用内容太少，也可能账号已被 X 限制，需要人工再看一眼。",
+  blacklist: "AI 认为这些账号高度疑似垃圾账号，尚未公开。点「确认拉黑」才会真正进公榜。",
+  whitelist: "AI 认为这些账号更像正常用户，尚未生效。点「确认加白」才会真正进官方白名单。",
 };
-
-function jsonArr(s?: string): string[] {
-  try {
-    const v = JSON.parse(s || "[]");
-    return Array.isArray(v) ? v : [];
-  } catch {
-    return [];
-  }
-}
 
 async function promoteBatch(keys: string[], target: string, label: string) {
   const chunks = chunk(keys, BATCH_CHUNK);
@@ -112,7 +104,7 @@ export function AgentTab({
         title: `批量${label}`,
         body: (
           <p>
-            对已选 <b>{keysArr.length}</b> 条 agent 决策执行「{label}」？
+            对已选 <b>{keysArr.length}</b> 条 AI 审查结果执行「{label}」？
           </p>
         ),
         okLabel: `${label} ${keysArr.length} 条`,
@@ -129,7 +121,7 @@ export function AgentTab({
   return (
     <div>
       <ViewHead
-        title={`🤖 agent · ${BUCKET_ZH[bucket]}`}
+        title={`AI 审查 · ${BUCKET_ZH[bucket]}`}
         count={fmtN(rows.length) + (hasMore ? "+" : "")}
         desc={DESC[bucket]}
       />
@@ -172,23 +164,12 @@ export function AgentTab({
         }
       />
       {rows.length === 0 ? (
-        <EmptyState>{BUCKET_ZH[bucket]}桶当前为空。agent 每 15 分钟自动扫待审队列。</EmptyState>
+        <EmptyState>{BUCKET_ZH[bucket]}列表当前为空。AI 每 15 分钟自动复核待审队列。</EmptyState>
       ) : (
         <ListShell>
           {rows.map((a, i) => {
             const label = a.agent_label || "uncertain";
-            const signals = jsonArr(a.agent_signals);
-            const reasons = jsonArr(a.agent_reasons);
-            let ev: Record<string, unknown> = {};
-            try {
-              ev = JSON.parse(a.agent_evidence || "{}") || {};
-            } catch {}
-            const evChips: string[] = [];
-            if (ev.account_age_days != null) evChips.push(`账龄 ${ev.account_age_days}d`);
-            if (ev.follower_count != null) evChips.push(`粉丝 ${fmtN(ev.follower_count as number)}`);
-            if (ev.posting_rate_per_day != null) evChips.push(`日发帖 ${ev.posting_rate_per_day}`);
-            if (ev.reply_offtopic_ratio != null)
-              evChips.push(`回复跑题率 ${Math.round((ev.reply_offtopic_ratio as number) * 100)}%`);
+            const summary = summarizeAgentReview(a);
             return (
               <AccountRow
                 key={rowKey(a)}
@@ -197,37 +178,37 @@ export function AgentTab({
                 selected={sel.sel.has(rowKey(a))}
                 onToggle={(shift) => sel.toggle(i, shift)}
                 confidence={Math.round((a.agent_confidence || 0) * 100)}
-                subExtra={<span>· agent 决策 {ago(a.agent_at || a.last_scored)}</span>}
+                subExtra={<span>· AI 复核 {ago(a.agent_at || a.last_scored)}</span>}
                 below={
-                  (signals.length > 0 || reasons.length > 0 || evChips.length > 0) && (
-                    <div className="mt-1.5 space-y-1.5">
-                      {signals.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {signals.map((s, j) => (
-                            <span key={j} className="rounded border border-violet/30 bg-violet/10 px-1.5 py-px font-mono text-[10.5px] font-semibold text-violet">
-                              {s}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      {reasons.length > 0 && (
-                        <div className="flex flex-wrap gap-x-2 text-[11.5px] text-muted-foreground">
-                          {reasons.slice(0, 4).map((r, j) => (
-                            <span key={j}>· {r}</span>
-                          ))}
-                        </div>
-                      )}
-                      {evChips.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {evChips.map((c, j) => (
-                            <span key={j} className="rounded border bg-card px-1.5 py-px text-[11px] tabular-nums text-muted-foreground">
-                              {c}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )
+                  <div className="mt-2 max-w-2xl space-y-2 text-[12px]">
+                    <p className="flex flex-wrap items-baseline gap-x-2">
+                      <span className="font-medium text-muted-foreground">判断结果</span>
+                      <span className="font-semibold text-foreground">{summary.conclusion}</span>
+                    </p>
+                    {summary.signals.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="mr-0.5 text-muted-foreground">主要依据</span>
+                        {summary.signals.map((signal) => (
+                          <span key={signal} className="rounded-full border border-violet/30 bg-violet/10 px-2 py-0.5 font-medium text-violet">
+                            {signal}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {summary.reasons.slice(0, 3).map((reason) => (
+                      <p key={reason} className="text-foreground/80">补充说明：{reason}</p>
+                    ))}
+                    {summary.evidence.length > 0 && (
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="mr-0.5 text-muted-foreground">可核对数据</span>
+                        {summary.evidence.map((item) => (
+                          <span key={item} className="rounded border bg-card px-1.5 py-0.5 tabular-nums text-muted-foreground">
+                            {item}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 }
                 actions={
                   <>

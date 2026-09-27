@@ -1,0 +1,160 @@
+{
+  "passed": true,
+  "at": "2026-09-23T17:58:36.967Z",
+  "version": "4d513b38-7719-4c9f-9ea8-127df4a219a6",
+  "requests": 18,
+  "requestCap": 24,
+  "queueStats": 40900,
+  "stageCounts": {
+    "all": 40900,
+    "unreviewed": 815,
+    "reviewed": 40086,
+    "pending": 32100,
+    "blacklist": 2868,
+    "whitelist": 5125
+  },
+  "aiAutoPublishEnabled": false,
+  "dryRunPendingMatched": 32100,
+  "adminHtmlMatchesBuild": true,
+  "assets": [
+    {
+      "name": "AdminPage-BoD-Ttoe.js",
+      "sha256": "3a16e497932ee94c5d56f3ce432451b710154ecf5fef3e2bbfa44c82b2bcb155"
+    },
+    {
+      "name": "LandingPage-CnDvyM8b.js",
+      "sha256": "a365aab10e0fea7213a42014c4f7e6f90dc23b6c3b55d75f6ceeccc756784c63"
+    },
+    {
+      "name": "ListPage-CbmG6p-g.js",
+      "sha256": "3de2219878212a934cc8306c8d2dc7007f24ac905f7f60052f5b3de1c61bce87"
+    },
+    {
+      "name": "ThemeToggle-pV0tDJ6I.js",
+      "sha256": "61e1318f578a42de8e263b407fb782188b5ff01e20fc01c09944fc35991c2ab8"
+    },
+    {
+      "name": "dialog-B2eG0vnB.js",
+      "sha256": "3add96a2992eb4c5d82ceb39b1e6847d58012e9304985b12a29378bea82fa336"
+    },
+    {
+      "name": "index-CrYoQSmU.js",
+      "sha256": "7e9964a06c6a6f3444a53354374667ab52f79f140b158ae0296b2ab1d69de59d"
+    },
+    {
+      "name": "index-zST2yjCn.css",
+      "sha256": "cb83794d40ce79c7bdd7847558a698408226b646ebe22bac6b7629b2bb59bdf3"
+    },
+    {
+      "name": "publicApi-CcDJ9NY2.js",
+      "sha256": "f3a20881ca63baa5e37ebb99a6ea2ce5b90c89f6c1148c61f32d2edba1383783"
+    }
+  ],
+  "httpChecks": [
+    {
+      "path": "/v1/health",
+      "status": 200,
+      "bytes": 30
+    },
+    {
+      "path": "/admin",
+      "status": 200,
+      "bytes": 1046
+    },
+    {
+      "path": "/app/assets/AdminPage-BoD-Ttoe.js",
+      "status": 200,
+      "bytes": 216370
+    },
+    {
+      "path": "/app/assets/LandingPage-CnDvyM8b.js",
+      "status": 200,
+      "bytes": 368162
+    },
+    {
+      "path": "/app/assets/ListPage-CbmG6p-g.js",
+      "status": 200,
+      "bytes": 5634
+    },
+    {
+      "path": "/app/assets/ThemeToggle-pV0tDJ6I.js",
+      "status": 200,
+      "bytes": 36542
+    },
+    {
+      "path": "/app/assets/dialog-B2eG0vnB.js",
+      "status": 200,
+      "bytes": 34101
+    },
+    {
+      "path": "/app/assets/index-CrYoQSmU.js",
+      "status": 200,
+      "bytes": 234826
+    },
+    {
+      "path": "/app/assets/index-zST2yjCn.css",
+      "status": 200,
+      "bytes": 72103
+    },
+    {
+      "path": "/app/assets/publicApi-CcDJ9NY2.js",
+      "status": 200,
+      "bytes": 4238
+    },
+    {
+      "path": "/v1/admin/stats",
+      "status": 200,
+      "bytes": 339
+    },
+    {
+      "path": "/v1/admin/queue?limit=5&total=1&review_stage=",
+      "status": 200,
+      "bytes": 5058
+    },
+    {
+      "path": "/v1/admin/queue?limit=5&total=1&review_stage=unreviewed",
+      "status": 200,
+      "bytes": 5066
+    },
+    {
+      "path": "/v1/admin/queue?limit=5&total=1&review_stage=reviewed",
+      "status": 200,
+      "bytes": 5366
+    },
+    {
+      "path": "/v1/admin/queue?limit=5&total=1&review_stage=pending",
+      "status": 200,
+      "bytes": 5365
+    },
+    {
+      "path": "/v1/admin/queue?limit=5&total=1&review_stage=blacklist",
+      "status": 200,
+      "bytes": 5502
+    },
+    {
+      "path": "/v1/admin/queue?limit=5&total=1&review_stage=whitelist",
+      "status": 200,
+      "bytes": 5590
+    },
+    {
+      "path": "/v1/admin/decide-by-filter",
+      "status": 200,
+      "bytes": 52
+    }
+  ],
+  "productionMutations": 0,
+  "activeTrafficPercent": 100,
+  "localTests": {
+    "passed": 160,
+    "failed": 0
+  },
+  "browserChecks": [
+    "统一待审顶部总数 40,900；列表/接口同口径",
+    "实际点击 AI 待定筛选，命中 32,100",
+    "实际展开批量操作菜单并打开预览；显示 AI 待定条件、32,100 命中及单次 2,000 上限",
+    "已点击取消并回读，返回列表；未执行任何账号裁决"
+  ],
+  "budgetAlert": "Cloudflare UI checked 2026-09-24: existing USD 10 budget alert, 1 recipient",
+  "rollbackVersion": "679e6c49-b50e-4570-a551-a460a724ceb9",
+  "initialProbe": "Python HTTP client received 403 on the initial public health probe; Node fetch subsequently passed all 18 checks. Cause not investigated."
+}

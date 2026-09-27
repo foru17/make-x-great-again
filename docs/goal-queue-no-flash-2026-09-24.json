@@ -1,0 +1,27 @@
+{
+  "goal": "修复待审裁决后整表闪烁并发布",
+  "tasks": [
+    {
+      "id": "F1",
+      "task": "复现并修复裁决后整表卸载",
+      "verify": "DOM 行保留断言；无加载骨架；计数与分页正确",
+      "passes": true,
+      "evidence": [
+        "旧版真实点击：flashes=1, kept=0/99, expanded=false；修复后连续两次拉黑：flashes=0, kept=99/99, expanded=true",
+        "单条拉黑/白名单/驳回/移除后计数 112→107；末页批量驳回 7 条后回到第 1/1 页、100 行、选择清空",
+        "前端 TypeScript、修改文件 lint、Vite 构建通过；三尺寸/主题截图已核对"
+      ]
+    },
+    {
+      "id": "F2",
+      "task": "界面验收和发布",
+      "verify": "类型/构建、桌面移动暗色、生产版本与资源校验",
+      "passes": true,
+      "evidence": [
+        "UI VERDICT PASS；docs/queue-no-flash-evidence-2026-09-24.json；桌面/移动/暗色截图已核对",
+        "新版本 8c6d74e4-cf8e-4cf7-908f-bb57a348d787 承载 100% 流量",
+        "10 次线上 HTTP 检查通过；线上 HTML 及全部 8 个 JS/CSS 与验收构建逐字节一致，未操作生产账号裁决"
+      ]
+    }
+  ]
+}

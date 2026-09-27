@@ -53,6 +53,9 @@ export interface Settings {
   autoTierMode: AutoTierMode; // how far auto-published (non-human) list hits may auto-act
   autoExpand: boolean; // pop the bubble card open when auto-processing starts (off = pill pulse only; better on narrow/mobile viewports)
   edgeBase: string; // advanced: override the service base URL — list/whitelist sync source, whitelist-apply backend AND outbound links
+  officialRulesEnabled: boolean; // master switch for the synced maintainer-curated keyword rules (per-rule disables live in xss:rules:disabled)
+  ruleTelemetry: boolean; // anonymously report OFFICIAL rule hits (spam account identity + matched rule only, never the user's own info) so the maintainer can review & publish them
+  followingWhitelist: boolean; // auto-add accounts the viewer follows to the LOCAL whitelist (never badged / auto-processed); entries live in xss:whitelist:local
 }
 
 export const DEFAULT_CATEGORY_ACTIONS: CategoryActions = {
@@ -77,9 +80,15 @@ export const DEFAULTS: Settings = {
   autoTierMode: "full",
   autoExpand: true,
   edgeBase: "",
+  officialRulesEnabled: true,
+  ruleTelemetry: true,
+  followingWhitelist: true,
 };
 
 const KEY = "xss:settings";
+/** Storage key for the settings object — exported for modules (local-rules)
+ *  that need to react to settings changes via storage.onChanged. */
+export const SETTINGS_KEY = KEY;
 
 /** Shallow merge + nested categoryActions merge (a stored partial object
  *  from an older version must not wipe the new keys). */

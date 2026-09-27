@@ -1,0 +1,365 @@
+{
+  "goal": "Review and test the current 0.6.1 iteration, fix verified defects, and revalidate the result",
+  "baseline": "d0fcac0 (feat/rules-visibility-telemetry)",
+  "branch": "codex/review-2026-09-07",
+  "tasks": [
+    {
+      "id": "baseline",
+      "task": "Inventory changed paths and run baseline tests, type checks, builds and dependency audits",
+      "verify": "Captured command outputs for core, extension, edge and agent runner",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/baseline-{core,extension,edge,runner}.log: all tests and compilation/builds passed; lint has 2 errors; generated Worker types check fails",
+        ".review-2026-09-07/audit-{core,extension,edge}.json: core 0; extension 7 high; edge 8 high and 2 moderate dependency findings"
+      ]
+    },
+    {
+      "id": "tooling",
+      "task": "Fix baseline lint errors, stale Worker types, vulnerable dependency resolutions and missing CI checks",
+      "verify": "Lint, generated types check, bounded dependency audits and all affected builds/tests pass",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/final-core.log",
+        ".review-2026-09-07/final-extension.log",
+        ".review-2026-09-07/final-edge.log",
+        ".review-2026-09-07/runtime-node22-final.log"
+      ]
+    },
+    {
+      "id": "backup",
+      "task": "Review backup parsing, merge/replace, credential exclusion and cross-tab storage integrity; fix reproduced defects",
+      "verify": "Adversarial backup regression tests and extension compile",
+      "passes": true,
+      "evidence": [
+        "backup regressions, storage failure/merge tests and real browser import assertions; see findings"
+      ]
+    },
+    {
+      "id": "whitelist",
+      "task": "Review identity matching, following harvest, removal tombstones and live protection changes",
+      "verify": "Whitelist and bridge integration/regression tests",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/final-extension.log",
+        ".review-2026-09-07/browser-lifecycle-final.log",
+        ".review-2026-09-07/browser-regressions.log"
+      ]
+    },
+    {
+      "id": "detection",
+      "task": "Review detection, cache revalidation, auto-action guards and telemetry failure/budget behavior",
+      "verify": "Targeted regression tests through affected caller paths",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/final-extension.log",
+        ".review-2026-09-07/global-budget-surface-green.log"
+      ]
+    },
+    {
+      "id": "edge",
+      "task": "Review current edge API changes, authentication, moderation state and classifier contracts",
+      "verify": "Edge and agent-runner tests plus bounded local HTTP checks",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/final-edge.log",
+        ".review-2026-09-07/final-runner.log",
+        ".review-2026-09-07/runtime-node22-final.log",
+        ".review-2026-09-07/http-final.json"
+      ]
+    },
+    {
+      "id": "ui",
+      "task": "Exercise real extension build, backup and whitelist flows on desktop/mobile and light/dark themes",
+      "verify": "Browser assertions and inspected screenshots",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/contrast-green.log",
+        ".review-2026-09-07/inpage-final.log",
+        ".review-2026-09-07/firefox-runtime-final.log"
+      ]
+    },
+    {
+      "id": "final",
+      "task": "Adversarially recheck every finding and record verified results and external limitations",
+      "verify": "Full final tests/type checks/builds, clean diff and commit history, evidence report",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/final-verification.json",
+        "docs/review-2026-09-07.md"
+      ],
+      "scope_note": "Local review and verification complete; deployment, live provider/X actions and proposed follow-ups are explicitly outside this signoff."
+    }
+  ],
+  "findings": [
+    {
+      "id": "backup-endpoint",
+      "severity": "high",
+      "status": "fixed",
+      "finding": "A backup could change edgeBase, redirecting subsequent authenticated requests with the existing GitHub token; unsanitized settings export could also leak URL credentials or unknown legacy settings.",
+      "fix": "Export and import only known portable preferences; preserve the installation service endpoint.",
+      "verify": "backup endpoint regression red then green; extension compile passed",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/backup-endpoint-red.log",
+        ".review-2026-09-07/backup-endpoint-green.log"
+      ]
+    },
+    {
+      "id": "backup-validation",
+      "severity": "medium",
+      "status": "fixed",
+      "finding": "Numeric/object whitelist handles caused parseBackup to throw instead of returning a validated result; numeric IDs and unsupported old/fractional versions were accepted.",
+      "fix": "Validate handle/ID/timestamp types and require the supported backup format version.",
+      "verify": "11 backup/whitelist tests and extension compile passed",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/backup-validation-red.log",
+        ".review-2026-09-07/backup-validation-green.log"
+      ]
+    },
+    {
+      "id": "backup-cache",
+      "severity": "medium",
+      "status": "fixed",
+      "finding": "Replace mode kept old cache entries absent from the backup; cache export/parse repeatedly enumerated all accumulated keys.",
+      "fix": "Remove only obsolete cache keys after replacement writes succeed; track validated entry counts in linear time.",
+      "verify": "6 backup tests and extension compile passed",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/backup-cache-red.log",
+        ".review-2026-09-07/backup-cache-green.log"
+      ]
+    },
+    {
+      "id": "backup-preview",
+      "severity": "high",
+      "status": "fixed",
+      "finding": "Empty sections were hidden from approval but still overwritten; hidden-record selection was ignored; storage read failure silently converted merges into overwrites and errors were not shown.",
+      "fix": "Show every present section, group hidden IDs/records into one control, show exclusions, abort on read failure and display import/read errors.",
+      "verify": "8 backup tests, extension compile/build, real Chrome extension UI interaction assertions and four viewport/theme screenshots passed",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/backup-preview-red.log",
+        ".review-2026-09-07/backup-preview-green.log",
+        ".review-2026-09-07/backup-ui-after.log",
+        ".ui-acceptance/2026-09-07-review/backup-after-dark-390.png",
+        ".ui-acceptance/2026-09-07-review/backup-after-light-1440.png"
+      ]
+    },
+    {
+      "id": "backup-exclusion",
+      "severity": "medium",
+      "status": "fixed",
+      "finding": "Merging an old backup restored whitelist entries that the user explicitly removed.",
+      "fix": "Removal exclusions take precedence over stale entries during backup merge/replace.",
+      "verify": "9 backup tests and extension compile passed",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/backup-exclusion-red.log",
+        ".review-2026-09-07/backup-exclusion-green.log"
+      ]
+    },
+    {
+      "id": "whitelist-write-race",
+      "severity": "high",
+      "status": "fixed",
+      "finding": "Two page-local write queues overwrote each other; backup import could race following harvest; following detection did not wait for protection to persist.",
+      "fix": "Route whitelist mutations and backup import through one background queue; await following protection before detection; propagate storage failures.",
+      "verify": "76 extension tests, compile/build, isolated-context concurrency tests and real backup UI passed",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/whitelist-race-red.log",
+        ".review-2026-09-07/whitelist-race-green.log",
+        ".review-2026-09-07/backup-ui-after.log"
+      ]
+    },
+    {
+      "id": "whitelist-identity",
+      "severity": "high",
+      "status": "fixed",
+      "finding": "A reused handle inherited local whitelist protection despite a conflicting immutable account ID.",
+      "fix": "Known IDs must agree for a handle match; the original ID remains protected after a rename.",
+      "verify": "9 whitelist tests and extension compile passed",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/whitelist-identity-red.log",
+        ".review-2026-09-07/whitelist-identity-green.log"
+      ]
+    },
+    {
+      "id": "whitelist-actions",
+      "severity": "high",
+      "status": "fixed",
+      "finding": "A real extension page resumed a saved X block for an already-whitelisted account and kept its article hidden; pacing and queued actions did not recheck protection.",
+      "fix": "Whitelist wins before hidden IDs; resume/auto queues and native calls recheck protection at execution boundaries; live whitelist changes restore surfaces and cancel pending hides.",
+      "verify": "Real browser reproduction changed from one intercepted X block + invisible row to zero requests + visible row; 78 extension tests/compile/build passed",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/whitelist-actions-red.log",
+        ".review-2026-09-07/whitelist-actions-green.log",
+        ".review-2026-09-07/whitelist-actions-tests.log",
+        ".ui-acceptance/2026-09-07-review/whitelist-actions.png"
+      ]
+    },
+    {
+      "id": "classifier-cache-inputs",
+      "severity": "medium",
+      "status": "fixed",
+      "finding": "Client and Worker cache hashes ignored profile facts and rendering context; even expired server rows reused verdicts after those inputs changed.",
+      "fix": "Include all model-visible client signals and hash the actual Worker user prompt; preserve status TTL and request caps.",
+      "verify": "Both regression tests red then green; all 142 Edge tests and extension/Worker type checks passed",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/cache-hash-red.log",
+        ".review-2026-09-07/edge-cache-hash-red.log",
+        ".review-2026-09-07/cache-hash-green.log"
+      ]
+    },
+    {
+      "id": "template-identity",
+      "severity": "medium",
+      "status": "fixed",
+      "finding": "Valid prototype-named handles such as __proto__ crashed the template-memory path before online detection.",
+      "fix": "Use a null-prototype author dictionary so account handles remain data keys.",
+      "verify": "4 template-memory tests and extension compile passed",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/template-identity-red.log",
+        ".review-2026-09-07/template-identity-green.log"
+      ]
+    },
+    {
+      "id": "classify-quota",
+      "severity": "high",
+      "status": "fixed",
+      "finding": "COUNT-then-INSERT permitted concurrent LLM requests past the quota; missing rate_log failed open and still called the provider.",
+      "fix": "Atomically reserve identity/global slots in one SQLite statement; return 503 for unavailable/invalid accounting; bounded cleanup.",
+      "verify": "Real SQLite route test: cap 1 with 3 concurrent requests returns 200/429/429, one mock model call; missing table returns 503 with no additional call; all 143 Edge tests/typecheck passed",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/classify-quota-red.log",
+        ".review-2026-09-07/classify-quota-green.log"
+      ]
+    },
+    {
+      "id": "network-deadlines",
+      "severity": "medium",
+      "status": "fixed",
+      "finding": "List sync, telemetry and online classification had no request deadline, so a stalled fetch could monopolize their shared queue or limiter.",
+      "fix": "Add finite transport deadlines; retain failed telemetry for later retry and release sync state; bound GitHub identity and model requests too.",
+      "verify": "Timeout/recovery regression and extension/Worker typechecks passed",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/network-timeouts-red.log",
+        ".review-2026-09-07/network-timeouts-green.log"
+      ]
+    },
+    {
+      "id": "whitelist-late-result",
+      "severity": "medium",
+      "status": "fixed",
+      "finding": "An AI result arriving after a whitelist change reinserted the protected author into the suspicious findings list.",
+      "fix": "Recheck protection before queued classification and after async cache/model results; reject protected findings.",
+      "verify": "Real Chrome delayed-response reproduction red then green; extension compile/build passed",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/detection-lifecycle-red.log",
+        ".review-2026-09-07/detection-lifecycle-green.log"
+      ]
+    },
+    {
+      "id": "extension-dependencies",
+      "severity": "high",
+      "status": "fixed",
+      "finding": "Extension development dependency audit reported 7 high findings, including a crafted ZIP memory-exhaustion issue.",
+      "fix": "Update compatible lockfile patches and override adm-zip to patched 0.6 without migrating WXT.",
+      "verify": "Extension tests, compile, Chrome/Firefox builds passed; audit 0 findings; archive folder round trip passed.",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/dependencies-extension-verify.log",
+        ".review-2026-09-07/audit-extension-final.json"
+      ]
+    },
+    {
+      "id": "edge-dependencies",
+      "severity": "high",
+      "status": "fixed",
+      "finding": "Edge production and development dependencies had 8 high and 2 moderate audit findings.",
+      "fix": "Apply compatible Hono/toolchain patches and update pinned React Router to 7.18.3.",
+      "verify": "143 Edge tests, Worker/app typechecks and app build passed; audit 0 findings.",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/dependencies-edge-verify.log",
+        ".review-2026-09-07/audit-edge-final.json"
+      ]
+    },
+    {
+      "id": "options-contrast",
+      "severity": "low",
+      "status": "fixed",
+      "finding": "Dark options secondary copy measured only 4.10:1 contrast; faint labels also used unnecessarily low-contrast tokens.",
+      "fix": "Raise muted text contrast while preserving the existing layout and theme.",
+      "verify": "Real Chrome secondary text contrast: light 4.83:1, dark 5.79:1; four viewport/theme screenshots, no overflow, import assertions passed.",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/contrast-red.log",
+        ".review-2026-09-07/contrast-green.log",
+        ".ui-acceptance/2026-09-07-review/backup-after-dark-390.png"
+      ]
+    },
+    {
+      "id": "worker-runtime-entry",
+      "severity": "high",
+      "status": "fixed",
+      "finding": "The actual workerd runtime rejected the named CLASSIFY_SYSTEM_PROMPT string export and could not start, despite Node tests and typechecks passing.",
+      "fix": "Deploy a default-only worker module; keep evaluation helpers available from index.ts; add a bounded real-runtime HTTP smoke check to CI.",
+      "verify": "Startup failure reproduced; workerd starts after fix, 6 HTTP routes return expected 200/401/403; typechecks pass.",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/worker-entry-red.log",
+        ".review-2026-09-07/worker-entry-green.log",
+        ".review-2026-09-07/http-final.json"
+      ]
+    },
+    {
+      "id": "global-budget-surface",
+      "severity": "high",
+      "status": "fixed",
+      "finding": "Reports, block confirmations and scheduled category backfill bypassed the classify-only global admission budget. A local cap of 1 still allowed four mock provider calls.",
+      "fix": "Share atomic identity/global reservations across every Worker model path and give backfill calls a finite deadline; count conservative logical attempts (up to two provider attempts each).",
+      "verify": "Real SQLite public-route/cron regression changed from report/confirm 200/200 and 4 calls to 429/429 and 1 call; all 144 Edge tests/typecheck pass.",
+      "passes": true,
+      "evidence": [
+        ".review-2026-09-07/global-budget-surface-red.log",
+        ".review-2026-09-07/global-budget-surface-green.log"
+      ]
+    }
+  ],
+  "manual_items": [
+    {
+      "id": "R-01",
+      "item": "Proposed follow-up: atomic/fail-closed non-model public-write limits; see review report",
+      "owner": "backend maintainer (proposed)"
+    },
+    {
+      "id": "R-02",
+      "item": "Verify provider budget, alert delivery/owner and approved peak workload before deployment or quota changes",
+      "owner": "user/operations"
+    },
+    {
+      "id": "R-03",
+      "item": "Real X test-account actions and Safari native/device acceptance",
+      "owner": "user/release maintainer"
+    },
+    {
+      "id": "R-04",
+      "item": "Migrate existing Safari bundled-list fallback to comply with current no-large-client-list requirement",
+      "owner": "Safari maintainer (proposed)"
+    },
+    {
+      "id": "R-05",
+      "item": "Provide the project Feishu progress document URL for milestone synchronization",
+      "owner": "user"
+    }
+  ]
+}

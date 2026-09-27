@@ -1,0 +1,37 @@
+[
+  {
+    "id": "reproduce",
+    "task": "复现线上搜索和规则匹配遗漏",
+    "verification": "真实路径回归测试先失败；只读核对线上结果",
+    "passes": true,
+    "evidence": "node --import tsx --test services/edge/test/search-rule-unicode.test.ts: 3 failing tests, each actual=1 expected=3; .verification/search-rules-2026-09-13/repro-red.log"
+  },
+  {
+    "id": "search",
+    "task": "修复搜索遗漏",
+    "verification": "搜索回归测试通过，核对计数与分页",
+    "passes": true,
+    "evidence": ".verification/search-rules-2026-09-13/search-green.log: 3 passed, 0 failed; real SQLite queue/blacklist, count, pagination, structured filters, batch dry-run"
+  },
+  {
+    "id": "rules",
+    "task": "修复规则匹配遗漏",
+    "verification": "服务端和扩展规则回归测试通过",
+    "passes": true,
+    "evidence": ".verification/search-rules-2026-09-13/rules-green.log: 27 passed, 0 failed; live classify, SQL prefilter, preview/sweep parity, extension and original evidence excerpt"
+  },
+  {
+    "id": "verify",
+    "task": "整体证伪复核和交付",
+    "verification": "相关完整测试、类型检查、构建；记录线上验证或阻塞",
+    "passes": true,
+    "evidence": "docs/search-rules-evidence-2026-09-13.json: full tests, TypeScript, Chrome/Firefox builds and workerd/D1 25 variants passed"
+  },
+  {
+    "id": "deploy",
+    "task": "发布线上基线上的独立修复并回读验证",
+    "verification": "保留线上静态资源及配置，检查真实搜索和预览结果、健康检查和桌面/移动端页面",
+    "passes": true,
+    "evidence": "docs/search-rules-evidence-2026-09-13.json: version 679e6c49; HTTP 200 search=53, preview=53, dry-run=53; unchanged admin HTML and assets"
+  }
+]

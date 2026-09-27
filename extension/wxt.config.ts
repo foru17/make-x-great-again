@@ -1,14 +1,16 @@
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "wxt";
 
-// Make X Great Again (MXGA) — passive by default. The public blocklist is
+// Make X Great Again (MXGA) — local-first by default. The public blocklist is
 // NOT bundled: the background syncs the compact lite artifact from the
 // official source over plain CORS (a read-only GET of public data — nothing
 // about the user is ever uploaded) and caches it locally.
 // X-native actions (mute / block) are opt-in: only when the user switches
 // settings.actionMode does the extension request the optional x.com host
 // permission and act on their account via X's own first-party endpoints,
-// using their existing session. Nothing is ever sent to our own backend.
+// using their existing session. After GitHub login, locally unknown accounts
+// are optionally sent to our edge classifier; the generated manifest and
+// privacy copy disclose that authenticated website-content flow.
 export default defineConfig({
   modules: ["@wxt-dev/module-react"],
   vite: () => ({ plugins: [tailwindcss()] }),
@@ -24,7 +26,7 @@ export default defineConfig({
   manifest: ({ browser }) => ({
     name: "Make X Great Again (MXGA)",
     description:
-      "Local spam and porn-bot warnings for X using a synced public list. Matching stays on device. Open source.",
+      "Local X spam-list matching with authenticated online AI checks for newly encountered accounts. Open source.",
     // alarms: periodic list refresh; unlimitedStorage: the cached list
     // (~5MB) plus local records would otherwise crowd the 10MB default
     // quota. Neither adds an install-time permission warning.
@@ -74,22 +76,30 @@ export default defineConfig({
     options_ui: { open_in_tab: true },
     // Firefox / AMO requirements (ignored by the Chrome build):
     //  - gecko.id: stable add-on ID, keyed to a domain we control.
-    //  - strict_min_version 109.0: the first Firefox release with Manifest V3
-    //    support (we no longer ship any MAIN-world content script).
-    //  - Routine protection transmits no personal data. The optional
-    //    whitelist application sends GitHub authentication and the user's
-    //    public X handle only after an explicit runtime opt-in. AMO requires
-    //    these optional categories for new listings since 2025-11-03.
+    //  - strict_min_version 140.0 (desktop) / 142.0 (Android): the first
+    //    releases supporting Firefox's built-in data-collection consent
+    //    declared and requested below.
+    //  - Routine local matching transmits no personal data. After the optional
+    //    GitHub login, unknown accounts can send public website content for
+    //    online AI classification; whitelist application can also send the
+    //    user's public X handle. AMO requires these optional categories.
     ...(browser === "firefox"
       ? {
           browser_specific_settings: {
             gecko: {
               id: "x-spam-sentinel@zuoluo.tv",
-              strict_min_version: "109.0",
+              strict_min_version: "140.0",
               data_collection_permissions: {
                 required: ["none"],
-                optional: ["authenticationInfo", "personallyIdentifyingInfo"],
+                optional: [
+                  "authenticationInfo",
+                  "personallyIdentifyingInfo",
+                  "websiteContent",
+                ],
               },
+            },
+            gecko_android: {
+              strict_min_version: "142.0",
             },
           },
         }

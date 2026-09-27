@@ -1,0 +1,105 @@
+{
+  "$schema": "./cases.schema.json",
+  "description": "Frozen classifier evaluation set. Every prompt/threshold change is scored against this BEFORE deploy (scripts/eval/classify-eval.ts). `expect` is a bucket, not a label: clean = legit|uncertain, spam = spam|porn_bot|likely_spam. `origin` says where the case came from; `reconstructed: true` means the exact stored text was not available and the payload is a faithful stand-in from the audit description.",
+  "created": "2026-09-06",
+  "sources": [
+    "docs/issues-report-audit-2026-09-04.md — 8 upheld appeals (#363–#373) and 10 audited false positives from the latest 50 spam labels",
+    "extension/test/local-rules.test.ts — the 2026-07-14 porn-ring reply templates",
+    "services/edge/src/index.ts SYSTEM prompt — linkless redirect bait, funnels, creator/brand exemptions"
+  ],
+  "cases": [
+    {
+      "id": "appeal-363",
+      "origin": "appeal #363 upheld",
+      "expect": "clean",
+      "reconstructed": true,
+      "signals": { "handle": "yyeonmihy", "displayName": "yeonmi", "bio": "", "triggeringComment": "今天好累，早点睡", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else" }
+    },
+    {
+      "id": "appeal-364",
+      "origin": "appeal #364 upheld",
+      "expect": "clean",
+      "reconstructed": true,
+      "signals": { "handle": "Felix51829805", "displayName": "Felix", "bio": "", "triggeringComment": "iPad 用了三年还是很顺手，画画写笔记都够用", "recentTweets": [], "surface": "home", "isReply": false }
+    },
+    {
+      "id": "appeal-365",
+      "origin": "appeal #365 upheld — single article share read as repeated promotion",
+      "expect": "clean",
+      "reconstructed": true,
+      "signals": { "handle": "ACai_sec", "displayName": "ACai", "bio": "安全研究 / CTF", "triggeringComment": "写了一篇关于 CVE 复现的分析，欢迎指正 https://example.com/post", "recentTweets": [], "surface": "home", "isReply": false }
+    },
+    {
+      "id": "appeal-367",
+      "origin": "appeal #367 upheld — profile path with no text at all",
+      "expect": "clean",
+      "reconstructed": true,
+      "signals": { "handle": "_marulka", "displayName": "Marulka", "bio": "illustrator · commissions", "recentTweets": ["new painting, oil on canvas", "commissions open this month"], "surface": "profile", "isReply": false }
+    },
+    {
+      "id": "appeal-369",
+      "origin": "appeal #369 upheld — opinion + one Facebook link",
+      "expect": "clean",
+      "reconstructed": true,
+      "signals": { "handle": "kevinhung2", "displayName": "Kevin", "bio": "", "triggeringComment": "這個政策我不同意，理由寫在這裡 https://facebook.com/kevinhung2/posts/1", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "newsdesk" }
+    },
+    {
+      "id": "appeal-371",
+      "origin": "appeal #371 upheld — mirrored text read as 'repeated posting'",
+      "expect": "clean",
+      "reconstructed": false,
+      "signals": { "handle": "Pluvio9yte", "displayName": "Pluviobyte", "bio": "dev", "triggeringComment": "用 Codex 清了一下电脑空间，几十 GB 的缓存都被翻出来了，体验不错", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "OpenAI" }
+    },
+    {
+      "id": "appeal-372",
+      "origin": "appeal #372 upheld — bare mention read as porn solicitation",
+      "expect": "clean",
+      "reconstructed": false,
+      "signals": { "handle": "wallen97754394", "displayName": "wallen", "bio": "", "triggeringComment": "@justinsuntron", "recentTweets": [], "surface": "thread", "isReply": true, "replyToHandle": "justinsuntron", "rootAuthorHandle": "justinsuntron", "hasDefaultAvatar": true, "avatarSource": "dom" }
+    },
+    {
+      "id": "appeal-373",
+      "origin": "appeal #373 upheld — arXiv share",
+      "expect": "clean",
+      "reconstructed": true,
+      "signals": { "handle": "fly51fly", "displayName": "爱可可-爱生活", "bio": "AI 论文速递", "triggeringComment": "[LG] Scaling Laws for Sparse Mixture-of-Experts https://arxiv.org/abs/2409.00001", "recentTweets": [], "surface": "home", "isReply": false }
+    },
+
+    { "id": "audit-fp-01", "origin": "2026-09-04 audit FP (was porn_bot 0.92)", "expect": "clean", "signals": { "handle": "cmmm1244", "displayName": "小c", "bio": "", "triggeringComment": "我头晕得站都站不稳。", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else" } },
+    { "id": "audit-fp-02", "origin": "2026-09-04 audit FP (was spam 0.90)", "expect": "clean", "signals": { "handle": "rongchunh2whj", "displayName": "rongchun", "bio": "", "triggeringComment": "我还以为被封号了", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else" } },
+    { "id": "audit-fp-03", "origin": "2026-09-04 audit FP (was spam 0.92)", "expect": "clean", "signals": { "handle": "romanrichshing", "displayName": "Roman", "bio": "", "triggeringComment": "刚刚开始", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else" } },
+    { "id": "audit-fp-04", "origin": "2026-09-04 audit FP (was spam 0.92)", "expect": "clean", "signals": { "handle": "yuzhiqiang1993", "displayName": "yuzhiqiang", "bio": "", "triggeringComment": "请更新 Antigravity IDE，谢谢", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "GoogleAI" } },
+    { "id": "audit-fp-05", "origin": "2026-09-04 audit FP (was porn_bot 0.92)", "expect": "clean", "signals": { "handle": "jy85234509", "displayName": "jy", "bio": "", "triggeringComment": "為啥?拍片嗎?", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else" } },
+    { "id": "audit-fp-06", "origin": "2026-09-04 audit FP (was porn_bot 0.92)", "expect": "clean", "signals": { "handle": "qiyueqiriqing77", "displayName": "七月", "bio": "", "triggeringComment": "杨幂？", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else" } },
+    { "id": "audit-fp-07", "origin": "2026-09-04 audit FP (was porn_bot 0.92)", "expect": "clean", "signals": { "handle": "slhiyu247185", "displayName": "slh", "bio": "", "triggeringComment": "36岁！！！", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else" } },
+    { "id": "audit-fp-08", "origin": "2026-09-04 audit FP (was porn_bot 0.92)", "expect": "clean", "signals": { "handle": "travelallchina", "displayName": "Travel China", "bio": "", "triggeringComment": "@getxbot", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else" } },
+    { "id": "audit-fp-09", "origin": "2026-09-04 audit FP (was porn_bot 0.92) — political profanity", "expect": "clean", "reconstructed": true, "signals": { "handle": "fressshhh2", "displayName": "fresh", "bio": "", "triggeringComment": "这帮人真他妈的不要脸，说一套做一套", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else" } },
+    { "id": "audit-fp-10", "origin": "2026-09-04 audit FP (was likely_spam 0.75) — political satire", "expect": "clean", "reconstructed": true, "signals": { "handle": "bmzxdchgqz", "displayName": "bmz", "bio": "", "triggeringComment": "公款吃喝都能吃出经济增长，真是厉害了", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else" } },
+
+    { "id": "exempt-adult-creator", "origin": "prompt rule: adult creator on own timeline", "expect": "clean", "signals": { "handle": "lunacosplay", "displayName": "Luna 🌙", "bio": "cosplay · 18+ · links in bio", "triggeringComment": "new set is up on my page tonight 🔞", "recentTweets": ["thank you for 10k!", "shooting a new set this weekend"], "surface": "profile", "isReply": false, "followersCount": 12400, "statusesCount": 3100, "mediaCount": 900 } },
+    { "id": "exempt-brand-promo", "origin": "prompt rule: legit commerce, own product", "expect": "clean", "signals": { "handle": "acme_tools", "displayName": "ACME Tools", "bio": "Official account", "triggeringComment": "Our summer sale starts today — 20% off everything at acme.example", "recentTweets": [], "surface": "home", "isReply": false, "followersCount": 58000, "isVerified": true, "accountAgeDays": 2900 } },
+    { "id": "exempt-sponsored-creator", "origin": "prompt rule: disclosed sponsorship", "expect": "clean", "signals": { "handle": "gadgetgirl", "displayName": "GadgetGirl", "bio": "reviews · 【PR】あり", "triggeringComment": "【PR】新しいイヤホンを1週間使ってみた感想です", "recentTweets": [], "surface": "home", "isReply": false, "followersCount": 34000 } },
+
+    { "id": "tp-ring-01", "origin": "2026-07-14 porn-ring template (local-rules.test)", "expect": "spam", "signals": { "handle": "gigi_9b2", "displayName": "Gigi 🌸", "bio": "", "triggeringComment": "sao货bh 没人比她sao❣️ @lyclne 0s", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else", "accountAgeDays": 4, "followersCount": 0 } },
+    { "id": "tp-ring-02", "origin": "2026-07-14 porn-ring template", "expect": "spam", "signals": { "handle": "miu_x7k", "displayName": "みう", "bio": "", "triggeringComment": "sao货ns没人比她sao❣️ @kikiynk 3v", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else", "templateRepeats": 3 } },
+    { "id": "tp-ring-03", "origin": "2026-07-14 porn-ring template", "expect": "spam", "signals": { "handle": "lina_q1", "displayName": "Lina", "bio": "", "triggeringComment": "30+的sao货id没人比她sao ❣️ @mamarwu 2z", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else" } },
+    { "id": "tp-ring-04", "origin": "2026-07-14 porn-ring template", "expect": "spam", "signals": { "handle": "yumi_0z", "displayName": "Yumi", "bio": "", "triggeringComment": "她太涩了lc 我真顶不住 @xintpk1 0m", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else" } },
+    { "id": "tp-ring-05", "origin": "2026-07-14 porn-ring template", "expect": "spam", "signals": { "handle": "kira_p9", "displayName": "Kira", "bio": "", "triggeringComment": "刷了半天的X et就她的主页能打✈️了 @lyclne 1k", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else" } },
+    { "id": "tp-redirect-01", "origin": "linkless redirect bait", "expect": "spam", "signals": { "handle": "sexbot9911", "displayName": "小可爱", "bio": "24h 在线 看主页", "triggeringComment": "看主页 @dispatcher01", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else", "accountAgeDays": 12, "followersCount": 3, "followingCount": 2100 } },
+    { "id": "tp-redirect-02", "origin": "linkless redirect bait, filler chars", "expect": "spam", "signals": { "handle": "aa_lo9", "displayName": "🍑", "bio": "", "triggeringComment": "主页能打 a[ pz l' ~t !+ qw @meimei_88 fg* u[v", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else" } },
+    { "id": "tp-redirect-03", "origin": "escort solicitation", "expect": "spam", "signals": { "handle": "tongcheng_yy", "displayName": "同城约", "bio": "同城可约 线下 加v", "triggeringComment": "线下可约 看简介", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else" } },
+    { "id": "tp-netdisk-01", "origin": "netdisk resource bait", "expect": "spam", "signals": { "handle": "ziyuan_fx", "displayName": "资源分享", "bio": "全网资源 夸克网盘", "triggeringComment": "完整版资源已整理好 夸克网盘 链接见主页", "recentTweets": ["最新合集 夸克网盘 主页自取", "资源已更新 看主页"], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else" } },
+    { "id": "tp-netdisk-02", "origin": "pirated course funnel", "expect": "spam", "signals": { "handle": "kecheng_vip", "displayName": "课程合集", "bio": "付费课程 全套打包 tg 见简介", "triggeringComment": "这套课我这有全集 百度网盘 私", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else" } },
+    { "id": "tp-crypto-01", "origin": "airdrop referral funnel", "expect": "spam", "signals": { "handle": "airdrop_hunt77", "displayName": "🚀 Airdrop Alpha", "bio": "Free airdrops daily", "triggeringComment": "Claim your free $SOL airdrop now 👉 sol-claim.example/ref=77 (limited)", "recentTweets": ["Claim your free $SOL airdrop now 👉 sol-claim.example/ref=77", "Last chance airdrop 👉 sol-claim.example/ref=77"], "surface": "thread", "isReply": true, "rootAuthorHandle": "solana", "templateRepeats": 4 } },
+    { "id": "tp-crypto-02", "origin": "wallet drainer bait", "expect": "spam", "signals": { "handle": "eth_supportdesk", "displayName": "ETH Support", "bio": "", "triggeringComment": "Wallet issue? Sync here to fix: walletsync.example — DM open", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else", "accountAgeDays": 2 } },
+    { "id": "tp-crypto-03", "origin": "signal group funnel", "expect": "spam", "signals": { "handle": "trade_master_cn", "displayName": "币圈老陈", "bio": "带单 稳赚 加tg", "triggeringComment": "今天又是三倍 跟单进群 tg 看简介", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else" } },
+    { "id": "tp-gambling-01", "origin": "casino funnel", "expect": "spam", "signals": { "handle": "win8888_vip", "displayName": "威尼斯人官方", "bio": "注册送88 首存翻倍", "triggeringComment": "注册送88 首存翻倍 点主页链接", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else" } },
+    { "id": "tp-gambling-02", "origin": "betting tips funnel", "expect": "spam", "signals": { "handle": "tips_lock9", "displayName": "Sure Odds", "bio": "Fixed matches 100% · Telegram in bio", "triggeringComment": "Today's fixed match is out 🔒 join the Telegram in my bio", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else" } },
+    { "id": "tp-marketing-01", "origin": "follower farming", "expect": "spam", "signals": { "handle": "boost_follow_x", "displayName": "Grow Fast", "bio": "10k followers in 24h", "triggeringComment": "Want 10k followers by tomorrow? DM me 🔥 boostx.example", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else" } },
+    { "id": "tp-marketing-02", "origin": "promo matrix, off-topic template", "expect": "spam", "signals": { "handle": "dailydeals_zz", "displayName": "Daily Deals", "bio": "", "triggeringComment": "Best VPN deal of the year 👉 vpndeal.example/aff", "recentTweets": ["Best VPN deal of the year 👉 vpndeal.example/aff"], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else", "templateRepeats": 6 } },
+    { "id": "tp-porn-link-01", "origin": "explicit porn ad with platform", "expect": "spam", "signals": { "handle": "xx_video_88", "displayName": "看片神器", "bio": "", "triggeringComment": "免费看片 无需下载 复制链接 xxvideo.example", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else" } },
+    { "id": "tp-porn-mention-01", "origin": "sexual innuendo + @redirect, unrelated thread", "expect": "spam", "signals": { "handle": "qq_1l0", "displayName": "🍓", "bio": "", "triggeringComment": "没她骚 第一骚 @ruru_p2", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "techreporter", "threadTopic": "苹果发布会汇总" } },
+    { "id": "tp-repeat-only", "origin": "benign-looking text made spam by template repetition", "expect": "spam", "signals": { "handle": "helper_bot_2", "displayName": "Helper", "bio": "", "triggeringComment": "答案在这里 👉 answers.example/q", "recentTweets": ["答案在这里 👉 answers.example/q", "答案在这里 👉 answers.example/q"], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else", "templateRepeats": 9 } },
+    { "id": "tp-hijacked-old", "origin": "prompt rule: content over age", "expect": "spam", "signals": { "handle": "old_acct_2011", "displayName": "Mike", "bio": "", "triggeringComment": "看主页 约 @jiejie_33", "recentTweets": [], "surface": "thread", "isReply": true, "rootAuthorHandle": "someone_else", "accountAgeDays": 4800, "followersCount": 210 } }
+  ]
+}

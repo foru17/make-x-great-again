@@ -1,0 +1,82 @@
+{
+  "goal": "将管理后台三项审核体验优化按项目现有发布链路发布，并验证线上结果",
+  "created_at": "2026-08-03",
+  "tasks": [
+    {
+      "id": "release-preflight",
+      "verification": {
+        "source": "从 origin/main@a975f61 建立 codex/release-admin-review-ux-2026-08-03；旧开发分支落后 main 97 个提交，未直接部署；仅重新移植三项审核 UI/API 改动。",
+        "impact": "只更新 Worker 代码与静态管理后台；不执行 D1 SQL，不创建或修改 D1/R2，不改密钥、路由、定时任务或绑定。",
+        "tests": "npm test：70 passed, 0 failed",
+        "typecheck": [
+          "npm run typecheck：passed",
+          "npm run typecheck:app：passed",
+          "npm run types:check：generated bindings up to date"
+        ],
+        "build": "npm run predeploy：passed；2488 modules transformed",
+        "cloudflare": "Wrangler 4.110.0；OAuth 身份可访问 wrangler.toml 中 account_id；7 个既有 secrets 均存在。",
+        "dry_run": "npx wrangler deploy --dry-run --keep-vars --strict：passed；585.06 KiB upload / 127.03 KiB gzip；只识别既有 DB、ARTIFACTS、ASSETS 三个绑定。"
+      },
+      "passes": true
+    },
+    {
+      "id": "publish-source",
+      "verification": {
+        "remote": "origin/codex/release-admin-review-ux-2026-08-03",
+        "base": "origin/main@a975f61",
+        "push": "git push -u origin codex/release-admin-review-ux-2026-08-03：new branch published",
+        "safety": "发布前重新 fetch；origin/main...HEAD 为 0 behind / 4 ahead，未覆盖远端 main 或他人提交。"
+      },
+      "passes": true
+    },
+    {
+      "id": "deploy-production",
+      "verification": {
+        "command": "npm run deploy -- --keep-vars --strict --message 'admin review UX 2026-08-03'：passed",
+        "version_id": "4dbf2b54-fa64-4c51-abcc-303c4dbf4a87",
+        "targets": [
+          "https://x-spam-sentinel-edge.zuoluotv.workers.dev",
+          "https://x.zuoluo.tv"
+        ],
+        "upload": "初次部署后，移动端视觉验收发现标签导航与标题重叠；提交 b0a9ac8 修复并重新部署。最终 9 个新增或变更静态资源上传成功；Worker 585.23 KiB / gzip 127.05 KiB；startup 12 ms。",
+        "bindings": "部署结果仍为既有 DB(xss-db)、ARTIFACTS(xss-blocklist)、ASSETS；既有两个 cron 保持原值。"
+      },
+      "passes": true
+    },
+    {
+      "id": "verify-production",
+      "verification": {
+        "health": "GET https://x.zuoluo.tv/v1/health：200，{ok:true,published:205858}",
+        "final_regression": "移动端修复并重新部署后再次执行 npm test：70 passed, 0 failed。",
+        "assets": "GET /admin 引用 /app/assets/index-78V9LZmy.js；线上 AdminPage-BPzWT_63.js 包含关键字规则、AI 自动审查、人工确认、历史记录、处理中、判断结果等新文案。",
+        "version": "wrangler versions view 4dbf2b54-fa64-4c51-abcc-303c4dbf4a87：message=admin review UX mobile layout fix；fetch/scheduled handlers、7 个 secrets 与 DB/ARTIFACTS/ASSETS 绑定完整。",
+        "browser": {
+          "source_labels": [
+            "关键字规则",
+            "AI 自动审查",
+            "人工确认",
+            "历史记录"
+          ],
+          "whitelist_list_gets_before": 1,
+          "whitelist_list_gets_after": 1,
+          "whitelist_decision_posts": 1,
+          "remaining_row_dom_connected": true,
+          "technical_terms_visible": false,
+          "desktop_overflow": false,
+          "mobile_dark_overflow": false,
+          "mobile_tabs_overlap_title": false,
+          "console_errors": 0,
+          "request_failures": 0,
+          "production_admin_chunk_loaded": true
+        },
+        "screenshots": [
+          "/Users/luolei/.codex/visualizations/2026/08/03/admin-review-ux-release/production-blacklist-desktop.png",
+          "/Users/luolei/.codex/visualizations/2026/08/03/admin-review-ux-release/production-whitelist-local-update-desktop.png",
+          "/Users/luolei/.codex/visualizations/2026/08/03/admin-review-ux-release/production-agent-desktop.png",
+          "/Users/luolei/.codex/visualizations/2026/08/03/admin-review-ux-release/production-agent-mobile-dark.png"
+        ]
+      },
+      "passes": true
+    }
+  ]
+}

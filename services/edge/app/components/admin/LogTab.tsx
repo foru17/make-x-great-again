@@ -7,7 +7,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { api, AuthError, type LogEntry } from "@/lib/adminApi";
+import { api, AuthError, type ContribRow, type LogEntry } from "@/lib/adminApi";
+import { logActionZh } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { MoreFoot } from "./MoreFoot";
 import { ViewHead } from "./ViewHead";
@@ -15,9 +16,80 @@ import { ViewHead } from "./ViewHead";
 const REPO = "https://github.com/foru17/make-x-great-again";
 
 function actionTone(a: string) {
-  if (a === "approve" || a === "auto_confirm") return "text-destructive";
-  if (a === "whitelist_add" || a === "whitelist") return "text-success";
+  // 拉黑类 = 危险色，加白类 = 正常色，其余中性。用前缀判断，规则/agent 触发的
+  // 同类动作（keyword_blacklist…）也能着色。
+  if (a.includes("remove") || a.includes("reject")) return "text-muted-foreground";
+  if (a === "approve" || a === "auto_confirm" || a.includes("blacklist")) return "text-destructive";
+  if (a.includes("whitelist")) return "text-success";
   return "text-muted-foreground";
+}
+
+/** 共建活跃：每日 distinct 贡献者（登录检测/匿名/规则命中/上报）。观察
+ *  登录叙事改版是否拉动登录率的仪表。没有数据时不占版面。 */
+function ContribSection() {
+  const [rows, setRows] = useState<ContribRow[] | null>(null);
+
+  useEffect(() => {
+    api
+      .contrib(14)
+      .then((j) => setRows(j.list || []))
+      .catch(() => setRows([]));
+  }, []);
+
+  if (!rows || rows.length === 0) return null;
+
+  const byDay = new Map<string, Record<string, number>>();
+  for (const r of rows) {
+    const d = byDay.get(r.day) ?? {};
+    d[r.kind] = r.actives;
+    byDay.set(r.day, d);
+  }
+  const days = [...byDay.keys()].sort().reverse();
+
+  return (
+    <div className="mb-6">
+      <div className="mb-2">
+        <h3 className="text-sm font-semibold">共建活跃（近 14 天 · 每日去重身份数）</h3>
+        <p className="mt-0.5 text-[12px] text-muted-foreground">
+          在线检测 = 实际花了 AI 判定的身份；规则命中 = 走关键词直判通道的身份。登录引导改版后盯「登录检测」这列有没有涨。
+        </p>
+      </div>
+      <div className="overflow-x-auto rounded-xl border bg-card shadow-sm">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-28">日期</TableHead>
+              <TableHead className="text-right">登录检测</TableHead>
+              <TableHead className="text-right">匿名检测</TableHead>
+              <TableHead className="text-right">规则命中</TableHead>
+              <TableHead className="text-right">上报</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {days.map((d) => {
+              const w = byDay.get(d) ?? {};
+              const cell = (n?: number) => (
+                <TableCell className="text-right font-mono tabular-nums">
+                  {n ? n : <span className="text-muted-foreground">—</span>}
+                </TableCell>
+              );
+              return (
+                <TableRow key={d}>
+                  <TableCell className="font-mono text-[11.5px] tabular-nums text-muted-foreground">
+                    {d}
+                  </TableCell>
+                  {cell(w.classify)}
+                  {cell(w.classify_anon)}
+                  {cell((w.rule_write ?? 0) + (w.rule_write_anon ?? 0) || undefined)}
+                  {cell(w.report)}
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
 }
 
 export function LogTab({ onAuth }: { onAuth: () => void }) {
@@ -59,6 +131,7 @@ export function LogTab({ onAuth }: { onAuth: () => void }) {
           </>
         }
       />
+      <ContribSection />
       <div className="overflow-hidden rounded-xl border bg-card shadow-sm">
         <Table>
           <TableHeader>
@@ -76,8 +149,11 @@ export function LogTab({ onAuth }: { onAuth: () => void }) {
                 <TableCell className="font-mono text-[11.5px] tabular-nums text-muted-foreground">
                   {new Date(e.at).toLocaleString("zh-CN", { hour12: false })}
                 </TableCell>
-                <TableCell className={cn("text-xs font-semibold", actionTone(e.action))}>
-                  {e.action}
+                <TableCell
+                  title={e.action}
+                  className={cn("text-xs font-semibold", actionTone(e.action))}
+                >
+                  {logActionZh(e.action)}
                 </TableCell>
                 <TableCell className="font-mono text-[11.5px] text-muted-foreground">{e.actor}</TableCell>
                 <TableCell>

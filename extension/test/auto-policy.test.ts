@@ -75,18 +75,21 @@ test("cap passes through human-confirmed entries and 'full' opt-in unchanged", (
   }
 });
 
-test("rule hits are auto tier: 'hide' caps them at local hide, 'badge' gates them out", () => {
-  // The options copy promises "X 静音/拉黑仍只对人工确认条目执行" (hide) and
-  // "自动收录条目永不自动处理" (badge). Rule hits target first-seen accounts
-  // with zero human review, so both promises must cover them.
-  for (const action of ["mute", "block", "hide"] as const) {
+test("rule hits are capped at the local hide in EVERY mode; 'badge' gates them out", () => {
+  // Rule hits target first-seen accounts with zero human review: a substring
+  // match must never fire the irreversible X mute/block with the user's own
+  // session, whatever autoTierMode says (2026-09-06; autoTierMode=full is a
+  // statement about published list entries, not local matches).
+  for (const autoTierMode of ["hide", "full"] as const) {
+    for (const action of ["mute", "block", "hide"] as const) {
+      assert.equal(
+        capAutoTierAction(action, { source: "rule", tier: "auto", autoTierMode }),
+        "hide",
+      );
+    }
     assert.equal(
-      capAutoTierAction(action, { source: "rule", tier: "auto", autoTierMode: "hide" }),
-      "hide",
-    );
-    assert.equal(
-      capAutoTierAction(action, { source: "rule", tier: "auto", autoTierMode: "full" }),
-      action,
+      capAutoTierAction("badge", { source: "rule", tier: "auto", autoTierMode }),
+      "badge",
     );
   }
   assert.equal(

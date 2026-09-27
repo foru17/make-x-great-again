@@ -1,7 +1,28 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { clearGh, getGhLogin, getGhToken, ghUser, setGh } from "../../lib/auth";
+import {
+  type BackupFile,
+  type BackupSection,
+  type BackupSummary,
+  type ImportMode,
+  backupFileName,
+  exportBackup,
+  importBackup,
+  parseBackup,
+  presentBackupSections,
+  summarize,
+} from "../../lib/backup";
 import { BRAND } from "../../lib/brand";
-import { CATEGORY_ZH, SPAM_CATEGORIES, type SpamCategory } from "../../lib/category";
+import { CATEGORY_ZH, SPAM_CATEGORIES, type SpamCategory, categoryFromCode } from "../../lib/category";
+import {
+  type CustomRule,
+  MAX_CUSTOM_RULES,
+  type RuleField,
+  getCustomRules,
+  getDisabledPatterns,
+  saveCustomRules,
+  saveDisabledPatterns,
+} from "../../lib/local-rules";
 import { categorizeReason, categorizeReasons } from "../../lib/reason-category";
 import {
   type ActionMode,
@@ -12,6 +33,17 @@ import {
   setSetting,
 } from "../../lib/settings";
 import { getStoredList, getStoredWhitelist } from "../../lib/list-sync";
+import {
+  LOCAL_WL_KEY,
+  type LocalWhitelistEntry,
+  MAX_LOCAL_WHITELIST,
+  addLocalWhitelist,
+  clearExcluded,
+  listExcluded,
+  listLocalWhitelist,
+  normalizeWhitelistHandle,
+  removeLocalWhitelist,
+} from "../../lib/local-whitelist";
 import {
   type BlockRecord,
   type CacheRow,
@@ -404,12 +436,59 @@ function ListStatusCard({ ls, onRefreshed }: { ls: ListState; onRefreshed: () =>
   );
 }
 
+/** 共建状态卡：把「登录 GitHub」重新定位成参与公开收集的入口——未登录讲清
+ *  登录能开启什么（在线 AI 检测 + 上报），已登录展示贡献状态。 */
+function ContribCard({
+  login,
+  detections,
+  blocked,
+}: {
+  login: string | null;
+  detections: number;
+  blocked: number;
+}) {
+  if (!login) {
+    return (
+      <div className="contrib-card mb-6 flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border bg-card-hi px-5 py-4">
+        <div className="min-w-[240px] flex-1">
+          <div className="text-[13.5px] font-semibold text-fg">参与共建 · 帮所有人拦住新垃圾号</div>
+          <p className="mt-1 text-[12px] leading-relaxed text-fg-3">
+            登录 GitHub 后：本地名单没命中的新账号会自动送在线 AI 检测，一键上报进入公共审核队列——
+            你刷到的每个新垃圾号，复核后全体用户受益。只提交垃圾账号的公开资料，不含你的 X 身份。
+          </p>
+        </div>
+        <a href="?tab=whitelist" className="flex-none">
+          <Btn tier="primary">用 GitHub 登录，开启共建</Btn>
+        </a>
+      </div>
+    );
+  }
+  return (
+    <div className="contrib-card mb-6 flex flex-wrap items-center justify-between gap-4 rounded-lg border border-border px-5 py-4">
+      <div className="min-w-[240px] flex-1">
+        <div className="flex items-center gap-2 text-[13.5px] font-semibold text-fg">
+          <span className="inline-block h-2 w-2 rounded-full bg-ok" />
+          共建已开启 · @{login}
+        </div>
+        <p className="mt-1 text-[12px] leading-relaxed text-fg-3">
+          新账号在线 AI 检测运行中；本设备已检测 {detections.toLocaleString("zh-CN")} 次、处理{" "}
+          {blocked.toLocaleString("zh-CN")} 个账号。上报与误判申诉随时可用。
+        </p>
+      </div>
+      <a href="?tab=whitelist" className="flex-none text-[12px] text-fg-3 hover:text-fg">
+        管理登录 →
+      </a>
+    </div>
+  );
+}
+
 function Overview() {
   const [s, setS] = useState<Awaited<ReturnType<typeof getStats>> | null>(null);
   const [bl, setBl] = useState(0);
   const [autoBl, setAutoBl] = useState(0);
   const [ls, setLs] = useState<ListState | null>(null);
   const [st, setSt] = useState<Settings | null>(null);
+  const [ghLogin, setGhLogin] = useState<string | null>(null);
   const loadLists = () => readListState().then(setLs);
   useEffect(() => {
     getStats().then(setS);
@@ -418,6 +497,7 @@ function Overview() {
       setAutoBl(l.filter((r) => r.source === "auto").length);
     });
     getSettings().then(setSt);
+    getGhLogin().then((v) => setGhLogin(v ?? null));
     void loadLists();
   }, []);
   if (!s) return <Page title="概览" sub="加载中…" />;
@@ -451,6 +531,7 @@ function Overview() {
   ];
   return (
     <Page title="概览" sub="本地统计 · 数据仅存于本机，不含个人隐私信息">
+      <ContribCard login={ghLogin} detections={s.detections} blocked={bl} />
       {ls && <ListStatusCard ls={ls} onRefreshed={loadLists} />}
       <div className="overview-stats mb-8 grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-border bg-border lg:grid-cols-4">
         <Card n={s.detections} l="AI 检测总数" />
@@ -622,12 +703,29 @@ function Blocklist() {
                           >
                             {r.displayName}
                           </a>
+                        ) : /^\d+$/.test(r.handle) ? (
+                          // Bare id row (no name captured yet): X resolves
+                          // /i/user/<id> to the profile; the name fills in
+                          // the next time the account is seen on X.
+                          <a
+                            href={`https://x.com/i/user/${r.handle}`}
+                            target="_blank"
+                            rel="noopener"
+                            className="text-fg transition hover:text-accent"
+                            title="仅记录了账号 ID；下次在 X 上遇到会补全名称"
+                          >
+                            账号 ID {r.handle}
+                          </a>
                         ) : (
                           <HandleLink handle={r.handle} className="text-fg" />
                         )}
                       </div>
                       <div className="max-w-[220px] truncate text-[12px] text-fg-3">
-                        <HandleLink handle={r.handle} className="text-fg-3" />
+                        {/^\d+$/.test(r.handle) ? (
+                          <span>用户名待补全</span>
+                        ) : (
+                          <HandleLink handle={r.handle} className="text-fg-3" />
+                        )}
                         {idTail(r.id, r.handle)}
                       </div>
                     </div>
@@ -1170,10 +1268,14 @@ function WhitelistApplySection({ edgeBase }: { edgeBase: string }) {
     try {
       if (import.meta.env.BROWSER === "firefox") {
         const dataGranted = await chrome.permissions.request({
-          data_collection: ["authenticationInfo", "personallyIdentifyingInfo"],
+          data_collection: [
+            "authenticationInfo",
+            "personallyIdentifyingInfo",
+            "websiteContent",
+          ],
         } as chrome.permissions.Permissions & { data_collection: string[] });
         if (!dataGranted) {
-          setMsg({ text: "未授权白名单申请所需的数据传输权限。", ok: false });
+          setMsg({ text: "未授权在线 AI 检测与白名单申请所需的数据传输权限。", ok: false });
           return;
         }
       }
@@ -1304,9 +1406,15 @@ function WhitelistApplySection({ edgeBase }: { edgeBase: string }) {
     "w-full rounded-md border border-border-2 bg-transparent px-3 py-2 text-[13px] outline-none transition focus:border-accent";
 
   const identityLine = login && (
-    <p className="text-[12px] text-fg-3">
-      GitHub 身份：<b className="text-fg-2">@{login}</b>
-    </p>
+    <div className="space-y-1 text-[12px] text-fg-3">
+      <p>
+        GitHub 身份：<b className="text-fg-2">@{login}</b> · 新账号在线 AI 检测已启用
+      </p>
+      <p className="leading-relaxed">
+        本地名单、缓存与官方规则均未命中的账号，会把公开资料和当前公开文本提交到
+        x.zuoluo.tv 检测；单页最多 40 个，结果缓存在本机。
+      </p>
+    </div>
   );
 
   // ---- Terminal states render as a status panel, not the apply form ----
@@ -1480,6 +1588,246 @@ function WhitelistApplySection({ edgeBase }: { edgeBase: string }) {
   );
 }
 
+const RULE_FIELD_ZH: Record<RuleField, string> = {
+  any: "任意字段",
+  handle: "用户名",
+  display_name: "昵称",
+  bio: "简介",
+  tweet: "推文",
+};
+const RULE_FIELD_BY_CODE: Record<string, RuleField> = {
+  h: "handle",
+  d: "display_name",
+  b: "bio",
+  t: "tweet",
+  a: "any",
+};
+
+const CatChip = ({ cat }: { cat: SpamCategory }) => (
+  <span className="inline-flex items-center gap-1.5 rounded-full border border-border-2 px-2 py-0.5 text-[11px] text-fg-2">
+    <span
+      className="h-1.5 w-1.5 rounded-full"
+      style={{ backgroundColor: CAT_COLOR[cat] ?? CAT_COLOR.other }}
+    />
+    {CATEGORY_ZH[cat]}
+  </span>
+);
+
+/** Compact switch for dense rule rows — same visual language as Toggle,
+ *  minus the label block. */
+function MiniSwitch({ on, onChange }: { on: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      onClick={() => onChange(!on)}
+      className={`h-[18px] w-8 flex-none rounded-full border transition ${
+        on ? "bg-fg border-fg" : "bg-card-hi border-border-2"
+      }`}
+    >
+      <span
+        className={`block h-3.5 w-3.5 rounded-full shadow-sm transition ${
+          on ? "translate-x-[15px] bg-bg" : "translate-x-0.5 bg-fg-3"
+        }`}
+      />
+    </button>
+  );
+}
+
+/** 「检测规则」——同步的官方规则（总开关 / 单条停用 / 匿名回传）+ 本机自定义规则。 */
+function DetectionRulesSection({
+  st,
+  save,
+}: {
+  st: Settings;
+  save: <K extends keyof Settings>(k: K, v: Settings[K]) => Promise<void>;
+}) {
+  const [official, setOfficial] = useState<{ pattern: string; field: RuleField; cat: SpamCategory }[]>([]);
+  const [disabled, setDisabled] = useState<Set<string>>(new Set());
+  const [custom, setCustom] = useState<CustomRule[]>([]);
+  const [expanded, setExpanded] = useState(false);
+  const [draft, setDraft] = useState<{ pattern: string; field: RuleField; category: SpamCategory }>({
+    pattern: "",
+    field: "any",
+    category: "porn",
+  });
+  const [draftMsg, setDraftMsg] = useState<string | null>(null);
+
+  useEffect(() => {
+    void getStoredList().then((list) => {
+      const rows = (list?.rules ?? []).flatMap((r) => {
+        const field = RULE_FIELD_BY_CODE[String(r[1])];
+        return field
+          ? [{ pattern: r[0], field, cat: categoryFromCode(String(r[2])[1]) }]
+          : [];
+      });
+      setOfficial(rows);
+    });
+    void getDisabledPatterns().then((p) => setDisabled(new Set(p)));
+    void getCustomRules().then(setCustom);
+  }, []);
+
+  const toggleRule = async (pattern: string, enabledNow: boolean) => {
+    const next = new Set(disabled);
+    if (enabledNow) next.add(pattern);
+    else next.delete(pattern);
+    setDisabled(next);
+    await saveDisabledPatterns([...next]);
+  };
+
+  const addCustom = async () => {
+    const pattern = draft.pattern.trim();
+    if (!pattern) return;
+    if (custom.some((r) => r.pattern.toLowerCase() === pattern.toLowerCase() && r.field === draft.field)) {
+      setDraftMsg("已有相同规则");
+      return;
+    }
+    if (custom.length >= MAX_CUSTOM_RULES) {
+      setDraftMsg(`最多 ${MAX_CUSTOM_RULES} 条`);
+      return;
+    }
+    const next = await saveCustomRules([...custom, { pattern, field: draft.field, category: draft.category }]);
+    setCustom(next);
+    setDraft((d) => ({ ...d, pattern: "" }));
+    setDraftMsg(null);
+  };
+
+  const removeCustom = async (idx: number) => {
+    const next = custom.filter((_, i) => i !== idx);
+    setCustom(await saveCustomRules(next));
+  };
+
+  const disabledCount = official.filter((r) => disabled.has(r.pattern)).length;
+  const shown = expanded ? official : [];
+  const selectCls =
+    "rounded-md border border-border-2 bg-transparent px-2 py-1.5 text-[12px] text-fg outline-none transition focus:border-accent";
+
+  return (
+    <section>
+      <SectionH>检测规则</SectionH>
+      <p className="mb-3 text-[12px] leading-relaxed text-fg-3">
+        官方规则由维护者人工审定、随公共名单每 6 小时同步，全部在本机比对；命中后按上方「自动处理策略」执行（仅评论区自动执行）。
+      </p>
+      <Toggle
+        on={st.officialRulesEnabled}
+        onChange={(v) => save("officialRulesEnabled", v)}
+        label="启用官方规则"
+        hint="关闭后同步的官方规则全部不再生效；公共黑名单命中不受影响"
+      />
+      <Toggle
+        on={st.ruleTelemetry}
+        onChange={(v) => save("ruleTelemetry", v)}
+        label="匿名回传官方规则命中"
+        hint="仅上传命中账号的公开标识（用户名 / 数字 ID）、命中的规则与字段，以及该账号自己公开发布的命中处原文片段（≤200 字），供维护者复核后决定是否收录公共名单；不含你的任何账号或浏览信息。自定义规则命中永不上传。"
+      />
+
+      <div className="mt-3 overflow-hidden rounded-lg border border-border">
+        <div className="flex items-center justify-between gap-3 bg-card-hi px-3 py-2.5">
+          <div className="text-[12px] text-fg-2">
+            已同步 <b className="font-mono tabular-nums text-fg">{official.length}</b> 条官方规则
+            {disabledCount > 0 && (
+              <span className="ml-2 text-fg-3">（已停用 {disabledCount} 条）</span>
+            )}
+          </div>
+          {official.length > 0 && (
+            <Btn onClick={() => setExpanded((v) => !v)}>{expanded ? "收起" : "查看规则"}</Btn>
+          )}
+        </div>
+        {expanded && (
+          <ul className="max-h-[320px] divide-y divide-border overflow-y-auto">
+            {shown.map((r) => {
+              const off = disabled.has(r.pattern);
+              return (
+                <li
+                  key={`${r.pattern}|${r.field}`}
+                  className={`flex items-center gap-3 px-3 py-2 ${off ? "opacity-45" : ""}`}
+                >
+                  <code className="min-w-0 flex-1 truncate font-mono text-[12.5px] text-fg">
+                    {r.pattern}
+                  </code>
+                  <span className="flex-none text-[11px] text-fg-3">{RULE_FIELD_ZH[r.field]}</span>
+                  <span className="flex-none">
+                    <CatChip cat={r.cat} />
+                  </span>
+                  <MiniSwitch
+                    on={!off && st.officialRulesEnabled}
+                    onChange={() => st.officialRulesEnabled && toggleRule(r.pattern, !off)}
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+
+      <div className="mt-5">
+        <div className="mb-1.5 text-[12px] font-semibold text-fg">自定义规则</div>
+        <p className="mb-2 text-[12px] leading-relaxed text-fg-3">
+          你自己的关键词规则：仅本机生效、不上传、不参与回传；命中处理方式与官方规则一致，白名单账号永不处理。
+        </p>
+        {custom.length > 0 && (
+          <ul className="mb-2 divide-y divide-border overflow-hidden rounded-lg border border-border">
+            {custom.map((r, i) => (
+              <li key={`${r.pattern}|${r.field}`} className="flex items-center gap-3 px-3 py-2">
+                <code className="min-w-0 flex-1 truncate font-mono text-[12.5px] text-fg">
+                  {r.pattern}
+                </code>
+                <span className="flex-none text-[11px] text-fg-3">{RULE_FIELD_ZH[r.field]}</span>
+                <span className="flex-none">
+                  <CatChip cat={r.category} />
+                </span>
+                <Btn tier="danger" onClick={() => removeCustom(i)}>
+                  删除
+                </Btn>
+              </li>
+            ))}
+          </ul>
+        )}
+        <div className="custom-rule-form flex flex-wrap items-center gap-2">
+          <input
+            value={draft.pattern}
+            onChange={(e) => {
+              setDraft((d) => ({ ...d, pattern: e.target.value }));
+              setDraftMsg(null);
+            }}
+            onKeyDown={(e) => e.key === "Enter" && void addCustom()}
+            placeholder="关键词（包含即命中，不区分大小写）"
+            maxLength={200}
+            className="min-w-[200px] flex-1 rounded-md border border-border-2 bg-transparent px-3 py-1.5 text-[12.5px] outline-none transition focus:border-accent"
+          />
+          <select
+            value={draft.field}
+            onChange={(e) => setDraft((d) => ({ ...d, field: e.target.value as RuleField }))}
+            className={selectCls}
+          >
+            {(Object.keys(RULE_FIELD_ZH) as RuleField[]).map((f) => (
+              <option key={f} value={f}>
+                {RULE_FIELD_ZH[f]}
+              </option>
+            ))}
+          </select>
+          <select
+            value={draft.category}
+            onChange={(e) => setDraft((d) => ({ ...d, category: e.target.value as SpamCategory }))}
+            className={selectCls}
+          >
+            {SPAM_CATEGORIES.map((c) => (
+              <option key={c} value={c}>
+                {CATEGORY_ZH[c]}
+              </option>
+            ))}
+          </select>
+          <Btn onClick={() => void addCustom()} disabled={!draft.pattern.trim()}>
+            添加
+          </Btn>
+        </div>
+        {draftMsg && <p className="mt-1.5 text-[12px] text-danger">{draftMsg}</p>}
+      </div>
+    </section>
+  );
+}
+
 function Settings() {
   const [cleared, setCleared] = useState(false);
   const [clearOpen, setClearOpen] = useState(false);
@@ -1612,7 +1960,7 @@ function Settings() {
               <div className="mb-1.5 text-[12px] font-semibold text-fg">自动收录条目</div>
               <p className="mb-2 text-[12px] leading-relaxed text-fg-3">
                 命中分两级：<b className="text-fg-2">人工确认</b>（维护者复核过的公榜条目，始终按下方各类别的动作完整执行）和
-                <b className="text-fg-2">自动收录</b>（AI/规则自动上榜的公榜条目 + 本地官方规则命中，占大多数）。这里决定自动收录一级能自动处理到什么程度。
+                <b className="text-fg-2">自动收录</b>（AI/规则自动上榜的公榜条目 + 本地官方规则命中，占大多数）。这里决定自动上榜条目能自动处理到什么程度；本地规则命中无论选哪档都封顶为本地隐藏。
               </p>
               <div className="grid grid-cols-1 gap-2">
                 {(
@@ -1620,7 +1968,7 @@ function Settings() {
                     {
                       v: "full",
                       label: "完整执行（默认）",
-                      hint: "自动收录与人工确认同权，按各类别设定的动作执行（包括 X 静音/拉黑）。误判可在「处理记录」恢复并申诉。",
+                      hint: "自动上榜的公榜条目与人工确认同权，按各类别设定的动作执行（包括 X 静音/拉黑）；本地规则命中始终封顶为本地隐藏（尚未上榜、无人复核）。误判可在「处理记录」恢复并申诉。",
                     },
                     {
                       v: "hide",
@@ -1688,6 +2036,8 @@ function Settings() {
             )}
           </section>
         )}
+
+        {st && <DetectionRulesSection st={st} save={save} />}
 
         {st && (
           <section>
@@ -1853,15 +2203,492 @@ function BrandLockup() {
   );
 }
 
-/** 白名单自助申请 — its own nav page so the entry isn't buried in 设置. */
+const WL_SOURCE_ZH: Record<LocalWhitelistEntry["source"], { label: string; hint: string }> = {
+  manual: { label: "手动添加", hint: "你在角标弹层或本页手动加入" },
+  following: { label: "我关注的", hint: "检测到你关注了该账号后自动加入" },
+};
+
+/** 本地白名单 — the user's own never-touch list (highest priority of the
+ *  whole chain). Followed accounts join automatically; anything can be added
+ *  by handle. Local-only storage, never uploaded. */
+function LocalWhitelistSection({
+  st,
+  save,
+}: {
+  st: Settings;
+  save: <K extends keyof Settings>(k: K, v: Settings[K]) => Promise<void>;
+}) {
+  const [rows, setRows] = useState<LocalWhitelistEntry[]>([]);
+  const [draft, setDraft] = useState("");
+  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [q, setQ] = useState("");
+  const reload = () => void listLocalWhitelist().then(setRows);
+  useEffect(() => {
+    reload();
+    const h = (changes: Record<string, chrome.storage.StorageChange>, area: string) => {
+      if (area === "local" && changes[LOCAL_WL_KEY]) reload();
+    };
+    try {
+      chrome.storage.onChanged.addListener(h);
+      return () => chrome.storage.onChanged.removeListener(h);
+    } catch {
+      return undefined;
+    }
+  }, []);
+  const add = async () => {
+    const handle = normalizeWhitelistHandle(draft);
+    if (!handle) {
+      setMsg({ text: "请输入有效的 X 用户名（1–15 位字母、数字或下划线）", ok: false });
+      return;
+    }
+    const added = await addLocalWhitelist({ handle, source: "manual" });
+    setMsg({ text: added ? `已加入 @${handle}` : `@${handle} 已在白名单中`, ok: true });
+    setDraft("");
+    reload();
+  };
+  const remove = async (handle: string) => {
+    await removeLocalWhitelist(handle);
+    reload();
+  };
+  const [excluded, setExcluded] = useState<string[]>([]);
+  const [page, setPage] = useState(0);
+  const PAGE = 50;
+  useEffect(() => {
+    void listExcluded().then(setExcluded);
+  }, [rows]);
+  const following = rows.filter((r) => r.source === "following").length;
+  const needle = q.trim().toLowerCase().replace(/^@+/, "");
+  const shown = needle
+    ? rows.filter(
+        (r) => r.handle.toLowerCase().includes(needle) || (r.displayName ?? "").toLowerCase().includes(needle),
+      )
+    : rows;
+  const pages = Math.max(1, Math.ceil(shown.length / PAGE));
+  const cur = Math.min(page, pages - 1);
+  const slice = shown.slice(cur * PAGE, cur * PAGE + PAGE);
+  return (
+    <section className="mb-10">
+      <SectionH>本地白名单 · 你信任的账号</SectionH>
+      <p className="mb-3 text-[12px] leading-relaxed text-fg-3">
+        针对<b className="text-fg-2">别人的账号</b>（你关注的人、朋友、确认不是垃圾号的账号）：只对本机生效，优先级最高——名单内账号<b className="text-fg-2">不检测、不标记、不自动处理</b>，即使公共名单或关键词规则命中。仅保存在本机，不上传、不参与回传。
+      </p>
+      <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-3 py-2.5">
+        <span>
+          <span className="block text-[13px] font-medium text-fg">自动加入我关注的账号</span>
+          <span className="block text-[12px] leading-5 text-fg-3">
+            刷到你关注的账号（X 自带的关注关系）时自动加入；「移出」过的账号不会再自动加回
+            {following > 0 ? `（已收录 ${following.toLocaleString("zh-CN")} 个）` : ""}
+          </span>
+        </span>
+        <MiniSwitch on={st.followingWhitelist} onChange={(v) => save("followingWhitelist", v)} />
+      </div>
+      <div className="mb-3 flex flex-wrap items-center gap-2">
+        <input
+          value={draft}
+          onChange={(e) => {
+            setDraft(e.target.value);
+            setMsg(null);
+          }}
+          onKeyDown={(e) => e.key === "Enter" && void add()}
+          placeholder="@用户名 — 手动加入白名单"
+          maxLength={20}
+          className="min-w-[200px] flex-1 rounded-md border border-border-2 bg-transparent px-3 py-1.5 text-[12.5px] outline-none transition focus:border-accent"
+        />
+        <Btn tier="primary" onClick={() => void add()} disabled={rows.length >= MAX_LOCAL_WHITELIST}>
+          加入
+        </Btn>
+        {msg && (
+          <span className={`text-[12px] ${msg.ok ? "text-fg-2" : "text-danger"}`}>{msg.text}</span>
+        )}
+      </div>
+      {rows.length === 0 ? (
+        <div className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-[12.5px] text-fg-3">
+          还没有本地白名单账号。在 X 上悬停角标 → 「加入白名单」，或在上方输入用户名。
+        </div>
+      ) : (
+        <>
+          <div className="mb-2 flex flex-wrap items-center justify-between gap-3">
+            <span className="text-[12px] text-fg-3">
+              共 {rows.length.toLocaleString("zh-CN")} 个账号
+              {needle ? ` · 筛选出 ${shown.length.toLocaleString("zh-CN")} 个` : ""}
+            </span>
+            {rows.length > 8 && (
+              <input
+                value={q}
+                onChange={(e) => {
+                  setQ(e.target.value);
+                  setPage(0);
+                }}
+                placeholder="筛选用户名 / 昵称"
+                className="w-44 rounded-md border border-border-2 bg-transparent px-2.5 py-1 text-[12px] outline-none transition focus:border-accent"
+              />
+            )}
+          </div>
+          <div className="overflow-x-auto rounded-lg border border-border">
+            <table className="w-full border-collapse text-[13px]">
+              <thead>
+                <tr>
+                  <th className={th}>账号</th>
+                  <th className={th}>来源</th>
+                  <th className={th}>加入时间</th>
+                  <th className={`${th} text-right`}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {slice.map((r) => (
+                  <tr key={r.handle} className={trHover}>
+                    <td className={td}>
+                      <a
+                        href={`https://x.com/${r.handle}`}
+                        target="_blank"
+                        rel="noopener"
+                        className="inline-flex items-center gap-2.5 text-fg hover:underline"
+                        title={`去 @${r.handle} 的 X 主页`}
+                      >
+                        <Avatar url={r.avatarUrl} name={r.displayName || r.handle} />
+                        <span className="min-w-0">
+                          {r.displayName ? (
+                            <>
+                              <span className="font-medium">{r.displayName}</span>
+                              <span className="ml-1.5 text-fg-3">@{r.handle}</span>
+                            </>
+                          ) : (
+                            <>@{r.handle}</>
+                          )}
+                        </span>
+                      </a>
+                    </td>
+                    <td className={`${td} text-[12px] text-fg-2`} title={WL_SOURCE_ZH[r.source].hint}>
+                      {WL_SOURCE_ZH[r.source].label}
+                    </td>
+                    <td className={`${td} font-mono text-[12px] text-fg-3`}>
+                      {r.addedAt ? relTime(r.addedAt) : "—"}
+                    </td>
+                    <td className={`${td} text-right`}>
+                      <Btn tier="ghost" size="sm" onClick={() => void remove(r.handle)}>
+                        移出
+                      </Btn>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          {pages > 1 && (
+            <div className="mt-2 flex items-center justify-between gap-3 text-[12px] text-fg-3">
+              <span>
+                第 {cur + 1} / {pages} 页 · 每页 {PAGE} 个
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Btn size="sm" onClick={() => setPage(0)} disabled={cur === 0}>
+                  首页
+                </Btn>
+                <Btn size="sm" onClick={() => setPage(cur - 1)} disabled={cur === 0}>
+                  上一页
+                </Btn>
+                <Btn size="sm" onClick={() => setPage(cur + 1)} disabled={cur >= pages - 1}>
+                  下一页
+                </Btn>
+                <Btn size="sm" onClick={() => setPage(pages - 1)} disabled={cur >= pages - 1}>
+                  末页
+                </Btn>
+              </span>
+            </div>
+          )}
+        </>
+      )}
+      {excluded.length > 0 && (
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border px-3 py-2 text-[12px] text-fg-3">
+          <span>
+            已移出 {excluded.length.toLocaleString("zh-CN")} 个关注的账号，不会再自动加回（手动加入可解除）
+          </span>
+          <Btn
+            tier="ghost"
+            size="sm"
+            onClick={() => void clearExcluded().then(() => listExcluded().then(setExcluded))}
+          >
+            全部允许再次自动加入
+          </Btn>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/** 白名单 — the user's local list first (highest priority), then the
+ *  official-whitelist self-service application. */
 function WhitelistPage() {
   const [st, setSt] = useState<Settings | null>(null);
   useEffect(() => {
     getSettings().then(setSt);
   }, []);
+  const save = async <K extends keyof Settings>(k: K, v: Settings[K]) => {
+    await setSetting(k, v);
+    setSt((s) => (s ? { ...s, [k]: v } : s));
+  };
   return (
-    <Page title="保护我的账号" sub="官方白名单 · 名单内账号永不被检测、标记或上榜">
-      <div className="max-w-[680px]">{st && <WhitelistApplySection edgeBase={st.edgeBase} />}</div>
+    <Page title="白名单" sub="两份名单，对象不同：上面保护「你自己」不被别人误列；下面保护「你信任的人」不被本机误处理">
+      <div className="max-w-[760px]">
+        <section className="mb-10">
+          <SectionH>保护我的账号 · 官方白名单</SectionH>
+          <p className="mb-3 text-[12px] leading-relaxed text-fg-3">
+            针对<b className="text-fg-2">你自己的 X 账号</b>：申请进入官方白名单后，所有用户的扩展都不会再检测、标记或收录你。需要 GitHub 登录，由维护者审核。
+          </p>
+          {st && <WhitelistApplySection edgeBase={st.edgeBase} />}
+        </section>
+        {st && <LocalWhitelistSection st={st} save={save} />}
+      </div>
+    </Page>
+  );
+}
+
+const SECTION_ZH: Record<BackupSection, string> = {
+  settings: "设置",
+  localWhitelist: "本地白名单",
+  customRules: "自定义规则",
+  disabledRules: "停用的官方规则",
+  hiddenIds: "已隐藏账号与处理记录",
+  stats: "本地统计",
+  cache: "检测缓存",
+};
+
+function summaryLines(s: BackupSummary): string[] {
+  const out: string[] = [];
+  if (s.settings) out.push("设置");
+  if (s.localWhitelist) out.push(`本地白名单 ${s.localWhitelist.toLocaleString("zh-CN")} 个`);
+  if (s.localWhitelistExcluded) out.push(`不再自动加入白名单 ${s.localWhitelistExcluded.toLocaleString("zh-CN")} 个`);
+  if (s.customRules) out.push(`自定义规则 ${s.customRules} 条`);
+  if (s.disabledRules) out.push(`停用的官方规则 ${s.disabledRules} 条`);
+  if (s.hiddenIds || s.hiddenRecords)
+    out.push(`已隐藏账号 ${s.hiddenIds.toLocaleString("zh-CN")} 个（处理记录 ${s.hiddenRecords.toLocaleString("zh-CN")} 条）`);
+  if (s.stats) out.push("本地统计");
+  if (s.cache) out.push(`检测缓存 ${s.cache.toLocaleString("zh-CN")} 条`);
+  return out;
+}
+
+/** 备份与迁移 — export the user's own local data to a JSON file, import it on
+ *  another browser. Never includes the GitHub login or the synced public
+ *  lists; import validates every field and merges or replaces per section. */
+function BackupPage() {
+  const [includeCache, setIncludeCache] = useState(false);
+  const [includeStats, setIncludeStats] = useState(true);
+  const [exportMsg, setExportMsg] = useState<string | null>(null);
+  const [parsed, setParsed] = useState<{ file: BackupFile; summary: BackupSummary; name: string } | null>(null);
+  const [parseErr, setParseErr] = useState<string | null>(null);
+  const [importErr, setImportErr] = useState<string | null>(null);
+  const [mode, setMode] = useState<ImportMode>("merge");
+  const [skip, setSkip] = useState<Partial<Record<BackupSection, boolean>>>({});
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<BackupSummary | null>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  const doExport = async () => {
+    setBusy(true);
+    setExportMsg(null);
+    try {
+      const file = await exportBackup({ includeCache, includeStats });
+      const text = JSON.stringify(file, null, 2);
+      const blob = new Blob([text], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = backupFileName();
+      a.rel = "noopener";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+      const s = summarize(file);
+      setExportMsg(`已导出 ${a.download}（${(text.length / 1024).toFixed(0)} KB）：${summaryLines(s).join("、") || "无数据"}`);
+    } catch (e) {
+      setExportMsg(`导出失败：${(e as Error).message}`);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onPick = async (f: File | undefined) => {
+    setParsed(null);
+    setParseErr(null);
+    setResult(null);
+    setImportErr(null);
+    setSkip({});
+    if (!f) return;
+    if (f.size > 50 * 1024 * 1024) {
+      setParseErr("文件超过 50 MB，不是本扩展的备份");
+      return;
+    }
+    try {
+      const r = parseBackup(await f.text());
+      if (!r.ok) {
+        setParseErr(r.error);
+        return;
+      }
+      setParsed({ file: r.file, summary: r.summary, name: f.name });
+    } catch (e) {
+      setParseErr(`读取失败：${(e as Error).message}`);
+    }
+  };
+
+  const doImport = async () => {
+    if (!parsed) return;
+    setBusy(true);
+    setResult(null);
+    setImportErr(null);
+    try {
+      const sections: Partial<Record<BackupSection, boolean>> = {};
+      for (const [k, v] of Object.entries(skip)) if (v) sections[k as BackupSection] = false;
+      const applied = await importBackup(parsed.file, mode, sections);
+      setResult(applied);
+    } catch (e) {
+      setImportErr(`导入失败：${(e as Error).message}。请检查本机数据后重试。`);
+    } finally {
+      setBusy(false);
+      setConfirmOpen(false);
+    }
+  };
+
+  const present = parsed ? presentBackupSections(parsed.file) : [];
+
+  return (
+    <Page title="备份" sub="导出 / 导入你在本机的数据 · 换浏览器、换电脑时迁移">
+      <div className="max-w-[760px]">
+        <section className="mb-10">
+          <SectionH>导出备份</SectionH>
+          <p className="mb-3 text-[12px] leading-relaxed text-fg-3">
+            导出一个 JSON 文件，包含：设置、本地白名单、自定义规则与停用的官方规则、已隐藏账号与处理记录、本地统计。
+            <b className="text-fg-2">不包含</b> GitHub 登录信息（换浏览器后需重新登录）、服务地址和公开名单（会自动重新同步）。文件含你的白名单、隐藏偏好和处理记录，请妥善保管。
+          </p>
+          <div className="mb-3 space-y-2">
+            <Toggle on={includeStats} onChange={setIncludeStats} label="包含本地统计" hint="扫描 / 命中 / 处理计数" />
+            <Toggle
+              on={includeCache}
+              onChange={setIncludeCache}
+              label="包含检测缓存"
+              hint="账号级判定缓存，换机后可少调用在线检测；文件会明显变大，且旧判定会一并带走"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Btn tier="primary" onClick={() => void doExport()} disabled={busy}>
+              导出备份文件
+            </Btn>
+            {exportMsg && <span className="text-[12px] text-fg-2">{exportMsg}</span>}
+          </div>
+        </section>
+
+        <section>
+          <SectionH>导入备份</SectionH>
+          <p className="mb-3 text-[12px] leading-relaxed text-fg-3">
+            选择之前导出的文件，先看到内容摘要，再选择合并或覆盖。导入只写入上面列出的几类数据，不会碰登录信息。
+          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <input
+              ref={fileInput}
+              type="file"
+              accept="application/json,.json"
+              className="hidden"
+              onChange={(e) => void onPick(e.target.files?.[0])}
+            />
+            <Btn onClick={() => fileInput.current?.click()} disabled={busy}>
+              选择备份文件
+            </Btn>
+            {parsed && <span className="text-[12px] text-fg-2">{parsed.name}</span>}
+            {parseErr && <span className="text-[12px] text-danger">{parseErr}</span>}
+          </div>
+
+          {parsed && (
+            <div className="mt-4 rounded-lg border border-border bg-card p-4">
+              <div className="mb-1 text-[13px] font-medium text-fg">备份内容</div>
+              <div className="mb-3 text-[12px] text-fg-3">
+                导出于 {parsed.file.exportedAt ? new Date(parsed.file.exportedAt).toLocaleString("zh-CN") : "未知时间"}
+                {parsed.file.extensionVersion ? ` · 扩展 v${parsed.file.extensionVersion}` : ""}
+              </div>
+              <ul className="mb-4 space-y-1.5">
+                {present.map((k) => {
+                  const v = parsed.summary[k];
+                  return (
+                    <li key={k} className="text-[13px]">
+                      <label className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={!skip[k]}
+                        onChange={(e) => setSkip((s) => ({ ...s, [k]: !e.target.checked }))}
+                        className="h-4 w-4 accent-fg"
+                      />
+                      <span className="text-fg">{SECTION_ZH[k]}</span>
+                      {typeof v === "number" && <span className="text-fg-3">{v.toLocaleString("zh-CN")}</span>}
+                      {k === "localWhitelist" && parsed.summary.localWhitelistExcluded > 0 && <span className="text-fg-3">（不再自动加入 {parsed.summary.localWhitelistExcluded} 个）</span>}
+                      </label>
+                    </li>
+                  );
+                })}
+                {present.length === 0 && <li className="text-[12px] text-fg-3">文件里没有可导入的数据</li>}
+              </ul>
+              <div className="mb-4 grid gap-2 sm:grid-cols-2">
+                {(
+                  [
+                    { v: "merge", label: "合并（推荐）", hint: "名单/规则/隐藏账号取并集，统计相加，设置以备份为准；本机已有的数据保留" },
+                    { v: "replace", label: "覆盖", hint: "勾选的每一类以备份为准，本机同类数据被替换；未勾选的类别不动" },
+                  ] as const
+                ).map((o) => (
+                  <button
+                    type="button"
+                    key={o.v}
+                    onClick={() => setMode(o.v)}
+                    className={`flex items-start gap-2.5 rounded-lg border px-3 py-2.5 text-left transition ${
+                      mode === o.v ? "border-fg bg-card-hi" : "border-border hover:border-fg-3"
+                    }`}
+                  >
+                    <span className={`mt-1 flex h-3.5 w-3.5 flex-none items-center justify-center rounded-full border ${mode === o.v ? "border-fg" : "border-border-2"}`}>
+                      {mode === o.v && <span className="h-2 w-2 rounded-full bg-fg" />}
+                    </span>
+                    <span>
+                      <span className="text-[13px] font-medium text-fg">{o.label}</span>
+                      <span className="block text-[12px] leading-5 text-fg-3">{o.hint}</span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <Btn tier={mode === "replace" ? "danger" : "primary"} onClick={() => setConfirmOpen(true)} disabled={busy || !present.some((k) => !skip[k])}>
+                  {mode === "replace" ? "覆盖导入" : "合并导入"}
+                </Btn>
+                {result && (
+                  <span className="text-[12px] text-ok">
+                    已导入：{summaryLines(result).join("、") || "没有新增内容"}
+                  </span>
+                )}
+                {importErr && <span role="alert" className="text-[12px] text-danger">{importErr}</span>}
+              </div>
+            </div>
+          )}
+        </section>
+
+        <ConfirmDialog
+          open={confirmOpen}
+          title={mode === "replace" ? "覆盖导入" : "合并导入"}
+          body={
+            <>
+              将把 {parsed?.name ?? "备份"} 中的：
+              <ul className="my-2 list-inside list-disc text-fg-3">
+                {present.filter((k) => !skip[k]).map((k) => (
+                  <li key={k}>{SECTION_ZH[k]}</li>
+                ))}
+              </ul>
+              {mode === "replace" ? (
+                <b className="text-fg">覆盖本机同类数据（不可恢复，建议先导出一份当前备份）。</b>
+              ) : (
+                <>与本机数据合并。已隐藏的账号会在 X 上立即生效。</>
+              )}
+            </>
+          }
+          okLabel={mode === "replace" ? "确认覆盖" : "确认合并"}
+          variant={mode === "replace" ? "danger" : "primary"}
+          onCancel={() => setConfirmOpen(false)}
+          onConfirm={() => void doImport()}
+        />
+      </div>
     </Page>
   );
 }
@@ -1871,7 +2698,8 @@ const TABS = [
   ["blocklist", "处理记录", Blocklist],
   ["cache", "检测缓存", Cache],
   ["settings", "设置", Settings],
-  ["whitelist", "保护我的账号", WhitelistPage],
+  ["whitelist", "白名单", WhitelistPage],
+  ["backup", "备份", BackupPage],
   ["about", "关于", About],
 ] as const;
 type TabId = (typeof TABS)[number][0];
