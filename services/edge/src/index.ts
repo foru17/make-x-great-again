@@ -5,7 +5,7 @@ import { type Context, Hono } from "hono";
 import { cors } from "hono/cors";
 import { z } from "zod";
 import { ANALYTICS_CSP, googleAnalyticsHead } from "./analytics";
-import { isArtifactIdentityValid } from "./artifact-identity";
+import { artifactVersion, isArtifactIdentityValid } from "./artifact-identity";
 import { BRAND } from "./brand";
 import { adminHtml } from "./pages/admin";
 import { landingHtml } from "./pages/landing";
@@ -6095,37 +6095,6 @@ async function publishArtifacts(env: Bindings): Promise<void> {
     }
   }
 
-  // The version must change whenever the published set changes. It used to be
-  // the first 16 base64 chars of the bloom, but the bloom is saturated at this
-  // size so that prefix is constant ("-_____f_________") and the version
-  // degenerated to the account count alone. A whitelist that drops the count
-  // back to a value published earlier then collided with that old version:
-  // the ledger's ON CONFLICT keeps the old published_at, so /v1/list/meta kept
-  // advertising the previous (larger) version and the whitelisted accounts
-  // stayed in the served artifacts. Hash the full identity/label set instead.
-  // Rows are sorted first because published_at ties come back in no fixed
-  // order, and a version that churns every tick would re-upload ~23 MB of
-  // artifacts each run. Hex keeps keys single URL path segments (the
-  // artifacts route rejects '/').
-  const identityRows = accounts
-    .map((a) =>
-      JSON.stringify([a.x_user_id ?? "", a.handle, a.verdict_label, a.category, a.published_tier]),
-    )
-    .sort();
-  const identityDigest = await crypto.subtle.digest(
-    "SHA-256",
-    new TextEncoder().encode(identityRows.join("\n")),
-  );
-  const versionPrefix = [...new Uint8Array(identityDigest).slice(0, 8)]
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-  const version = `v${versionPrefix}-${accounts.length}`;
-  const now = Date.now();
-  const bloomKey = `bloom-${version}.b64`;
-  const metaKey = `meta-${version}.json`;
-  const jsonKey = `shards-${version}.json`;
-  const liteKey = `lite-${version}.json`;
-
   // Lite artifact (schema v2): one compact row per account —
   //   [x_user_id ("" when handle-only), handle, "<label><category><tier>"]
   // where label is p=porn_bot / s=spam, category is the 1-char code from
@@ -6163,6 +6132,22 @@ async function publishArtifacts(env: Bindings): Promise<void> {
       (r.verdict_label === "porn_bot" ? "p" : "s") +
         (CATEGORY_CODE[(categoryForRule(r) ?? "other") as SpamCategory] ?? "o"),
     ]);
+
+  // The version must change whenever the published set changes. It used to be
+  // the first 16 base64 chars of the bloom, but the bloom is saturated at this
+  // size so that prefix is constant ("-_____f_________") and the version
+  // degenerated to the account count alone. A whitelist that drops the count
+  // back to a value published earlier then collided with that old version:
+  // the ledger's ON CONFLICT keeps the old published_at, so /v1/list/meta kept
+  // advertising the previous (larger) version and the whitelisted accounts
+  // stayed in the served artifacts. Hash the full identity/label set plus the
+  // shipped keyword rules instead.
+  const version = await artifactVersion(accounts, liteRules);
+  const now = Date.now();
+  const bloomKey = `bloom-${version}.b64`;
+  const metaKey = `meta-${version}.json`;
+  const jsonKey = `shards-${version}.json`;
+  const liteKey = `lite-${version}.json`;
 
   const liteArtifact = {
     schema: 2,
@@ -6232,11 +6217,18 @@ async function publishArtifacts(env: Bindings): Promise<void> {
   // confirmed set (and thus the version key) is unchanged, without bumping
   // published_at (so "latest publication" ordering stays stable) or re-writing
   // R2 objects. That way /v1/list/meta's pending never goes stale between
-  // confirmed-set changes.
+  // confirmed-set changes. The one exception: if the set returns to a state
+  // published earlier (not the current latest row), bump published_at so
+  // /v1/list/meta advertises it again instead of the newer, now-wrong row.
   await env.DB.prepare(
     `INSERT INTO publications (version, bloom_key, json_key, meta_key, lite_key, count, pending_count, published_at)
      VALUES (?,?,?,?,?,?,?,?)
-     ON CONFLICT(version) DO UPDATE SET count=excluded.count, pending_count=excluded.pending_count, lite_key=excluded.lite_key`,
+     ON CONFLICT(version) DO UPDATE SET count=excluded.count, pending_count=excluded.pending_count, lite_key=excluded.lite_key,
+       published_at=CASE
+         WHEN publications.version = (SELECT version FROM publications ORDER BY published_at DESC LIMIT 1)
+         THEN publications.published_at
+         ELSE excluded.published_at
+       END`,
   )
     .bind(version, bloomKey, jsonKey, metaKey, liteKey, accounts.length, pendingCount, now)
     .run();
