@@ -1,8 +1,18 @@
 {
   "schema": 1,
-  "generatedAt": 1790100127142,
-  "count": 2476,
+  "generatedAt": 1790507929748,
+  "count": 2478,
   "list": [
+    {
+      "handle": "xsbebi",
+      "x_user_id": "2099119416122466304",
+      "last_scored": 1790507813123
+    },
+    {
+      "handle": "little_morichan",
+      "x_user_id": "1636035343370838017",
+      "last_scored": 1790507804714
+    },
     {
       "handle": "masatusai",
       "x_user_id": null,
