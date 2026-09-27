@@ -1,0 +1,2806 @@
+{
+  "schema": "mxga-appeal-audit/consolidated-1",
+  "description": "GitHub 误报/申诉自动复核（Multica autopilot 30ea6a26）的逐轮审计记录。2026-09-27 把此前分散在 20 个未合并 PR 与 Multica 本地提交里、各自新建本文件的记录合并于此。之后每一轮往 runs 末尾追加一个 {source, document}。",
+  "runs": [
+    {
+      "source": "PR #385 (zuo-6-review-open-issues)",
+      "document": {
+        "goal": "GitHub 误报 Issue 自动复核",
+        "run_date": "2026-09-08",
+        "repository": "foru17/make-x-great-again",
+        "scope": "14 个仍为 open 且已有公开复核记录的单账号申诉 Issue",
+        "production_mutation": {
+          "attempted": true,
+          "admin_api_validation": "GET /v1/admin/stats 200；逐账号 POST /v1/admin/whitelist 14/14 返回 200",
+          "public_check_validation": "14 个当前 X 结构化 UID 批量 /v1/check 均无 hits",
+          "whitelist_validation": "生产 /v1/whitelist?since=... 返回 14/14 个目标 UID，状态均为 whitelisted",
+          "review_log_validation": "14 条 whitelist_add 审计记录，ID 747855–747868",
+          "rowid_validation": "生产 admin list 接口不返回 SQLite rowid；所有 rowid 保留 null，未猜测或伪造",
+          "list_meta_validation": {
+            "version": "v-_____f_______f_-172795",
+            "count": 172795,
+            "pending": 9270,
+            "artifact_check": "当前 lite/shards/meta artifact 可读取，14 个目标 UID/handle 均未出现；该版本生成时间早于本轮写入，名单本身此前也无这 14 个目标的公榜命中"
+          },
+          "stats_before": {
+            "blacklist": 172797,
+            "whitelist": 2377,
+            "queue": 9266
+          },
+          "stats_after": {
+            "blacklist": 172797,
+            "whitelist": 2391,
+            "queue": 9262
+          }
+        },
+        "issues": [
+          {
+            "github_issue": 384,
+            "handle": "xiaoxue2026",
+            "decision": "whitelist_add",
+            "result": "completed",
+            "x_user_id": "2075167914802696192",
+            "rowid": null,
+            "audit_id": 747855,
+            "github_comment_id": 5573669757,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/384#issuecomment-5573669757",
+            "github_state": "closed",
+            "verification": "X 主页为日常/社会话题表达；唯一暧昧句不足以证明色情广告 bot。已写入 whitelisted；/v1/check 无命中。"
+          },
+          {
+            "github_issue": 383,
+            "handle": "readjoyscom1",
+            "decision": "whitelist_add",
+            "result": "completed",
+            "x_user_id": "1287029391998902273",
+            "rowid": null,
+            "audit_id": 747856,
+            "github_comment_id": 5573670100,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/383#issuecomment-5573670100",
+            "github_state": "closed",
+            "verification": "X 主页明确为书籍作者；D1 待审证据是重复自荐书籍，属于普通作者自我推广，不是范围内 bot。原待审行 UID 为空，已补齐当前 UID；/v1/check 无命中。"
+          },
+          {
+            "github_issue": 382,
+            "handle": "fhwofjow51260",
+            "decision": "whitelist_add",
+            "result": "completed",
+            "x_user_id": "1880582182466658304",
+            "rowid": null,
+            "audit_id": 747857,
+            "github_comment_id": 5573670380,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/382#issuecomment-5573670380",
+            "github_state": "closed",
+            "verification": "X 主页为知识分享账号，约 12.8 万粉；未见可重复商业垃圾或色情广告 bot 模式。已写入 whitelisted；/v1/check 无命中。"
+          },
+          {
+            "github_issue": 381,
+            "handle": "sh11668",
+            "decision": "whitelist_add",
+            "result": "completed",
+            "x_user_id": "2007704695486435328",
+            "rowid": null,
+            "audit_id": 747858,
+            "github_comment_id": 5573670634,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/381#issuecomment-5573670634",
+            "github_state": "closed",
+            "verification": "X 主页为编程、生活和个人表达；未见范围内 bot 证据。已写入 whitelisted；/v1/check 无命中。"
+          },
+          {
+            "github_issue": 380,
+            "handle": "ryang_luckin",
+            "decision": "whitelist_add",
+            "result": "completed",
+            "x_user_id": "2094277943338176512",
+            "rowid": null,
+            "audit_id": 747859,
+            "github_comment_id": 5573670926,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/380#issuecomment-5573670926",
+            "github_state": "closed",
+            "verification": "X 主页为认知、情感、投资和 AI 主题创作者；未见可重复 bot 模式。已写入 whitelisted；/v1/check 无命中。"
+          },
+          {
+            "github_issue": 379,
+            "handle": "lhy9569591",
+            "decision": "whitelist_add",
+            "result": "completed",
+            "x_user_id": "2047196689736572929",
+            "rowid": null,
+            "audit_id": 747860,
+            "github_comment_id": 5573671193,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/379#issuecomment-5573671193",
+            "github_state": "closed",
+            "verification": "X 主页为探索世界、独立思考和生活记录；未见商业垃圾或色情广告 bot 证据。已写入 whitelisted；/v1/check 无命中。"
+          },
+          {
+            "github_issue": 378,
+            "handle": "alan_blake",
+            "decision": "whitelist_add",
+            "result": "completed",
+            "x_user_id": "28148677",
+            "submitted_x_user_id": "1992237116516868096",
+            "rowid": null,
+            "audit_id": 747861,
+            "github_comment_id": 5573671488,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/378#issuecomment-5573671488",
+            "github_state": "closed",
+            "verification": "X 主页为旅行、历史和开发者账号；Issue UID 与当前结构化 UID 不一致，按当前主页 UID 写入 whitelisted；/v1/check 无命中。"
+          },
+          {
+            "github_issue": 377,
+            "handle": "StrawMono_001",
+            "decision": "whitelist_add",
+            "result": "completed",
+            "x_user_id": "2095883239982534657",
+            "rowid": null,
+            "audit_id": 747862,
+            "github_comment_id": 5573671757,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/377#issuecomment-5573671757",
+            "github_state": "closed",
+            "verification": "X 主页包含身份表达、倾诉入口和群组链接；D1 待审证据的‘求互转/重复模板’不足以证明商业垃圾或色情广告 bot。原待审行 UID 为空，已补齐当前 UID；/v1/check 无命中。"
+          },
+          {
+            "github_issue": 376,
+            "handle": "keke202106",
+            "decision": "whitelist_add",
+            "result": "completed",
+            "x_user_id": "1954072516668145664",
+            "previous_review_x_user_id": "3005075238",
+            "rowid": null,
+            "audit_id": 747863,
+            "github_comment_id": 5573672061,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/376#issuecomment-5573672061",
+            "github_state": "closed",
+            "verification": "X 主页为 AI Builder/出海创作；当前结构化 UID 已按主页修正，正常创作者推广不构成 bot。已写入 whitelisted；/v1/check 无命中。"
+          },
+          {
+            "github_issue": 375,
+            "handle": "AnaMiles245714",
+            "decision": "whitelist_add",
+            "result": "completed",
+            "x_user_id": "1889944908011806722",
+            "submitted_x_user_id": "1795214639048843264",
+            "rowid": null,
+            "audit_id": 747864,
+            "github_comment_id": 5573672405,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/375#issuecomment-5573672405",
+            "github_state": "closed",
+            "verification": "X 主页为加密行业创作者，含 Telegram 联系方式；行业推广本身不足以证明商业垃圾或色情广告 bot。按当前主页 UID 写入 whitelisted；/v1/check 无命中。"
+          },
+          {
+            "github_issue": 374,
+            "handle": "EmberCN",
+            "decision": "whitelist_add",
+            "result": "completed",
+            "x_user_id": "1499656309565657089",
+            "rowid": null,
+            "audit_id": 747865,
+            "github_comment_id": 5573672698,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/374#issuecomment-5573672698",
+            "github_state": "closed",
+            "verification": "X 主页为链上数据/加密分析，含 OKX 返现链接；这是行业创作者推广，未见可重复 bot 模式且不属于色情广告。已写入 whitelisted；/v1/check 无命中。"
+          },
+          {
+            "github_issue": 370,
+            "handle": "btcmos",
+            "decision": "whitelist_add",
+            "result": "completed",
+            "x_user_id": "1888127766488625152",
+            "previous_review_x_user_id": "1865722200185307136",
+            "rowid": null,
+            "audit_id": 747866,
+            "github_comment_id": 5573672953,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/370#issuecomment-5573672953",
+            "github_state": "closed",
+            "verification": "X 主页为美股、BTC、加密和 AI 资讯；当前结构化 UID 已按主页修正，未见范围内 bot 证据。已写入 whitelisted；/v1/check 无命中。"
+          },
+          {
+            "github_issue": 368,
+            "handle": "LuBtc888",
+            "decision": "whitelist_add",
+            "result": "completed",
+            "x_user_id": "1400390484967690241",
+            "rowid": null,
+            "audit_id": 747867,
+            "github_comment_id": 5573673203,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/368#issuecomment-5573673203",
+            "github_state": "closed",
+            "verification": "X 主页为加密投研、美股、交易和 AI 科技；正常财经内容不构成商业垃圾或色情广告 bot。已写入 whitelisted；/v1/check 无命中。"
+          },
+          {
+            "github_issue": 366,
+            "handle": "Flowers_hurt",
+            "decision": "whitelist_add",
+            "result": "completed",
+            "x_user_id": "1048105054689873920",
+            "rowid": null,
+            "audit_id": 747868,
+            "github_comment_id": 5573673488,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/366#issuecomment-5573673488",
+            "github_state": "closed",
+            "verification": "X 主页为 AI 工具、科技和日常实用内容；未见范围内 bot 证据。已写入 whitelisted；/v1/check 无命中。"
+          }
+        ]
+      }
+    },
+    {
+      "source": "PR #406 (ZUO-13-review-appeal-404)",
+      "document": {
+        "run_at": "2026-09-13T12:42:47+08:00",
+        "scope": "open appeal issue #404 (single-account issue; no other open appeal issues found)",
+        "source": {
+          "github_repo": "https://github.com/foru17/make-x-great-again",
+          "production_api": "https://x.zuoluo.tv",
+          "governance": "GOVERNANCE.md"
+        },
+        "verification": {
+          "x_profile": "X profile resolved @xjcjchdbbd to UID 1583711402006413313; active profile iekwj, joined 2022-10, 6289 posts, 233 followers, 2389 following, empty bio.",
+          "pre_decision": "No hit in /v1/check, admin blacklist, admin queue, admin whitelist, latest lite artifact, or data-mirror snapshot.",
+          "post_decision": "Admin whitelist returned rowid 887923 and status whitelisted; /v1/whitelist returned the UID; /v1/check returned no hit; current lite and shards artifact version v-_____f_______f_-174416 contain no matching UID or handle.",
+          "artifact_version": "v-_____f_______f_-174416",
+          "artifact_generated_at": 1789273258115,
+          "rowid_note": "rowid was recovered from the authenticated admin whitelist pagination cursor; it was not guessed."
+        },
+        "records": [
+          {
+            "issue": 404,
+            "handle": "xjcjchdbbd",
+            "decision": "whitelisted",
+            "uid": "1583711402006413313",
+            "rowid": 887923,
+            "audit_id": 757913,
+            "audit_action": "whitelist_add",
+            "github_comment_id": 5651194567,
+            "result": "completed",
+            "evidence": "The current public X profile resolves the submitted UID exactly and shows an active established account with an empty bio; no repeatable commercial spam or porn-advertising-bot evidence was found. Evidence is insufficient for a blacklist under the project scope.",
+            "sources": [
+              "https://x.com/xjcjchdbbd"
+            ],
+            "check_hit": false,
+            "whitelist_present": true,
+            "artifact_present": false
+          }
+        ]
+      }
+    },
+    {
+      "source": "PR #408 (ZUO-14-review-appeal-405)",
+      "document": {
+        "run_at": "2026-09-13T12:53:49+08:00",
+        "scope": "open appeal issue #405 (single-account issue; no other open GitHub issues found in the sweep)",
+        "source": {
+          "github_repo": "https://github.com/foru17/make-x-great-again",
+          "github_issue": "https://github.com/foru17/make-x-great-again/issues/405",
+          "production_api": "https://x.zuoluo.tv",
+          "governance": "GOVERNANCE.md"
+        },
+        "verification": {
+          "x_profile": "The live X profile resolves @EricWongly to UID 1675836276648361985; it is available, shows Eric Wong, joined 2023-07-03, reports 45 posts, 6 followers, 57 following, and has an empty bio. The logged-out profile view did not expose timeline entries. No repeatable commercial spam or porn-advertising-bot evidence was found.",
+          "pre_decision": "No matching account was found in /v1/check, /v1/admin/blacklist, /v1/admin/queue, /v1/admin/whitelist, or the latest data-mirror blacklist and whitelist snapshots.",
+          "post_decision": "Because no pre-existing blacklist or pending row was found, the authenticated admin whitelist created a preventive registration for normalized handle ericwongly with rowid 959041 and status whitelisted; review_log contains audit ID 757916 with action whitelist_add. /v1/whitelist returned the UID, /v1/check returned no hit, and the current lite/shards artifacts contain neither the UID nor the handle.",
+          "artifact_version": "v-_____f_______f_-174429",
+          "artifact_generated_at": 1789275058024,
+          "artifact_count": 174429,
+          "rowid_note": "The rowid was recovered by decoding the authenticated admin whitelist endpoint's limit=1 nextBefore cursor [1789275084344,1789275084344,959041]; it was not guessed.",
+          "external_actions": {
+            "github_comment_edited": [
+              5651240588
+            ],
+            "github_comment_deleted": [
+              {
+                "id": 5651273230,
+                "result": "already_absent_at_verification"
+              }
+            ],
+            "github_issue_closed": [
+              {
+                "issue": 405,
+                "state": "closed",
+                "reason": "completed"
+              }
+            ]
+          }
+        },
+        "records": [
+          {
+            "issue": 405,
+            "handle": "EricWongly",
+            "decision": "whitelisted",
+            "was_listed_before": false,
+            "uid": "1675836276648361985",
+            "rowid": 959041,
+            "audit_id": 757916,
+            "audit_action": "whitelist_add",
+            "github_comment_id": 5651240588,
+            "result": "completed",
+            "evidence": "The account was not listed before review; the current public X profile resolves the submitted UID exactly and shows no repeatable commercial spam or porn-advertising-bot evidence. It was registered preventively on the whitelist.",
+            "sources": [
+              "https://x.com/EricWongly"
+            ],
+            "check_hit": false,
+            "whitelist_present": true,
+            "artifact_present": false
+          }
+        ]
+      }
+    },
+    {
+      "source": "PR #411 (ZUO-17-review-appeals-409-410)",
+      "document": {
+        "run_at": "2026-09-13T13:51:11+08:00",
+        "scope": "open appeal issues #409 and #410 at run start (2 single-account issues; this run completed the production writes and GitHub replies through the maintainer flow before final verification)",
+        "source": {
+          "github_repo": "https://github.com/foru17/make-x-great-again",
+          "production_api": "https://x.zuoluo.tv",
+          "governance": "GOVERNANCE.md"
+        },
+        "verification": {
+          "x_profiles": "The current public X pages resolve @Zaykee7nom to UID 2091266160046268416 (梨子🍐, joined August 2026, 442 posts, 339 followers, following 30; personal-fragments bio) and @yuyu31607952729 to UID 1711022864105693185 (yu, joined October 2023, 775 posts, 66 followers, following 6; personal-expression bio). Both submitted UIDs match the current structured profile UIDs.",
+          "pre_decision": "For #409, the prior D1 row was human_confirmed/porn_bot at confidence 0.92 with 0 reporters. Its five original reasons are preserved in records[0].prior_reasons and were rebutted individually: the prior bio phrase `私信跟我玩` is no longer present and the current bio points to an NGL anonymous-question link, not commercial solicitation; the stored explicit text is one personal-sexual experience rather than an advertisement; the current profile and sampled posts do not show a repeatable DM-bait campaign; the prior 18d/352-post snapshot is stale because the current profile shows 442 posts, 339 followers, and 30 following, and activity/follower counts alone do not establish bot behavior; and no current commercial offer or porn-advertising service was found, so adult self-expression alone is out of scope. For #410, the lookup found no current blacklist or pending row and its public profile/posts likewise supplied no in-scope evidence.",
+          "post_decision": "This run's authenticated maintainer flow changed both accounts to whitelisted and closed GitHub issues #409 and #410 as completed. A final public whitelist query (since=1789000000000) returned both exact UIDs; /v1/check?ids=2091266160046268416,1711022864105693185 returned hits={}.",
+          "whitelist_rows": [
+            {
+              "uid": "2091266160046268416",
+              "handle": "zaykee7nom",
+              "last_scored": 1789277998185
+            },
+            {
+              "uid": "1711022864105693185",
+              "handle": "yuyu31607952729",
+              "last_scored": 1789278509301
+            }
+          ],
+          "artifact_version": "v-_____f_______f_-174582",
+          "artifact_generated_at": 1789279301224,
+          "artifact_count": 174582,
+          "artifact_check": "The latest lite and shards artifacts contain neither target UID nor handle.",
+          "rowid_note": "Rowids came from the authenticated maintainer admin lookups recorded in the GitHub audit replies; they were not guessed.",
+          "concurrency_note": "This run performed the production writes and GitHub replies through the maintainer flow before final reads; no duplicate whitelist writes or comments were issued."
+        },
+        "records": [
+          {
+            "issue": 409,
+            "handle": "Zaykee7nom",
+            "decision": "whitelisted",
+            "uid": "2091266160046268416",
+            "rowid": 1017899,
+            "audit_id": 758091,
+            "audit_action": "whitelist_add",
+            "github_comment_id": 5651455908,
+            "correction_comment_id": 5651544981,
+            "github_state": "closed",
+            "result": "completed",
+            "prior_reasons": [
+              "sexual solicitation in bio (私信跟我玩)",
+              "highly explicit personal sex story as triggeringComment",
+              "bait pattern to drive DMs / private interaction",
+              "new account (18d) with high post volume (352) and low followers",
+              "content is off-topic self-promotion of sexual availability"
+            ],
+            "prior_reason_review": [
+              {
+                "prior_reason": "sexual solicitation in bio (私信跟我玩)",
+                "current_finding": "The prior phrase is no longer present. The current bio is personal-fragments text with an NGL anonymous-question link, not commercial solicitation.",
+                "supports_in_scope_violation": false
+              },
+              {
+                "prior_reason": "highly explicit personal sex story as triggeringComment",
+                "current_finding": "The stored text is one personal-sexual experience narrative. It is adult expression, not an advertisement or service offer.",
+                "supports_in_scope_violation": false
+              },
+              {
+                "prior_reason": "bait pattern to drive DMs / private interaction",
+                "current_finding": "The current profile and sampled recent posts do not show a repeatable DM-bait campaign or commercial funnel.",
+                "supports_in_scope_violation": false
+              },
+              {
+                "prior_reason": "new account (18d) with high post volume (352) and low followers",
+                "current_finding": "The prior snapshot is stale. The current profile shows joined August 2026, 442 posts, 339 followers, and 30 following; activity and follower counts alone do not establish bot behavior.",
+                "supports_in_scope_violation": false
+              },
+              {
+                "prior_reason": "content is off-topic self-promotion of sexual availability",
+                "current_finding": "No current commercial offer or porn-advertising service was found. Personal adult expression without commercial promotion is outside MXGA scope.",
+                "supports_in_scope_violation": false
+              }
+            ],
+            "evidence": "逐条复核原始 D1 判据：① `私信跟我玩` 的旧简介文案现已不存在，当前简介是个人碎碎念并带 NGL 匿名提问链接，不是商业导流；②触发文本是单条个人性经历叙述，不是广告或服务报价；③当前主页与抽查的近期帖子未见可重复的 DM 诱导或商业转化模式；④`18d/352 帖、低关注`是过期快照，当前为 2026 年 8 月加入、442 帖、339 位关注者、关注 30 人，活跃度和关注数本身不能证明 bot；⑤未发现当前商业性邀约或色情广告服务，成人自我表达不单独构成违规。结论：原始五条判据均不足以在当前证据下证明范围内的商业垃圾或色情广告 bot。",
+            "sources": [
+              "https://x.com/Zaykee7nom",
+              "https://x.com/Zaykee7nom/status/2098983610141519953",
+              "https://x.com/Zaykee7nom/status/2098977612769136947"
+            ],
+            "check_hit": false,
+            "whitelist_present": true,
+            "artifact_present": false
+          },
+          {
+            "issue": 410,
+            "handle": "yuyu31607952729",
+            "decision": "whitelisted",
+            "uid": "1711022864105693185",
+            "rowid": 934566,
+            "audit_id": 758095,
+            "audit_action": "whitelist_add",
+            "github_comment_id": 5651479294,
+            "github_state": "closed",
+            "result": "completed",
+            "evidence": "The current profile and available recent posts show ordinary personal expression, including seasonal thoughts, a reaction to a horror-game stream, and daily conversation. No repeatable commercial solicitation or porn-advertising-bot evidence was found.",
+            "sources": [
+              "https://x.com/yuyu31607952729",
+              "https://x.com/yuyu31607952729/status/2098436998902288754",
+              "https://x.com/yuyu31607952729/status/2061170013386543605",
+              "https://x.com/yuyu31607952729/status/1998343904979009572"
+            ],
+            "check_hit": false,
+            "whitelist_present": true,
+            "artifact_present": false
+          }
+        ]
+      }
+    },
+    {
+      "source": "PR #414 (ZUO-18-review-appeal-412)",
+      "document": {
+        "run_at": "2026-09-13T14:08:55+08:00",
+        "scope": "open appeal issue #412 at run start (1 single-account issue; no other open GitHub appeal issues found)",
+        "source": {
+          "github_repo": "https://github.com/foru17/make-x-great-again",
+          "production_api": "https://x.zuoluo.tv",
+          "governance": "GOVERNANCE.md"
+        },
+        "verification": {
+          "x_profile": "The current public X profile resolves @aeri2728 to UID 2042877803901657088, matching the submitted UID. It shows visang, Republic of Korea, joined April 2026, 265 statuses, 32 followers, 6 following, an empty bio, and recent activity. A sample of recent public replies and reposts contained ordinary political/social discussion and no repeatable commercial solicitation or porn-advertising-bot evidence.",
+          "pre_decision": "Before the write, /v1/check returned hits={} and authenticated production searches found no matching row in the admin blacklist, pending queue, whitelist, or any agent staging bucket. The account therefore had no current production row to remove from a public list, but the appeal was still registered as a preventive whitelist override.",
+          "post_decision": "The authenticated maintainer whitelist flow created a whitelisted row and review_log entry, the GitHub appeal comment was posted, and issue #412 was closed as completed. /v1/whitelist returned the exact UID; /v1/check still returned hits={}; authenticated blacklist and pending-queue searches remained empty.",
+          "artifact_version": "v-_____f_______f_-174582",
+          "artifact_generated_at": 1789279301224,
+          "artifact_count": 174582,
+          "artifact_pending": 4588,
+          "artifact_check": "The latest lite, shards, and meta artifacts were fetched successfully and contain neither target UID nor handle. The bloom artifact was also fetched successfully.",
+          "rowid_note": "rowid 1072042 was recovered from the authenticated admin whitelist pagination cursor [last_scored, last_scored, rowid]; it was not guessed.",
+          "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/412#issuecomment-5651564581"
+        },
+        "records": [
+          {
+            "issue": 412,
+            "handle": "aeri2728",
+            "decision": "whitelisted",
+            "uid": "2042877803901657088",
+            "rowid": 1072042,
+            "audit_id": 758097,
+            "audit_action": "whitelist_add",
+            "github_comment_id": 5651564581,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/412#issuecomment-5651564581",
+            "github_state": "closed",
+            "result": "completed",
+            "evidence": "The current public profile matches the submitted UID and shows an active personal account. Recent public replies and reposts are ordinary political/social expression; no repeatable commercial spam or porn-advertising-bot pattern was found. Political viewpoints, language, and nationality are outside MXGA scope.",
+            "sources": [
+              "https://x.com/aeri2728",
+              "https://x.com/aeri2728/status/2098796272065147241",
+              "https://x.com/aeri2728/status/2093960129196789936"
+            ],
+            "check_hit": false,
+            "whitelist_present": true,
+            "blacklist_present": false,
+            "queue_present": false,
+            "agent_present": false,
+            "artifact_present": false
+          }
+        ]
+      }
+    },
+    {
+      "source": "PR #416 (ZUO-19-review-appeal-413-team-7648)",
+      "document": {
+        "run_at": "2026-09-13T14:34:29+08:00",
+        "scope": "open appeal issue #413 at run start (1 single-account issue; no other open GitHub appeal issues found)",
+        "source": {
+          "github_repo": "https://github.com/foru17/make-x-great-again",
+          "production_api": "https://x.zuoluo.tv",
+          "governance": "GOVERNANCE.md"
+        },
+        "verification": {
+          "x_profile": "The current public X profile resolves @team_7648 to UID 2050497648369758208, matching the submitted UID. It shows 抹茶, location 地球, joined May 2026, 41 posts, 4 followers, 2 following, and a personal-interest bio. The currently rendered public post (2026-09-02) discusses My Hero Academia and a China-related cultural question; no repeatable commercial solicitation or porn-advertising-bot evidence was found in the accessible public material.",
+          "pre_decision": "Before the write, /v1/check returned hits={} and authenticated searches found no matching row in /v1/admin/blacklist, /v1/admin/queue, or /v1/admin/whitelist; the latest 100 /v1/admin/log rows also had no matching handle or UID.",
+          "post_decision": "The authenticated maintainer whitelist flow returned ok=true and created a whitelisted row. /v1/whitelist returned the exact UID after the write; /v1/check still returned hits={}; authenticated blacklist and pending-queue searches remained empty; all three agent staging buckets had no matching row. The audit log contains id 758111 with action whitelist_add.",
+          "artifact_version": "v-_____f_______f_-174593",
+          "artifact_generated_at": 1789280462374,
+          "artifact_count": 174593,
+          "artifact_pending": 4603,
+          "artifact_check": "The latest bloom, shards, meta, and lite artifacts were fetched successfully. None contains UID 2050497648369758208 or handle team_7648.",
+          "rowid_note": "rowid 956939 was recovered from the authenticated /v1/admin/whitelist?limit=1&q=team_7648 nextBefore cursor [last_scored, last_scored, rowid]; it was not guessed.",
+          "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/413#issuecomment-5651682974"
+        },
+        "records": [
+          {
+            "issue": 413,
+            "handle": "team_7648",
+            "decision": "whitelisted",
+            "uid": "2050497648369758208",
+            "rowid": 956939,
+            "audit_id": 758111,
+            "audit_action": "whitelist_add",
+            "github_comment_id": 5651682974,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/413#issuecomment-5651682974",
+            "github_state": "closed",
+            "result": "completed",
+            "evidence": "The current public X profile matches the submitted UID and presents an active personal account: 41 posts, 4 followers, 2 following, a personal-interest bio, and a recent discussion about My Hero Academia and a China-related cultural question. No repeatable commercial spam or porn-advertising-bot pattern was found. Political and cultural expression is outside MXGA scope.",
+            "sources": [
+              "https://x.com/team_7648",
+              "https://x.com/team_7648/status/2095131677169426939"
+            ],
+            "check_hit": false,
+            "whitelist_present": true,
+            "blacklist_present": false,
+            "queue_present": false,
+            "agent_present": false,
+            "artifact_present": false
+          }
+        ]
+      }
+    },
+    {
+      "source": "PR #417 (ZUO-20-review-appeal-415)",
+      "document": {
+        "run_at": "2026-09-13T14:38:59+08:00",
+        "scope": "open appeal issue #415 at run start (1 single-account issue; no other open GitHub appeal issues found)",
+        "source": {
+          "github_repo": "https://github.com/foru17/make-x-great-again",
+          "production_api": "https://x.zuoluo.tv",
+          "governance": "GOVERNANCE.md"
+        },
+        "verification": {
+          "x_profile": "The current public X profile resolves @FFirmstone22262 to display name 不吃草 and structured rest_id 2047980830656544768. The submitted 2097222490028429312 is the current avatar media ID, not the user ID. The profile shows April 2026 signup, 114 posts, 33 followers, 57 following, and an empty description; the visible post is ordinary commentary with no repeatable commercial spam or porn-advertising-bot evidence.",
+          "pre_decision": "The submitted UID returned hits={} from /v1/check, and authenticated admin searches by handle found no publishable blacklist row, pending queue row, or whitelist row. After the avatar-media-ID mismatch was detected, the provisional wrong-ID whitelist row was demoted and the existing current-UID account row was updated with the verified UID.",
+          "post_decision": "The final maintainer whitelist flow returned the verified UID and status=whitelisted. The wrong-ID provisional row is no longer whitelisted; /v1/check returned hits={} for both the verified UID and submitted media ID. The GitHub appeal comment was corrected in place and issue #415 was closed as completed.",
+          "artifact_version": "v-_____f_______f_-174593",
+          "artifact_generated_at": 1789280462374,
+          "artifact_count": 174593,
+          "artifact_pending": 4613,
+          "artifact_check": "The latest lite and shards artifacts were fetched successfully and contain neither the verified UID, the submitted avatar media ID, nor the handle.",
+          "rowid_note": "rowid 103313 was recovered from the authenticated admin whitelist pagination cursor [last_scored, last_scored, rowid]; it was not guessed.",
+          "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/415#issuecomment-5651695574"
+        },
+        "records": [
+          {
+            "issue": 415,
+            "handle": "FFirmstone22262",
+            "decision": "whitelisted",
+            "uid": "2047980830656544768",
+            "submitted_uid": "2097222490028429312",
+            "submitted_uid_interpretation": "avatar_media_id",
+            "rowid": 103313,
+            "audit_id": 758114,
+            "audit_action": "whitelist_add",
+            "correction_audit_id": 758113,
+            "correction_audit_action": "whitelist_remove",
+            "github_comment_id": 5651695574,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/415#issuecomment-5651695574",
+            "github_state": "closed",
+            "result": "completed",
+            "evidence": "The current public X profile's structured rest_id is 2047980830656544768; the submitted number is an avatar media ID. The profile and visible ordinary commentary show no repeatable commercial spam or porn-advertising-bot pattern, so the account is out of scope or lacks evidence for a blacklist decision.",
+            "sources": [
+              "https://x.com/FFirmstone22262",
+              "https://x.com/FFirmstone22262/status/2077323001889247239"
+            ],
+            "check_hit": false,
+            "whitelist_present": true,
+            "blacklist_present": false,
+            "queue_present": false,
+            "agent_present": false,
+            "artifact_present": false
+          }
+        ]
+      }
+    },
+    {
+      "source": "PR #420 (ZUO-22-review-appeal-419)",
+      "document": {
+        "run_at": "2026-09-15T15:16:50+08:00",
+        "scope": "open appeal issue #419 at run start (1 single-account issue; no other open GitHub appeal issues found)",
+        "source": {
+          "github_repo": "https://github.com/foru17/make-x-great-again",
+          "production_api": "https://x.zuoluo.tv",
+          "governance": "GOVERNANCE.md"
+        },
+        "verification": {
+          "x_profile": "The current public X profile resolves @ranranbing to display name 然 and structured rest_id 1874109310659350528, matching the submitted UID. It shows December 2024 signup, 7,618 posts, 652 followers, and 811 following. The visible timeline sample contains ordinary interaction and adult self-expression; the explicit post 2099391484512674228 and the other visible t.co links resolve back to X posts, with no commercial destination, contact route, repeated ad funnel, or repeatable bot pattern found.",
+          "pre_decision": "Before the write, /v1/check?ids=1874109310659350528 returned hits={}; authenticated searches by handle and UID found no human_confirmed blacklist row, pending queue row, or whitelist row. One non-public agent_blacklist staging row existed with verdict_label=porn_bot, confidence=0.92, agent_id=batch-openai-v2, agent_confidence=0.98, and an explicit-content trigger; the stored bot rationale was not sufficient to satisfy the human governance gate.",
+          "decision_basis": "The account has adult expression, including one explicit media post, but the current public evidence does not establish commercial solicitation, a contact or sales route, a repeated advertising funnel, or bot behavior. Adult expression alone is outside the governance scope of commercial spam and pornographic-advertising bots.",
+          "post_decision": "The production whitelist upsert returned status=whitelisted. The canonical row is UID 1874109310659350528, rowid 1096254, with published fields cleared; review_log.id=761621 records whitelist_add by admin. The GitHub appeal comment was posted and issue #419 was closed as completed.",
+          "artifact_version": "v-_____f_________-175266",
+          "artifact_generated_at": 1789456269427,
+          "artifact_count": 175266,
+          "artifact_pending": 3364,
+          "artifact_check": "The latest /v1/list/meta, lite artifact, and shards artifact were fetched successfully; neither the UID nor handle appears in the lite or shards artifact. The data-mirror whitelist snapshot contains the UID/handle and the blacklist snapshot does not.",
+          "mirror_sync": "The first POST /v1/admin/sync-mirror returned a blacklist-side 502 after committing whitelist/lite; the idempotent retry returned ok=true with whitelist=skipped, blacklist=committed, lite=committed.",
+          "data_mirror_commits": "The whitelist snapshot commit is f229b44 (2441 total); the fetched data-mirror head is 8caef78 (latest lite sync, 175268 total).",
+          "rowid_note": "rowid 1096254 was decoded from the authenticated admin whitelist pagination cursor [last_scored, last_scored, rowid]; it was not guessed.",
+          "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/419#issuecomment-5676308224"
+        },
+        "records": [
+          {
+            "issue": 419,
+            "handle": "ranranbing",
+            "decision": "whitelisted",
+            "uid": "1874109310659350528",
+            "submitted_uid": "1874109310659350528",
+            "rowid": 1096254,
+            "audit_id": 761621,
+            "audit_action": "whitelist_add",
+            "prior_status": "agent_blacklist",
+            "prior_verdict_label": "porn_bot",
+            "prior_confidence": 0.92,
+            "prior_agent_id": "batch-openai-v2",
+            "prior_agent_confidence": 0.98,
+            "prior_evidence": "#成熟教师被诱人黑色巨棒征服，满足的舔舐吞咽着最后毫无抵抗力地被塞满一嘴",
+            "prior_reasons": [
+              "explicit sexual/pornographic solicitation in comment",
+              "bait pattern typical of reply-section porn advertising bots",
+              "off-topic adult content in home feed with no relation to threadTopic",
+              "account posts high volume of media (1848) consistent with adult spam behavior"
+            ],
+            "github_comment_id": 5676308224,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/419#issuecomment-5676308224",
+            "github_state": "closed",
+            "result": "completed",
+            "evidence": "The public profile UID matches the appeal. The profile has ordinary interaction and adult self-expression, including one explicit media post, but the sampled posts and resolved links show no commercial solicitation, contact route, repeated ad funnel, or repeatable bot pattern. The evidence is insufficient for an in-scope commercial spam or pornographic-advertising bot decision.",
+            "sources": [
+              "https://x.com/ranranbing",
+              "https://x.com/ranranbing/status/2099391484512674228",
+              "https://x.com/ranranbing/status/2099717481283633617",
+              "https://x.com/ranranbing/status/2099521313274732696",
+              "https://x.com/ranranbing/status/2099168365478813826",
+              "https://x.zuoluo.tv/v1/check?ids=1874109310659350528",
+              "https://x.zuoluo.tv/v1/list/meta",
+              "https://x.zuoluo.tv/v1/artifacts/lite-v-_____f_________-175266.json",
+              "https://x.zuoluo.tv/v1/artifacts/shards-v-_____f_________-175266.json",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/whitelist/v1.json",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v1.json"
+            ],
+            "check_hit": false,
+            "whitelist_present": true,
+            "blacklist_present": false,
+            "queue_present": false,
+            "agent_present_before": true,
+            "agent_present_after": false,
+            "artifact_present": false
+          }
+        ]
+      }
+    },
+    {
+      "source": "PR #422 (ZUO-23-review-issue-421)",
+      "document": {
+        "run_at": "2026-09-15T19:44:03+08:00",
+        "scope": "open appeal issue #421 at run start (1 single-account issue; no other open GitHub appeal issues found)",
+        "source": {
+          "github_repo": "https://github.com/foru17/make-x-great-again",
+          "production_api": "https://x.zuoluo.tv",
+          "governance": "GOVERNANCE.md"
+        },
+        "verification": {
+          "x_profile": "The current public X profile resolves @mikawaifusuki to structured UID 1585339869445779456, matching the submitted UID. It shows the display name 小鸟游星野🍥（劝人吃麦当劳第一人）, joined October 2022, about 19.9K followers, 145 following, no profile website, and a bio describing content reposting, adult expression, and political identity. A 60-post sample from 2026-09-11 through 2026-09-15 contains adult commentary, ordinary commentary, political discussion, and quote/repost activity; the account-owned posts expose X media links, not a commercial destination or contact route. A quoted account's payment link was on the quoted author's profile, not on @mikawaifusuki's profile.",
+          "pre_decision": "Before the write, /v1/check?ids=1585339869445779456 returned hits={}. Authenticated admin searches found one human_confirmed row for the UID/handle, source=auto_keyword, published_tier=rule, verdict_label=porn_bot, confidence=1, category=porn, evidence_text=好涩 plus an explicit-media caption, reporters=1; no queue, whitelist, or agent-staging row was present. The matching curated rule was tweet pattern 好涩 (rule 20), which is an ambiguous/context-free expression rather than proof of commercial porn advertising.",
+          "decision_basis": "The profile and sampled posts show adult expression and some vulgar commentary, plus political and ordinary discussion, but no account-owned commercial solicitation, contact route, paid-content funnel, or repeatable porn-advertising bot pattern. Adult expression, political views, reposting, and a single ambiguous keyword hit are outside or insufficient for the narrowly defined commercial-spam/pornographic-advertising-bot scope.",
+          "post_decision": "The production whitelist upsert returned status=whitelisted. The canonical row is UID 1585339869445779456, rowid 80881, with status=whitelisted, source=admin_whitelist, verdict_label=legit, confidence=1, signals_hash/published_at/published_tier cleared; review_log.id=761697 records whitelist_add by admin. /v1/check remained empty and authenticated blacklist/queue searches returned no row.",
+          "artifact_before": "At the decision time /v1/list/meta advertised v-_____f_________-175304 (generatedAt=1789472469257, count=175304); the old R2 lite and shards artifacts still contained this UID until the next scheduled publication.",
+          "artifact_after": "At the final check (2026-09-15T12:08:07Z), /v1/list/meta still advertised v-_____f_________-175304 (count=175304); the fetched R2 lite contained the UID and handle once each, and shards contained the UID/handle (4/3 textual matches). The post-decision data-mirror v2-lite at 1f7d8ef had no match. R2 publication had not refreshed yet, so this record does not claim that the old public artifacts were already removed.",
+          "mirror_sync": "POST /v1/admin/sync-mirror returned ok=true with whitelist=committed, blacklist=committed, lite=committed.",
+          "data_mirror_commits": "The post-decision data-mirror commits are 8b0d2ee (whitelist, 2442 total), 9105928 (blacklist, 50000 total), and 1f7d8ef (lite, 175305 total). The data-mirror whitelist contains the UID/handle and both the v1 blacklist and v2-lite contain no match.",
+          "rowid_note": "rowid 80881 was decoded from the authenticated admin whitelist pagination cursor [last_scored, last_scored, rowid] returned with limit=1; it was not guessed.",
+          "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/421#issuecomment-5679933600"
+        },
+        "records": [
+          {
+            "issue": 421,
+            "handle": "mikawaifusuki",
+            "decision": "whitelisted",
+            "uid": "1585339869445779456",
+            "submitted_uid": "1585339869445779456",
+            "rowid": 80881,
+            "audit_id": 761697,
+            "audit_action": "whitelist_add",
+            "prior_status": "human_confirmed",
+            "prior_source": "auto_keyword",
+            "prior_verdict_label": "porn_bot",
+            "prior_confidence": 1,
+            "prior_category": "porn",
+            "prior_evidence": "好涩\n掀开裙子就出来了",
+            "prior_rule_id": 20,
+            "prior_rule_pattern": "好涩",
+            "github_comment_id": 5679933600,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/421#issuecomment-5679933600",
+            "github_state": "closed",
+            "result": "completed",
+            "evidence": "The public profile UID matches the appeal. The profile and a 60-post sample show adult expression and vulgar commentary, but no account-owned commercial solicitation, contact route, paid-content funnel, or repeatable porn-advertising bot pattern. The keyword hit is insufficient under the project's narrow governance scope.",
+            "sources": [
+              "https://x.com/mikawaifusuki",
+              "https://api.fxtwitter.com/2/profile/mikawaifusuki",
+              "https://api.fxtwitter.com/2/profile/mikawaifusuki/statuses?count=20",
+              "https://x.com/mikawaifusuki/status/2099497234467582062",
+              "https://x.com/mikawaifusuki/status/2099746459436613954",
+              "https://x.com/mikawaifusuki/status/2099659938520002585",
+              "https://x.zuoluo.tv/v1/check?ids=1585339869445779456",
+              "https://x.zuoluo.tv/v1/whitelist?since=1789473256405&limit=2000",
+              "https://x.zuoluo.tv/v1/list/meta",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/whitelist/v1.json",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v1.json",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v2-lite.json"
+            ],
+            "check_hit": false,
+            "whitelist_present": true,
+            "blacklist_present": false,
+            "queue_present": false,
+            "agent_present_before": false,
+            "agent_present_after": false,
+            "artifact_present_before": true,
+            "artifact_present_after": true
+          }
+        ]
+      }
+    },
+    {
+      "source": "PR #426 (ZUO-26-review-appeal-424-peter91719371)",
+      "document": {
+        "run_at": "2026-09-17T10:22:34+08:00",
+        "scope": "open GitHub issue #424 at run start (1 single-account appeal)",
+        "source": {
+          "github_repo": "https://github.com/foru17/make-x-great-again",
+          "github_issue": "https://github.com/foru17/make-x-great-again/issues/424",
+          "production_api": "https://x.zuoluo.tv",
+          "governance": "GOVERNANCE.md"
+        },
+        "verification": {
+          "x_profile": "The current public X profile resolves @Peter91719371 to structured UID 944543674515406848, matching the submitted UID. It shows display name localucer, joined 2017-12-23, 3,892 posts, 56 followers, 585 following, location Tokyo-to, Japan, bio 'nothing lasts', and no profile website. The visible pinned and recent timeline is personal commentary about relationships, television, games, and music; no account-owned commercial destination, contact/sales route, paid-content funnel, or repeatable advertising-bot pattern was found.",
+          "pre_decision": "Before the write, /v1/check?ids=944543674515406848 returned hits={}. Authenticated searches found no current matching row in /v1/admin/blacklist, /v1/admin/queue, or /v1/admin/whitelist; the latest 100 review_log rows had no matching handle or UID. The first 200 rows of each agent staging bucket also had no matching handle or UID.",
+          "decision_basis": "The submitted screenshot records a single 95% porn_bot model/rule hit with ambiguous text, but the current public profile and visible recent activity do not establish commercial spam, pornographic advertising, a contact/sales route, or repeatable bot behavior. Adult or suggestive expression alone is outside the narrowly defined governance scope. The account therefore qualifies for a whitelist correction.",
+          "post_decision": "The production whitelist upsert returned status=whitelisted. The canonical row is handle peter91719371, UID 944543674515406848, rowid 975263; review_log.id=764632 records whitelist_add by admin. /v1/check remained empty, and the public whitelist delta returned the exact UID and handle.",
+          "mirror_sync": "POST /v1/admin/sync-mirror returned ok=true with whitelist=committed, blacklist=committed, lite=committed.",
+          "data_mirror_commits": "The post-decision data-mirror commits are cd23cd6 (whitelist, 2456 total), 4ba1833 (blacklist, 50000 total), and b09459b (lite, 175531 total). The data-mirror whitelist contains the UID/handle; the blacklist v1 and v2-lite snapshots contain neither.",
+          "artifact_check": "At final verification, /v1/list/meta advertised version v-_____f_________-175529 with count=175529 and pending=2051. The advertised bloom artifact fetched successfully (HTTP 200, 87384 bytes); the advertised meta, lite, and shards artifacts all fetched successfully and recursively contained neither UID 944543674515406848 nor handle peter91719371. The account was not present in the public blacklist before the appeal, so no public-list removal was needed.",
+          "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/424#issuecomment-5707490472",
+          "github_state": "closed",
+          "github_state_reason": "completed"
+        },
+        "records": [
+          {
+            "issue": 424,
+            "handle": "peter91719371",
+            "decision": "whitelisted",
+            "uid": "944543674515406848",
+            "submitted_uid": "944543674515406848",
+            "rowid": 975263,
+            "audit_id": 764632,
+            "audit_action": "whitelist_add",
+            "prior_status": null,
+            "prior_source": null,
+            "github_comment_id": 5707490472,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/424#issuecomment-5707490472",
+            "github_state": "closed",
+            "result": "completed",
+            "evidence": "The public profile UID matches the appeal. It is an established low-follower account with nearly nine years of history, a personal bio, and varied recent posts about relationships, television, games, and music. No commercial solicitation, contact route, paid-content funnel, or repeatable porn-advertising-bot behavior was found; the single ambiguous model/rule hit is insufficient under the project's narrow governance scope.",
+            "sources": [
+              "https://x.com/Peter91719371",
+              "https://x.com/Peter91719371/status/2011600687516533189",
+              "https://x.com/Peter91719371/status/2099669719318147405",
+              "https://x.com/Peter91719371/status/2099652598747758988",
+              "https://api.fxtwitter.com/2/profile/Peter91719371",
+              "https://github.com/foru17/make-x-great-again/issues/424",
+              "https://github.com/user-attachments/assets/0b8c557a-cc0f-456a-ab9d-05ee2f252169",
+              "https://x.zuoluo.tv/v1/check?ids=944543674515406848",
+              "https://x.zuoluo.tv/v1/whitelist?since=1789600000000&limit=2000",
+              "https://x.zuoluo.tv/v1/list/meta",
+              "https://x.zuoluo.tv/v1/artifacts/lite-v-_____f_________-175529.json",
+              "https://x.zuoluo.tv/v1/artifacts/shards-v-_____f_________-175529.json",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/whitelist/v1.json",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v1.json",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v2-lite.json"
+            ],
+            "check_hit": false,
+            "whitelist_present": true,
+            "blacklist_present": false,
+            "queue_present": false,
+            "artifact_present_after": false,
+            "mirror_whitelist_present": true,
+            "mirror_blacklist_present": false
+          }
+        ]
+      }
+    },
+    {
+      "source": "PR #427 (agent/coder-codex/4f2ef73d6418)",
+      "document": {
+        "run_at": "2026-09-17T02:25:51Z",
+        "scope": "open GitHub appeal issues #424 and #425 at run start (two single-account items)",
+        "source": {
+          "github_repo": "https://github.com/foru17/make-x-great-again",
+          "production_api": "https://x.zuoluo.tv",
+          "governance": "GOVERNANCE.md"
+        },
+        "verification": {
+          "x_profiles": "Both public X profiles resolved to the submitted structured UIDs. @Peter91719371 resolves to 944543674515406848 and shows personal film, game, music, and opinion posts. @LiaoJieAiAi resolves to 2054894802504966144 and shows a personal media/business/lifestyle profile with ordinary opinion and entertainment posts. Neither profile showed an account-owned commercial destination, paid-content funnel, sales/contact route, or repeatable commercial-spam/porn-advertising-bot pattern.",
+          "production_reads": "For both UIDs, /v1/check returned an empty hits object. The live whitelist delta contained Peter's canonical row (handle peter91719371, UID 944543674515406848, last_scored 1789611555610) and no LiaoJieAiAi match. The latest data-mirror whitelist contains Peter and no LiaoJieAiAi match; the latest blacklist snapshot contains neither account.",
+          "decision_basis": "Personal expression, entertainment commentary, and isolated references to advertising are not by themselves commercial spam or a pornographic-advertising bot under GOVERNANCE.md. Peter was already whitelisted by a concurrent completed review, so no duplicate mutation was made. LiaoJieAiAi was not present on the public blacklist or published artifacts, so no production row required a new public-list removal.",
+          "post_decision": "Issue #424's authoritative maintainer comment records canonical row peter91719371 / UID 944543674515406848 as whitelisted, rowid 975263, with review_log.id=764632 and action whitelist_add. Issue #425 received a not_planned result with no D1 write, so it has no new rowid or review_log audit ID.",
+          "artifact_check": "At final verification, /v1/list/meta advertised version v-_____f_________-175529 with count 175529 and pending 2051. The referenced lite and shards artifacts were fetched successfully and contained neither UID/handle. The public data-mirror blacklist and whitelist snapshots were also checked.",
+          "github_comments": {
+            "424": "https://github.com/foru17/make-x-great-again/issues/424#issuecomment-5707490472",
+            "425": "https://github.com/foru17/make-x-great-again/issues/425#issuecomment-5707506442"
+          }
+        },
+        "records": [
+          {
+            "issue": 424,
+            "handle": "Peter91719371",
+            "decision": "whitelisted",
+            "uid": "944543674515406848",
+            "submitted_uid": "944543674515406848",
+            "rowid": 975263,
+            "audit_id": 764632,
+            "audit_action": "whitelist_add",
+            "prior_status": null,
+            "prior_source": null,
+            "github_comment_id": 5707490472,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/424#issuecomment-5707490472",
+            "github_state": "closed",
+            "result": "completed",
+            "evidence": "The submitted UID matches the public profile. The account is an established personal profile with varied entertainment and opinion posts; no commercial solicitation, pornographic advertising, paid funnel, or repeatable ad-bot behavior was found. The concurrent authoritative review changed the canonical row to whitelisted.",
+            "sources": [
+              "https://x.com/Peter91719371",
+              "https://x.com/Peter91719371/status/2099669719318147405",
+              "https://x.zuoluo.tv/v1/check?ids=944543674515406848",
+              "https://x.zuoluo.tv/v1/whitelist?since=1789579494466&limit=2000",
+              "https://x.zuoluo.tv/v1/list/meta",
+              "https://x.zuoluo.tv/v1/artifacts/lite-v-_____f_________-175529.json",
+              "https://x.zuoluo.tv/v1/artifacts/shards-v-_____f_________-175529.json",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/whitelist/v1.json",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v1.json"
+            ],
+            "check_hit": false,
+            "whitelist_present": true,
+            "blacklist_present": false,
+            "queue_present": null,
+            "agent_present_before": null,
+            "agent_present_after": null,
+            "artifact_present_after": false
+          },
+          {
+            "issue": 425,
+            "handle": "LiaoJieAiAi",
+            "decision": "not_planned",
+            "uid": "2054894802504966144",
+            "submitted_uid": "2054894802504966144",
+            "rowid": null,
+            "audit_id": null,
+            "audit_action": null,
+            "prior_status": null,
+            "prior_source": null,
+            "github_comment_id": 5707506442,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/425#issuecomment-5707506442",
+            "github_state": "closed",
+            "result": "not_planned",
+            "evidence": "The submitted UID matches the public profile. The account presents personal media, business, finance, travel, and entertainment commentary; no account-owned commercial solicitation, pornographic advertising, paid funnel, sales/contact route, or repeatable ad-bot pattern was found. It was absent from /v1/check, the current published blacklist artifacts, and the data-mirror blacklist, so no D1 list write was performed.",
+            "sources": [
+              "https://x.com/LiaoJieAiAi",
+              "https://x.com/LiaoJieAiAi/status/2100407752631914712",
+              "https://x.zuoluo.tv/v1/check?ids=2054894802504966144",
+              "https://x.zuoluo.tv/v1/whitelist?since=1785658983000&limit=2000",
+              "https://x.zuoluo.tv/v1/list/meta",
+              "https://x.zuoluo.tv/v1/artifacts/lite-v-_____f_________-175529.json",
+              "https://x.zuoluo.tv/v1/artifacts/shards-v-_____f_________-175529.json",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/whitelist/v1.json",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v1.json"
+            ],
+            "check_hit": false,
+            "whitelist_present": false,
+            "blacklist_present": false,
+            "queue_present": null,
+            "agent_present_before": null,
+            "agent_present_after": null,
+            "artifact_present_after": false
+          }
+        ]
+      }
+    },
+    {
+      "source": "PR #429 (ZUO-28-review-appeal-428)",
+      "document": {
+        "run_at": "2026-09-17T05:23:17Z",
+        "scope": "open GitHub issue #428 at run start (1 single-account appeal)",
+        "source": {
+          "github_repo": "https://github.com/foru17/make-x-great-again",
+          "github_issue": "https://github.com/foru17/make-x-great-again/issues/428",
+          "production_api": "https://x.zuoluo.tv",
+          "governance": "GOVERNANCE.md"
+        },
+        "verification": {
+          "x_profile": "The current public profile resolver maps @Inkingfish to structured UID 1198837480759287808, matching the submitted UID. It shows the account as public, joined 2019-11-25, with 7,046 followers, 475 following, 13,678 posts, 377 media posts, no website, and display name 大东北婷婷👸. The visible recent author-owned posts are political/social commentary and adult expression; no account-owned commercial destination, contact/sales route, paid-content funnel, or repeatable advertising-bot pattern was found.",
+          "pre_decision": "Before the write, the targeted admin blacklist row was handle inkingfish / UID 1198837480759287808 with status human_confirmed, source auto_keyword, category marketing, confidence 1, zero reporters, and reason matched keyword rule \"点击主页\" on the historical display name. The targeted admin queue and whitelist searches returned no row; the latest 100 review_log rows and the first 200 rows of each agent staging bucket had no matching UID or handle. /v1/check?ids=1198837480759287808 returned hits={}. The production admin list response does not expose SQLite rowid, and this runner has no Cloudflare D1 CLI authentication, so rowid is recorded as null rather than guessed.",
+          "decision_basis": "The current profile and recent samples show normal ongoing personal discussion, politics, and adult expression, but no repeatable commercial spam or pornographic-advertising bot evidence. The old display-name keyword hit is insufficient under the narrow governance scope; opinion and adult expression alone are out of scope. The account therefore qualifies for an official whitelist correction.",
+          "post_decision": "POST /v1/admin/whitelist returned status=whitelisted for canonical handle inkingfish / UID 1198837480759287808. review_log.id=764714 records whitelist_add by admin. The targeted admin whitelist row is present with published fields cleared; /v1/check remains hits={}, and the public whitelist delta returns the UID and handle.",
+          "mirror_sync": "POST /v1/admin/sync-mirror returned ok=true with whitelist=committed, blacklist=committed, lite=committed.",
+          "data_mirror_commits": "The post-decision data-mirror commits are 60e8564 (whitelist, 2457 total), fbfe2c6 (blacklist, 50000 total), and ea1d829 (lite, 175590 total). The whitelist contains the UID/handle; the blacklist v1 and v2-lite snapshots contain neither.",
+          "artifact_check": "At final verification, /v1/list/meta advertised version v-_____f_________-175588 generated at 2026-09-17T05:01:17Z, before the whitelist write at 2026-09-17T05:04:17Z. The referenced lite artifact contained neither UID nor handle, while the referenced shards artifact still contained the old UID/handle entry (twice in its recursive JSON shape). The stale published shard is explicitly not claimed as removed; it awaits the next scheduled artifact publication.",
+          "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/428#issuecomment-5709212468",
+          "github_state": "closed",
+          "github_state_reason": "completed"
+        },
+        "records": [
+          {
+            "issue": 428,
+            "handle": "inkingfish",
+            "decision": "whitelisted",
+            "uid": "1198837480759287808",
+            "submitted_uid": "1198837480759287808",
+            "rowid": null,
+            "rowid_note": "Not exposed by the production admin API; no direct D1 CLI authentication was available in this runner.",
+            "audit_id": 764714,
+            "audit_action": "whitelist_add",
+            "prior_status": "human_confirmed",
+            "prior_source": "auto_keyword",
+            "github_comment_id": 5709212468,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/428#issuecomment-5709212468",
+            "github_state": "closed",
+            "result": "completed",
+            "evidence": "The submitted UID matches the current public profile. The account has a long-running, active personal profile with political/social commentary and adult expression, but no account-owned commercial solicitation, pornographic advertising, paid funnel, sales/contact route, or repeatable ad-bot behavior. The historical display-name keyword hit alone is insufficient under GOVERNANCE.md.",
+            "sources": [
+              "https://x.com/Inkingfish",
+              "https://api.fxtwitter.com/2/profile/Inkingfish",
+              "https://api.fxtwitter.com/2/profile/Inkingfish/statuses?count=100",
+              "https://x.com/Inkingfish/status/2100190045332480097",
+              "https://x.com/Inkingfish/status/2099349304301535397",
+              "https://x.com/Inkingfish/status/2097966726826836073",
+              "https://x.zuoluo.tv/v1/check?ids=1198837480759287808",
+              "https://x.zuoluo.tv/v1/whitelist?since=1789600000000&limit=2000",
+              "https://x.zuoluo.tv/v1/list/meta",
+              "https://x.zuoluo.tv/v1/artifacts/lite-v-_____f_________-175588.json",
+              "https://x.zuoluo.tv/v1/artifacts/shards-v-_____f_________-175588.json",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/whitelist/v1.json",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v1.json",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v2-lite.json"
+            ],
+            "check_hit": false,
+            "whitelist_present": true,
+            "blacklist_present": false,
+            "queue_present": false,
+            "agent_present_before": false,
+            "agent_present_after": false,
+            "lite_artifact_present_after": false,
+            "shards_artifact_present_after": true,
+            "artifact_present_after": true,
+            "mirror_whitelist_present": true,
+            "mirror_blacklist_present": false
+          }
+        ]
+      }
+    },
+    {
+      "source": "PR #431 (ZUO-29-review-appeal-430)",
+      "document": {
+        "run_at": "2026-09-17T05:23:17Z",
+        "scope": "open GitHub issue #428 at run start (1 single-account appeal)",
+        "source": {
+          "github_repo": "https://github.com/foru17/make-x-great-again",
+          "github_issue": "https://github.com/foru17/make-x-great-again/issues/428",
+          "production_api": "https://x.zuoluo.tv",
+          "governance": "GOVERNANCE.md"
+        },
+        "verification": {
+          "x_profile": "The current public profile resolver maps @Inkingfish to structured UID 1198837480759287808, matching the submitted UID. It shows the account as public, joined 2019-11-25, with 7,046 followers, 475 following, 13,678 posts, 377 media posts, no website, and display name 大东北婷婷👸. The visible recent author-owned posts are political/social commentary and adult expression; no account-owned commercial destination, contact/sales route, paid-content funnel, or repeatable advertising-bot pattern was found.",
+          "pre_decision": "Before the write, the targeted admin blacklist row was handle inkingfish / UID 1198837480759287808 with status human_confirmed, source auto_keyword, category marketing, confidence 1, zero reporters, and reason matched keyword rule \"点击主页\" on the historical display name. The targeted admin queue and whitelist searches returned no row; the latest 100 review_log rows and the first 200 rows of each agent staging bucket had no matching UID or handle. /v1/check?ids=1198837480759287808 returned hits={}. The production admin list response does not expose SQLite rowid, and this runner has no Cloudflare D1 CLI authentication, so rowid is recorded as null rather than guessed.",
+          "decision_basis": "The current profile and recent samples show normal ongoing personal discussion, politics, and adult expression, but no repeatable commercial spam or pornographic-advertising bot evidence. The old display-name keyword hit is insufficient under the narrow governance scope; opinion and adult expression alone are out of scope. The account therefore qualifies for an official whitelist correction.",
+          "post_decision": "POST /v1/admin/whitelist returned status=whitelisted for canonical handle inkingfish / UID 1198837480759287808. review_log.id=764714 records whitelist_add by admin. The targeted admin whitelist row is present with published fields cleared; /v1/check remains hits={}, and the public whitelist delta returns the UID and handle.",
+          "mirror_sync": "POST /v1/admin/sync-mirror returned ok=true with whitelist=committed, blacklist=committed, lite=committed.",
+          "data_mirror_commits": "The post-decision data-mirror commits are 60e8564 (whitelist, 2457 total), fbfe2c6 (blacklist, 50000 total), and ea1d829 (lite, 175590 total). The whitelist contains the UID/handle; the blacklist v1 and v2-lite snapshots contain neither.",
+          "artifact_check": "At final verification, /v1/list/meta advertised version v-_____f_________-175588 generated at 2026-09-17T05:01:17Z, before the whitelist write at 2026-09-17T05:04:17Z. The referenced lite artifact contained neither UID nor handle, while the referenced shards artifact still contained the old UID/handle entry (twice in its recursive JSON shape). The stale published shard is explicitly not claimed as removed; it awaits the next scheduled artifact publication.",
+          "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/428#issuecomment-5709212468",
+          "github_state": "closed",
+          "github_state_reason": "completed"
+        },
+        "records": [
+          {
+            "issue": 428,
+            "handle": "inkingfish",
+            "decision": "whitelisted",
+            "uid": "1198837480759287808",
+            "submitted_uid": "1198837480759287808",
+            "rowid": null,
+            "rowid_note": "Not exposed by the production admin API; no direct D1 CLI authentication was available in this runner.",
+            "audit_id": 764714,
+            "audit_action": "whitelist_add",
+            "prior_status": "human_confirmed",
+            "prior_source": "auto_keyword",
+            "github_comment_id": 5709212468,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/428#issuecomment-5709212468",
+            "github_state": "closed",
+            "result": "completed",
+            "evidence": "The submitted UID matches the current public profile. The account has a long-running, active personal profile with political/social commentary and adult expression, but no account-owned commercial solicitation, pornographic advertising, paid funnel, sales/contact route, or repeatable ad-bot behavior. The historical display-name keyword hit alone is insufficient under GOVERNANCE.md.",
+            "sources": [
+              "https://x.com/Inkingfish",
+              "https://api.fxtwitter.com/2/profile/Inkingfish",
+              "https://api.fxtwitter.com/2/profile/Inkingfish/statuses?count=100",
+              "https://x.com/Inkingfish/status/2100190045332480097",
+              "https://x.com/Inkingfish/status/2099349304301535397",
+              "https://x.com/Inkingfish/status/2097966726826836073",
+              "https://x.zuoluo.tv/v1/check?ids=1198837480759287808",
+              "https://x.zuoluo.tv/v1/whitelist?since=1789600000000&limit=2000",
+              "https://x.zuoluo.tv/v1/list/meta",
+              "https://x.zuoluo.tv/v1/artifacts/lite-v-_____f_________-175588.json",
+              "https://x.zuoluo.tv/v1/artifacts/shards-v-_____f_________-175588.json",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/whitelist/v1.json",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v1.json",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v2-lite.json"
+            ],
+            "check_hit": false,
+            "whitelist_present": true,
+            "blacklist_present": false,
+            "queue_present": false,
+            "agent_present_before": false,
+            "agent_present_after": false,
+            "lite_artifact_present_after": false,
+            "shards_artifact_present_after": true,
+            "artifact_present_after": true,
+            "mirror_whitelist_present": true,
+            "mirror_blacklist_present": false
+          },
+          {
+            "issue": 430,
+            "handle": "n0daeetcimaz3g0",
+            "submitted_handle": "n0daeetCIMaZ3g0",
+            "decision": "not_planned",
+            "uid": "4589496975",
+            "submitted_uid": "4589496975",
+            "rowid": null,
+            "rowid_note": "No target row was returned by the production blacklist, queue, whitelist, or agent-staging searches; no D1 write was performed, so no rowid exists for this review.",
+            "audit_id": null,
+            "audit_action": null,
+            "prior_status": null,
+            "prior_source": null,
+            "github_comment_id": 5711443996,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/430#issuecomment-5711443996",
+            "github_state": "closed",
+            "github_state_reason": "completed",
+            "github_closed_by": "Al-Leto",
+            "github_closed_at": "2026-09-17T08:05:07Z",
+            "result": "not_planned",
+            "evidence": "The submitted UID matches the current public profile resolver. The profile is a long-running public account with 3,514 followers, 523 following, 6,873 posts, no website, and a 100-status sample dominated by political/social commentary, criticism, and links to a university complaint channel or anti-feminism.com reporting/submission pages. No account-owned commercial solicitation, sales/contact route, paid-content funnel, or repeatable advertising-bot pattern was found. The account's opinions, coarse language, and ordinary external links are outside the narrow commercial-spam and pornographic-advertising-bot scope.",
+            "production_note": "At review time GET /v1/check?ids=4589496975 returned hits={}, and the authenticated targeted blacklist, queue, whitelist, and first 200 rows of each agent staging bucket returned no matching handle or UID. The live whitelist delta, data-mirror snapshots, and advertised lite/shards artifacts also contained neither value. The issue had already been closed by its submitter before the review response; no production row was available to modify.",
+            "production_meta_version": "v-_____f_________-175613",
+            "production_meta_generated_at": 1789633875450,
+            "data_mirror_commit": "53230e1",
+            "data_mirror_snapshot_counts": {
+              "whitelist": 2457,
+              "blacklist_v1": 50000,
+              "blacklist_v2_lite": 175602
+            },
+            "sources": [
+              "https://x.com/n0daeetCIMaZ3g0",
+              "https://api.fxtwitter.com/2/profile/n0daeetCIMaZ3g0",
+              "https://api.fxtwitter.com/2/profile/n0daeetCIMaZ3g0/statuses?count=100",
+              "https://x.com/n0daeetCIMaZ3g0/status/2100244828076572709",
+              "https://x.com/n0daeetCIMaZ3g0/status/2098791680682156325",
+              "https://x.com/n0daeetCIMaZ3g0/status/2098254651963683206",
+              "https://x.zuoluo.tv/v1/check?ids=4589496975",
+              "https://x.zuoluo.tv/v1/whitelist?limit=2000",
+              "https://x.zuoluo.tv/v1/admin/blacklist?q=4589496975&limit=10",
+              "https://x.zuoluo.tv/v1/admin/queue?q=4589496975&limit=10",
+              "https://x.zuoluo.tv/v1/admin/whitelist?q=4589496975&limit=10",
+              "https://x.zuoluo.tv/v1/admin/agent-list?bucket=blacklist&limit=200",
+              "https://x.zuoluo.tv/v1/admin/agent-list?bucket=whitelist&limit=200",
+              "https://x.zuoluo.tv/v1/admin/agent-list?bucket=pending&limit=200",
+              "https://x.zuoluo.tv/v1/list/meta",
+              "https://x.zuoluo.tv/v1/artifacts/lite-v-_____f_________-175613.json",
+              "https://x.zuoluo.tv/v1/artifacts/shards-v-_____f_________-175613.json",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/whitelist/v1.json",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v1.json",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v2-lite.json"
+            ],
+            "check_hit": false,
+            "whitelist_present": false,
+            "blacklist_present": false,
+            "queue_present": false,
+            "agent_present_before": false,
+            "agent_present_after": false,
+            "lite_artifact_present_after": false,
+            "shards_artifact_present_after": false,
+            "artifact_present_after": false,
+            "mirror_whitelist_present": false,
+            "mirror_blacklist_present": false
+          }
+        ]
+      }
+    },
+    {
+      "source": "PR #435 (ZUO-32-review-github-appeal-434)",
+      "document": {
+        "run_at": "2026-09-19T03:06:46Z",
+        "scope": "open GitHub appeal issue #434 at run start (one single-account item)",
+        "source": {
+          "github_repo": "https://github.com/foru17/make-x-great-again",
+          "github_issue": "https://github.com/foru17/make-x-great-again/issues/434",
+          "production_api": "https://x.zuoluo.tv",
+          "governance": "GOVERNANCE.md"
+        },
+        "verification": {
+          "x_profile": "The current public X profile resolves @yanmin1105 to structured UID 1904539885769457665, matching the submitted UID. It is an active public personal account joined 2025-03-25 with 1,778 posts, 2,311 followers, and 522 following. Recent posts contain repeated Hong Kong phone-card sales and giveaway promotion, but the profile also has ongoing personal posts and interaction; no repeatable advertising-bot pattern was established.",
+          "historical_listing": "The historical blacklist snapshot at commit 883b9a7 recorded handle yanmin1105 with UID 2048062376847835137, verdict spam, confidence 0.98, and phone-card sales evidence. That UID does not match the current public profile UID and is not currently returned by /v1/check or the targeted admin searches.",
+          "pre_decision": "Before the write, /v1/check returned hits={} for both the submitted UID 1904539885769457665 and historical UID 2048062376847835137. Authenticated admin blacklist, queue, and whitelist searches returned no current row for the handle or either UID; the first 200 rows of each agent staging bucket also had no match.",
+          "decision_basis": "The current account does self-promote a phone-card business, but its public profile is a sustained personal account with non-commercial posts and interaction. The available evidence does not establish a commercial-spam bot, and ordinary personal-account self-promotion is not independently a violation under the narrow GOVERNANCE.md scope. The historical UID mismatch further prevents treating the old record as a current-account verdict.",
+          "post_decision": "POST /v1/admin/whitelist returned status=whitelisted for canonical handle yanmin1105 / UID 1904539885769457665. The targeted admin whitelist row is rowid 140280 with published fields cleared; review_log.id=767198 records whitelist_add. The rowid was recovered by decoding the authenticated limit=1 nextBefore cursor [1789787090738,1789787090738,140280], not guessed. /v1/check remains hits={}, and the whitelist delta returns the UID.",
+          "mirror_sync": "POST /v1/admin/sync-mirror returned ok=true with whitelist=committed, blacklist=committed, and lite=committed. data-mirror commits are e115646 (whitelist), 8504ab6 (blacklist v1), and 863a69f (blacklist lite). The mirrored whitelist contains the target; mirrored blacklist v1 and v2-lite do not.",
+          "artifact_check": "The advertised /v1/list/meta remained version v-_____f_________-175772 generated at 1789785069736. Its referenced lite, shards, bloom, and meta artifacts were fetched successfully; none contains UID 1904539885769457665 or handle yanmin1105. The account was not a current public blacklist hit before the write, and remains absent from the published artifacts.",
+          "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/434#issuecomment-5738881989",
+          "github_state": "Issue #434 closed",
+          "github_state_reason": "completed"
+        },
+        "records": [
+          {
+            "issue": 434,
+            "handle": "yanmin1105",
+            "submitted_handle": "yanmin1105",
+            "decision": "whitelisted",
+            "uid": "1904539885769457665",
+            "submitted_uid": "1904539885769457665",
+            "historical_uid": "2048062376847835137",
+            "rowid": 140280,
+            "rowid_note": "Decoded from the authenticated admin whitelist limit=1 nextBefore cursor; not guessed.",
+            "audit_id": 767198,
+            "audit_action": "whitelist_add",
+            "prior_status": null,
+            "prior_source": null,
+            "github_comment_id": 5738881989,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/434#issuecomment-5738881989",
+            "github_state": "closed",
+            "github_state_reason": "completed",
+            "result": "completed",
+            "evidence": "The submitted UID matches the current public X profile. The profile has recurring phone-card sales and giveaway posts, but is a sustained personal account with ordinary non-commercial activity and interaction; no repeatable commercial-spam-bot behavior was established. The historical blacklist record used a different UID, so it cannot be treated as a current-account verdict under the UID-first review rule.",
+            "sources": [
+              "https://x.com/yanmin1105",
+              "https://x.com/yanmin1105/status/2096133966508306535",
+              "https://x.com/yanmin1105/status/2101006260279927085",
+              "https://x.com/yanmin1105/status/2100265543295173066",
+              "https://api.fxtwitter.com/2/profile/yanmin1105",
+              "https://api.fxtwitter.com/2/profile/yanmin1105/statuses?count=100",
+              "https://x.zuoluo.tv/v1/check?ids=1904539885769457665,2048062376847835137",
+              "https://x.zuoluo.tv/v1/whitelist?since=1789787090737&limit=20",
+              "https://x.zuoluo.tv/v1/list/meta",
+              "https://x.zuoluo.tv/v1/artifacts/lite-v-_____f_________-175772.json",
+              "https://x.zuoluo.tv/v1/artifacts/shards-v-_____f_________-175772.json",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/whitelist/v1.json",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v1.json",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v2-lite.json",
+              "https://github.com/foru17/make-x-great-again/commit/883b9a7"
+            ],
+            "check_hit": false,
+            "whitelist_present": true,
+            "blacklist_present": false,
+            "queue_present": false,
+            "agent_present_before": false,
+            "agent_present_after": false,
+            "lite_artifact_present_after": false,
+            "shards_artifact_present_after": false,
+            "artifact_present_after": false,
+            "mirror_whitelist_present": true,
+            "mirror_blacklist_present": false
+          }
+        ]
+      }
+    },
+    {
+      "source": "PR #437 (agent/coder-codex/ZUO-33-review-github-436)",
+      "document": {
+        "run_at": "2026-09-19T07:10:41Z",
+        "scope": "Open GitHub issues at run start: #436 was the only open issue and was not a false-positive or appeal item.",
+        "source": {
+          "github_repo": "https://github.com/foru17/make-x-great-again",
+          "github_issue": "https://github.com/foru17/make-x-great-again/issues/436",
+          "governance": "GOVERNANCE.md"
+        },
+        "verification": {
+          "open_issues": "The repository had one open issue at triage: #436, titled '[Bug] 判定提示中，希望能有中文的提示'.",
+          "issue_triage": "The title and body request a Chinese version of a verdict prompt under the 'other' component. They contain no false-positive or appeal language, X handle, X numeric user ID, or account URL.",
+          "decision_basis": "The automation is limited to individual false-positive and appeal reviews for commercial spam or pornographic-advertising bots. Issue #436 is a product localization request, so it is outside this moderation run. No X profile, D1/admin row, review_log entry, or public-list artifact was queried or changed.",
+          "production_verification": "Not applicable: no account was submitted and no production mutation was attempted.",
+          "github_comment_url": null,
+          "github_state": "Issue #436 remains open for maintainer product triage.",
+          "github_state_reason": "not_planned_for_moderation_automation"
+        },
+        "records": [
+          {
+            "issue": 436,
+            "handle": null,
+            "submitted_handle": null,
+            "decision": "not_planned",
+            "uid": null,
+            "submitted_uid": null,
+            "rowid": null,
+            "audit_id": null,
+            "audit_action": null,
+            "github_comment_id": null,
+            "github_comment_url": null,
+            "github_state": "open",
+            "github_state_reason": "not_planned_for_moderation_automation",
+            "result": "not_planned",
+            "evidence": "The issue requests Chinese UI copy for a verdict prompt and does not identify a misclassified account or request removal from the public list. It was intentionally left open and no account-level review or production change was performed.",
+            "sources": [
+              "https://github.com/foru17/make-x-great-again/issues/436",
+              "GOVERNANCE.md"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "source": "PR #441 (ZUO-35-review-github-440)",
+      "document": {
+        "run_at": "2026-09-22T05:43:32Z",
+        "scope": "Open GitHub issues at run start: #440 was a single-account false-positive appeal; #436 remained an unrelated localization request and was not part of this moderation run.",
+        "source": {
+          "github_repo": "https://github.com/foru17/make-x-great-again",
+          "github_issue": "https://github.com/foru17/make-x-great-again/issues/440",
+          "production_api": "https://x.zuoluo.tv",
+          "governance": "GOVERNANCE.md"
+        },
+        "verification": {
+          "open_issues": "The repository had two open issues at triage: #440, titled '[Appeal] @lijnchn24426647 wrongly listed', and #436, titled '[Bug] 判定提示中，希望能有中文的提示'. Only #440 identified a false-positive appeal with a handle and numeric X user ID.",
+          "x_profile": "The current public profile resolver maps @lijnchn24426647 to structured UID 1722888172978483200, matching the submitted UID. The profile is named 水滴, has an empty bio, joined 2023-11-10, and reports 21 followers, 165 following, 701 statuses, and 10 media items. Sampled author-owned posts are personal/game or political expression and image/video posts; no account-owned commercial destination, paid-content funnel, sales/contact route, or repeatable commercial-spam/porn-advertising-bot pattern was found.",
+          "pre_decision": "Authenticated production blacklist search returned handle lijnchn24426647 / UID 1722888172978483200 with status human_confirmed, source auto_keyword, verdict_label porn_bot, confidence 1, category porn, evidence_text '很正常和宅男一个道理，宅男普遍胖子应该没人反驳我，玩这种乙游就是自己现实中找不到对象就沉迷嘛，要是国内允许Galagame 然后线下搞展也是同样的画面。', and reason 'matched keyword rule \"应该没人\" on tweet'. Whitelist, queue, and the latest 200 review_log rows had no matching account. /v1/check returned a hit, and the advertised artifact v-_____f_________-176112 contained the target in shards.",
+          "decision_basis": "The current structured UID matches the appeal. The profile and sampled author-owned posts do not establish commercial spam, pornographic advertising, a sales/contact route, or repeatable bot behavior. The stored evidence is ordinary commentary and the isolated generic keyword match is insufficient under the narrow GOVERNANCE.md scope; political opinion, adult vocabulary, and ordinary personal expression are out of scope.",
+          "post_decision": "POST /v1/admin/whitelist returned status=whitelisted for canonical handle lijnchn24426647 / UID 1722888172978483200. review_log.id=771037 records whitelist_add. The targeted admin blacklist and queue searches are now empty; /v1/check now returns hits={}; and a fresh /v1/whitelist query returns the exact UID and handle. The production admin API does not expose SQLite rowid, so rowid is recorded as null rather than guessed.",
+          "mirror_sync": "POST /v1/admin/sync-mirror returned ok=true with whitelist=committed, blacklist=committed, and lite=committed. The resulting data-mirror commits are f7daf5f2f8804b49835e1989bc05a7b2c3809fda (whitelist), 77f6b1415f9b4e2675e06bae8e5fef664c6e11a3 (blacklist v1), and a3fe362613c0db0039c8af2795b235c036b28b1e (blacklist lite). The fresh whitelist mirror contains the target; blacklist v1 and v2-lite do not.",
+          "artifact_check": "The fresh data-mirror lite snapshot generated at 2026-09-22T05:39:51Z has 176113 entries and contains neither the target UID nor handle; the matching whitelist mirror contains the exact UID and handle. The refreshed /v1/list/meta now advertises R2 version v-_____f_________-176111 generated at 2026-09-22T05:41:16.878Z; both its lite and shards artifacts contain neither the target UID nor handle. The previously advertised v-_____f_________-176112 artifact was the pre-write snapshot and is not treated as current.",
+          "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/440#issuecomment-5771787815",
+          "github_state": "closed",
+          "github_state_reason": "completed"
+        },
+        "records": [
+          {
+            "issue": 436,
+            "handle": null,
+            "submitted_handle": null,
+            "decision": "not_planned",
+            "uid": null,
+            "submitted_uid": null,
+            "rowid": null,
+            "audit_id": null,
+            "audit_action": null,
+            "github_comment_id": null,
+            "github_comment_url": null,
+            "github_state": "open",
+            "github_state_reason": "not_planned_for_moderation_automation",
+            "result": "not_planned",
+            "evidence": "The issue requests Chinese UI copy for a verdict prompt and does not identify a misclassified account or request removal from the public list. It was intentionally left open and no account-level review or production change was performed.",
+            "sources": [
+              "https://github.com/foru17/make-x-great-again/issues/436",
+              "GOVERNANCE.md"
+            ]
+          },
+          {
+            "issue": 440,
+            "handle": "lijnchn24426647",
+            "submitted_handle": "lijnchn24426647",
+            "decision": "whitelisted",
+            "uid": "1722888172978483200",
+            "submitted_uid": "1722888172978483200",
+            "rowid": null,
+            "rowid_note": "Not exposed by the production admin API; no direct D1 CLI authentication was available in this runner.",
+            "audit_id": 771037,
+            "audit_action": "whitelist_add",
+            "prior_status": "human_confirmed",
+            "prior_source": "auto_keyword",
+            "github_comment_id": 5771787815,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/440#issuecomment-5771787815",
+            "github_state": "closed",
+            "github_state_reason": "completed",
+            "result": "completed",
+            "evidence": "The submitted UID matches the current public profile. The account is an established personal profile with ordinary personal/game, image/video, and political-expression posts, no commercial solicitation, pornographic advertising, paid funnel, sales/contact route, or repeatable ad-bot behavior. The stored evidence is an ordinary discussion matched by the generic keyword rule \"应该没人\", which is insufficient under the project's narrow governance scope.",
+            "sources": [
+              "https://github.com/foru17/make-x-great-again/issues/440",
+              "https://x.com/lijnchn24426647",
+              "https://api.fxtwitter.com/2/profile/lijnchn24426647",
+              "https://api.fxtwitter.com/2/profile/lijnchn24426647/statuses?count=100",
+              "https://x.com/lijnchn24426647/status/2065402414191223018",
+              "https://x.com/lijnchn24426647/status/2060283656523198537",
+              "https://x.com/lijnchn24426647/status/1969353862751625288",
+              "https://x.zuoluo.tv/v1/check?ids=1722888172978483200",
+              "https://x.zuoluo.tv/v1/whitelist?since=1790055581935&limit=20",
+              "https://x.zuoluo.tv/v1/list/meta",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/whitelist/v1.json?cachebust=1790055581936",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v1.json?cachebust=1790055581936",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v2-lite.json?cachebust=1790055581936",
+              "https://github.com/foru17/make-x-great-again/commit/f7daf5f2f8804b49835e1989bc05a7b2c3809fda",
+              "https://github.com/foru17/make-x-great-again/commit/77f6b1415f9b4e2675e06bae8e5fef664c6e11a3",
+              "https://github.com/foru17/make-x-great-again/commit/a3fe362613c0db0039c8af2795b235c036b28b1e"
+            ],
+            "pre_check_hit": true,
+            "check_hit": false,
+            "whitelist_present": true,
+            "blacklist_present": false,
+            "queue_present": false,
+            "agent_present_before": false,
+            "agent_present_after": false,
+            "lite_artifact_present_before": true,
+            "shards_artifact_present_before": true,
+            "lite_artifact_present_after": false,
+            "shards_artifact_present_after": false,
+            "artifact_present_after": false,
+            "mirror_whitelist_present": true,
+            "mirror_blacklist_present": false
+          }
+        ]
+      }
+    },
+    {
+      "source": "PR #443 (ZUO-36-review-kevinwongtsgq)",
+      "document": {
+        "run_at": "2026-09-23T05:10:26Z",
+        "scope": "Open GitHub issues at run start: #442 was a single-account appeal; #436 was an unrelated Chinese UI-copy request and was not part of the moderation run.",
+        "source": {
+          "github_repo": "https://github.com/foru17/make-x-great-again",
+          "github_issue": "https://github.com/foru17/make-x-great-again/issues/442",
+          "production_api": "https://x.zuoluo.tv",
+          "governance": "GOVERNANCE.md"
+        },
+        "verification": {
+          "open_issues": "The repository had two open issues at triage: #442, titled '[Appeal] @kevinwongtsgq wrongly listed', and #436, titled '[Bug] 判定提示中，希望能有中文的提示'. Only #442 identified a single-account appeal with a handle and numeric X user ID.",
+          "x_profile": "The current public profile resolver maps @kevinwongtsgq to structured UID 2093871970748334081, matching the submitted UID. The profile is named kevin wong, has an empty bio, joined 2026-08-30, and reports 18 followers, 41 following, and 212 statuses. Four visible author-owned posts repeat the same Muse referral copy, invite code JIQIPB, and muse.ai/join link between 2026-09-20 and 2026-09-22; this is repeatable commercial promotion/spam, not ordinary personal expression.",
+          "pre_decision": "Authenticated production admin queries for blacklist, queue, whitelist, agent blacklist, agent whitelist, and agent pending returned no matching handle or UID. The public /v1/check?ids=2093871970748334081 returned hits={}; a recent public whitelist query returned no match; current lite and shards artifacts also contained neither identity.",
+          "decision_basis": "The X evidence does not support an upheld false-positive appeal: the account repeatedly advertises a referral code and commercial destination. However, the current production D1-backed admin surfaces and published artifacts contain no matching account, so there was no human_confirmed row to maintain, no false-positive row to whitelist, and no safe basis to create or restore a production entry.",
+          "post_decision": "No production mutation was performed. The targeted blacklist/queue/whitelist and agent-bucket searches remained empty, /v1/check remained hits={}, and no matching review_log row or audit ID was created. The production data therefore remained unchanged.",
+          "mirror_sync": "Not run because no D1 state changed; there was no whitelist_add or appeal_rejected mutation to mirror.",
+          "artifact_check": "The current /v1/list/meta advertised version v-_____f_________-176227 with count 176227; its lite and shards artifacts contained neither the target UID nor handle. The data-mirror blacklist v2-lite snapshots at 2026-09-21 23:17, 2026-09-22 02:01/08:01/13:40/14:02/20:02, and 2026-09-23 02:02/08:01 +08 likewise contained no match.",
+          "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/442#issuecomment-5789440574",
+          "github_state": "closed",
+          "github_state_reason": "not_planned"
+        },
+        "records": [
+          {
+            "issue": 436,
+            "handle": null,
+            "submitted_handle": null,
+            "decision": "not_planned",
+            "uid": null,
+            "submitted_uid": null,
+            "rowid": null,
+            "audit_id": null,
+            "audit_action": null,
+            "github_comment_id": null,
+            "github_comment_url": null,
+            "github_state": "open",
+            "github_state_reason": "not_planned_for_moderation_automation",
+            "result": "not_planned",
+            "evidence": "The issue requests Chinese UI copy for a verdict prompt and does not identify a misclassified account or request removal from the public list. It was intentionally left open and no account-level review or production change was performed.",
+            "sources": [
+              "https://github.com/foru17/make-x-great-again/issues/436",
+              "GOVERNANCE.md"
+            ]
+          },
+          {
+            "issue": 442,
+            "handle": "kevinwongtsgq",
+            "submitted_handle": "kevinwongtsgq",
+            "decision": "not_listed",
+            "appeal_decision": "rejected",
+            "uid": "2093871970748334081",
+            "submitted_uid": "2093871970748334081",
+            "rowid": null,
+            "rowid_note": "No matching production account was returned by the authenticated admin surfaces; the production API does not expose a D1 rowid for an absent row.",
+            "audit_id": null,
+            "audit_action": null,
+            "github_comment_id": 5789440574,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/442#issuecomment-5789440574",
+            "github_state": "closed",
+            "github_state_reason": "not_planned",
+            "result": "not_planned",
+            "evidence": "The submitted UID matches the current public profile. Four author-owned posts repeat the same Muse referral promotion, invite code, and commercial join link, establishing repeatable commercial spam. Because the production blacklist, queue, whitelist, agent buckets, /v1/check, and current lite/shards artifacts all lack the target, no D1 row was changed or created.",
+            "sources": [
+              "https://github.com/foru17/make-x-great-again/issues/442",
+              "https://x.com/kevinwongtsgq",
+              "https://api.fxtwitter.com/2/profile/kevinwongtsgq",
+              "https://api.fxtwitter.com/2/profile/kevinwongtsgq/statuses?count=100",
+              "https://x.zuoluo.tv/v1/check?ids=2093871970748334081",
+              "https://x.zuoluo.tv/v1/list/meta",
+              "https://x.zuoluo.tv/v1/artifacts/lite-v-_____f_________-176227.json",
+              "https://x.zuoluo.tv/v1/artifacts/shards-v-_____f_________-176227.json",
+              "https://raw.githubusercontent.com/foru17/make-x-great-again/data-mirror/data/blacklist/v2-lite.json"
+            ],
+            "pre_check_hit": false,
+            "check_hit": false,
+            "whitelist_present": false,
+            "blacklist_present": false,
+            "queue_present": false,
+            "agent_present_before": false,
+            "agent_present_after": false,
+            "lite_artifact_present_before": false,
+            "shards_artifact_present_before": false,
+            "artifact_present_after": false,
+            "mirror_whitelist_present": false,
+            "mirror_blacklist_present": false
+          }
+        ]
+      }
+    },
+    {
+      "source": "PR #446 (ZUO-39-review-appeal-445)",
+      "document": {
+        "schema_version": 1,
+        "runs": [
+          {
+            "run_id": "ZUO-39-2026-09-24",
+            "multica_issue_id": "01a0d235-4e15-775b-82ed-57bea7a0edd5",
+            "recorded_at": "2026-09-24T07:03:26.580228+00:00",
+            "base_commit": "b5b32fda2225c272e961ab93dfd65ab302fd5c8d",
+            "status": "blocked",
+            "scope": {
+              "open_issue_numbers": [
+                436,
+                444,
+                445
+              ],
+              "appeal_issue_numbers": [
+                444,
+                445
+              ],
+              "excluded": [
+                {
+                  "number": 436,
+                  "reason": "UI bug report, not an appeal"
+                }
+              ],
+              "max_issues": 20,
+              "prior_review_comment": "https://github.com/foru17/make-x-great-again/issues/444#issuecomment-5808773928",
+              "prior_review_note": "Prior review of #444 was blocked, without final decision. New readable X evidence was obtained this run and reported in a follow-up comment."
+            },
+            "access_check": {
+              "command": "npx --yes wrangler@4.110.0 whoami",
+              "result": "You are not authenticated. Please run `wrangler login`.",
+              "database_queries_performed": false,
+              "database_writes_performed": false
+            },
+            "public_snapshot": {
+              "meta": {
+                "count": 181971,
+                "day": 5724,
+                "week": 6369,
+                "pending": 11,
+                "generatedAt": 1790230250398,
+                "latestAt": 1790230139576,
+                "version": "v-_____f_________-181971",
+                "artifacts": {
+                  "bloom": "/v1/artifacts/bloom-v-_____f_________-181971.b64",
+                  "shards": "/v1/artifacts/shards-v-_____f_________-181971.json",
+                  "meta": "/v1/artifacts/meta-v-_____f_________-181971.json",
+                  "lite": "/v1/artifacts/lite-v-_____f_________-181971.json"
+                }
+              },
+              "artifacts": {
+                "lite": {
+                  "version": "v-_____f_________-181971",
+                  "matches": [
+                    [
+                      "2099119416122466304",
+                      "xsbebi",
+                      "pph"
+                    ],
+                    [
+                      "",
+                      "little_morichan",
+                      "ppa"
+                    ]
+                  ],
+                  "url": "https://x.zuoluo.tv/v1/artifacts/lite-v-_____f_________-181971.json"
+                },
+                "shards": {
+                  "version": "v-_____f_________-181971",
+                  "matches": {
+                    "2099119416122466304": {
+                      "userId": "2099119416122466304",
+                      "handle": "xsbebi",
+                      "label": "porn_bot",
+                      "confidence": 0.88,
+                      "published_at": 1789983207612,
+                      "tier": "human"
+                    },
+                    "handle:xsbebi": {
+                      "userId": "2099119416122466304",
+                      "handle": "xsbebi",
+                      "label": "porn_bot",
+                      "confidence": 0.88,
+                      "published_at": 1789983207612,
+                      "tier": "human"
+                    },
+                    "handle:little_morichan": {
+                      "userId": null,
+                      "handle": "little_morichan",
+                      "label": "porn_bot",
+                      "confidence": 1,
+                      "published_at": 1784907006603,
+                      "tier": "auto"
+                    }
+                  },
+                  "url": "https://x.zuoluo.tv/v1/artifacts/shards-v-_____f_________-181971.json"
+                }
+              },
+              "whitelist": {
+                "matches": [],
+                "pages": [
+                  {
+                    "since": 0,
+                    "count": 2000,
+                    "latestAt": 1785658983000
+                  },
+                  {
+                    "since": 1785658983000,
+                    "count": 476,
+                    "latestAt": 1790081504093
+                  }
+                ],
+                "pagination_note": "API uses strict last_scored > since; timestamp ties at full page boundaries cannot be ruled out"
+              },
+              "check": {
+                "hits": {
+                  "2099119416122466304": {
+                    "label": "porn_bot",
+                    "confidence": 0.88
+                  }
+                }
+              }
+            },
+            "issues": [
+              {
+                "issue_number": 445,
+                "issue_url": "https://github.com/foru17/make-x-great-again/issues/445",
+                "handle": "XSbebi",
+                "submitted_uid": "2099119416122466304",
+                "verified_uid": "2099119416122466304",
+                "decision": "pending_human_review",
+                "recommendation": "Review original D1 evidence; current readable public sample is insufficient to uphold the listing. Consider whitelist only after authorized human review.",
+                "production_change_applied": false,
+                "rowid": null,
+                "audit_ids": [],
+                "d1_status": null,
+                "d1_verification": "blocked: Wrangler is not authenticated; accounts and review_log were not queried",
+                "x_evidence": {
+                  "url": "https://x.com/XSbebi",
+                  "http_status": 200,
+                  "uid_source": "SSR User.rest_id",
+                  "bio": "可约拍 不商务 不互动 不互勉不互勉",
+                  "readable_post_count": 4,
+                  "summary": "4 readable posts concern photography, photo delivery, gaming and daily life. Bio advertises photography availability; no repeatable commercial spam or pornographic-advertising bot evidence established in the readable sample.",
+                  "example_post_urls": [
+                    "https://x.com/XSbebi/status/2102992455104954477"
+                  ],
+                  "html_sha256": "1b351e690a6f6cbf7b58ef126100f53ae39e87b01522ffcc38ef4663e07ef490",
+                  "retrieved_at": "2026-09-24T07:01:43.351724+00:00",
+                  "limitations": "Only returned SSR text was reviewed; media was not inspected; sample is not complete account history."
+                },
+                "public_verification": {
+                  "check_url": "https://x.zuoluo.tv/v1/check?ids=2099119416122466304",
+                  "check_hit": {
+                    "label": "porn_bot",
+                    "confidence": 0.88
+                  },
+                  "lite_rows": [
+                    [
+                      "2099119416122466304",
+                      "xsbebi",
+                      "pph"
+                    ]
+                  ],
+                  "shards_entries": {
+                    "2099119416122466304": {
+                      "userId": "2099119416122466304",
+                      "handle": "xsbebi",
+                      "label": "porn_bot",
+                      "confidence": 0.88,
+                      "published_at": 1789983207612,
+                      "tier": "human"
+                    },
+                    "handle:xsbebi": {
+                      "userId": "2099119416122466304",
+                      "handle": "xsbebi",
+                      "label": "porn_bot",
+                      "confidence": 0.88,
+                      "published_at": 1789983207612,
+                      "tier": "human"
+                    }
+                  },
+                  "whitelist_match_in_returned_pages": false,
+                  "interpretation": "Public API/artifact observations are existing publication state, not an independent moderation verdict. /v1/check only returns human-tier rows."
+                },
+                "github_comment_id": 5809393968,
+                "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/445#issuecomment-5809393968",
+                "github_state_after": "OPEN",
+                "github_close_reason": null
+              },
+              {
+                "issue_number": 444,
+                "issue_url": "https://github.com/foru17/make-x-great-again/issues/444",
+                "handle": "Little_Morichan",
+                "submitted_uid": "1636035343370838017",
+                "verified_uid": "1636035343370838017",
+                "decision": "pending_human_review",
+                "recommendation": "Review original D1 evidence; current readable public sample is insufficient to uphold the listing. Consider whitelist only after authorized human review.",
+                "production_change_applied": false,
+                "rowid": null,
+                "audit_ids": [],
+                "d1_status": null,
+                "d1_verification": "blocked: Wrangler is not authenticated; accounts and review_log were not queried",
+                "x_evidence": {
+                  "url": "https://x.com/Little_Morichan",
+                  "http_status": 200,
+                  "uid_source": "SSR User.rest_id",
+                  "bio": "ただの普通の学生/coserです，不定期发推\n中文/日本語/English ok\nthank you for following me！",
+                  "readable_post_count": 5,
+                  "summary": "5 readable posts concern cosplay, job hunting and daily life, including crude expression. Personal expression and cosplay alone are outside governance scope; no repeatable commercial spam or pornographic-advertising bot evidence established in the readable sample.",
+                  "example_post_urls": [
+                    "https://x.com/Little_Morichan/status/2089734049795567804"
+                  ],
+                  "html_sha256": "1c8e65af5d34e4c8b250641af69ee1f299cc04831dda65916279891a2f0ee1f0",
+                  "retrieved_at": "2026-09-24T07:01:45.435095+00:00",
+                  "limitations": "Only returned SSR text was reviewed; media was not inspected; sample is not complete account history."
+                },
+                "public_verification": {
+                  "check_url": "https://x.zuoluo.tv/v1/check?ids=1636035343370838017",
+                  "check_hit": null,
+                  "lite_rows": [
+                    [
+                      "",
+                      "little_morichan",
+                      "ppa"
+                    ]
+                  ],
+                  "shards_entries": {
+                    "handle:little_morichan": {
+                      "userId": null,
+                      "handle": "little_morichan",
+                      "label": "porn_bot",
+                      "confidence": 1,
+                      "published_at": 1784907006603,
+                      "tier": "auto"
+                    }
+                  },
+                  "whitelist_match_in_returned_pages": false,
+                  "interpretation": "Public API/artifact observations are existing publication state, not an independent moderation verdict. /v1/check only returns human-tier rows."
+                },
+                "github_comment_id": 5809394356,
+                "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/444#issuecomment-5809394356",
+                "github_state_after": "OPEN",
+                "github_close_reason": null
+              }
+            ],
+            "acceptance": {
+              "commands": [
+                {
+                  "command": "pnpm typecheck && pnpm test && pnpm lint",
+                  "result": "PASS: typecheck; 23 tests; lint 71 files"
+                },
+                {
+                  "command": "python3 -m json.tool docs/goal-open-issues-2026-08-26.json > /dev/null",
+                  "result": "PASS"
+                },
+                {
+                  "command": "git diff --check",
+                  "result": "PASS"
+                }
+              ],
+              "production_row_and_audit_check": "BLOCKED: not authenticated",
+              "post_mutation_publication_verification": "NOT APPLICABLE: no mutations; observed existing publication only"
+            },
+            "next_steps": [
+              "Use an authenticated, authorized maintainer session to query both accounts by handle and verified UID and inspect original evidence and review_log.",
+              "Complete human review, apply only the approved per-account decision with audit, then verify D1, /v1/check, whitelist and freshly published lite/shards before closing appeals."
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "source": "PR #449 (ZUO-43-appeal-audit)",
+      "document": {
+        "schema": 1,
+        "initialization_note": "The requested audit path is absent at the recorded base commit. This file starts with ZUO-43 observations; no historical audit records were reconstructed from unmerged branches.",
+        "runs": [
+          {
+            "multica_issue": "ZUO-43",
+            "multica_issue_id": "01a0e0f5-6cc4-7b6b-98e4-9c2d19a11e4e",
+            "observed_at": "2026-09-27T03:47:48.132080+00:00",
+            "base_commit": "b5b32fda2225c272e961ab93dfd65ab302fd5c8d",
+            "status": "blocked_pending_human_review",
+            "scope": {
+              "trigger_issue": 448,
+              "open_issues_scanned": [
+                448,
+                447,
+                445,
+                444,
+                436
+              ],
+              "new_appeals_reviewed": [
+                448
+              ],
+              "existing_pending_appeals": [
+                {
+                  "issue": 447,
+                  "comment_id": 5822812428
+                },
+                {
+                  "issue": 445,
+                  "comment_id": 5809393968
+                },
+                {
+                  "issue": 444,
+                  "comment_id": 5809394356
+                }
+              ],
+              "selection_note": "Existing appeals already have automation evidence/blocker replies and remain pending; they are not final decisions. No duplicate replies or production changes were made for them. Issue 436 is a feature request, not an appeal. No durable successful-run cursor was advanced."
+            },
+            "production_access": {
+              "command": "npx --yes wrangler@4.110.0 whoami",
+              "result": "You are not authenticated. Please run `wrangler login`.",
+              "d1_read": false,
+              "d1_write": false,
+              "review_log_read": false,
+              "review_log_write": false
+            },
+            "accounts": [
+              {
+                "issue": 448,
+                "issue_url": "https://github.com/foru17/make-x-great-again/issues/448",
+                "handle": "FSfleetinglife",
+                "submitted_uid": "1517427878555619329",
+                "verified_uid": "1517427878555619329",
+                "decision": "pending_human_review",
+                "recommendation": "Visible text alone is insufficient to establish commercial spam or pornographic-advertising bot activity; a maintainer must inspect original D1 evidence before deciding the appeal.",
+                "x_evidence": {
+                  "url": "https://x.com/FSfleetinglife",
+                  "http_status": 200,
+                  "uid_source": "SSR UserByScreenName result User.rest_id, matching core.screen_name",
+                  "profile_available": true,
+                  "bio_empty": true,
+                  "visible_post_text_count": 5,
+                  "media_inspected": false,
+                  "sample_is_complete_history": false,
+                  "sample_posts": [
+                    {
+                      "url": "https://x.com/FSfleetinglife/status/2104049891660145147",
+                      "topic_summary": "旅行路线"
+                    },
+                    {
+                      "url": "https://x.com/FSfleetinglife/status/2104033030642061526",
+                      "topic_summary": "体型讨论"
+                    },
+                    {
+                      "url": "https://x.com/FSfleetinglife/status/2104015666324148420",
+                      "topic_summary": "社保观点"
+                    },
+                    {
+                      "url": "https://x.com/FSfleetinglife/status/2103886014012084529",
+                      "topic_summary": "体育讨论"
+                    },
+                    {
+                      "url": "https://x.com/FSfleetinglife/status/2103872221642883573",
+                      "topic_summary": "电脑装配提问"
+                    }
+                  ],
+                  "limitations": "Logged-out profile exposes only a limited text sample; attached images and account history were not reviewed. Third-party search results were not used as authoritative UID or verdict evidence."
+                },
+                "production_status": null,
+                "rowid": null,
+                "historical_audit_ids": null,
+                "audit_ids_created": [],
+                "production_action": "none",
+                "check": {
+                  "url": "https://x.zuoluo.tv/v1/check?ids=1517427878555619329",
+                  "response": {
+                    "hits": {}
+                  },
+                  "interpretation": "No human-tier hit; auto-tier artifact membership means this is not evidence of removal."
+                },
+                "whitelist": {
+                  "found_in_returned_pages": false,
+                  "d1_status_verified": false
+                },
+                "artifacts": {
+                  "lite_entries": [
+                    [
+                      "1517427878555619329",
+                      "fsfleetinglife",
+                      "sma"
+                    ]
+                  ],
+                  "lite_decoded": {
+                    "label": "spam",
+                    "category": "marketing",
+                    "tier": "auto"
+                  },
+                  "shards_entries": {
+                    "1517427878555619329": {
+                      "userId": "1517427878555619329",
+                      "handle": "fsfleetinglife",
+                      "label": "spam",
+                      "confidence": 1,
+                      "published_at": 1780623515317,
+                      "tier": "auto"
+                    },
+                    "handle:fsfleetinglife": {
+                      "userId": "1517427878555619329",
+                      "handle": "fsfleetinglife",
+                      "label": "spam",
+                      "confidence": 1,
+                      "published_at": 1780623515317,
+                      "tier": "auto"
+                    }
+                  },
+                  "removed_from_public_artifacts": false,
+                  "interpretation": "Observed pre-existing publication, not a new finding of abuse or an appeal rejection."
+                },
+                "github_comment_id": 5852394719,
+                "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/448#issuecomment-5852394719",
+                "github_state": "open",
+                "github_close_reason": null
+              }
+            ],
+            "round_verification": {
+              "meta_url": "https://x.zuoluo.tv/v1/list/meta",
+              "meta_response": {
+                "count": 182116,
+                "day": 110,
+                "week": 6333,
+                "pending": 19,
+                "generatedAt": 1790476827168,
+                "latestAt": 1790476319341,
+                "version": "v-_____f_________-182116",
+                "artifacts": {
+                  "bloom": "/v1/artifacts/bloom-v-_____f_________-182116.b64",
+                  "shards": "/v1/artifacts/shards-v-_____f_________-182116.json",
+                  "meta": "/v1/artifacts/meta-v-_____f_________-182116.json",
+                  "lite": "/v1/artifacts/lite-v-_____f_________-182116.json"
+                }
+              },
+              "artifact_observations": {
+                "lite": {
+                  "url": "https://x.zuoluo.tv/v1/artifacts/lite-v-_____f_________-182116.json",
+                  "version": "v-_____f_________-182116",
+                  "generatedAt": 1790479817132,
+                  "count": 182116,
+                  "sha256": "999a85d2c8c928a8cd4291f9036deabfe2394aec9fb4d0708bde681047017f11"
+                },
+                "shards": {
+                  "url": "https://x.zuoluo.tv/v1/artifacts/shards-v-_____f_________-182116.json",
+                  "version": "v-_____f_________-182116",
+                  "generatedAt": 1790480428567,
+                  "count": 182116,
+                  "sha256": "c6ce968a5d5e945c7af0614b0fc6424638cc97a3bac39088902c13cfd3f25349"
+                }
+              },
+              "whitelist_pages": [
+                {
+                  "url": "https://x.zuoluo.tv/v1/whitelist?limit=2000&since=0",
+                  "count": 2000,
+                  "latestAt": 1785658983000
+                },
+                {
+                  "url": "https://x.zuoluo.tv/v1/whitelist?limit=2000&since=1785658983000",
+                  "count": 476,
+                  "latestAt": 1790081504093
+                }
+              ],
+              "whitelist_pagination_limitation": "API uses last_scored > since with a 2000 row limit. Equal timestamps at a full-page boundary may omit rows; absence cannot establish D1 status.",
+              "existing_pending_artifact_observations": [
+                {
+                  "issue": 447,
+                  "handle": "cenk_sss",
+                  "found": false
+                },
+                {
+                  "issue": 445,
+                  "handle": "xsbebi",
+                  "uid": "2099119416122466304",
+                  "label": "porn_bot",
+                  "tier": "human"
+                },
+                {
+                  "issue": 444,
+                  "handle": "little_morichan",
+                  "uid": null,
+                  "label": "porn_bot",
+                  "tier": "auto"
+                }
+              ],
+              "post_mutation_verification": "not_applicable_no_mutations; required D1 and review_log verification remains blocked"
+            },
+            "local_validation": {
+              "command": "pnpm typecheck && pnpm test && pnpm lint",
+              "result": "passed",
+              "tests_passed": 23
+            },
+            "next_action": "Maintainer with existing D1 authorization must inspect original account rows and review_log, complete the human review gate, apply only the justified account change, then verify D1/check/whitelist/artifacts before closing the appeal."
+          }
+        ]
+      }
+    },
+    {
+      "source": "ZUO-45 (Multica local commit a429b7a, not pushed)",
+      "document": {
+        "schema": 1,
+        "initialization_note": "Requested path is absent from base commit; initialized with this run. Unmerged historical branches were not reconstructed.",
+        "runs": [
+          {
+            "multica_issue": "ZUO-45",
+            "multica_issue_id": "01a0e291-762e-7c65-ac2a-28c62f0e87ae",
+            "observed_at": "2026-09-27T11:19:39.747835+00:00",
+            "base_commit": "b5b32fda2225c272e961ab93dfd65ab302fd5c8d",
+            "status": "blocked_pending_artifact_and_human_review",
+            "open_issues_scanned": [
+              444,
+              445,
+              447,
+              448,
+              450,
+              436
+            ],
+            "appeals_reviewed": [
+              444,
+              445,
+              447,
+              448,
+              450
+            ],
+            "excluded": {
+              "436": "feature request, not an appeal"
+            },
+            "production_access": {
+              "method": "online admin API with injected ADMIN_TOKEN; no wrangler",
+              "authenticated_read": true,
+              "authenticated_write": true,
+              "initial_urllib_request": "HTTP 403 Cloudflare 1010; standard curl client returned HTTP 200; not a token permission blocker"
+            },
+            "safety_resolution": "Steps request whitelisting for insufficient evidence but Safety requires pending human review for insufficient evidence. Only clearly out-of-scope false positives were changed; uncertain accounts were retained without a new blacklist confirmation.",
+            "accounts": [
+              {
+                "issue": 444,
+                "issue_url": "https://github.com/foru17/make-x-great-again/issues/444",
+                "handle": "Little_Morichan",
+                "submitted_uid": "1636035343370838017",
+                "verified_uid": "1636035343370838017",
+                "decision": "whitelisted",
+                "reason": "False positive: listing evidence is another account mentioning the appellant in a vulgar post. Current profile is a student/cosplayer; observed own posts concern cosplay, job seeking and daily expression.",
+                "rowid": 506954,
+                "rowid_source": "third element of admin nextBefore cursor for matching first row with limit=1",
+                "x_evidence": {
+                  "url": "https://x.com/Little_Morichan",
+                  "http_status": 200,
+                  "uid_source": "SSR UserByScreenName User.rest_id matching core.screen_name",
+                  "own_post_count": 5,
+                  "post_urls": [
+                    "https://x.com/Little_Morichan/status/2089734049795567804",
+                    "https://x.com/Little_Morichan/status/2104123463661424824",
+                    "https://x.com/Little_Morichan/status/2104008900785971604",
+                    "https://x.com/Little_Morichan/status/2103925678873964901",
+                    "https://x.com/Little_Morichan/status/2102844324442706148"
+                  ],
+                  "html_sha256": "27779f8e4c256978a3e073d30edf21154b4b3062d2f39eeca80456b554b14dcd",
+                  "media_inspected": false,
+                  "complete_history": false
+                },
+                "production_before": {
+                  "blacklist": [
+                    {
+                      "x_user_id": null,
+                      "handle": "little_morichan",
+                      "display_name": "",
+                      "verdict_label": "porn_bot",
+                      "confidence": 1,
+                      "category": "porn",
+                      "reasons": "[\"auto-blacklisted: @-mentioned by spam account @wn_lulu which matched keyword rule \\\"她骚\\\"\"]",
+                      "evidence_text": "bjke比她好看的没她骚x2比她骚的没她好看\n@Little_Morichan",
+                      "last_scored": 1784907006603,
+                      "source": "auto_keyword_mention",
+                      "agent_id": null,
+                      "agent_label": null,
+                      "published_at": 1784907006603,
+                      "published_tier": "mention",
+                      "last_decided_by": null,
+                      "last_decided_at": null,
+                      "reporters": 0
+                    }
+                  ],
+                  "whitelist": [],
+                  "queue": []
+                },
+                "audit_id": 783188,
+                "github_comment_id": 5855378635,
+                "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/444#issuecomment-5855378635",
+                "github_state": "OPEN",
+                "check": {
+                  "hits": {}
+                },
+                "historical_log": "Latest 100 global review_log entries inspected; this is not a complete per-account history.",
+                "production_after": {
+                  "issue": 444,
+                  "write_result": {
+                    "ok": true,
+                    "handle": "little_morichan",
+                    "status": "whitelisted"
+                  },
+                  "whitelist": {
+                    "list": [
+                      {
+                        "x_user_id": "1636035343370838017",
+                        "handle": "little_morichan",
+                        "display_name": "",
+                        "reasons": "[\"whitelisted by admin\",\"ZUO-45 GitHub #444: 当前 X 结构化 UID 已核实；原证据仅他人粗俗帖 @提及，本人学生/coser日常内容，明确范围外误报，按治理规范移除。\"]",
+                        "last_scored": 1790507804714,
+                        "last_decided_by": null,
+                        "last_decided_at": null
+                      }
+                    ],
+                    "nextBefore": "WzE3OTA1MDc4MDQ3MTQsMTc5MDUwNzgwNDcxNCw1MDY5NTRd",
+                    "appliedFilters": {
+                      "q": "little_morichan",
+                      "sort": "time_desc"
+                    }
+                  },
+                  "blacklist_matching_rows": [],
+                  "audit": [
+                    {
+                      "id": 783188,
+                      "x_user_id": "1636035343370838017",
+                      "handle": "little_morichan",
+                      "action": "whitelist_add",
+                      "actor": "admin",
+                      "note": "ZUO-45 GitHub #444: 当前 X 结构化 UID 已核实；原证据仅他人粗俗帖 @提及，本人学生/coser日常内容，明确范围外误报，按治理规范移除。",
+                      "at": 1790507804714
+                    }
+                  ],
+                  "check": {
+                    "hits": {}
+                  },
+                  "rowid_before": 506954,
+                  "rowid_after": 506954
+                },
+                "rowid_unchanged": true,
+                "published_fields_verification": "Admin whitelist membership and absence from admin blacklist verified. API does not expose raw published_at/published_tier in whitelist responses; NULL-clearing is source-code behavior, not a directly observed column assertion.",
+                "github_close_reason": null,
+                "artifact_membership": {
+                  "lite": [
+                    [
+                      "",
+                      "little_morichan",
+                      "ppa"
+                    ]
+                  ],
+                  "shards": {
+                    "handle:little_morichan": {
+                      "userId": null,
+                      "handle": "little_morichan",
+                      "label": "porn_bot",
+                      "confidence": 1,
+                      "published_at": 1784907006603,
+                      "tier": "auto"
+                    }
+                  }
+                },
+                "processing_status": "production_whitelisted_awaiting_artifact_removal"
+              },
+              {
+                "issue": 445,
+                "issue_url": "https://github.com/foru17/make-x-great-again/issues/445",
+                "handle": "XSbebi",
+                "submitted_uid": "2099119416122466304",
+                "verified_uid": "2099119416122466304",
+                "decision": "whitelisted",
+                "reason": "False positive: original evidence is a model/photographer credit. Profile offers photoshoots and current posts discuss photos and daily life. These are outside the pornographic-advertising bot scope.",
+                "rowid": 1081555,
+                "rowid_source": "third element of admin nextBefore cursor for matching first row with limit=1",
+                "x_evidence": {
+                  "url": "https://x.com/XSbebi",
+                  "http_status": 200,
+                  "uid_source": "SSR UserByScreenName User.rest_id matching core.screen_name",
+                  "own_post_count": 4,
+                  "post_urls": [
+                    "https://x.com/XSbebi/status/2102992455104954477",
+                    "https://x.com/XSbebi/status/2102382958774763868",
+                    "https://x.com/XSbebi/status/2101345720200810733",
+                    "https://x.com/XSbebi/status/2099509595358277900"
+                  ],
+                  "html_sha256": "836a8198605ffc0b8ae11406b067d6e1d9b7cdfa6bbfea908ff1857bfd8472b3",
+                  "media_inspected": false,
+                  "complete_history": false
+                },
+                "production_before": {
+                  "blacklist": [
+                    {
+                      "x_user_id": "2099119416122466304",
+                      "handle": "xsbebi",
+                      "display_name": "X病病bebi",
+                      "verdict_label": "porn_bot",
+                      "confidence": 0.88,
+                      "category": "porn",
+                      "reasons": "[\"linkless redirect bait\",\"sexual/solicitation template\",\"@mention funnel to another account\",\"off-topic reply in unrelated thread\"]",
+                      "evidence_text": "模特：我\n：\n@RZT0571",
+                      "last_scored": 1789959393304,
+                      "source": "auto_scan",
+                      "agent_id": "batch-openai-v2",
+                      "agent_label": "uncertain",
+                      "published_at": 1789983207612,
+                      "published_tier": "human",
+                      "last_decided_by": "agent:batch-openai-v2",
+                      "last_decided_at": 1789344163585,
+                      "reporters": 0
+                    }
+                  ],
+                  "whitelist": [],
+                  "queue": []
+                },
+                "audit_id": 783189,
+                "github_comment_id": 5855378837,
+                "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/445#issuecomment-5855378837",
+                "github_state": "OPEN",
+                "check": {
+                  "hits": {}
+                },
+                "historical_log": "Latest 100 global review_log entries inspected; this is not a complete per-account history.",
+                "production_after": {
+                  "issue": 445,
+                  "write_result": {
+                    "ok": true,
+                    "handle": "xsbebi",
+                    "status": "whitelisted"
+                  },
+                  "whitelist": {
+                    "list": [
+                      {
+                        "x_user_id": "2099119416122466304",
+                        "handle": "xsbebi",
+                        "display_name": "X病病bebi",
+                        "reasons": "[\"whitelisted by admin\",\"ZUO-45 GitHub #445: 当前 X 结构化 UID 已核实；原证据为模特/摄影署名，本人约拍及日常内容，不构成色情广告 bot，按治理规范移除。\"]",
+                        "last_scored": 1790507813123,
+                        "last_decided_by": "agent:batch-openai-v2",
+                        "last_decided_at": 1789344163585
+                      }
+                    ],
+                    "nextBefore": "WzE3OTA1MDc4MTMxMjMsMTc5MDUwNzgxMzEyMywxMDgxNTU1XQ==",
+                    "appliedFilters": {
+                      "q": "xsbebi",
+                      "sort": "time_desc"
+                    }
+                  },
+                  "blacklist_matching_rows": [],
+                  "audit": [
+                    {
+                      "id": 783189,
+                      "x_user_id": "2099119416122466304",
+                      "handle": "xsbebi",
+                      "action": "whitelist_add",
+                      "actor": "admin",
+                      "note": "ZUO-45 GitHub #445: 当前 X 结构化 UID 已核实；原证据为模特/摄影署名，本人约拍及日常内容，不构成色情广告 bot，按治理规范移除。",
+                      "at": 1790507813123
+                    }
+                  ],
+                  "check": {
+                    "hits": {}
+                  },
+                  "rowid_before": 1081555,
+                  "rowid_after": 1081555
+                },
+                "rowid_unchanged": true,
+                "published_fields_verification": "Admin whitelist membership and absence from admin blacklist verified. API does not expose raw published_at/published_tier in whitelist responses; NULL-clearing is source-code behavior, not a directly observed column assertion.",
+                "github_close_reason": null,
+                "artifact_membership": {
+                  "lite": [
+                    [
+                      "2099119416122466304",
+                      "xsbebi",
+                      "pph"
+                    ]
+                  ],
+                  "shards": {
+                    "2099119416122466304": {
+                      "userId": "2099119416122466304",
+                      "handle": "xsbebi",
+                      "label": "porn_bot",
+                      "confidence": 0.88,
+                      "published_at": 1789983207612,
+                      "tier": "human"
+                    },
+                    "handle:xsbebi": {
+                      "userId": "2099119416122466304",
+                      "handle": "xsbebi",
+                      "label": "porn_bot",
+                      "confidence": 0.88,
+                      "published_at": 1789983207612,
+                      "tier": "human"
+                    }
+                  }
+                },
+                "processing_status": "production_whitelisted_awaiting_artifact_removal"
+              },
+              {
+                "issue": 447,
+                "issue_url": "https://github.com/foru17/make-x-great-again/issues/447",
+                "handle": "Cenk_SsS",
+                "submitted_uid": "177899806",
+                "verified_uid": "177899806",
+                "decision": "pending_human_review",
+                "reason": "Pending human review: current own posts contain a claimed token gain and invitation to a private Telegram group, while original stored evidence is an opinion about floating interest rates. More context and repeated-spam evidence needed; do not promote the old agent_whitelist verdict automatically.",
+                "rowid": 405396,
+                "rowid_source": "third element of admin nextBefore cursor for matching first row with limit=1",
+                "x_evidence": {
+                  "url": "https://x.com/Cenk_SsS",
+                  "http_status": 200,
+                  "uid_source": "SSR UserByScreenName User.rest_id matching core.screen_name",
+                  "own_post_count": 5,
+                  "post_urls": [
+                    "https://x.com/Cenk_SsS/status/2104068495332045126",
+                    "https://x.com/Cenk_SsS/status/2104038192102154302",
+                    "https://x.com/Cenk_SsS/status/2104032747279032711",
+                    "https://x.com/Cenk_SsS/status/2104004120306929856",
+                    "https://x.com/Cenk_SsS/status/2104000083016749116"
+                  ],
+                  "html_sha256": "1ea55551e5bfe1181cdfcef1333e847d491320040f4279284b40784afb92cbb7",
+                  "media_inspected": false,
+                  "complete_history": false
+                },
+                "production_before": {
+                  "blacklist": [],
+                  "whitelist": [],
+                  "queue": [
+                    {
+                      "x_user_id": "177899806",
+                      "handle": "cenk_sss",
+                      "display_name": "0xCenk.ETH",
+                      "verdict_label": "spam",
+                      "confidence": 0.88,
+                      "reasons": "[\"reported\"]",
+                      "evidence_text": "浮动利率是个骗局",
+                      "last_scored": 1784016844631,
+                      "source": "block",
+                      "category": "crypto",
+                      "status": "agent_whitelist",
+                      "agent_id": "batch-openai-v2",
+                      "agent_label": "legit",
+                      "agent_confidence": 0.95,
+                      "agent_at": 1785010807042,
+                      "agent_reasons": "[\"no blacklistable evidence\"]",
+                      "agent_model": "gpt-5.5",
+                      "reporters": 1
+                    }
+                  ]
+                },
+                "audit_id": null,
+                "github_comment_id": 5855359278,
+                "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/447#issuecomment-5855359278",
+                "github_state": "OPEN",
+                "check": {
+                  "hits": {}
+                },
+                "historical_log": "Latest 100 global review_log entries inspected; this is not a complete per-account history.",
+                "production_write": false,
+                "github_close_reason": null,
+                "artifact_membership": {
+                  "lite": [],
+                  "shards": {}
+                },
+                "processing_status": "pending_human_review"
+              },
+              {
+                "issue": 448,
+                "issue_url": "https://github.com/foru17/make-x-great-again/issues/448",
+                "handle": "FSfleetinglife",
+                "submitted_uid": "1517427878555619329",
+                "verified_uid": "1517427878555619329",
+                "decision": "pending_human_review",
+                "reason": "Pending human review: stored evidence promotes a monetization course with a cloud-drive link; 9 reports are prioritization only. Current five own posts are everyday content. Need original post/context and repeated commercial-spam evidence.",
+                "rowid": 85814,
+                "rowid_source": "third element of admin nextBefore cursor for matching first row with limit=1",
+                "x_evidence": {
+                  "url": "https://x.com/FSfleetinglife",
+                  "http_status": 200,
+                  "uid_source": "SSR UserByScreenName User.rest_id matching core.screen_name",
+                  "own_post_count": 5,
+                  "post_urls": [
+                    "https://x.com/FSfleetinglife/status/2104167668991307966",
+                    "https://x.com/FSfleetinglife/status/2104136462618992731",
+                    "https://x.com/FSfleetinglife/status/2104119098154291439",
+                    "https://x.com/FSfleetinglife/status/2104100978530418980",
+                    "https://x.com/FSfleetinglife/status/2104083613872431327"
+                  ],
+                  "html_sha256": "9aa7edc0a2e42263f6cd1ec08692c99540803e9458a5e73076f960356de67c06",
+                  "media_inspected": false,
+                  "complete_history": false
+                },
+                "production_before": {
+                  "blacklist": [
+                    {
+                      "x_user_id": "1517427878555619329",
+                      "handle": "fsfleetinglife",
+                      "display_name": "浮生梦一场",
+                      "verdict_label": "spam",
+                      "confidence": 1,
+                      "category": "marketing",
+                      "reasons": "[\"reported\"]",
+                      "evidence_text": "《公众号爆文变现项目 满500粉开收益 万次阅读20-200元 10W爆款赚2000》\n\n核心教你在公众号满500粉丝后开通流量主，通过阅读量获取收益（单价20-200元/万次阅读，10W爆款可赚200-2000元）。课程涵盖流量主底层逻辑、起号方式、多领域爆文教学！\n\nKK：\nhttps://\npan.quark.cn/s/515b87925d57",
+                      "last_scored": 1783171291660,
+                      "source": "auto_keyword",
+                      "agent_id": null,
+                      "agent_label": null,
+                      "published_at": 1780623515317,
+                      "published_tier": "rule",
+                      "last_decided_by": null,
+                      "last_decided_at": null,
+                      "reporters": 9
+                    }
+                  ],
+                  "whitelist": [],
+                  "queue": []
+                },
+                "audit_id": null,
+                "github_comment_id": 5855359505,
+                "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/448#issuecomment-5855359505",
+                "github_state": "OPEN",
+                "check": {
+                  "hits": {}
+                },
+                "historical_log": "Latest 100 global review_log entries inspected; this is not a complete per-account history.",
+                "production_write": false,
+                "github_close_reason": null,
+                "artifact_membership": {
+                  "lite": [
+                    [
+                      "1517427878555619329",
+                      "fsfleetinglife",
+                      "sma"
+                    ]
+                  ],
+                  "shards": {
+                    "1517427878555619329": {
+                      "userId": "1517427878555619329",
+                      "handle": "fsfleetinglife",
+                      "label": "spam",
+                      "confidence": 1,
+                      "published_at": 1780623515317,
+                      "tier": "auto"
+                    },
+                    "handle:fsfleetinglife": {
+                      "userId": "1517427878555619329",
+                      "handle": "fsfleetinglife",
+                      "label": "spam",
+                      "confidence": 1,
+                      "published_at": 1780623515317,
+                      "tier": "auto"
+                    }
+                  }
+                },
+                "processing_status": "pending_human_review"
+              },
+              {
+                "issue": 450,
+                "issue_url": "https://github.com/foru17/make-x-great-again/issues/450",
+                "handle": "NirvaDeva",
+                "submitted_uid": "1579831531345915905",
+                "verified_uid": "1579831531345915905",
+                "decision": "pending_human_review",
+                "reason": "Pending human review: UID and handle searches across admin blacklist/whitelist/queue return no matching rows. These status-scoped endpoints do not prove absence from all D1 statuses. Current political expression is out of scope; original row and historical decision must be located.",
+                "rowid": null,
+                "rowid_source": "not exposed: no matching row in three status-scoped endpoints",
+                "x_evidence": {
+                  "url": "https://x.com/NirvaDeva",
+                  "http_status": 200,
+                  "uid_source": "SSR UserByScreenName User.rest_id matching core.screen_name",
+                  "own_post_count": 5,
+                  "post_urls": [
+                    "https://x.com/NirvaDeva/status/2074794642433003710",
+                    "https://x.com/NirvaDeva/status/2103835424942956716",
+                    "https://x.com/NirvaDeva/status/2095417036092621011",
+                    "https://x.com/NirvaDeva/status/2090692728283865226",
+                    "https://x.com/NirvaDeva/status/2087486927415152932"
+                  ],
+                  "html_sha256": "dc1a5ecb73b0f032237ef8dddb89b347744c216e2791c223e4f2d1873a13b655",
+                  "media_inspected": false,
+                  "complete_history": false
+                },
+                "production_before": {
+                  "blacklist": [],
+                  "whitelist": [],
+                  "queue": []
+                },
+                "audit_id": null,
+                "github_comment_id": 5855359719,
+                "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/450#issuecomment-5855359719",
+                "github_state": "OPEN",
+                "check": {
+                  "hits": {}
+                },
+                "historical_log": "Latest 100 global review_log entries inspected; this is not a complete per-account history.",
+                "production_write": false,
+                "github_close_reason": null,
+                "artifact_membership": {
+                  "lite": [],
+                  "shards": {}
+                },
+                "processing_status": "pending_human_review"
+              }
+            ],
+            "public_whitelist": {
+              "list": [
+                {
+                  "x_user_id": "1636035343370838017",
+                  "handle": "little_morichan",
+                  "last_scored": 1790507804714
+                },
+                {
+                  "x_user_id": "2099119416122466304",
+                  "handle": "xsbebi",
+                  "last_scored": 1790507813123
+                }
+              ],
+              "latestAt": 1790507813123,
+              "count": 2
+            },
+            "initial_artifact_meta": {
+              "count": 182484,
+              "day": 372,
+              "week": 6517,
+              "pending": 102,
+              "generatedAt": 1790506832710,
+              "latestAt": 1790507423119,
+              "version": "v-_____f_________-182484",
+              "artifacts": {
+                "bloom": "/v1/artifacts/bloom-v-_____f_________-182484.b64",
+                "shards": "/v1/artifacts/shards-v-_____f_________-182484.json",
+                "meta": "/v1/artifacts/meta-v-_____f_________-182484.json",
+                "lite": "/v1/artifacts/lite-v-_____f_________-182484.json"
+              }
+            },
+            "validation": {
+              "pnpm install --frozen-lockfile": "PASS",
+              "pnpm typecheck": "PASS",
+              "pnpm test": "PASS (23/23)",
+              "pnpm lint": "PASS (71 files)",
+              "python3 -m json.tool docs/goal-open-issues-2026-08-26.json > /dev/null": "PASS",
+              "git diff --cached --check": "PASS",
+              "audit consistency and injected-token scan": "PASS"
+            },
+            "delivery": {
+              "branch": "ZUO-45-appeal-audit",
+              "push": false,
+              "pull_request": null,
+              "reason": "Task explicitly requests local commit only, no push and no default-branch modification."
+            },
+            "mirror_sync": {
+              "ok": true,
+              "results": {
+                "whitelist": "committed",
+                "blacklist": "committed",
+                "lite": "committed"
+              }
+            },
+            "mirror_commit": "https://github.com/foru17/make-x-great-again/commit/bcd2a7f24fbdbb4a9ff182b9ac290bebb4a895df",
+            "mirror_lite_verified": {
+              "whitelisted_handles_absent": [
+                "little_morichan",
+                "xsbebi"
+              ],
+              "unchanged_pending_handle_present": [
+                "fsfleetinglife"
+              ]
+            },
+            "finished_at": "2026-09-27T11:22:12.507162+00:00",
+            "final_artifact_meta": {
+              "count": 182484,
+              "day": 372,
+              "week": 6514,
+              "pending": 102,
+              "generatedAt": 1790506832710,
+              "latestAt": 1790507423119,
+              "version": "v-_____f_________-182484",
+              "artifacts": {
+                "bloom": "/v1/artifacts/bloom-v-_____f_________-182484.b64",
+                "shards": "/v1/artifacts/shards-v-_____f_________-182484.json",
+                "meta": "/v1/artifacts/meta-v-_____f_________-182484.json",
+                "lite": "/v1/artifacts/lite-v-_____f_________-182484.json"
+              }
+            },
+            "artifact_validation": {
+              "result": "FAIL: whitelisted accounts remain in latest discoverable R2 version",
+              "version": "v-_____f_________-182484",
+              "observed_at": "2026-09-27T11:20:49Z",
+              "lite_sha256": "194752ad8c7c264b458279fe6f8306dd22d5a292503be1e3cff7e8dcf362b4e6",
+              "shards_sha256": "92500f8289af91c89230461a88d44163b31fda4f0ee1793a2e90c336729e1ae6",
+              "note": "Hashes are for saved UTF-8 JSON response bodies. R2 publication was not forced: exposed sync-mirror only updates GitHub mirror."
+            },
+            "blockers": [
+              "R2 lite/shards still contain #444 and #445 despite successful production whitelisting and GitHub mirror removal. Verify next published version before closing.",
+              "#447 and #448 require human evidence review; #450 requires locating original D1 row/history beyond the available status-scoped views."
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "source": "ZUO-46 (Multica local commit de11df9, not pushed)",
+      "document": {
+        "schema": 1,
+        "runs": [
+          {
+            "multica_issue": "ZUO-46",
+            "multica_issue_id": "01a0e2de-07f2-7493-8a2d-ffa4014ae988",
+            "checked_at": "2026-09-27T12:39:15.703903+00:00",
+            "scope": "Publication follow-up only; trigger contains no new GitHub issue number",
+            "concurrent_project_in_progress_issues_excluding_self": 0,
+            "skipped_needs_maintainer": [
+              447,
+              448,
+              450
+            ],
+            "skipped_non_appeal": [
+              436
+            ],
+            "accounts": [
+              {
+                "issue": 444,
+                "url": "https://github.com/foru17/make-x-great-again/issues/444",
+                "handle": "little_morichan",
+                "uid": "1636035343370838017",
+                "decision": "already_whitelisted_artifacts_pending",
+                "rowid": 506954,
+                "rowid_source": "Prior maintainer GitHub comment; allowed GET endpoints omit rowid, not independently reverified this run",
+                "audit_id": 783188,
+                "audit_action": "whitelist_add",
+                "audit_at": 1790507804714,
+                "audit_reverified": true,
+                "github_comment_id": null,
+                "previous_github_comment_id": 5855378635,
+                "github_comment_action": "No new production fact or final conclusion; no duplicate comment",
+                "github_state": "OPEN",
+                "production_status": "whitelisted",
+                "admin_blacklist_exact_handle_or_uid_matches": 0,
+                "public_whitelist_present": true,
+                "public_check_hit": false,
+                "lite_present": true,
+                "shards_present": true,
+                "new_production_writes": 0,
+                "x_profile_check": "Prior review retained; this run only rechecks publication, no new account verdict",
+                "closure_eligible": false
+              },
+              {
+                "issue": 445,
+                "url": "https://github.com/foru17/make-x-great-again/issues/445",
+                "handle": "xsbebi",
+                "uid": "2099119416122466304",
+                "decision": "already_whitelisted_artifacts_pending",
+                "rowid": 1081555,
+                "rowid_source": "Prior maintainer GitHub comment; allowed GET endpoints omit rowid, not independently reverified this run",
+                "audit_id": 783189,
+                "audit_action": "whitelist_add",
+                "audit_at": 1790507813123,
+                "audit_reverified": true,
+                "github_comment_id": null,
+                "previous_github_comment_id": 5855378837,
+                "github_comment_action": "No new production fact or final conclusion; no duplicate comment",
+                "github_state": "OPEN",
+                "production_status": "whitelisted",
+                "admin_blacklist_exact_handle_or_uid_matches": 0,
+                "public_whitelist_present": true,
+                "public_check_hit": false,
+                "lite_present": true,
+                "shards_present": true,
+                "new_production_writes": 0,
+                "x_profile_check": "Prior review retained; this run only rechecks publication, no new account verdict",
+                "closure_eligible": false
+              }
+            ],
+            "meta": {
+              "version": "v-_____f_________-182484",
+              "generatedAt": 1790506832710,
+              "count": 182484
+            },
+            "public_verification": [
+              {
+                "path": "/v1/whitelist?since=1790507804713&limit=2000",
+                "version": null,
+                "generatedAt": null,
+                "count": 2,
+                "matching_rows": [
+                  {
+                    "x_user_id": "1636035343370838017",
+                    "handle": "little_morichan",
+                    "last_scored": 1790507804714
+                  },
+                  {
+                    "x_user_id": "2099119416122466304",
+                    "handle": "xsbebi",
+                    "last_scored": 1790507813123
+                  }
+                ]
+              },
+              {
+                "path": "/v1/artifacts/lite-v-_____f_________-182484.json",
+                "version": "v-_____f_________-182484",
+                "generatedAt": 1790507422280,
+                "count": 182484,
+                "matching_entries": {
+                  "6397": [
+                    "2099119416122466304",
+                    "xsbebi",
+                    "pph"
+                  ],
+                  "33306": [
+                    "",
+                    "little_morichan",
+                    "ppa"
+                  ]
+                }
+              },
+              {
+                "path": "/v1/artifacts/shards-v-_____f_________-182484.json",
+                "version": "v-_____f_________-182484",
+                "generatedAt": 1790507422280,
+                "count": 182484,
+                "matching_entries": {
+                  "2099119416122466304": {
+                    "userId": "2099119416122466304",
+                    "handle": "xsbebi",
+                    "label": "porn_bot",
+                    "confidence": 0.88,
+                    "published_at": 1789983207612,
+                    "tier": "human"
+                  },
+                  "handle:xsbebi": {
+                    "userId": "2099119416122466304",
+                    "handle": "xsbebi",
+                    "label": "porn_bot",
+                    "confidence": 0.88,
+                    "published_at": 1789983207612,
+                    "tier": "human"
+                  },
+                  "handle:little_morichan": {
+                    "userId": null,
+                    "handle": "little_morichan",
+                    "label": "porn_bot",
+                    "confidence": 1,
+                    "published_at": 1784907006603,
+                    "tier": "auto"
+                  }
+                }
+              }
+            ],
+            "result": "生产已加白，工件待发布；原加白已超过 25 分钟，保持 GitHub Issue 开放，不置权限阻塞。",
+            "limitations": [
+              "Admin whitelist/blacklist GET omit rowid and whitelist publication fields; their clearing cannot be directly reverified through these responses.",
+              "Initial Python urllib requests returned HTTP 403; curl requests to all seven endpoints returned HTTP 200, admin access verified."
+            ],
+            "validation_scope": "JSON audit only; no application code change"
+          }
+        ]
+      }
+    },
+    {
+      "source": "PR #451 (ZUO-47-appeal-audit)",
+      "document": {
+        "schema": 1,
+        "runs": [
+          {
+            "issue": "ZUO-47",
+            "multicaIssueId": "01a0e346-7cde-76fd-9508-dd24fe10481d",
+            "checkedAt": "2026-09-27T14:33:22.037606+00:00",
+            "scope": "Read-only publication follow-up for previously upheld appeals; no new account adjudication or production writes.",
+            "concurrencyCheck": "No other in_progress issue in the project. No specific new GitHub trigger was provided.",
+            "xEvidence": "Prior completed profile/UID verification cited by the existing whitelist audit. Current direct web reads failed (403/cache miss); no fresh X profile verification or new adjudication claimed.",
+            "apiAccess": "GET admin/public requests succeeded with Mozilla/5.0 User-Agent after default urllib requests were rejected with 403. No production authorization blocker.",
+            "skippedNeedsMaintainer": [
+              447,
+              448,
+              450
+            ],
+            "skippedOutOfScope": [
+              436
+            ],
+            "artifacts": [
+              {
+                "path": "/v1/artifacts/lite-vdab7f1f3fcb60b0a-182484.json",
+                "status": 200,
+                "version": "vdab7f1f3fcb60b0a-182484",
+                "generatedAt": 1790519418592,
+                "count": 182484,
+                "entriesCount": 182484,
+                "matches": [],
+                "verificationMethod": "Decoded lite tuples [userId, handle, ...]; matched both identity fields."
+              },
+              {
+                "path": "/v1/artifacts/shards-vdab7f1f3fcb60b0a-182484.json",
+                "status": 200,
+                "version": "vdab7f1f3fcb60b0a-182484",
+                "generatedAt": 1790519418592,
+                "count": 182484,
+                "entriesCount": 355069,
+                "matches": [],
+                "verificationMethod": "Checked numeric-ID and handle keys plus entry userId/handle fields."
+              }
+            ],
+            "records": [
+              {
+                "issue": 444,
+                "url": "https://github.com/foru17/make-x-great-again/issues/444",
+                "handle": "Little_Morichan",
+                "uid": "1636035343370838017",
+                "decision": "close_completed_after_publication_verified",
+                "productionStatus": "whitelisted",
+                "rowid": 506954,
+                "rowidSource": "https://github.com/foru17/make-x-great-again/issues/444#issuecomment-5855378635",
+                "rowidVerification": "Historical value only; current admin whitelist projection omits rowid. Current handle/UID whitelist membership was re-read.",
+                "audit": {
+                  "id": 783188,
+                  "x_user_id": "1636035343370838017",
+                  "handle": "little_morichan",
+                  "action": "whitelist_add",
+                  "actor": "admin",
+                  "note": "ZUO-45 GitHub #444: 当前 X 结构化 UID 已核实；原证据仅他人粗俗帖 @提及，本人学生/coser日常内容，明确范围外误报，按治理规范移除。",
+                  "at": 1790507804714
+                },
+                "newAuditIds": [],
+                "githubComment": {
+                  "issue": 444,
+                  "commentUrl": "https://github.com/foru17/make-x-great-again/issues/444#issuecomment-5856760907",
+                  "commentId": 5856760907
+                },
+                "verification": {
+                  "adminWhitelist": true,
+                  "adminBlacklistExactAccountMatches": 0,
+                  "publicWhitelist": true,
+                  "humanConfirmedCheckHits": 0,
+                  "liteAbsent": true,
+                  "shardsAbsent": true,
+                  "artifactGeneratedAfterWhitelistWrite": true,
+                  "githubState": "CLOSED",
+                  "githubStateReason": "COMPLETED"
+                }
+              },
+              {
+                "issue": 445,
+                "url": "https://github.com/foru17/make-x-great-again/issues/445",
+                "handle": "XSbebi",
+                "uid": "2099119416122466304",
+                "decision": "close_completed_after_publication_verified",
+                "productionStatus": "whitelisted",
+                "rowid": 1081555,
+                "rowidSource": "https://github.com/foru17/make-x-great-again/issues/445#issuecomment-5855378837",
+                "rowidVerification": "Historical value only; current admin whitelist projection omits rowid. Current handle/UID whitelist membership was re-read.",
+                "audit": {
+                  "id": 783189,
+                  "x_user_id": "2099119416122466304",
+                  "handle": "xsbebi",
+                  "action": "whitelist_add",
+                  "actor": "admin",
+                  "note": "ZUO-45 GitHub #445: 当前 X 结构化 UID 已核实；原证据为模特/摄影署名，本人约拍及日常内容，不构成色情广告 bot，按治理规范移除。",
+                  "at": 1790507813123
+                },
+                "newAuditIds": [],
+                "githubComment": {
+                  "issue": 445,
+                  "commentUrl": "https://github.com/foru17/make-x-great-again/issues/445#issuecomment-5856761588",
+                  "commentId": 5856761588
+                },
+                "verification": {
+                  "adminWhitelist": true,
+                  "adminBlacklistExactAccountMatches": 0,
+                  "publicWhitelist": true,
+                  "humanConfirmedCheckHits": 0,
+                  "liteAbsent": true,
+                  "shardsAbsent": true,
+                  "artifactGeneratedAfterWhitelistWrite": true,
+                  "githubState": "CLOSED",
+                  "githubStateReason": "COMPLETED"
+                }
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}
