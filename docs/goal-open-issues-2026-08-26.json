@@ -1,0 +1,222 @@
+{
+  "schema": 1,
+  "initialization_note": "The requested audit path is absent at the recorded base commit. This file starts with ZUO-43 observations; no historical audit records were reconstructed from unmerged branches.",
+  "runs": [
+    {
+      "multica_issue": "ZUO-43",
+      "multica_issue_id": "01a0e0f5-6cc4-7b6b-98e4-9c2d19a11e4e",
+      "observed_at": "2026-09-27T03:47:48.132080+00:00",
+      "base_commit": "b5b32fda2225c272e961ab93dfd65ab302fd5c8d",
+      "status": "blocked_pending_human_review",
+      "scope": {
+        "trigger_issue": 448,
+        "open_issues_scanned": [
+          448,
+          447,
+          445,
+          444,
+          436
+        ],
+        "new_appeals_reviewed": [
+          448
+        ],
+        "existing_pending_appeals": [
+          {
+            "issue": 447,
+            "comment_id": 5822812428
+          },
+          {
+            "issue": 445,
+            "comment_id": 5809393968
+          },
+          {
+            "issue": 444,
+            "comment_id": 5809394356
+          }
+        ],
+        "selection_note": "Existing appeals already have automation evidence/blocker replies and remain pending; they are not final decisions. No duplicate replies or production changes were made for them. Issue 436 is a feature request, not an appeal. No durable successful-run cursor was advanced."
+      },
+      "production_access": {
+        "command": "npx --yes wrangler@4.110.0 whoami",
+        "result": "You are not authenticated. Please run `wrangler login`.",
+        "d1_read": false,
+        "d1_write": false,
+        "review_log_read": false,
+        "review_log_write": false
+      },
+      "accounts": [
+        {
+          "issue": 448,
+          "issue_url": "https://github.com/foru17/make-x-great-again/issues/448",
+          "handle": "FSfleetinglife",
+          "submitted_uid": "1517427878555619329",
+          "verified_uid": "1517427878555619329",
+          "decision": "pending_human_review",
+          "recommendation": "Visible text alone is insufficient to establish commercial spam or pornographic-advertising bot activity; a maintainer must inspect original D1 evidence before deciding the appeal.",
+          "x_evidence": {
+            "url": "https://x.com/FSfleetinglife",
+            "http_status": 200,
+            "uid_source": "SSR UserByScreenName result User.rest_id, matching core.screen_name",
+            "profile_available": true,
+            "bio_empty": true,
+            "visible_post_text_count": 5,
+            "media_inspected": false,
+            "sample_is_complete_history": false,
+            "sample_posts": [
+              {
+                "url": "https://x.com/FSfleetinglife/status/2104049891660145147",
+                "topic_summary": "旅行路线"
+              },
+              {
+                "url": "https://x.com/FSfleetinglife/status/2104033030642061526",
+                "topic_summary": "体型讨论"
+              },
+              {
+                "url": "https://x.com/FSfleetinglife/status/2104015666324148420",
+                "topic_summary": "社保观点"
+              },
+              {
+                "url": "https://x.com/FSfleetinglife/status/2103886014012084529",
+                "topic_summary": "体育讨论"
+              },
+              {
+                "url": "https://x.com/FSfleetinglife/status/2103872221642883573",
+                "topic_summary": "电脑装配提问"
+              }
+            ],
+            "limitations": "Logged-out profile exposes only a limited text sample; attached images and account history were not reviewed. Third-party search results were not used as authoritative UID or verdict evidence."
+          },
+          "production_status": null,
+          "rowid": null,
+          "historical_audit_ids": null,
+          "audit_ids_created": [],
+          "production_action": "none",
+          "check": {
+            "url": "https://x.zuoluo.tv/v1/check?ids=1517427878555619329",
+            "response": {
+              "hits": {}
+            },
+            "interpretation": "No human-tier hit; auto-tier artifact membership means this is not evidence of removal."
+          },
+          "whitelist": {
+            "found_in_returned_pages": false,
+            "d1_status_verified": false
+          },
+          "artifacts": {
+            "lite_entries": [
+              [
+                "1517427878555619329",
+                "fsfleetinglife",
+                "sma"
+              ]
+            ],
+            "lite_decoded": {
+              "label": "spam",
+              "category": "marketing",
+              "tier": "auto"
+            },
+            "shards_entries": {
+              "1517427878555619329": {
+                "userId": "1517427878555619329",
+                "handle": "fsfleetinglife",
+                "label": "spam",
+                "confidence": 1,
+                "published_at": 1780623515317,
+                "tier": "auto"
+              },
+              "handle:fsfleetinglife": {
+                "userId": "1517427878555619329",
+                "handle": "fsfleetinglife",
+                "label": "spam",
+                "confidence": 1,
+                "published_at": 1780623515317,
+                "tier": "auto"
+              }
+            },
+            "removed_from_public_artifacts": false,
+            "interpretation": "Observed pre-existing publication, not a new finding of abuse or an appeal rejection."
+          },
+          "github_comment_id": 5852394719,
+          "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/448#issuecomment-5852394719",
+          "github_state": "open",
+          "github_close_reason": null
+        }
+      ],
+      "round_verification": {
+        "meta_url": "https://x.zuoluo.tv/v1/list/meta",
+        "meta_response": {
+          "count": 182116,
+          "day": 110,
+          "week": 6333,
+          "pending": 19,
+          "generatedAt": 1790476827168,
+          "latestAt": 1790476319341,
+          "version": "v-_____f_________-182116",
+          "artifacts": {
+            "bloom": "/v1/artifacts/bloom-v-_____f_________-182116.b64",
+            "shards": "/v1/artifacts/shards-v-_____f_________-182116.json",
+            "meta": "/v1/artifacts/meta-v-_____f_________-182116.json",
+            "lite": "/v1/artifacts/lite-v-_____f_________-182116.json"
+          }
+        },
+        "artifact_observations": {
+          "lite": {
+            "url": "https://x.zuoluo.tv/v1/artifacts/lite-v-_____f_________-182116.json",
+            "version": "v-_____f_________-182116",
+            "generatedAt": 1790479817132,
+            "count": 182116,
+            "sha256": "999a85d2c8c928a8cd4291f9036deabfe2394aec9fb4d0708bde681047017f11"
+          },
+          "shards": {
+            "url": "https://x.zuoluo.tv/v1/artifacts/shards-v-_____f_________-182116.json",
+            "version": "v-_____f_________-182116",
+            "generatedAt": 1790480428567,
+            "count": 182116,
+            "sha256": "c6ce968a5d5e945c7af0614b0fc6424638cc97a3bac39088902c13cfd3f25349"
+          }
+        },
+        "whitelist_pages": [
+          {
+            "url": "https://x.zuoluo.tv/v1/whitelist?limit=2000&since=0",
+            "count": 2000,
+            "latestAt": 1785658983000
+          },
+          {
+            "url": "https://x.zuoluo.tv/v1/whitelist?limit=2000&since=1785658983000",
+            "count": 476,
+            "latestAt": 1790081504093
+          }
+        ],
+        "whitelist_pagination_limitation": "API uses last_scored > since with a 2000 row limit. Equal timestamps at a full-page boundary may omit rows; absence cannot establish D1 status.",
+        "existing_pending_artifact_observations": [
+          {
+            "issue": 447,
+            "handle": "cenk_sss",
+            "found": false
+          },
+          {
+            "issue": 445,
+            "handle": "xsbebi",
+            "uid": "2099119416122466304",
+            "label": "porn_bot",
+            "tier": "human"
+          },
+          {
+            "issue": 444,
+            "handle": "little_morichan",
+            "uid": null,
+            "label": "porn_bot",
+            "tier": "auto"
+          }
+        ],
+        "post_mutation_verification": "not_applicable_no_mutations; required D1 and review_log verification remains blocked"
+      },
+      "local_validation": {
+        "command": "pnpm typecheck && pnpm test && pnpm lint",
+        "result": "passed",
+        "tests_passed": 23
+      },
+      "next_action": "Maintainer with existing D1 authorization must inspect original account rows and review_log, complete the human review gate, apply only the justified account change, then verify D1/check/whitelist/artifacts before closing the appeal."
+    }
+  ]
+}
