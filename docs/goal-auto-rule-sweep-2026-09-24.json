@@ -1,0 +1,19 @@
+{
+  "goal": "关键字扫描点击一次后自动扫完整个范围",
+  "tasks": [
+    {
+      "id": "A1",
+      "task": "移除正常扫描的人为暂停，自动续扫并防止无进展循环",
+      "verify": "超过十批的自动执行、游标不前进与异常边界测试",
+      "passes": true,
+      "evidence": "docs/auto-rule-sweep-2026-09-24.md"
+    },
+    {
+      "id": "A2",
+      "task": "界面验收、发布及只读生产核对",
+      "verify": "桌面/移动/暗色截图，真实 SQLite 21批一次点击完成，生产资源一致",
+      "passes": true,
+      "evidence": "docs/auto-rule-sweep-2026-09-24.md"
+    }
+  ]
+}

@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { type Account, api, type Item, rowKey } from "@/lib/adminApi";
-import { ago, fmtN } from "@/lib/format";
+import { agoZh, fmtN } from "@/lib/format";
 import { runBatch } from "@/lib/runBatch";
 import { useListData } from "@/lib/useListData";
 import { useSelection } from "@/lib/useSelection";
@@ -85,7 +85,7 @@ function AddDialog({ onAdded }: { onAdded: () => void }) {
               取消
             </Button>
             <Button type="submit" size="sm" className="bg-success text-success-foreground hover:bg-success/90">
-              加白名单
+              加入白名单
             </Button>
           </DialogFooter>
         </form>
@@ -138,7 +138,7 @@ export function WhitelistTab({ onAuth, onMutated }: { onAuth: () => void; onMuta
       title: "批量移出白名单",
       body: (
         <p>
-          确认把 <b>{keysArr.length}</b> 个账号移出白名单？它们将变回 rejected 状态。
+          确认把 <b>{keysArr.length}</b> 个账号移出白名单？它们会变回「已驳回」——不公开，但可以再被扫描。
         </p>
       ),
       okLabel: `移出 ${keysArr.length} 条`,
@@ -186,7 +186,7 @@ export function WhitelistTab({ onAuth, onMutated }: { onAuth: () => void; onMuta
       />
       {list.length === 0 ? (
         <EmptyState>
-          还没有白名单账号。点右上角「+ 加入白名单」，或在「待审队列」对某行点白名单。
+          没有符合条件的白名单账号。点右上角「+ 加入白名单」，或在「待审队列」对某行点白名单。
         </EmptyState>
       ) : (
         <ListShell>
@@ -199,10 +199,10 @@ export function WhitelistTab({ onAuth, onMutated }: { onAuth: () => void; onMuta
               onToggle={(shift) => sel.toggle(i, shift)}
               subExtra={
                 <>
-                  {note(a) && <span>· {note(a)}</span>}
                   <span title={new Date(a.last_decided_at || a.last_scored || 0).toLocaleString("zh-CN")}>
-                    · 加入 {ago(a.last_decided_at || a.last_scored)}
+                    · 入白名单 {agoZh(a.last_decided_at || a.last_scored)}
                   </span>
+                  {note(a) && <span>· {note(a)}</span>}
                 </>
               }
               actions={

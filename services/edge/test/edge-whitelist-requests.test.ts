@@ -45,6 +45,7 @@ interface Account {
   signals_hash?: string | null;
   last_scored?: number;
   category?: string | null;
+  avatar_url?: string | null;
 }
 
 interface WhitelistRequest {
@@ -143,6 +144,7 @@ class MockStmt implements D1PreparedStatement {
       return { results: rows as T[] };
     }
     if (this.sql.includes("FROM accounts WHERE lower(handle) IN")) {
+      this.db.accountLookupBindCounts.push(this.args.length);
       const handles = new Set(this.args.map((v) => String(v).toLowerCase()));
       const rows = this.db.accounts
         .filter((a) => handles.has(a.handle.toLowerCase()))
@@ -152,6 +154,7 @@ class MockStmt implements D1PreparedStatement {
           status: a.status,
           verdict_label: a.verdict_label,
           category: a.category ?? null,
+          avatar_url: a.avatar_url ?? null,
           last_scored: a.last_scored ?? 0,
         }));
       return { results: rows as T[] };
@@ -200,28 +203,90 @@ class MockStmt implements D1PreparedStatement {
       }
       return { meta: { changes: row ? 1 : 0 } };
     }
-    if (this.sql.includes("UPDATE accounts") && this.sql.includes("WHERE x_user_id=?")) {
-      // whitelistUpsert pass 1: canonical-row UPDATE by uid (rename-safe).
-      const [handle, reasons, _now, _dn, _av, uid] = this.args as [
+    if (
+      this.sql.includes("UPDATE accounts SET status=?") &&
+      this.sql.includes("WHERE lower(handle)=? AND x_user_id=?")
+    ) {
+      const [status, _publishedAt, _publishedTier, _category, handle, uid] = this.args as [
+        string,
+        number | null,
+        string | null,
+        string | null,
+        string,
+        string,
+      ];
+      const existing = this.db.accounts.find(
+        (account) =>
+          account.x_user_id === uid && account.handle.toLowerCase() === handle.toLowerCase(),
+      );
+      if (existing) existing.status = status;
+      return { meta: { changes: existing ? 1 : 0 } };
+    }
+    if (
+      this.sql.includes("UPDATE accounts SET status=?, published_at=NULL") &&
+      this.sql.includes("x_user_id IS NULL")
+    ) {
+      const [status, handle] = this.args as [string, string];
+      let changes = 0;
+      for (const account of this.db.accounts) {
+        if (
+          account.x_user_id === null &&
+          account.status === "auto_pending_review" &&
+          account.handle.toLowerCase() === handle.toLowerCase()
+        ) {
+          account.status = status;
+          changes++;
+        }
+      }
+      return { meta: { changes } };
+    }
+    if (
+      this.sql.includes("UPDATE accounts") &&
+      this.sql.includes("x_user_id=COALESCE(x_user_id, ?)") &&
+      this.sql.includes("WHERE rowid=?")
+    ) {
+      const [uid, handle, reasons, _now, _displayName, _avatarUrl, rowid] = this.args as [
+        string | null,
         string,
         string,
         number,
         string | null,
         string | null,
-        string,
+        number,
       ];
-      const existing = this.db.accounts.find((a) => a.x_user_id === uid);
+      const existing = this.db.accounts.find((account) => account.rowid === rowid);
       if (existing) {
+        existing.x_user_id = existing.x_user_id ?? uid;
         existing.handle = handle;
         existing.status = "whitelisted";
         existing.verdict_label = "legit";
-        existing.confidence = 1.0;
+        existing.confidence = 1;
         existing.reasons = reasons;
       }
       return { meta: { changes: existing ? 1 : 0 } };
     }
+    if (
+      this.sql.includes("UPDATE accounts") &&
+      this.sql.includes("source='auto_dedup_to_uid_twin'") &&
+      this.sql.includes("WHERE rowid<>?")
+    ) {
+      const [keepRowid, handle] = this.args as [number, string];
+      let changes = 0;
+      for (const account of this.db.accounts) {
+        if (
+          account.rowid !== keepRowid &&
+          account.x_user_id === null &&
+          account.status !== "removed" &&
+          account.handle.toLowerCase() === handle.toLowerCase()
+        ) {
+          account.status = "removed";
+          changes++;
+        }
+      }
+      return { meta: { changes } };
+    }
     if (this.sql.includes("INSERT INTO accounts") && this.sql.includes("ON CONFLICT")) {
-      // whitelistUpsert: upsert by (uid, handle) → status='whitelisted'.
+      // whitelistUpsert: any physical identity guard converges on one row.
       const [uid, handle, _dn, _av, reasons] = this.args as [
         string | null,
         string,
@@ -232,7 +297,10 @@ class MockStmt implements D1PreparedStatement {
       const existing = this.db.accounts.find(
         (a) =>
           (uid !== null && a.x_user_id === uid) ||
-          (a.handle.toLowerCase() === handle.toLowerCase() && (uid === null || a.x_user_id === uid)),
+          (uid === null &&
+            a.x_user_id === null &&
+            a.status !== "removed" &&
+            a.handle.toLowerCase() === handle.toLowerCase()),
       );
       if (existing) {
         existing.status = "whitelisted";
@@ -277,6 +345,7 @@ class MockStmt implements D1PreparedStatement {
 
 class MockDB implements D1Database {
   accounts: Account[] = [];
+  accountLookupBindCounts: number[] = [];
   whitelistRequests: WhitelistRequest[] = [];
   rateLog: { fp: string; created_at: number }[] = [];
   bans: {
@@ -357,6 +426,22 @@ function applyRequest(token = "aged-token", body: Record<string, unknown> = { ha
   return new Request("https://x.test/v1/whitelist/apply", {
     method: "POST",
     headers: { authorization: `Bearer ${token}`, "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+function adminWhitelistRequest(body: Record<string, unknown>) {
+  return new Request("https://x.test/v1/admin/whitelist", {
+    method: "POST",
+    headers: { "x-admin-token": "admin", "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+function adminDecideRequest(body: Record<string, unknown>) {
+  return new Request("https://x.test/v1/admin/decide", {
+    method: "POST",
+    headers: { "x-admin-token": "admin", "content-type": "application/json" },
     body: JSON.stringify(body),
   });
 }
@@ -534,6 +619,7 @@ test("admin whitelist-requests list flags an applicant that is on the blacklist"
     status: "human_confirmed",
     verdict_label: "spam",
     confidence: 0.97,
+    avatar_url: "https://pbs.twimg.com/badguy.jpg",
   });
   db.whitelistRequests.push({
     id: 1,
@@ -554,11 +640,45 @@ test("admin whitelist-requests list flags an applicant that is on the blacklist"
   );
   assert.equal(res.status, 200);
   const body = (await res.json()) as {
-    list: { handle: string; account_status: string | null; account_verdict_label: string | null }[];
+    list: {
+      handle: string;
+      account_status: string | null;
+      account_verdict_label: string | null;
+      avatar_url: string | null;
+    }[];
   };
   assert.equal(body.list.length, 1);
   assert.equal(body.list[0]?.account_status, "human_confirmed");
   assert.equal(body.list[0]?.account_verdict_label, "spam");
+  assert.equal(body.list[0]?.avatar_url, "https://pbs.twimg.com/badguy.jpg");
+});
+
+test("admin whitelist-requests chunks account enrichment below the D1 bind cap", async () => {
+  const db = new MockDB();
+  for (let i = 0; i < 200; i++) {
+    db.whitelistRequests.push({
+      id: i + 1,
+      x_user_id: String(1000 + i),
+      handle: `applicant_${i}`,
+      reporter_fp: `rpt:${i}`,
+      gh_age_days: 400,
+      note: null,
+      status: "pending",
+      created_at: i,
+      decided_at: null,
+    });
+  }
+
+  const res = await worker.fetch(
+    new Request("https://x.test/v1/admin/whitelist-requests?status=pending", {
+      headers: { "x-admin-token": "admin" },
+    }),
+    env(db),
+  );
+
+  assert.equal(res.status, 200);
+  assert.deepEqual(db.accountLookupBindCounts, [90, 90, 20]);
+  assert.ok(db.accountLookupBindCounts.every((count) => count <= 90));
 });
 
 test("admin approve flips the account to whitelisted and settles the request", async () => {
@@ -636,6 +756,145 @@ test("admin approve whitelists the canonical uid row even after a handle rename"
   assert.equal(db.accounts[0]?.status, "whitelisted");
   assert.equal(db.accounts[0]?.handle, "new_name");
   assert.equal(db.whitelistRequests[0]?.status, "approved");
+});
+
+test("admin add with a numeric uid collapses a pre-existing handle-only sibling", async () => {
+  const db = new MockDB();
+  db.accounts.push(
+    {
+      rowid: 1,
+      handle: "same_person",
+      x_user_id: "900",
+      status: "auto_pending_review",
+      verdict_label: "uncertain",
+      confidence: 0.5,
+    },
+    {
+      rowid: 2,
+      handle: "same_person",
+      x_user_id: null,
+      status: "auto_pending_review",
+      verdict_label: "uncertain",
+      confidence: 0.5,
+    },
+  );
+
+  const res = await worker.fetch(
+    adminWhitelistRequest({ handle: "same_person", xUserId: "900" }),
+    env(db),
+  );
+
+  assert.equal(res.status, 200);
+  const whitelisted = db.accounts.filter((account) => account.status === "whitelisted");
+  assert.equal(whitelisted.length, 1);
+  assert.equal(whitelisted[0]?.x_user_id, "900");
+  assert.equal(db.accounts.find((account) => account.x_user_id === null)?.status, "removed");
+});
+
+test("admin add with a numeric uid does not whitelist a different uid sharing the handle", async () => {
+  const db = new MockDB();
+  db.accounts.push(
+    {
+      rowid: 1,
+      handle: "recycled_handle",
+      x_user_id: "900",
+      status: "auto_pending_review",
+      verdict_label: "uncertain",
+      confidence: 0.5,
+    },
+    {
+      rowid: 2,
+      handle: "recycled_handle",
+      x_user_id: "800",
+      status: "human_confirmed",
+      verdict_label: "spam",
+      confidence: 0.9,
+    },
+  );
+
+  const res = await worker.fetch(
+    adminWhitelistRequest({ handle: "recycled_handle", xUserId: "900" }),
+    env(db),
+  );
+
+  assert.equal(res.status, 200);
+  const whitelisted = db.accounts.filter((account) => account.status === "whitelisted");
+  assert.deepEqual(
+    whitelisted.map((account) => account.x_user_id),
+    ["900"],
+  );
+  assert.equal(
+    db.accounts.find((account) => account.x_user_id === "800")?.status,
+    "human_confirmed",
+  );
+});
+
+test("admin handle-only whitelist add is idempotent", async () => {
+  const db = new MockDB();
+  const requestBody = { handle: "no_uid_person" };
+
+  const first = await worker.fetch(adminWhitelistRequest(requestBody), env(db));
+  const second = await worker.fetch(adminWhitelistRequest(requestBody), env(db));
+
+  assert.equal(first.status, 200);
+  assert.equal(second.status, 200);
+  const whitelisted = db.accounts.filter((account) => account.status === "whitelisted");
+  assert.equal(whitelisted.length, 1);
+});
+
+test("admin mixed-case handle-only whitelist add reuses the canonical row", async () => {
+  const db = new MockDB();
+  db.accounts.push({
+    rowid: 1,
+    handle: "realchaindoctor",
+    x_user_id: null,
+    status: "whitelisted",
+    verdict_label: "legit",
+    confidence: 1,
+  });
+
+  const requestBody = { handle: "realChainDoctor" };
+  const first = await worker.fetch(adminWhitelistRequest(requestBody), env(db));
+  const second = await worker.fetch(adminWhitelistRequest(requestBody), env(db));
+
+  assert.equal(first.status, 200);
+  assert.equal(second.status, 200);
+  const whitelisted = db.accounts.filter((account) => account.status === "whitelisted");
+  assert.equal(whitelisted.length, 1);
+  assert.equal(whitelisted[0]?.handle, "realchaindoctor");
+});
+
+test("admin blacklist with a numeric uid removes a pending handle-only sibling", async () => {
+  const db = new MockDB();
+  db.accounts.push(
+    {
+      rowid: 1,
+      handle: "same_person",
+      x_user_id: "900",
+      status: "auto_pending_review",
+      verdict_label: "spam",
+      confidence: 0.9,
+    },
+    {
+      rowid: 2,
+      handle: "same_person",
+      x_user_id: null,
+      status: "auto_pending_review",
+      verdict_label: "uncertain",
+      confidence: 0.5,
+    },
+  );
+
+  const res = await worker.fetch(
+    adminDecideRequest({ handle: "same_person", xUserId: "900", action: "approve" }),
+    env(db),
+  );
+
+  assert.equal(res.status, 200);
+  const blacklisted = db.accounts.filter((account) => account.status === "human_confirmed");
+  assert.equal(blacklisted.length, 1);
+  assert.equal(blacklisted[0]?.x_user_id, "900");
+  assert.equal(db.accounts.find((account) => account.x_user_id === null)?.status, "removed");
 });
 
 test("admin reject settles the request without touching the account", async () => {

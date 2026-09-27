@@ -2,6 +2,7 @@
 // cannot bleed in and ours cannot leak out. Vanilla DOM — no framework
 // weight injected into the page. Tokens per docs/UX.md.
 import { BRAND } from "./brand";
+import { CATEGORY_ZH, SPAM_CATEGORIES, type SpamCategory } from "./category";
 import type { ActionMode } from "./settings";
 import type { Label, Verdict } from "./types";
 
@@ -26,6 +27,25 @@ export const STYLE = `
     --safe: #15803D; --hover: rgba(15,23,42,.06);
   }
 }
+/* X's OWN theme wins over the OS scheme (2026-09-06). X has three themes
+ * (Default / Dim / Lights out) chosen in-app, independent of the OS: a user
+ * on a light OS with X in Lights out got the light palette above — grey
+ * ghost badges and slate popover text on a black page. detectXTheme() reads
+ * the page's real background and stamps data-xss-theme on every shadow host
+ * and the popover/bubble roots; these blocks come AFTER the media query so
+ * they win either way. */
+:host([data-xss-theme="dark"]), .xss[data-xss-theme="dark"] {
+  --surface: rgba(13,17,23,.92); --border: rgba(255,255,255,.10);
+  --shadow: 0 8px 28px rgba(0,0,0,.45); --text: #E6EDF3; --muted: #8B949E;
+  --brand: #0EA5E9; --danger: #EF4444; --warn: #F59E0B; --neutral: #8B949E;
+  --safe: #16A34A; --hover: rgba(255,255,255,.06);
+}
+:host([data-xss-theme="light"]), .xss[data-xss-theme="light"] {
+  --surface: rgba(255,255,255,.96); --border: rgba(15,23,42,.12);
+  --shadow: 0 8px 28px rgba(15,23,42,.18); --text: #0F172A; --muted: #475569;
+  --brand: #0369A1; --danger: #DC2626; --warn: #B45309; --neutral: #475569;
+  --safe: #15803D; --hover: rgba(15,23,42,.06);
+}
 .xss-bubble {
   position: fixed;
   right: max(12px, env(safe-area-inset-right));
@@ -33,6 +53,11 @@ export const STYLE = `
   z-index: 2147483000;
   color: var(--text); -webkit-font-smoothing: antialiased;
 }
+/* X pins its search box to the top of the right sidebar; whether a pill at
+ * 12px collides with it depends on the viewport width. content.ts measures
+ * the real overlap (see avoidSearchBox) and sets --xss-bubble-top only when
+ * needed, so the default stays the tidy 12px. */
+.xss-bubble:not(.br) { top: var(--xss-bubble-top, max(12px, env(safe-area-inset-top))); }
 .xss-bubble.br {
   top: auto;
   bottom: max(12px, env(safe-area-inset-bottom));
@@ -316,6 +341,8 @@ export const STYLE = `
 .qappeal {
   margin-left: 6px; color: var(--muted); cursor: pointer;
   text-decoration: none; font-weight: 600; opacity: .7;
+  /* Two-character link must never split across lines ("误" / "判"). */
+  display: inline-block; white-space: nowrap;
 }
 .qappeal:hover { color: var(--warn); opacity: 1; text-decoration: underline; }
 .qsnip {
@@ -369,6 +396,27 @@ svg { display: block; }
   border-color: var(--border); background: transparent; box-shadow: none;
 }
 .xss-badge.ghost:hover { color: var(--text); }
+/* Local-whitelist member: green = "safe by your own choice" (the only place
+ * green is allowed besides legit/empty states). */
+.xss-badge.ghost.wl {
+  color: var(--safe);
+  border-color: color-mix(in srgb, var(--safe) 42%, var(--border));
+  background: color-mix(in srgb, var(--safe) 8%, transparent);
+}
+.xss-badge.ghost.wl:hover { color: var(--safe); filter: brightness(1.1); }
+.acts button[data-wl] {
+  color: var(--safe);
+  border-color: color-mix(in srgb, var(--safe) 45%, var(--border));
+}
+/* 举报 category chips — replace the 举报 button in place on first click. */
+.rep-cats { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; width: 100%; }
+.rep-cats-label { flex: 0 0 100%; font-size: 11px; color: var(--muted); margin: 2px 0 1px; }
+.rep-cats button {
+  border: 1px solid color-mix(in srgb, var(--warn) 48%, var(--border));
+  background: color-mix(in srgb, var(--warn) 9%, transparent); color: var(--warn);
+  border-radius: 999px; padding: 4px 9px; font-size: 11px; font-weight: 650; cursor: pointer;
+}
+.rep-cats button:hover { filter: brightness(1.08); transform: translateY(-1px); }
 /* v0.4 popover: soft 12px radius, deep layered shadow, pop-in scale. */
 .pop {
   position: fixed; z-index: 2147482001; width: 280px; padding: 12px;
@@ -433,13 +481,17 @@ svg { display: block; }
   letter-spacing: .3px;
 }
 .xss-badge.analyzing {
-  color: var(--muted); position: relative; overflow: hidden;
+  color: var(--brand); position: relative; overflow: hidden;
+  background: color-mix(in srgb, var(--brand) 8%, transparent);
+  border-color: color-mix(in srgb, var(--brand) 30%, transparent);
+  box-shadow: none;
 }
 .xss-badge.analyzing::after {
   content: ""; position: absolute; inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,.18), transparent);
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--brand) 14%, transparent), transparent);
   transform: translateX(-100%); animation: xshim 1.1s ease-in-out infinite;
 }
+.xss-checked { display: none !important; }
 .xss-spin { animation: xspin .8s linear infinite; transform-origin: 50% 50%; }
 /* Pending-undo badge (⏳ 5秒后处理 + 撤销) — warn-outlined, not a solid pill. */
 .xss-badge.pending {
@@ -540,6 +592,51 @@ const esc = (s: string) =>
 const safeAvatarUrl = (url: string | undefined): string | undefined =>
   url && /^https:\/\/pbs\.twimg\.com\//.test(url) ? url : undefined;
 
+export type XTheme = "dark" | "light";
+
+/** X's active theme, read from the page itself: X paints its theme as the
+ *  body background (Default = white, Dim = #15202B, Lights out = black), so
+ *  the background's luminance is the truth regardless of the OS scheme.
+ *  Falls back to the OS scheme when the page has not painted yet. */
+export function detectXTheme(): XTheme {
+  try {
+    // X paints the theme as an inline body background; fall back to the
+    // root element and then to the root's declared color-scheme, so a future
+    // X markup change degrades to "still right most of the time" rather
+    // than to the OS scheme.
+    for (const el of [document.body, document.documentElement]) {
+      if (!el) continue;
+      const bg = getComputedStyle(el).backgroundColor;
+      const m = bg.match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)(?:\s*,\s*([\d.]+))?\)/);
+      if (m && (m[4] === undefined || Number(m[4]) > 0.5)) {
+        const lum = 0.2126 * Number(m[1]) + 0.7152 * Number(m[2]) + 0.0722 * Number(m[3]);
+        return lum < 128 ? "dark" : "light";
+      }
+    }
+    const scheme = getComputedStyle(document.documentElement).colorScheme;
+    if (/dark/.test(scheme)) return "dark";
+    if (/light/.test(scheme)) return "light";
+  } catch {
+    /* no layout yet */
+  }
+  try {
+    return matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+  } catch {
+    return "dark"; // X's default for the extension's audience; tests have no matchMedia
+  }
+}
+
+/** Stamp the current X theme on every shadow host / root we own. Called at
+ *  mount time and again when X switches theme (content.ts observes body). */
+export function applyXTheme(theme: XTheme = detectXTheme()): XTheme {
+  for (const host of document.querySelectorAll<HTMLElement>(
+    ".xss-mount, [data-xss-overlay], .xss-bubble, .xss.pop",
+  )) {
+    host.setAttribute("data-xss-theme", theme);
+  }
+  return theme;
+}
+
 /** Inline status line inside a popover (举报 result). Text-only, no HTML. */
 function setPopStatus(el: HTMLElement | null | undefined, msg: string, kind: "info" | "ok" | "err") {
   if (!el) return;
@@ -636,6 +733,7 @@ export function createBubble(
 ) {
   const root = document.createElement("div");
   root.className = `xss xss-bubble${pos === "br" ? " br" : ""}`;
+  root.setAttribute("data-xss-theme", detectXTheme());
   root.setAttribute("role", "status");
   root.setAttribute("aria-live", "polite");
 
@@ -1622,6 +1720,26 @@ export function createActingBadge(verb: string, queued = false): HTMLElement {
   return el;
 }
 
+/** In-place progress state while a locally unknown account is being checked
+ * by the authenticated online classifier. */
+export function createAnalyzingBadge(): HTMLElement {
+  const el = document.createElement("span");
+  el.className = "xss-badge analyzing";
+  el.setAttribute("aria-label", "在线 AI 检测中");
+  el.innerHTML = `<span class="xss-spin">${icon("shield", "currentColor", 12)}</span><span>检测中</span>`;
+  return el;
+}
+
+/** Invisible scan sentinel for a cached or newly classified clean account.
+ * Keeping the mount prevents virtualized rows from being submitted again. */
+export function createCheckedMarker(): HTMLElement {
+  const el = document.createElement("span");
+  el.className = "xss-checked";
+  el.hidden = true;
+  el.setAttribute("aria-hidden", "true");
+  return el;
+}
+
 export interface BadgeActions {
   /** Run one action against this account in the given mode. The popover
    *  exposes the full ladder (隐藏 / 静音 / 拉黑); the caller's configured
@@ -1630,10 +1748,20 @@ export interface BadgeActions {
   onAct: (mode: ActionMode) => void;
   onAppeal: () => void;
   /** Report this account to the public queue (GitHub-authed contribution).
-   *  Only offered for accounts NOT already on the community list. Resolves to
-   *  a short user-facing result the popover shows inline; the network call,
-   *  GitHub-auth gating and abuse feedback all live in the caller. */
-  onReport?: () => Promise<{ ok: boolean; message: string }>;
+   *  Only offered for accounts NOT already on the community list. The
+   *  popover first asks WHICH kind of spam (a category chip row) — 13 of the
+   *  last 20 reports in the 2026-09-04 audit were out-of-scope arguments,
+   *  and a forced choice both filters those and gives the reviewer a claim
+   *  to check. Resolves to a short user-facing result the popover shows
+   *  inline; the network call, GitHub-auth gating and abuse feedback all
+   *  live in the caller. */
+  onReport?: (category: SpamCategory) => Promise<{ ok: boolean; message: string }>;
+  /** Account is on the user's LOCAL whitelist → the badge renders as the
+   *  neutral 白名单 marker and the popover offers 移出 instead of actions. */
+  whitelisted?: boolean;
+  /** Toggle local-whitelist membership for this account (add when not
+   *  whitelisted, remove when it is). Local-only; the caller re-renders. */
+  onWhitelist?: () => void | Promise<void>;
 }
 
 /** The manual action ladder shown in the popover, weakest → strongest.
@@ -1660,6 +1788,7 @@ function overlay(): ShadowRoot {
   if (overlayShadow?.host.isConnected) return overlayShadow;
   const host = document.createElement("div");
   host.setAttribute("data-xss-overlay", "");
+  host.setAttribute("data-xss-theme", detectXTheme());
   host.style.cssText = "position:fixed;left:0;top:0;width:0;height:0;z-index:2147483001;";
   document.documentElement.appendChild(host);
   overlayShadow = host.attachShadow({ mode: "open" });
@@ -1682,7 +1811,13 @@ export function createBadge(
   // amber likely_spam pill read as washed-out next to v0.4's badges.
   const spammy = !!v && (v.label === "spam" || v.label === "porn_bot" || v.label === "likely_spam");
   const color = !v ? "var(--muted)" : spammy ? "var(--danger)" : `var(${LABEL[v.label].varName})`;
-  if (!v) {
+  if (a.whitelisted) {
+    // Local-whitelist member: a quiet green-tinted ghost so the user can see
+    // WHY nothing happens to this account, and reach 移出 from the popover.
+    el.className = "xss-badge ghost wl";
+    el.setAttribute("aria-label", "MXGA：本地白名单 · 不检测、不处理");
+    el.innerHTML = `${icon("shield", "currentColor", 13)}<span>白名单</span>`;
+  } else if (!v) {
     // Unhit ghost — still INTERACTIVE: hover/focus opens the 手动处理
     // popover (v0.4 behavior the v0.5 rewrite dropped). "Not on the list"
     // is exactly when the user needs a manual handle on an obvious spammer.
@@ -1702,7 +1837,7 @@ export function createBadge(
           ? "命中官方关键词规则（本机比对）"
           : source === "cache"
             ? "本地缓存命中"
-            : "首次发现（本机首次判定，已记录待人工确认）";
+            : "在线 AI 检测结果";
     // No native title: the hover popover already carries the details, and the
     // OS tooltip floating next to it reads as visual noise.
     el.setAttribute("aria-label", `${meta.zh} ${(v.confidence * 100).toFixed(0)}% · ${tip}`);
@@ -1754,6 +1889,7 @@ export function createBadge(
     if (pop) return;
     pop = document.createElement("div");
     pop.className = "xss pop card";
+    pop.setAttribute("data-xss-theme", detectXTheme());
     pop.style.display = "block";
     // Action ladder: 隐藏 / 静音 / 拉黑, the configured mode as primary
     // (data-b), the rest as secondary chips. A one-off 拉黑 is reachable
@@ -1771,7 +1907,20 @@ export function createBadge(
     const reportBtn = canReport
       ? `<button data-report title="举报给公共名单人工审核（需 GitHub 授权）">举报为spam</button>`
       : "";
-    pop.innerHTML = v
+    // 本地白名单: the user's own never-touch list. Offered on every popover
+    // (hit or not); on a whitelisted account it is the ONLY action.
+    const wlBtn = a.onWhitelist
+      ? a.whitelisted
+        ? `<button data-wl title="移出本地白名单后，该账号重新参与检测">移出白名单</button>`
+        : `<button data-wl title="加入本地白名单：永不标记、永不自动处理（仅本机，不上传）">加入白名单</button>`
+      : "";
+    pop.innerHTML = a.whitelisted
+      ? `
+      <h4 style="color:var(--safe)">本地白名单</h4>
+      <div style="color:var(--muted);line-height:1.55">
+        该账号在你的本地白名单中：不检测、不标记、不自动处理，即使公共名单或规则命中。</div>
+      <div class="acts">${wlBtn}</div>`
+      : v
       ? `
       <h4 style="color:${color}">${LABEL[v.label].zh} · ${(v.confidence * 100).toFixed(0)}%</h4>
       <ul>${v.reasons.map((r) => `<li>${esc(r)}</li>`).join("")}</ul>
@@ -1779,6 +1928,7 @@ export function createBadge(
       <div class="acts">
         ${spammy ? ladder : ""}
         ${reportBtn}
+        ${wlBtn}
         <button data-a title="打开 GitHub 提交误判申诉 issue（已预填账号信息）">误判申诉</button>
       </div>
       <div class="pop-status" data-report-status hidden></div>`
@@ -1786,25 +1936,30 @@ export function createBadge(
       <h4>手动处理</h4>
       <div style="color:var(--muted);line-height:1.55">
         未命中公共名单与官方规则。确认是垃圾/骚扰账号时，可手动处理（5 秒内可撤销），或举报给公共名单。</div>
-      <div class="acts">${ladder}${reportBtn}</div>
+      <div class="acts">${ladder}${reportBtn}${wlBtn}</div>
       <div class="pop-status" data-report-status hidden></div>`;
     for (const b of pop.querySelectorAll<HTMLElement>("[data-act]"))
       b.addEventListener("click", () => a.onAct(b.dataset.act as ActionMode));
     pop.querySelector("[data-a]")?.addEventListener("click", a.onAppeal);
+    const wlEl = pop.querySelector<HTMLElement>("[data-wl]");
+    if (wlEl && a.onWhitelist) {
+      const onWhitelist = a.onWhitelist;
+      wlEl.addEventListener("click", () => void onWhitelist());
+    }
     // 举报: stays open to show the inline result, so it is NOT wired to close.
     const reportEl = pop.querySelector<HTMLButtonElement>("[data-report]");
     if (reportEl && a.onReport) {
       const onReport = a.onReport;
-      reportEl.addEventListener("click", async (e) => {
-        e.stopPropagation();
-        cancelHide();
+      const submit = async (category: SpamCategory) => {
         const statusEl = pop?.querySelector<HTMLElement>("[data-report-status]");
+        pop?.querySelector("[data-report-cats]")?.remove();
+        reportEl.hidden = false;
         reportEl.disabled = true;
         reportEl.textContent = "举报中…";
-        setPopStatus(statusEl, "正在提交举报…", "info");
+        setPopStatus(statusEl, `正在提交举报（${CATEGORY_ZH[category]}）…`, "info");
         let res: { ok: boolean; message: string };
         try {
-          res = await onReport();
+          res = await onReport(category);
         } catch {
           res = { ok: false, message: "举报失败，请稍后重试" };
         }
@@ -1815,6 +1970,32 @@ export function createBadge(
         // Let the result read, then fold.
         clearTimeout(hideTimer);
         hideTimer = setTimeout(close, res.ok ? 2600 : 3600);
+      };
+      // First click: ask which kind of spam. The chips replace the button
+      // in place; picking one submits. Two taps, no free text.
+      reportEl.addEventListener("click", (e) => {
+        e.stopPropagation();
+        cancelHide();
+        if (pop?.querySelector("[data-report-cats]")) return;
+        const cats = document.createElement("div");
+        cats.className = "rep-cats";
+        cats.setAttribute("data-report-cats", "");
+        cats.innerHTML = `<span class="rep-cats-label">这是哪类垃圾？</span>${SPAM_CATEGORIES.map(
+          (c) => `<button type="button" data-cat="${c}">${esc(CATEGORY_ZH[c])}</button>`,
+        ).join("")}`;
+        for (const b of cats.querySelectorAll<HTMLElement>("[data-cat]")) {
+          b.addEventListener("click", (ev) => {
+            ev.stopPropagation();
+            void submit(b.dataset.cat as SpamCategory);
+          });
+        }
+        reportEl.hidden = true;
+        reportEl.insertAdjacentElement("afterend", cats);
+        setPopStatus(
+          pop?.querySelector<HTMLElement>("[data-report-status]"),
+          "选择类型后提交；不属于这些类型的争吵/观点不在治理范围",
+          "info",
+        );
       });
     }
     // Any OTHER action click ends the popover's job: the flow continues in the

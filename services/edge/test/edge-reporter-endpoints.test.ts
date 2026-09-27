@@ -132,6 +132,13 @@ class MockStmt implements D1PreparedStatement {
   }
 
   async run(): Promise<{ results?: unknown[]; meta: { changes?: number; last_row_id?: number } }> {
+    if (this.sql.includes("WITH quota AS MATERIALIZED")) {
+      const [identity, since, perIdentity, global, globalSince, globalMax, , , now] = this.args as [string, number, number, string, number, number, string, string, number];
+      const count = (fp: string, start: number) => this.db.rateLog.filter(r=>r.fp === fp && r.created_at >= start).length;
+      if (count(identity, since) >= perIdentity || count(global, globalSince) >= globalMax) return { meta: { changes: 0 } };
+      this.db.rateLog.push({ fp: identity, created_at: now }, { fp: global, created_at: now });
+      return { meta: { changes: 2 } };
+    }
     if (this.sql.includes("INSERT INTO reports")) {
       const [_, uid, handle, fp, age, evidence, now, lookupHandle, a, b] = this.args as [
         string,
@@ -379,6 +386,39 @@ test("report endpoint stores HMAC fingerprint and minimized evidence without raw
   assert.ok(!report.evidence.includes("full bio should not be stored"));
   assert.ok(db.reviewLog[0]?.actor.startsWith("reporter:"));
   assert.notEqual(db.reviewLog[0]?.actor, "gh:42");
+});
+
+test("report carries the reporter's category claim into the evidence (2026-09-06)", async () => {
+  const db = new MockDB();
+  const res = await worker.fetch(
+    new Request("https://x.test/v1/report", {
+      method: "POST",
+      headers: { authorization: "Bearer ok-token", "content-type": "application/json" },
+      body: JSON.stringify({
+        userId: "101",
+        handle: "netdisk_bait",
+        displayName: "资源分享",
+        recentTweets: ["夸克网盘 链接见主页"],
+        reportCategory: "resource",
+      }),
+    }),
+    env(db),
+  );
+  assert.equal(res.status, 200);
+  const report = db.reports[0];
+  assert.ok(report);
+  assert.equal(JSON.parse(report.evidence).reportCategory, "resource");
+
+  // An unknown category is a schema error, not silently accepted.
+  const bad = await worker.fetch(
+    new Request("https://x.test/v1/report", {
+      method: "POST",
+      headers: { authorization: "Bearer ok-token", "content-type": "application/json" },
+      body: JSON.stringify({ handle: "someone", reportCategory: "politics" }),
+    }),
+    env(db),
+  );
+  assert.equal(bad.status, 400);
 });
 
 test("legacy gh:<id> report aliases to the HMAC fingerprint and is not double-counted", async () => {

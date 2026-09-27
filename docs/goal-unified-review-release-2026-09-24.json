@@ -1,0 +1,39 @@
+{
+  "goal": "发布已验收的统一待审列表并核对生产结果",
+  "tasks": [
+    {
+      "id": "R1",
+      "task": "核对生产版本、预算告警、发布影响和回滚目标",
+      "verify": "Cloudflare 当前部署和预算 UI；配置 diff 为空",
+      "passes": true,
+      "evidence": [
+        "Wrangler deployments list：当前 100% 版本 679e6c49-b50e-4570-a551-a460a724ceb9，未发生其他发布",
+        "2026-09-24 Cloudflare Billable usage / Budget Alerts：$10.00，1 recipient；本次只读核对",
+        "相对生产基准 wrangler.toml、依赖清单无 diff；影响范围为审核台静态资源、统一队列查询/计数/裁决接口，无迁移、无策略/路由/cron/绑定变更",
+        "回滚目标 679e6c49-b50e-4570-a551-a460a724ceb9"
+      ]
+    },
+    {
+      "id": "R2",
+      "task": "构建并发布已验收实现",
+      "verify": "构建/发布日志、新版本 ID、HTTP 响应",
+      "passes": true,
+      "evidence": [
+        "Vite 构建、160/160 Edge 测试、前后端 TypeScript 均通过；Wrangler dry-run 通过",
+        "发布日志 .ui-acceptance/2026-09-24-release/deploy.log；新版本 4d513b38-7719-4c9f-9ea8-127df4a219a6",
+        "生产 /v1/health、/admin 返回 200，HTML 和全部 8 个 JS/CSS 资源与本地构建逐字节一致"
+      ]
+    },
+    {
+      "id": "R3",
+      "task": "生产只读验收与记录",
+      "verify": "四状态总数、筛选/批量预览一致、真实界面与静态资源、回滚记录",
+      "passes": true,
+      "evidence": [
+        "生产 18 项 HTTP/资源/接口验证通过；docs/unified-review-release-evidence-2026-09-24.json",
+        "真实浏览器筛选、批量预览、取消操作回读通过；统一待审 40,900，AI 待定 32,100",
+        "部署列表已确认新版本 100% 流量；报告记录回滚目标，未实际裁决生产数据"
+      ]
+    }
+  ]
+}

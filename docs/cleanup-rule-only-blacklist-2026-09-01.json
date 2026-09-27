@@ -1,0 +1,69 @@
+{
+  "goal": "将线上黑名单收敛为仅保留当前启用的 blacklist 规则重新匹配命中的账号；其余历史 AI、人工批量确认及其他来源账号均移出黑名单，白名单不动",
+  "created": "2026-09-01",
+  "tasks": [
+    {
+      "id": "T1",
+      "task": "快照线上黑白名单、启用规则与公开面状态",
+      "verify": "记录清理前 blacklisted/whitelisted 数量、规则集合及公开制品版本；确认目标状态使用 removed 而非删除",
+      "passes": true,
+      "evidence": [
+        "2026-09-01T08:44:45Z 生产基线：blacklist=201912、whitelist=2338、removed=22592、pending_raw=3428；AI 自动发布开关为 false",
+        "当前启用 blacklist 规则共 72 条（display_name=38、tweet=22、any=12）；快照 SHA-256=eb6ff0c0def6372e62a49fe0bf47fa3b0babc6fd9e6a022f3ddeaab8fb4aeeb5",
+        "公开白名单 identity 快照 count=2338、SHA-256=bc1a0b0755df343dfc57ce72f04a0db3fab9d7adffe16b06ac7f67b45adb5dc5",
+        "公开制品基线：version=v-_____f_________-201902、count=201902、generatedAt=1788252032641；/v1/health 实测 ok=true",
+        "目标操作只将未命中规则的 accounts.status='human_confirmed' 行改为 status='removed'，不物理删除；同日同生产环境已在 Cloudflare 账单页确认 Budget alerts (1)",
+        "上线前已核对最新 @cloudflare/workers-types 版本 5.20260901.1"
+      ]
+    },
+    {
+      "id": "T2",
+      "task": "用生产规则引擎全量预演唯一保留集合",
+      "verify": "对全部当前黑名单运行与线上分类相同的启用规则匹配逻辑，得到互斥的保留/移除集合并抽查边界样本，预演不写数据",
+      "passes": true,
+      "evidence": [
+        "受保护临时通道已部署为 Worker 版本 fe0640ec-3b3a-4bf8-b78f-6c8367b3f565；默认 dryRun，写入必须同时通过管理员令牌、确认串、规则指纹和逐页计划哈希",
+        "全量 dryRun 在 300 页硬上限内完成 202 页/202 次调用：scanned=201912、retained=171754、removable=30158、processed=0，互斥集合精确对账",
+        "规则指纹全程固定为 eb6ff0c0def6372e62a49fe0bf47fa3b0babc6fd9e6a022f3ddeaab8fb4aeeb5；全量计划 SHA-256=ac277f064b939b9d9d6b1b14e1c0b335357ca5f87b9173b933464f398fa6143f",
+        "保留来源：human=9081、rule=155028、NULL=7462、mention=183；移除来源：human=28560、rule=1474、NULL=120、mention=4",
+        "历史行使用与生产 apply-to-queue 共用的 stored-row matcher：ASCII 词边界与 CJK 子串语义一致；仅匹配持久化的 handle/display_name/evidence_text，明确排除可能含否定关键词的 AI reasons",
+        "边界抽查：人工来源中，显示名命中“同城”和证据文本命中当前 tweet 规则的记录均被保留；无当前规则命中的人工记录被列入移除；旧 rule tier 但当前不再匹配的行也按本次口径移除",
+        "预演后生产复核仍为 blacklist=201912、whitelist=2338、removed=22592；白名单 identity SHA-256 仍为 bc1a0b0755df343dfc57ce72f04a0db3fab9d7adffe16b06ac7f67b45adb5dc5",
+        "Edge 测试 137/137、类型检查、定向 lint 与 wrangler deploy --dry-run 均通过"
+      ]
+    },
+    {
+      "id": "T3",
+      "task": "执行可恢复的非规则黑名单迁移",
+      "verify": "仅将预演中未命中 blacklist 规则的当前黑名单状态改为 removed，保留行与审计；不修改白名单和待审",
+      "passes": true,
+      "evidence": [
+        "D1 Time Travel 清理前恢复时间戳固定为 2026-09-01T08:57:58Z；wrangler bookmark 查询因 Cloudflare OAuth code 10000 失败，保留官方支持的 RFC3339 时间恢复锚点",
+        "正式执行 cleanupId=rule-only-2026-09-01-v2：202 页、404 次调用，低于 600 次硬上限；每页均先即时 dryRun 再校验同一规则指纹与 planHash",
+        "执行总账与预演完全一致：scanned=201912、retained=171754、removable=30158、processed=30158、skipped=0；规则指纹和全量计划 SHA-256 均未变化",
+        "生产状态精确对账：blacklist 201912→171754、removed 22592→52750，两侧差值均为 30158；迁移只改为 removed，账号行和原证据仍保留",
+        "实际移除来源：human=28560、rule=1474、NULL=120、mention=4；历史人工批量确认不再被来源标签豁免，只以当前规则是否命中决定",
+        "写后再次全量 dryRun 172 页：scanned=171754、retained=171754、removable=0，证明当前黑名单中不存在未命中规则的剩余行",
+        "白名单仍为 2338，公开 identity SHA-256 仍为 bc1a0b0755df343dfc57ce72f04a0db3fab9d7adffe16b06ac7f67b45adb5dc5；更新 SQL 只允许 status='human_confirmed'，白名单和待审不在写入范围",
+        "管理员日志在 3 次有上限的分页查询内找到本 cleanupId 的 200 条 rule_only_cleanup_batch 审计记录；/v1/health 实测 ok=true"
+      ]
+    },
+    {
+      "id": "T4",
+      "task": "刷新并证伪式验证线上公开结果",
+      "verify": "确认黑名单剩余集合与规则命中集合完全一致、白名单计数和身份集合不变、公开接口/制品不再暴露已移除账号，并保留回滚证据",
+      "passes": true,
+      "evidence": [
+        "写后全量复扫已证明 D1 当前 171754 条黑名单全部命中规则、removable=0；白名单 count=2338 且 identity SHA-256 与清理前完全一致",
+        "R2 已发布最终版本 v-_____f_______f_-171752，meta count=171752、lite entries=171752、rules=72、generatedAt=1788253846243；比 D1 少 2 条是 publishArtifacts 既有的无效身份过滤",
+        "公开 R2 lite 与 data-mirror v2-lite 双重抽查：一条本次 removed 样本均已不存在，一条规则保留样本均仍存在；/v1/health 返回 ok=true、published=171752",
+        "data-mirror 已手动同步：远端 HEAD=339789f116a5b7463b8eeb150dc78d0ed209ee28，v2-lite count/entries=171754、rules=72，whitelist count/listLength=2338",
+        "公开 data/README.md 和 DATA_USAGE.md 已说明两阶段误伤清理背景、30158 条移除、28560 条人工批量记录、规则唯一保留口径、白名单保护和 AI 只进待审；文档 commit f47f4cc 已通过 raw.githubusercontent.com 实测可读",
+        "临时写入口已移除并部署最终 Worker 版本 2f0d731c-4f09-4ed7-8681-f7ec2cb64d5d；线上 POST /v1/admin/rule-only-blacklist-cleanup 实测返回 404",
+        "最终 Edge 测试 130/130、根目录测试 23/23、Worker/App/根目录类型检查、配置类型检查、定向 lint、App 构建和 wrangler dry-run 全部通过",
+        "相对任务起点 a43f14a 的净产品代码改动为 0，仅保留公开文档与验证清单；git diff --check 和任务 diff 凭据模式扫描通过，原有 .audit-* 未跟踪文件未动",
+        "可恢复证据：D1 Time Travel 清理前 UTC 锚点 2026-09-01T08:57:58Z，账号行未物理删除，200 条批次审计日志仍在"
+      ]
+    }
+  ]
+}

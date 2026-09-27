@@ -1,0 +1,68 @@
+{
+  "goal": "清理线上黑名单：保留确定由规则匹配命中的账号，移除 AI 自动判定账号，白名单不变；公开说明清理背景",
+  "created": "2026-09-01",
+  "tasks": [
+    {
+      "id": "T1",
+      "task": "定位线上数据源、黑白名单状态和规则/AI 判定来源字段",
+      "verify": "代码、迁移和生产只读查询对同一口径达成一致",
+      "passes": true,
+      "evidence": [
+        "services/edge/wrangler.toml 将生产数据绑定到 D1 xss-db",
+        "accounts.status='human_confirmed' 是当前黑名单，status='whitelisted' 是白名单",
+        "published_tier='ai' 表示 AI 自动发布，published_tier='rule' 表示直接规则命中",
+        "2026-09-01 生产只读基线：blacklist=223670，whitelist=2337，tier ai=21827，tier rule=156432"
+      ]
+    },
+    {
+      "id": "T2",
+      "task": "生成清理预览并记录可回滚锚点",
+      "verify": "清理目标数、保留数与总数对账；记录 D1 Time Travel 清理前时间点；白名单基线固定",
+      "passes": true,
+      "evidence": [
+        "POST /v1/admin/decide-by-filter dryRun：tier=ai 命中 21827，单次执行上限 2000",
+        "清理前黑名单 223670、白名单 2337、removed 762、直接规则命中 156432",
+        "D1 Time Travel 清理前恢复锚点：2026-09-01T04:52:46Z（Cloudflare 官方文档确认该能力始终开启）",
+        "清理前公开产物元数据 count=223666，generatedAt=1788238262342"
+      ]
+    },
+    {
+      "id": "T3",
+      "task": "将 AI 自动发布账号移出当前黑名单",
+      "verify": "生产查询 tier ai=0；规则命中数量不减；白名单前后均为 2337；公开名单数量同步下降",
+      "passes": true,
+      "evidence": [
+        "生产黑名单 223670→201843、removed 762→22589，差值均为 21827",
+        "清理后 dryRun tier=ai matched=0；直接规则命中仍为 156432；白名单仍为 2337",
+        "AI_AUTO_PUBLISH_ENABLED=0 已部署为 Worker 版本 3f6083c7-a62a-4734-befe-c1aea2c4f45a；线上 stats 返回 ai_auto_publish_enabled=false",
+        "Edge 测试 130/130 通过；Worker 与 App 类型检查、配置类型检查、App 构建和 wrangler dry-run 通过",
+        "data-mirror v2-lite 已发布 201843 条（commit b6309dd）；R2 元数据已从 223666 降至 201839，generatedAt=1788239458985（发布窗口后实时新增 4 条规则记录）"
+      ]
+    },
+    {
+      "id": "T4",
+      "task": "在公开数据文档中说明本次清理背景、范围和白名单保护",
+      "verify": "文档 diff 明确日期、原因、保留/移除口径和申诉机制",
+      "passes": true,
+      "evidence": [
+        "DATA_USAGE.md 与 data/README.md 已写明误伤背景、21827 条移除口径、规则/人工保留、白名单不变和 AI 仅进待审的新策略；commit 8129b89",
+        "专用 data-mirror 公共分支已发布 data/README.md；commit b8506f2b87dd1981cd7d21762aa7d1526046b4ef",
+        "curl 读取 raw.githubusercontent.com/data-mirror/data/README.md 已返回 2026-09-01 清理说明",
+        "同一公开文档原有“数据删除 / 修改流程”继续提供误判申诉入口和处理流程"
+      ]
+    },
+    {
+      "id": "T5",
+      "task": "以证伪立场逐项复核并交付",
+      "verify": "测试、线上 API、公开产物、git diff 与敏感信息扫描均通过",
+      "passes": true,
+      "evidence": [
+        "最终复跑 Edge 测试 130/130、根目录测试 23/23 通过；Worker/App/根目录类型检查、配置类型检查、App 构建和 wrangler deploy --dry-run 均通过",
+        "最终线上只读复核：blacklist=201843、whitelist=2337、removed=22589、tier ai dryRun matched=0、tier rule dryRun matched=156432、ai_auto_publish_enabled=false、auto_lane_published_24h=0",
+        "最终公开产物复核：/v1/whitelist count=2337；/v1/list/meta 与 /v1/health 均发布 201839 条；data-mirror 远端为 b8506f2，raw 公共文档可读",
+        "git diff --check 与修改源文件定向 lint 通过；新增行凭据模式扫描无命中；工作区仅保留任务开始前已有的 .audit-* 未跟踪文件",
+        "全仓 lint 的两项失败位于未修改的 LogTab.tsx:70 与 RulesTab.tsx:277，属于本任务前已存在的无关问题"
+      ]
+    }
+  ]
+}

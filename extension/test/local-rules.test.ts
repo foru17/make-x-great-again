@@ -38,6 +38,8 @@ test("CJK tweet rules hit spam from non-CJK-profile authors", () => {
     const hit = matchLocalRules(sig({ triggeringComment: text, recentTweets: [text] }));
     assert.ok(hit, `should hit: ${text}`);
     assert.equal(hit?.label, "porn_bot");
+    assert.equal(hit?.field, "tweet", "hit reports where it matched");
+    assert.ok(hit?.matchedText.includes(hit.pattern), "excerpt carries the evidence");
   }
 });
 
@@ -79,4 +81,28 @@ test("non-CJK patterns ignore the translate guard entirely", () => {
     sig({ triggeringComment: "look https://twimg.kim/abc", tweetsTranslated: true }),
   );
   assert.ok(hit);
+});
+
+test("invisible formatting cannot evade rules in either pattern or field", () => {
+  const hidden = "\u2060\u200c我福\u2060不\u200d黑\u2060";
+  for (const pattern of ["我福不黑", hidden]) {
+    setLocalRules([[pattern, "a", "pp"]]);
+    for (const over of [{displayName:hidden}, {bio:hidden}, {recentTweets:[hidden]}, {triggeringComment:hidden}]) {
+      assert.ok(matchLocalRules(sig(over)), JSON.stringify(over));
+    }
+  }
+});
+test("normalized excerpt still points into the original long text", () => {
+  setLocalRules([["我福不黑", "b", "pp"]]);
+  const text = "\u200b".repeat(300) + "前".repeat(220) + "我\u2060福不黑" + "后".repeat(220);
+  assert.ok(matchLocalRules(sig({bio:text}))?.matchedText.includes("我\u2060福不黑"));
+});
+test("invisible-only rules never match everything", () => {
+  setLocalRules([["\u2060\u200b", "a", "pp"]]);
+  assert.equal(matchLocalRules(sig({bio:"ordinary"})), null);
+});
+test("official ASCII rules preserve server word boundaries after normalization", () => {
+  setLocalRules([["visa", "d", "so"]]);
+  assert.equal(matchLocalRules(sig({displayName:"Vi\u2060sakan"})), null);
+  assert.ok(matchLocalRules(sig({displayName:"Get VI\u200bSA now"})));
 });

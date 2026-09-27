@@ -28,9 +28,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - run: npm install --no-audit --no-fund
-      - run: npx tsc --noEmit
-      - run: npx wxt build
+      - run: npm ci --no-audit --no-fund
+      - run: npm run compile
+      - run: npm test
+      - run: npm run build
+      - run: npm run build:firefox
 
   edge:
     name: edge (Cloudflare Worker)
@@ -40,11 +42,15 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - run: npm install --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
       # Regenerate the inlined Tailwind stylesheet and fail if the committed
       # src/_generated-css.ts is stale (someone edited styles.css without
       # running `npm run build:css`).
       - run: npm run build:css
       - run: git diff --exit-code src/_generated-css.ts
-      - run: npx tsc --noEmit
+      - run: npm run types:check
+      - run: npm run typecheck
+      - run: npm run typecheck:app
       - run: npm test
+      - run: npm run build:app
+      - run: npm run test:runtime

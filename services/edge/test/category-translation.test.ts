@@ -182,6 +182,7 @@ const env = {
   DB: db,
   REPORT_SALT: "test-report-salt",
   REQUIRE_AUTH: "1",
+  AI_AUTO_PUBLISH_ENABLED: "1",
   LLM_API_BASE: "https://llm.invalid",
   LLM_API_KEY: "test",
   LLM_API_MODEL: "test-model",

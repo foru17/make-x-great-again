@@ -93,10 +93,33 @@ export async function getBlocklist(): Promise<BlockRecord[]> {
   return migrated;
 }
 
+/** A record synthesized from a bare id (legacy migration in getBlocklist):
+ *  no name, no verdict, handle is just the id. Such a row is a placeholder,
+ *  not history — a real record for the same account replaces it. */
+export function isBareRecord(r: BlockRecord): boolean {
+  return (
+    !r.displayName &&
+    !r.verdict &&
+    !r.tweetId &&
+    (r.handle === r.id || `h:${r.handle}` === r.id) &&
+    /^\d+$/.test(r.handle)
+  );
+}
+
 export async function addBlockRecord(rec: BlockRecord): Promise<void> {
   const list = await getBlocklist();
-  if (list.some((r) => r.id === rec.id)) return;
-  list.push(rec);
+  const i = list.findIndex((r) => r.id === rec.id);
+  if (i >= 0) {
+    // The fast-path id (xss:blocked) is written before the record; on a
+    // profile that has no record store yet, getBlocklist's legacy migration
+    // races in between and mints a bare "@<numeric id>" row for that very
+    // id — which then blocked the real record forever. Upgrade it.
+    const cur = list[i];
+    if (!cur || !isBareRecord(cur)) return;
+    list[i] = { ...cur, ...rec };
+  } else {
+    list.push(rec);
+  }
   await set(K_BLOCK, list);
 }
 

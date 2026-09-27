@@ -57,6 +57,14 @@ export function capAutoTierAction(
   opts: { source: AutoSource; tier: "confirmed" | "auto"; autoTierMode: Settings["autoTierMode"] },
 ): CategoryAction {
   if (opts.source === "list" && opts.tier === "confirmed") return action;
+  // Local keyword-rule hits are capped at the reversible local hide in EVERY
+  // mode (2026-09-06). A rule is a substring match on one field with zero
+  // review — nobody has looked at the account — and rules are now the
+  // dominant list source, so a rule false positive firing the irreversible X
+  // mute/block with the user's own session was the worst case in the audit.
+  // "上榜即可自动处理" (autoTierMode=full) is about PUBLIC-LIST entries, which
+  // went through the publish gates; a local hit has not been listed yet.
+  if (opts.source === "rule") return action === "badge" ? "badge" : "hide";
   if (opts.autoTierMode === "full") return action;
   return action === "badge" ? "badge" : "hide";
 }

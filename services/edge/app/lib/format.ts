@@ -1,5 +1,7 @@
 // Shared formatting + verdict metadata for the admin console.
 
+export const PAGE_SIZE_LABEL = "，每页 100 条";
+
 export function fmtN(n: number | null | undefined): string {
   return typeof n === "number" ? n.toLocaleString("zh-CN") : "—";
 }
@@ -21,6 +23,92 @@ export function ago(ms: number | null | undefined): string {
   if (h < 24) return `${h}h`;
   return `${Math.round(h / 24)}d`;
 }
+
+/** The one relative-time form used across the console: "3h前". */
+export function agoZh(ms: number | null | undefined): string {
+  const t = ago(ms);
+  return t ? `${t}前` : "—";
+}
+
+export const ACTION_ZH = {
+  approve: "拉黑",
+  whitelist: "白名单",
+  reject: "驳回",
+  remove: "移除",
+  requeue: "退回",
+  categorize: "归类",
+} as const;
+export type ActionKey = keyof typeof ACTION_ZH;
+export const batchZh = (key: ActionKey): string => `批量${ACTION_ZH[key]}`;
+
+const LOG_ACTION_ZH: Record<string, string> = {
+  requeue: "重新初审",
+  approve: "拉黑（进公榜）",
+  reject: "驳回",
+  remove: "移除",
+  whitelist: "加白名单",
+  whitelist_add: "加白名单",
+  whitelist_remove: "移出白名单",
+  whitelist_apply: "用户申请白名单",
+  whitelist_request_approve: "批准白名单申请",
+  whitelist_request_reject: "驳回白名单申请",
+  categorize: "改类别",
+  keyword_blacklist: "规则命中 · 拉黑",
+  keyword_whitelist: "规则命中 · 加白名单",
+  keyword_reject: "规则命中 · 驳回",
+  keyword_mention_blacklist: "提及连带 · 拉黑",
+  report_queued: "用户举报 · 入队",
+  report_seen: "用户举报 · 已记录",
+  reporter_banned: "举报人封禁",
+  appeal_submitted: "用户申诉",
+  ai_blacklist: "AI 判定 · 拉黑",
+  agent_blacklist: "AI · 拟拉黑",
+  agent_whitelist: "AI · 拟加白",
+  agent_pending: "AI · 待定",
+  agent_annotate: "AI · 标注",
+  agent_failed: "AI · 判定失败",
+  agent_promote_blacklist: "确认 AI 建议 · 拉黑",
+  agent_promote_whitelist: "确认 AI 建议 · 白名单",
+  agent_promote_reject: "确认 AI 建议 · 驳回",
+  agent_promote_requeue: "确认 AI 建议 · 退回",
+  auto_confirm: "自动确认",
+  uid_conflict_recall: "UID 冲突撤回",
+};
+const warnedActions = new Set<string>();
+export function logActionZh(action: string): string {
+  const translated = LOG_ACTION_ZH[action];
+  if (translated) return translated;
+  if (!warnedActions.has(action)) {
+    warnedActions.add(action);
+    console.warn(`[admin] 审计日志动作未汉化：${action}（请补 LOG_ACTION_ZH）`);
+  }
+  return action;
+}
+
+const STATUS_ZH: Record<string, string> = {
+  human_confirmed: "已在公榜",
+  auto_pending_review: "待审队列中",
+  auto_legit: "AI 判为正常",
+  auto_unsure: "AI 无法判断",
+  whitelisted: "已是白名单",
+  rejected: "已驳回",
+  removed: "已移除",
+  agent_blacklist: "AI 拟拉黑",
+  agent_whitelist: "AI 拟加白",
+  agent_pending: "AI 待定",
+};
+export function statusZh(status: string | null | undefined): string {
+  return (status && STATUS_ZH[status]) || status || "";
+}
+
+export const ACTION_EFFECT: Record<ActionKey, string> = {
+  approve: "进公榜，客户端会拦截",
+  whitelist: "永不再扫，举报也会被吞掉",
+  reject: "不公开，留档不上榜",
+  remove: "撤下并不再公开",
+  requeue: "退回待审队列重新走流程",
+  categorize: "只改 spam 类别，不改公榜状态",
+};
 
 function ymd(ms: number): string {
   const d = new Date(ms);
@@ -49,6 +137,102 @@ export const VERDICTS: Record<string, { zh: string; tone: string }> = {
 
 export function verdictZh(label: string | undefined): string {
   return (label && VERDICTS[label]?.zh) || label || "uncertain";
+}
+
+export interface BlacklistDecisionLike {
+  published_tier?: string | null;
+  source?: string | null;
+  reasons?: string | null;
+  verdict_label?: string;
+  confidence?: number;
+  reporters?: number;
+  last_decided_by?: string;
+  agent_id?: string;
+  agent_label?: string;
+}
+
+export interface BlacklistDecisionSource {
+  label: string;
+  detail: string;
+  tone: "human" | "agent" | "rule" | "muted";
+}
+
+const RULE_FIELD_ZH: Record<string, string> = {
+  bio: "简介",
+  tweet: "发言",
+  handle: "账号名",
+  display_name: "显示名称",
+};
+
+function reasonStrings(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed.filter((v): v is string => typeof v === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+function keywordRuleDetail(raw: string | null | undefined): string {
+  for (const reason of reasonStrings(raw)) {
+    const match = reason.match(/matched keyword rule "([^"]+)" on ([a-z_]+)/i);
+    if (match) {
+      const field = RULE_FIELD_ZH[match[2]] || "账号内容";
+      return `${field}命中“${match[1]}”，由规则自动加入黑名单`;
+    }
+  }
+  return "账号内容命中已启用的关键字规则，自动加入黑名单";
+}
+
+/** Turn storage-level provenance into a maintainer-facing explanation. */
+export function blacklistDecisionSource(a: BlacklistDecisionLike): BlacklistDecisionSource {
+  if (a.published_tier === "rule" || (!a.published_tier && a.source === "auto_keyword")) {
+    return { label: "关键字规则", detail: keywordRuleDetail(a.reasons), tone: "rule" };
+  }
+  if (a.published_tier === "mention" || (!a.published_tier && a.source === "auto_keyword_mention")) {
+    return {
+      label: "关联规则",
+      detail: "发言中提及了已命中规则的账号，因此被关联加入黑名单",
+      tone: "rule",
+    };
+  }
+  if (a.published_tier === "ai") {
+    const confidence = Math.round((a.confidence || 0) * 100);
+    return {
+      label: "AI 自动审查",
+      detail: `AI 判断为${verdictZh(a.verdict_label)}，把握 ${confidence}%，自动加入黑名单`,
+      tone: "agent",
+    };
+  }
+  if (a.published_tier === "human" || a.last_decided_by?.startsWith("human:")) {
+    if (a.agent_id || a.agent_label) {
+      return {
+        label: "人工确认",
+        detail: "AI 提供初审建议，管理员复核后确认拉黑",
+        tone: "human",
+      };
+    }
+    if (a.source === "report" && (a.reporters || 0) > 0) {
+      return {
+        label: "人工确认",
+        detail: `${a.reporters} 人举报后，由管理员审核确认拉黑`,
+        tone: "human",
+      };
+    }
+    if (a.source === "block") {
+      return { label: "人工确认", detail: "用户主动屏蔽后，由管理员审核确认拉黑", tone: "human" };
+    }
+    return { label: "人工确认", detail: "管理员审核后确认加入黑名单", tone: "human" };
+  }
+  if (a.last_decided_by?.startsWith("agent:")) {
+    return { label: "AI 审查", detail: "AI 根据账号信号给出拉黑结论", tone: "agent" };
+  }
+  return {
+    label: "历史记录",
+    detail: "旧记录没有保存完整的加入方式，可结合判定依据复核",
+    tone: "muted",
+  };
 }
 
 /** Spam category taxonomy — mirrors SPAM_CATEGORIES in src/index.ts and the

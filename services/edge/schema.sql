@@ -55,6 +55,12 @@ CREATE INDEX IF NOT EXISTS idx_accounts_status_following ON accounts(status, fol
 -- duplicate when the user renames their handle.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_uid_uq
   ON accounts(x_user_id) WHERE x_user_id IS NOT NULL;
+-- SQLite treats NULL values as distinct inside the composite PRIMARY KEY.
+-- Keep at most one active handle-only identity while preserving removed audit
+-- rows; the Worker reuses/collapses that canonical row before every write.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_accounts_active_null_handle_uq
+  ON accounts(lower(handle))
+  WHERE x_user_id IS NULL AND status <> 'removed';
 
 CREATE TABLE IF NOT EXISTS reports (
   id                  TEXT PRIMARY KEY,     -- uuid
@@ -174,3 +180,62 @@ CREATE TABLE IF NOT EXISTS reporter_bans (
 );
 CREATE INDEX IF NOT EXISTS idx_reporter_bans_fp_active
   ON reporter_bans(reporter_fp, expires_at);
+
+-- Anonymous extension rule-hit telemetry (POST /v1/rule-hits). ISOLATED BY
+-- DESIGN: nothing in the moderation surface (accounts / reports / queue /
+-- publish) reads this table, so ingest can never create list entries or
+-- queue rows — a human promotes rows into the review queue explicitly from
+-- the admin panel. One row per (UTC day, rule pattern, spam handle);
+-- repeated sightings bump count.
+CREATE TABLE IF NOT EXISTS rule_hit_stats (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  day         TEXT NOT NULL,               -- UTC YYYY-MM-DD bucket
+  pattern     TEXT NOT NULL,               -- matched keyword_rules.pattern (validated on ingest)
+  handle      TEXT NOT NULL,               -- spam account handle, lowercased
+  x_user_id   TEXT,                        -- spam account numeric id when the client had it
+  category    TEXT,                        -- category from the matching rule at ingest time
+  field       TEXT,                        -- which field matched (handle|display_name|bio|tweet), 2026-09-06
+  sample_text TEXT,                        -- ≤200-char excerpt of the matched field (spam account's own text)
+  count       INTEGER NOT NULL DEFAULT 1,  -- sightings reported for this key
+  first_seen  INTEGER NOT NULL,            -- epoch ms
+  last_seen   INTEGER NOT NULL             -- epoch ms
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_rule_hit_stats_key
+  ON rule_hit_stats(day, pattern, handle);
+CREATE INDEX IF NOT EXISTS idx_rule_hit_stats_handle ON rule_hit_stats(handle);
+
+-- Daily distinct contributing identities (salted fingerprints, NO PII) —
+-- powers /v1/admin/contrib, the login-rate / funnel observability added with
+-- the 2026-08 contribution-funnel work. One row per (UTC day, kind, fp);
+-- repeats bump count. kinds: classify|classify_anon (metered LLM calls),
+-- rule_write|rule_write_anon (keyword-rule publish path), report (manual).
+CREATE TABLE IF NOT EXISTS contrib_actives (
+  id        INTEGER PRIMARY KEY AUTOINCREMENT,
+  day       TEXT NOT NULL,
+  kind      TEXT NOT NULL,
+  fp        TEXT NOT NULL,
+  count     INTEGER NOT NULL DEFAULT 1,
+  first_at  INTEGER NOT NULL,
+  last_at   INTEGER NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_contrib_actives_key
+  ON contrib_actives(day, kind, fp);
+
+-- Corroboration ledger for the handle-only auto-publish lane (2026-08-23).
+-- One row per (handle, distinct salted caller fingerprint) that independently
+-- landed on a publish-grade spam verdict for that handle. The AI lane will
+-- publish a handle-only payload once AUTO_PUBLISH_MIN_WITNESSES distinct aged
+-- identities appear here — the substitute for the numeric-uid gate, which
+-- ~98% of live payloads cannot satisfy (the client cannot read X's React
+-- fiber from an isolated-world content script).
+--
+-- NO PII: fp is the same salted throttle fingerprint used by rate_log.
+-- Pruned to WITNESS_RETENTION_MS by the 10-minute cron.
+CREATE TABLE IF NOT EXISTS classify_witness (
+  handle_norm TEXT NOT NULL,               -- lower(handle), no leading '@'
+  fp          TEXT NOT NULL,               -- salted caller fingerprint
+  first_at    INTEGER NOT NULL,            -- epoch ms of first observation
+  PRIMARY KEY (handle_norm, fp)
+);
+-- Retention sweep filter; the COUNT(*) per handle rides the PRIMARY KEY.
+CREATE INDEX IF NOT EXISTS idx_classify_witness_first_at ON classify_witness(first_at);

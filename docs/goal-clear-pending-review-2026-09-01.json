@@ -1,0 +1,58 @@
+{
+  "goal": "清空线上待审队列；不动当前黑名单、白名单、AI Agent 队列和白名单申请，并保留可恢复的审计状态",
+  "created": "2026-09-01",
+  "tasks": [
+    {
+      "id": "T1",
+      "task": "固定待审口径、保护对象、生产基线和恢复锚点",
+      "verify": "确认仅处理 accounts.status='auto_pending_review'；记录 raw/dedup 数量、受保护状态数量和 D1 Time Travel 时间点",
+      "passes": true,
+      "evidence": [
+        "本次待审严格限定为 accounts.status='auto_pending_review'；不处理 agent_pending、whitelist_requests 或任何已发布状态",
+        "2026-09-01T05:44:48Z 生产基线：pending_raw=238020、去重 queue=237980、blacklist=201843、whitelist=2337、removed=22589、rejected=14866",
+        "受保护基线：agent_blacklist=0、agent_whitelist=3742、agent_pending=10275、whitelist_requests=11",
+        "D1 Time Travel 恢复时间戳固定为 2026-09-01T05:44:48Z；Cloudflare 官方文档确认 Time Travel 始终开启且支持按 RFC3339 时间恢复",
+        "本次会话已在 Cloudflare 账单页验证 Budget alerts (1)；wrangler bookmark 查询因 OAuth code 10000 失败，因此使用官方支持的时间戳恢复锚点"
+      ]
+    },
+    {
+      "id": "T2",
+      "task": "生成清空预览并确定有硬性上限的执行方案",
+      "verify": "预览命中数与基线对账；方案不会触碰其他 status，循环次数有明确上限",
+      "passes": true,
+      "evidence": [
+        "2026-09-01 生产 dryRun：scope=queue、action=reject、空过滤器命中 237983 个去重待审账号；通用接口单次 cap=2000",
+        "raw 比去重队列多约 40 行且队列仍有实时新增，因此执行目标采用精确条件 status='auto_pending_review'，不按去重 handle 遗漏兄弟行",
+        "通用逐账号接口至少需要 119 次大批量调用且已有超时风险；采用专用管理员批次，每次最多更新 5000 行，客户端循环硬上限 60 次（最多覆盖 300000 行）",
+        "批次仅将待审状态改为 rejected，不物理删除账号证据；每批写一条聚合 review_log，并要求显式确认字符串"
+      ]
+    },
+    {
+      "id": "T3",
+      "task": "将全部待审记录移出待审队列",
+      "verify": "生产查询 pending_raw=0 且 dedup queue=0；写入保留审计轨迹而非物理删除",
+      "passes": true,
+      "evidence": [
+        "受限清空接口已部署为 Worker 版本 2187cfab-49f5-4d1e-a4ee-12c95453a4b4；线上 dryRun 返回 pendingBefore=238031、cap=5000",
+        "正式执行 48 批：前 47 批各处理 5000 行，最后一批处理 3047 行，共处理 238047 行；未触及 60 批硬上限",
+        "2026-09-01T05:50:15Z 写后生产复核：pending_raw=0、去重 queue=0；接口 dryRun 同样返回 pendingBefore=0、done=true",
+        "管理员日志接口验证本次 cleanupId 下存在 48 条 reject_pending_batch 聚合审计记录",
+        "清空后实时流量又进入 29 条，尾部清扫两批（29、0）后再次归零；本次累计转为 rejected 238076 条，rejected 14866→252942，removed 仍为 22589",
+        "待审入口保持在线，尾部归零后 2.6 秒内又新增 4 至 5 条；这不属于旧积压回滚，若要求持续为零需另行暂停新 AI 待审写入"
+      ]
+    },
+    {
+      "id": "T4",
+      "task": "以证伪立场复核受保护数据、公开产物和仓库边界",
+      "verify": "黑名单、白名单、Agent 队列和白名单申请均未被本次操作修改；健康检查通过；diff 与敏感信息扫描通过",
+      "passes": true,
+      "evidence": [
+        "最终保护对象计数与基线一致：blacklist=201843、whitelist=2337、agent_blacklist=0、agent_whitelist=3742、agent_pending=10275、whitelist_requests=11",
+        "公开白名单 API count=2337；公开列表元数据与健康检查均正常，published=201839",
+        "临时批量入口已移除并部署最终 Worker 版本 6240069d-d264-494e-b882-df344392605c；线上 /v1/admin/clear-pending 返回 404",
+        "移除临时入口后 Edge 测试 130/130、类型检查、定向 lint 和 wrangler deploy --dry-run 均通过",
+        "相对任务开始 commit 66d0266 的净代码改动为零，仅新增本验证清单；git diff --check 与凭据模式扫描通过，原有 .audit-* 未跟踪文件未动"
+      ]
+    }
+  ]
+}

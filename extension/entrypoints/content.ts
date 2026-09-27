@@ -1,18 +1,42 @@
-import { hideAccountSurface } from "../lib/account-surface";
+import { hideAccountSurface, restoreAccountSurfaces } from "../lib/account-surface";
 import { autoEligible, capAutoTierAction } from "../lib/auto-policy";
-import { addBlocked, isBlockedSync, warm as warmBlocklist } from "../lib/blocklist";
+import {
+  BLOCKED_KEY,
+  addBlocked,
+  isBlockedSync,
+  removeBlocked,
+  warm as warmBlocklist,
+} from "../lib/blocklist";
 import { BRAND } from "../lib/brand";
 import { type Cached, cacheGet, signalsHash } from "../lib/cache";
 import {
   extractFromArticle,
   extractProfile,
   extractThreadTopic,
+  handleFromArticle,
   viewerHandle,
 } from "../lib/detect";
-import { CATEGORY_ZH } from "../lib/category";
+import { CATEGORY_ZH, type SpamCategory } from "../lib/category";
 import { LIST_KEY, WL_KEY } from "../lib/list-sync";
 import { type IndexEntry, isWhitelisted, lookupLocal, warmLocalIndex } from "../lib/local-index";
-import { matchLocalRules } from "../lib/local-rules";
+import { matchLocalRules, warmRuleConfig } from "../lib/local-rules";
+import {
+  LOCAL_WL_KEY,
+  addLocalWhitelist,
+  isExcludedFromAuto,
+  isLocallyWhitelisted,
+  noteFollowing,
+  removeLocalWhitelist,
+  warmLocalWhitelist,
+} from "../lib/local-whitelist";
+import {
+  CACHE_REVALIDATE_AFTER_MS,
+  MAX_CACHE_REVALIDATIONS_PER_PAGE,
+  OnlineClassificationLimiter,
+  classifyAndCache,
+  onlineVerdictVisibility,
+  shouldAutoClassify,
+} from "../lib/online-detection";
 import {
   type ActionMode,
   type CategoryAction,
@@ -22,13 +46,17 @@ import {
   setSetting,
 } from "../lib/settings";
 import { bumpStat } from "../lib/stats";
+import { noteTemplate } from "../lib/template-memory";
 import {
   type PendingXAction,
   addBlockRecord,
   addPendingAction,
   bumpStats,
   clearPendingAction,
+  getBlocklist,
   getPendingActions,
+  isBareRecord,
+  removeBlock,
   updateBlockRecord,
 } from "../lib/store";
 import type { Signals, Verdict } from "../lib/types";
@@ -36,9 +64,13 @@ import {
   type BadgeSource,
   type Finding,
   STYLE,
+  applyXTheme,
   createActingBadge,
+  createAnalyzingBadge,
   createBadge,
   createBubble,
+  createCheckedMarker,
+  detectXTheme,
 } from "../lib/ui";
 
 /** "误判申诉" — opens the GitHub appeal issue template, PRE-FILLED with the
@@ -68,7 +100,10 @@ const RESUME_MAX = 50;
  *  bans, and — auto-publish being off — every report just queues for a
  *  maintainer to confirm). The extension only surfaces the outcome; it never
  *  auto-lists anything. Returns a short line for the popover to show inline. */
-async function reportSpam(sig: Signals): Promise<{ ok: boolean; message: string }> {
+async function reportSpam(
+  sig: Signals,
+  category: SpamCategory,
+): Promise<{ ok: boolean; message: string }> {
   // The POST runs in the BACKGROUND (see BgRequest "report"): a content-script
   // fetch to the edge Worker is bound by x.com's CORS/CSP; the SW shares the
   // extension origin the whitelist-apply flow already reports from.
@@ -76,7 +111,7 @@ async function reportSpam(sig: Signals): Promise<{ ok: boolean; message: string 
     | { ok: boolean; error?: string; data?: { status: number; body: ReportBody } }
     | undefined;
   try {
-    resp = await chrome.runtime.sendMessage({ type: "report", sig });
+    resp = await chrome.runtime.sendMessage({ type: "report", sig, category });
   } catch {
     return { ok: false, message: "网络错误，举报未提交" };
   }
@@ -145,18 +180,19 @@ function autoCategoryCount(s: Settings): number {
  *  hide/record is applied separately and always — the X call rides on top.
  *  Returns false only when the native X action definitively failed (used by
  *  the bubble's batch panel to surface a per-row 重试 state). */
-async function applyXAction(mode: ActionMode, sig: Signals): Promise<boolean> {
+async function applyXAction(mode: ActionMode, sig: Signals, shouldProceed: () => boolean = () => true): Promise<boolean> {
+  if (!shouldProceed()) return false;
   if (mode === "local") return true;
 
   // Load the mutation client only after the user explicitly chooses a native
   // X action and grants the optional host permission.
   const { performXAction, retryDelayForAttempt } = await import("../lib/x-action");
-  const attempt = await performXAction(mode, sig.userId, sig.handle);
+  const attempt = await performXAction(mode, sig.userId, sig.handle, shouldProceed);
   if (attempt.ok) return true;
   const delay = retryDelayForAttempt(attempt, 1);
   if (delay > 0) {
     await new Promise((r) => setTimeout(r, delay));
-    const second = await performXAction(mode, sig.userId, sig.handle); // one best-effort retry
+    const second = await performXAction(mode, sig.userId, sig.handle, shouldProceed); // one best-effort retry
     return second.ok;
   }
   return false;
@@ -165,16 +201,6 @@ async function applyXAction(mode: ActionMode, sig: Signals): Promise<boolean> {
 /** Cheap author handle from the User-Name link href — no fiber walk, no
  *  innerText. Used both as the scan() skip key and to re-verify a captured
  *  anchor before a delayed hide fires (X recycles article nodes). */
-function handleFromArticle(art: HTMLElement): string | undefined {
-  const nameBlock = art.querySelector<HTMLElement>('[data-testid="User-Name"]');
-  if (!nameBlock) return undefined;
-  for (const a of nameBlock.querySelectorAll<HTMLAnchorElement>('a[href^="/"]')) {
-    const s = (a.getAttribute("href") ?? "").split("/").filter(Boolean);
-    if (s.length === 1 && /^[A-Za-z0-9_]{1,15}$/.test(s[0] ?? "")) return s[0];
-  }
-  return undefined;
-}
-
 /** Where a scanned account was seen. Auto actions are scoped by this:
  *  - "reply"   — a NON-focal article on a status page: someone replying under
  *                a tweet. This is where the spam wave lives → auto-actable.
@@ -182,6 +208,29 @@ function handleFromArticle(art: HTMLElement): string | undefined {
  *                tweet itself. Detect + badge only under the default scope.
  *  - "profile" — the profile header on the account's own page. Badge only. */
 type ScanContext = "reply" | "feed" | "profile";
+
+// X's home timeline tab labels for the "Following" feed, per locale.
+const FOLLOWING_TAB_RE =
+  /^(following|正在关注|關注中|フォロー中|팔로잉|abonnements|siguiendo|seguindo|folge ich|volgend)$/i;
+
+/** True on /home with the "Following" timeline selected — every standalone
+ *  post there is by an account the viewer follows. */
+function isFollowingFeed(): boolean {
+  if (location.pathname !== "/home") return false;
+  const tab = document.querySelector('[role="tablist"] [role="tab"][aria-selected="true"]');
+  return !!tab && FOLLOWING_TAB_RE.test((tab.textContent ?? "").trim());
+}
+
+/** In the Following feed an article is the AUTHOR'S OWN standalone post —
+ *  not a repost (social-context line, original author may be a stranger)
+ *  and not the parent half of a conversation pair (one timeline cell holding
+ *  two articles; the parent's author need not be followed). */
+function isStandaloneOwnPost(art: HTMLElement): boolean {
+  if (art.querySelector('[data-testid="socialContext"]')) return false;
+  const cell = art.closest<HTMLElement>('[data-testid="cellInnerDiv"]');
+  if (!cell) return false;
+  return cell.querySelectorAll('article[data-testid="tweet"]').length === 1;
+}
 
 /** Status id of the tweet the current page is focused on, or null when not
  *  on a /user/status/<id> page. */
@@ -211,17 +260,44 @@ function mountBadge(anchor: HTMLElement, build: () => HTMLElement) {
   // renders as a giant capsule. Pin both axes to content size.
   host.style.cssText =
     "display:inline-flex;align-items:center;align-self:center;vertical-align:middle;flex:none;";
+  // X's own theme (Default / Dim / Lights out), not the OS scheme — see STYLE.
+  host.setAttribute("data-xss-theme", detectXTheme());
   const sr = host.attachShadow({ mode: "open" });
   const st = document.createElement("style");
   st.textContent = STYLE;
   sr.append(st, build());
-  anchor.appendChild(host);
+  mountTarget(anchor).appendChild(host);
+}
+
+/** Where inside the User-Name block the badge goes. Feed rows lay the name
+ *  block out as a ROW (name · @handle · time) and the badge simply trails
+ *  it. The focal tweet on a /status/ page and the profile header stack name
+ *  and handle as a COLUMN — appending there made the badge a third, centred
+ *  line under the handle. Put it on the name row instead, so it reads the
+ *  same everywhere: right after the display name. */
+function mountTarget(anchor: HTMLElement): HTMLElement {
+  try {
+    if (getComputedStyle(anchor).flexDirection !== "column") return anchor;
+    // The name row: the direct child holding the profile link, else simply
+    // the first row (the profile header renders the name as plain text).
+    const link = anchor.querySelector('a[href^="/"]');
+    let row: Element | null = link;
+    while (row && row.parentElement !== anchor) row = row.parentElement;
+    const target = row ?? anchor.firstElementChild;
+    return target instanceof HTMLElement ? target : anchor;
+  } catch {
+    return anchor;
+  }
+}
+
+/** Our mounts, wherever mountTarget placed them (the name block never
+ *  contains another account's article, so a descendant search is safe). */
+function mountsIn(anchor: HTMLElement): NodeListOf<HTMLElement> {
+  return anchor.querySelectorAll<HTMLElement>(".xss-mount, .xss-pending");
 }
 
 function clearMounts(anchor: HTMLElement) {
-  anchor
-    .querySelectorAll(":scope > .xss-mount, :scope > .xss-pending")
-    .forEach((n) => n.remove());
+  mountsIn(anchor).forEach((n) => n.remove());
 }
 
 // ---- 5-second preview undo queue (PENDING_MS) ----
@@ -244,7 +320,9 @@ interface PendingAction {
 
 export default defineContentScript({
   matches: ["https://x.com/*", "https://twitter.com/*"],
-  cssInjectionMode: "ui",
+  // STYLE is mounted explicitly inside createShadowRootUi below. "manual"
+  // prevents WXT from fetching an unbuilt content.css on Firefox.
+  cssInjectionMode: "manual",
   async main(ctx) {
     let bubbleApi: ReturnType<typeof createBubble> | null = null;
     let dismissed = false;
@@ -253,13 +331,28 @@ export default defineContentScript({
     let findings: Finding[] = [];
     const pendingActions = new Map<string, PendingAction>();
     const inFlight = new Set<string>(); // keys currently in process()
+    const repaired = new Set<string>(); // bare 处理记录 rows already re-labelled this page
+    async function repairBareRecord(id: string, sig: Signals) {
+      if (/^\d+$/.test(sig.handle)) return;
+      const rec = (await getBlocklist()).find((r) => r.id === id);
+      if (!rec || !isBareRecord(rec)) return;
+      await updateBlockRecord(id, {
+        handle: sig.handle,
+        ...(sig.displayName ? { displayName: sig.displayName } : {}),
+        ...(sig.avatarUrl ? { avatarUrl: sig.avatarUrl } : {}),
+      });
+    }
     const hitPublicSeen = new Set<string>(); // hitPublic stat: once per account
+    const onlineClassificationLimiter = new OnlineClassificationLimiter();
+    let autoClassificationsStarted = 0;
+    let revalidationsStarted = 0;
+    let onlineAuthenticated = false;
 
     let settings = await getSettings();
     if (!settings.enabled) return; // master off → don't init (applies next load)
     // Build marker — confirms which content-script build is live in this tab
     // (reloading the unpacked extension does NOT refresh already-open tabs).
-    console.info("[MXGA] content script ready · build 2026-07-24 (profile-pending-settle)");
+    console.info("[MXGA] content script ready · build 2026-09-06 (fp-reduction)");
     onSettingsChange((s) => {
       const modeChanged = s.actionMode !== settings.actionMode;
       settings = s;
@@ -284,8 +377,39 @@ export default defineContentScript({
     // Warm local data structures
     await warmBlocklist();
     await warmLocalIndex();
+    await warmRuleConfig();
+    await warmLocalWhitelist();
+
+    async function refreshOnlineAuth(): Promise<boolean> {
+      const before = onlineAuthenticated;
+      try {
+        const response = (await chrome.runtime.sendMessage({ type: "auth_status" })) as {
+          ok?: boolean;
+          data?: { authenticated?: boolean };
+        };
+        onlineAuthenticated = response?.ok === true && response.data?.authenticated === true;
+      } catch {
+        onlineAuthenticated = false;
+      }
+      return before !== onlineAuthenticated;
+    }
+    await refreshOnlineAuth();
 
     const keyOf = (s: Signals) => s.userId || `h:${s.handle}`;
+    const protectedAccount = (sig: Pick<Signals, "userId" | "handle">) =>
+      isLocallyWhitelisted(sig.userId, sig.handle) || isWhitelisted(sig.userId, sig.handle);
+
+    function restoreProtectedSurfaces() {
+      const active = new Set<string>();
+      for (const surface of document.querySelectorAll<HTMLElement>("[data-xss-hidden-key]")) {
+        const key = surface.getAttribute("data-xss-hidden-key");
+        if (!key) continue;
+        const article = surface.matches("article") ? surface : surface.querySelector<HTMLElement>("article");
+        const handle = key.startsWith("h:") ? key.slice(2) : (article ? handleFromArticle(article) : undefined);
+        if (!protectedAccount({ userId: key.startsWith("h:") ? undefined : key, handle: handle ?? "" })) active.add(key);
+      }
+      restoreAccountSurfaces(active);
+    }
 
     /** Schedule a hide action with a 5-second undo window. `mode` overrides
      *  settings.actionMode for this one action (popover 隐藏 → "local"). */
@@ -377,7 +501,7 @@ export default defineContentScript({
         sameAuthor || (!!anchor && !art)
           ? anchor
           : document.querySelector(`[data-xss-key="${CSS.escape(key)}"]`);
-      if (target) hideAccountSurface(target);
+      if (target) hideAccountSurface(target, key);
       // If this account is a live bubble finding (a listed hit the user chose
       // to handle from the badge popover rather than the batch panel), drive
       // its row to "done" so it stops offering an actionable button and joins
@@ -470,6 +594,9 @@ export default defineContentScript({
 
     function enqueueAuto(it: AutoItem) {
       if (autoActing.has(it.key)) return;
+      // The user's own whitelist outranks every list/rule verdict: never
+      // auto-act on an account they chose to protect (or follow).
+      if (protectedAccount(it.sig)) return;
       autoActing.add(it.key);
       // Record FIRST — the protection survives navigation even if the
       // animation never gets to play.
@@ -552,24 +679,42 @@ export default defineContentScript({
         // One broken item (dead DOM node, render error) must not strand the
         // rest of the queue — fail it and move on.
         try {
+          // Whitelisted while queued (popover / options page during the
+          // gather window): undo the up-front record and let the row stand.
+          const allowed = () => settings.enabled && settings.autoProcess && !protectedAccount(it.sig);
+          const cancel = async () => {
+            // Undo everything enqueueAuto recorded up-front: the 处理记录 row
+            // AND the fast-path id (removeBlock does both), the stats bump,
+            // the pending marker; then let the bubble row settle.
+            await removeBlock(it.key);
+            if (it.sig.userId && it.sig.userId !== it.key) await removeBlock(it.sig.userId);
+            void bumpStats({ blocks: -1 });
+            void clearPendingAction(it.key);
+            bubbleApi?.markAuto(it.key, "failed", it.verb);
+            const row = autoTarget(it);
+            if (row) badgeFor(row, it.key, it.sig, null);
+          };
+          if (!allowed()) { await cancel(); continue; }
           const t0 = Date.now();
           const acting = autoTarget(it);
           if (acting) mountActing(acting, it.verb, false);
           bubbleApi?.markAuto(it.key, "processing", it.verb);
           const xOk =
             it.action === "mute" || it.action === "block"
-              ? await applyXAction(it.action, it.sig)
+              ? await applyXAction(it.action, it.sig, allowed)
               : true;
+          if (!allowed()) { await cancel(); continue; }
           if (!xOk)
             console.warn(`[MXGA] 自动${it.verb}：X 原生动作失败`, it.sig.handle, it.sig.userId);
           // Even the instant local-hide mode dwells long enough to be SEEN.
           const dwell = AUTO_MIN_ACT_MS - (Date.now() - t0);
           if (dwell > 0) await sleep(dwell);
+          if (!allowed()) { await cancel(); continue; }
           // Hide the real tweet INSTANTLY — the processing theater (fade /
           // shrink / fly-into-chip) belongs to the corner bubble; animating
           // the page's own DOM competes with X's scroll/virtualizer and reads
           // as jank on the timeline.
-          hideAccountSurface(autoTarget(it));
+          hideAccountSurface(autoTarget(it), it.key);
           // The action has now SETTLED (attempted) — drop its pending marker so
           // it stops being a resume candidate; only items whose queue died
           // before this point stay pending. On X failure, annotate the record.
@@ -618,7 +763,9 @@ export default defineContentScript({
           handle: p.handle,
           ...(/^\d+$/.test(p.id) ? { userId: p.id } : {}),
         } as Signals;
-        const ok = await applyXAction(p.action, sig).catch(() => false);
+        const allowed = () => settings.enabled && settings.actionMode !== "local" && !protectedAccount(sig);
+        if (!allowed()) { await clearPendingAction(p.id); continue; }
+        const ok = await applyXAction(p.action, sig, allowed).catch(() => false);
         if (!ok) {
           void updateBlockRecord(p.id, {
             reason: `自动${p.action === "block" ? "拉黑" : "静音"}（X 动作失败，仅本地隐藏）`,
@@ -634,6 +781,7 @@ export default defineContentScript({
       source: string,
       meta?: { categoryZh?: string; tweetId?: string; tier?: "confirmed" | "auto" },
     ) {
+      if (protectedAccount(sig)) return;
       if (!["spam", "porn_bot", "likely_spam"].includes(v.label)) return;
       const id = keyOf(sig);
       // Dedupe by key AND by handle: the same account can be scanned once
@@ -677,16 +825,46 @@ export default defineContentScript({
       // ghost badge's manual flow captures its own anchor via scheduleHide.
       if (v) anchorByKey.set(key, anchor);
       clearMounts(anchor);
+      const whitelisted = isLocallyWhitelisted(sig.userId, sig.handle);
       mountBadge(anchor, () =>
         createBadge(
-          v,
+          whitelisted ? null : v,
           {
             // The popover exposes the full ladder; the clicked mode overrides
             // settings.actionMode for this one account (default = configured).
             onAct: (mode) => scheduleHide(key, sig, anchor, mode),
             onAppeal: () =>
               openAppeal({ handle: sig.handle, ...(sig.userId ? { userId: sig.userId } : {}) }),
-            onReport: () => reportSpam(sig),
+            onReport: (category) => reportSpam(sig, category),
+            whitelisted,
+            // 本地白名单 toggle. Adding also undoes any local hide already
+            // recorded for the account (every id form) and cancels a pending
+            // undo-window action, so the row visibly comes back at once.
+            onWhitelist: async () => {
+              if (whitelisted) {
+                await removeLocalWhitelist(sig.handle);
+              } else {
+                const p = pendingActions.get(key);
+                if (p) {
+                  clearTimeout(p.timer);
+                  pendingActions.delete(key);
+                }
+                await addLocalWhitelist({
+                  handle: sig.handle,
+                  ...(sig.userId ? { userId: sig.userId } : {}),
+                  ...(sig.displayName ? { displayName: sig.displayName } : {}),
+                  ...(sig.avatarUrl ? { avatarUrl: sig.avatarUrl } : {}),
+                  source: "manual",
+                });
+                // removeBlock clears the 处理记录 row and the fast-path id.
+                for (const id of [key, sig.userId, `h:${sig.handle}`]) {
+                  if (id) void removeBlock(id);
+                }
+              }
+              // Re-render this row now; the storage event re-evaluates the rest.
+              clearMounts(anchor);
+              void process(sig, anchor);
+            },
           },
           note,
           source,
@@ -695,9 +873,90 @@ export default defineContentScript({
       );
     }
 
-    function renderCached(anchor: HTMLElement, key: string, sig: Signals, c: Cached) {
+    function markChecked(anchor: HTMLElement): void {
+      clearMounts(anchor);
+      mountBadge(anchor, createCheckedMarker);
+    }
+
+    async function renderCached(anchor: HTMLElement, key: string, sig: Signals, c: Cached) {
+      if (onlineVerdictVisibility(c.verdict) === "silent") {
+        markChecked(anchor);
+        return;
+      }
+      // A day-old cached SPAM verdict is re-checked against the edge before
+      // it badges again: if a moderator has since withdrawn it (appeal
+      // upheld, report rejected, whitelisted) the edge answers legit from its
+      // own row — no LLM call — and the stale local entry is overwritten.
+      // Bounded by the same per-page cap as fresh detection.
+      // Own small quota: re-checks must not starve first-seen accounts of
+      // the page's fresh-detection budget.
+      if (
+        onlineAuthenticated &&
+        Date.now() - c.ts > CACHE_REVALIDATE_AFTER_MS &&
+        revalidationsStarted < MAX_CACHE_REVALIDATIONS_PER_PAGE
+      ) {
+        revalidationsStarted += 1;
+        const result = await onlineClassificationLimiter.run(() =>
+          protectedAccount(sig)
+            ? Promise.resolve({ status: "failed" as const })
+            : classifyAndCache(key, sig),
+        );
+        if (protectedAccount(sig)) {
+          badgeFor(anchor, key, sig, null);
+          return;
+        }
+        if (result.status === "classified") {
+          if (onlineVerdictVisibility(result.verdict) === "silent") {
+            markChecked(anchor);
+            return;
+          }
+          badgeFor(anchor, key, sig, result.verdict, undefined, "cache");
+          pushFinding(sig, result.verdict, "cache");
+          return;
+        }
+      }
       badgeFor(anchor, key, sig, c.verdict, undefined, "cache");
       pushFinding(sig, c.verdict, "cache");
+    }
+
+    async function renderOnlineDetection(
+      anchor: HTMLElement,
+      key: string,
+      sig: Signals,
+    ): Promise<void> {
+      clearMounts(anchor);
+      mountBadge(anchor, createAnalyzingBadge);
+      const result = await onlineClassificationLimiter.run(async () => {
+        if (protectedAccount(sig)) return { status: "failed" as const };
+        if (!onlineAuthenticated) return { status: "unauthenticated" as const };
+        return classifyAndCache(key, sig);
+      });
+      if (protectedAccount(sig)) {
+        badgeFor(anchor, key, sig, null);
+        return;
+      }
+      if (result.status === "unauthenticated") onlineAuthenticated = false;
+      if (result.status !== "classified") {
+        badgeFor(anchor, key, sig, null);
+        return;
+      }
+      if (!result.cached) {
+        void bumpStats({ detections: 1, label: result.verdict.label });
+        void bumpStat("scanned");
+      }
+      if (onlineVerdictVisibility(result.verdict) === "silent") {
+        markChecked(anchor);
+        return;
+      }
+      badgeFor(
+        anchor,
+        key,
+        sig,
+        result.verdict,
+        result.cached ? "在线记录命中" : "在线 AI 检测完成",
+        "fresh",
+      );
+      pushFinding(sig, result.verdict, "online-ai");
     }
 
     function renderLocalIndex(
@@ -786,6 +1045,13 @@ export default defineContentScript({
       if (inFlight.has(key)) return; // a concurrent scan is already on it
       inFlight.add(key);
       try {
+        // User protection outranks even previously hidden IDs and pending work.
+        await noteFollowing(sig, settings.followingWhitelist);
+        if (protectedAccount(sig)) {
+          cancelPending(key);
+          badgeFor(anchor, key, sig, null);
+          return;
+        }
         // 0. Already blocked → hide, never render again. Exception: the cell
         //    the visible auto queue is working on (it was recorded up-front)
         //    — its animation owns the hide; OTHER cells by the same account
@@ -795,17 +1061,26 @@ export default defineContentScript({
         // (profile header), and a hit stored under one form must short-circuit
         // the other — otherwise it gets auto-processed twice and 恢复显示
         // (which deletes one id) never actually un-hides it.
-        if (
-          isBlockedSync(key) ||
-          (sig.userId && isBlockedSync(sig.userId)) ||
-          isBlockedSync(`h:${sig.handle}`)
-        ) {
+        const activeBlockedKey = isBlockedSync(key)
+          ? key
+          : sig.userId && isBlockedSync(sig.userId)
+            ? sig.userId
+            : isBlockedSync(`h:${sig.handle}`)
+              ? `h:${sig.handle}`
+              : null;
+        if (activeBlockedKey) {
           if (
             autoActing.has(key) &&
             articleOf(anchor)?.getAttribute("data-xss-key") === key
           )
             return;
-          hideAccountSurface(anchor);
+          // A record minted from a bare id (see store.isBareRecord) gets its
+          // real name / handle / avatar the next time the account is seen.
+          if (!repaired.has(activeBlockedKey)) {
+            repaired.add(activeBlockedKey);
+            void repairBareRecord(activeBlockedKey, sig);
+          }
+          hideAccountSurface(anchor, activeBlockedKey);
           return;
         }
 
@@ -836,21 +1111,55 @@ export default defineContentScript({
         //    as-is; legit/uncertain only if signals unchanged so new evidence
         //    can still re-trigger).
         const cached = await cacheGet(key);
+        if (protectedAccount(sig)) {
+          badgeFor(anchor, key, sig, null);
+          return;
+        }
         if (cached) {
           const spammy = ["spam", "porn_bot", "likely_spam"].includes(cached.verdict.label);
-          if (spammy || cached.signalsHash === signalsHash(sig)) {
-            renderCached(anchor, key, sig, cached);
+          // Reuse rules (2026-09-06): a verdict is reused when the signals are
+          // unchanged; a SPAM verdict is additionally reused while fresh
+          // (< 1 day) or when this client cannot re-check anyway (logged
+          // out). Otherwise new evidence / an older mark falls through to
+          // rules and the online path, where the edge answers from its own
+          // row (no LLM) and a since-withdrawn verdict is corrected.
+          const reuse =
+            cached.signalsHash === signalsHash(sig) ||
+            (spammy &&
+              (!onlineAuthenticated || Date.now() - cached.ts < CACHE_REVALIDATE_AFTER_MS));
+          if (reuse) {
+            await renderCached(anchor, key, sig, cached);
             void bumpStats({ cacheHits: 1 });
             return;
           }
         }
 
-        // 4.5 Maintainer-curated keyword rules, shipped with the synced list.
+        // 4.5 Keyword rules: maintainer-curated ones shipped with the synced
+        // list (minus user disables), then the user's own custom rules.
         // Catches first-seen template accounts (brand-new porn-bot throwaways
-        // not yet on the public list) with zero upload. Whitelist already won
-        // at step 2.
+        // not yet on the public list). Whitelist already won at step 2.
         const ruleHit = matchLocalRules(sig);
         if (ruleHit) {
+          // OFFICIAL hits only: hand the spam account's identity + matched
+          // rule to the background's anonymous telemetry queue (gated on
+          // settings.ruleTelemetry there; custom rules are local-only).
+          if (ruleHit.origin === "official" && settings.ruleTelemetry) {
+            try {
+              void chrome.runtime.sendMessage({
+                type: "rule-hit",
+                hit: {
+                  pattern: ruleHit.pattern,
+                  handle: sig.handle,
+                  ...(sig.userId ? { xUserId: sig.userId } : {}),
+                  category: ruleHit.category,
+                  field: ruleHit.field,
+                  matchedText: ruleHit.matchedText,
+                },
+              });
+            } catch {
+              /* background asleep — telemetry is best-effort */
+            }
+          }
           renderLocalIndex(
             anchor,
             key,
@@ -864,7 +1173,9 @@ export default defineContentScript({
                 // their own block screenshots, and a leaked keyword is a
                 // free evasion recipe. Category only.
                 confidence: 0.95,
-                reasons: [`命中官方规则 · ${CATEGORY_ZH[ruleHit.category]}`],
+                reasons: [
+                  `命中${ruleHit.origin === "custom" ? "自定义" : "官方"}规则 · ${CATEGORY_ZH[ruleHit.category]}`,
+                ],
               },
               category: ruleHit.category,
               tier: "auto", // rule hits are auto tier — reply-scope gated
@@ -877,7 +1188,30 @@ export default defineContentScript({
           return;
         }
 
-        // 5. Local public list did not match. Just show neutral/unhit state.
+        // 5. Local miss. Restored v0.4 behavior: a GitHub-authenticated user
+        //    automatically submits the newly encountered account for online
+        //    AI detection. The per-route hard cap bounds client/API spend;
+        //    logged-out and overflow rows stay in the neutral manual state.
+        if (
+          shouldAutoClassify({
+            authenticated: onlineAuthenticated,
+            localResult: "unknown",
+            requestsStarted: autoClassificationsStarted,
+          })
+        ) {
+          autoClassificationsStarted += 1;
+          // Cross-thread repetition is the strongest bot corroboration the
+          // prompt asks for and the one thing a single page can't show —
+          // the local template memory supplies it as a bare count.
+          const hitArt = articleOf(anchor);
+          sig.templateRepeats = await noteTemplate(
+            sig,
+            Date.now(),
+            hitArt ? articleStatusId(hitArt) : null,
+          );
+          await renderOnlineDetection(anchor, key, sig);
+          return;
+        }
         badgeFor(anchor, key, sig, null);
       } finally {
         inFlight.delete(key);
@@ -887,6 +1221,16 @@ export default defineContentScript({
     // Persist the logged-in viewer's own handle for the options page's
     // whitelist self-service flow (apply for YOUR account only).
     let lastViewer: string | undefined;
+    // Seed from the previous session's capture so the /following harvest and
+    // whitelist self-service know the viewer even before the nav renders.
+    try {
+      void chrome.storage.local.get("xss:viewer").then((g) => {
+        const v = (g["xss:viewer"] as { handle?: string } | undefined)?.handle;
+        if (v && !lastViewer) lastViewer = v;
+      });
+    } catch {
+      /* non-fatal */
+    }
     function captureViewer() {
       const v = viewerHandle();
       if (v && v !== lastViewer) {
@@ -899,14 +1243,74 @@ export default defineContentScript({
       }
     }
 
+    /** On the viewer's own /following page every UserCell carries an
+     *  "<uid>-unfollow" button — harvest them into the local whitelist so a
+     *  followed account is protected before it is ever seen in a thread.
+     *  Bounded per pass; cells already whitelisted cost one Set lookup. */
+    let harvestLogged = "";
+    function harvestFollowing() {
+      if (!settings.followingWhitelist) return;
+      const m = location.pathname.match(/^\/([A-Za-z0-9_]{1,15})\/following\/?$/);
+      if (!m) return;
+      // The nav profile link is absent in narrow / mobile layouts — fall back
+      // to the viewer handle captured earlier this session (xss:viewer).
+      const me = viewerHandle() ?? lastViewer;
+      const owner = m[1] ?? "";
+      if (!me || owner.toLowerCase() !== me.toLowerCase()) {
+        const why = me ? `page owner @${owner} is not the viewer @${me}` : "viewer handle unknown";
+        if (harvestLogged !== why) {
+          harvestLogged = why;
+          console.info(`[MXGA] following harvest skipped: ${why}`);
+        }
+        return;
+      }
+      let budget = 120;
+      let cells = 0;
+      let added = 0;
+      for (const cell of document.querySelectorAll<HTMLElement>('[data-testid="UserCell"]')) {
+        if (budget-- <= 0) break;
+        cells += 1;
+        const btn = cell.querySelector<HTMLElement>('[data-testid$="-unfollow"]');
+        if (!btn) continue;
+        const uid = btn.getAttribute("data-testid")?.match(/^(\d+)-unfollow$/)?.[1];
+        let handle: string | undefined;
+        for (const a of cell.querySelectorAll<HTMLAnchorElement>('a[href^="/"]')) {
+          const s = (a.getAttribute("href") ?? "").split("/").filter(Boolean);
+          if (s.length === 1 && /^[A-Za-z0-9_]{1,15}$/.test(s[0] ?? "")) {
+            handle = s[0];
+            break;
+          }
+        }
+        if (!handle || isLocallyWhitelisted(uid, handle) || isExcludedFromAuto(handle)) continue;
+        const avatar = cell.querySelector<HTMLImageElement>('img[src*="profile_images/"]')?.src;
+        const name = cell
+          .querySelector<HTMLAnchorElement>(`a[href="/${handle}"] span`)
+          ?.textContent?.trim();
+        added += 1;
+        void addLocalWhitelist({
+          handle,
+          ...(uid ? { userId: uid } : {}),
+          ...(name ? { displayName: name } : {}),
+          ...(avatar ? { avatarUrl: avatar } : {}),
+          source: "following",
+        }).catch(() => { /* Retry following harvest on the next scan. */ });
+      }
+      const line = `[MXGA] following harvest: ${cells} cells, +${added} to local whitelist`;
+      if (added > 0 || harvestLogged !== line) {
+        harvestLogged = line;
+        console.info(line);
+      }
+    }
+
     function scan() {
       captureViewer();
+      harvestFollowing();
       const p = extractProfile();
       if (p) {
         const el = document.querySelector<HTMLElement>('[data-testid="UserName"]');
         if (el) {
           // Same skip rule as articles: untouched account + live mount → done.
-          const hasMount = !!el.querySelector(":scope > .xss-mount");
+          const hasMount = !!el.querySelector(".xss-mount");
           if (nodeHandle.get(el) !== p.handle || !hasMount) {
             if (nodeHandle.get(el) !== p.handle) clearMounts(el);
             nodeHandle.set(el, p.handle);
@@ -926,21 +1330,46 @@ export default defineContentScript({
       // context where auto actions are allowed by default. Everything else
       // (home/list/search feeds, the focal tweet itself) is "feed".
       const focal = focalStatusId();
-      for (const art of document.querySelectorAll<HTMLElement>(
-        'article[data-testid="tweet"]',
-      )) {
+      const articles = document.querySelectorAll<HTMLElement>('article[data-testid="tweet"]');
+      // Root author of the conversation: the article whose permalink IS the
+      // focal id. Handed to the classifier with every in-thread reply so it
+      // can tell "replying in someone else's thread" from "own timeline".
+      let rootAuthor: string | undefined;
+      if (focal) {
+        for (const art of articles) {
+          if (articleStatusId(art) === focal) {
+            rootAuthor = handleFromArticle(art);
+            break;
+          }
+        }
+      }
+      // Following feed = a live, page-by-page stream of accounts the viewer
+      // follows; harvest them as they scroll past instead of relying on the
+      // (paginated, rarely visited) /following list or on the fiber bridge.
+      const followingFeed = settings.followingWhitelist && isFollowingFeed();
+      for (const art of articles) {
         const handle = handleFromArticle(art);
         const nameBlock = art.querySelector<HTMLElement>('[data-testid="User-Name"]');
         if (!handle || !nameBlock) continue;
-        const hasMount = !!nameBlock.querySelector(":scope > .xss-mount");
+        const hasMount = !!nameBlock.querySelector(".xss-mount");
         if (nodeHandle.get(art) === handle && hasMount) continue;
         const info = extractFromArticle(art);
         if (!info) continue;
         if (topic && !info.threadTopic) info.threadTopic = topic;
+        if (followingFeed && !info.viewerFollowing && !info.isReply && isStandaloneOwnPost(art)) {
+          info.viewerFollowing = true;
+        }
         if (nodeHandle.get(art) !== handle) clearMounts(nameBlock); // recycled node
         nodeHandle.set(art, handle);
         const sid = focal ? articleStatusId(art) : null;
-        const ctx: ScanContext = focal && sid && sid !== focal ? "reply" : "feed";
+        const inThreadReply = !!(focal && sid && sid !== focal);
+        const ctx: ScanContext = inThreadReply ? "reply" : "feed";
+        if (inThreadReply) {
+          info.isReply = true;
+          if (rootAuthor) info.rootAuthorHandle = rootAuthor;
+        } else if (rootAuthor && info.isReply && !info.rootAuthorHandle) {
+          info.rootAuthorHandle = rootAuthor;
+        }
         void process(info, nameBlock, ctx);
       }
     }
@@ -1018,6 +1447,30 @@ export default defineContentScript({
         container.appendChild(bubble.el);
         if (!settings.bubble) bubble.el.style.display = "none";
         bubbleApi = bubble;
+        // Keep the pill at the tidy 12px unless it would actually sit on X's
+        // sidebar search box (a viewport-width question: wide screens have
+        // free space to the right of the sidebar, ~1200px ones do not).
+        const avoidSearchBox = () => {
+          if (settings.bubblePos !== "tr") return;
+          const box = document.querySelector<HTMLElement>(
+            '[data-testid="SearchBox_Search_Input"], form[role="search"], input[placeholder][data-testid*="Search"]',
+          );
+          const search = box?.closest<HTMLElement>('[data-testid="sidebarColumn"]') ? box : null;
+          let top = "";
+          if (search) {
+            const r = search.getBoundingClientRect();
+            // Measure the visible pill, not the container (whose hidden card
+            // makes it far wider than what the user sees).
+            const pill = (bubble.el.querySelector<HTMLElement>(".pill") ?? bubble.el).getBoundingClientRect();
+            const collides =
+              r.width > 0 && r.bottom > 0 && r.top < 70 && pill.left < r.right + 8 && pill.right > r.left - 8;
+            if (collides) top = `${Math.round(r.bottom + 10)}px`;
+          }
+          bubble.el.style.setProperty("--xss-bubble-top", top);
+        };
+        avoidSearchBox();
+        ctx.addEventListener(window, "resize", avoidSearchBox);
+        ctx.setInterval(avoidSearchBox, 4000);
         // The bubble's 已处理 list is SESSION-scoped: it persists across SPA
         // navigation (the content script and its in-memory archive live on),
         // but a full reload / freshly-opened X must start clean — resurrecting
@@ -1047,6 +1500,8 @@ export default defineContentScript({
       pendingActions.clear();
       anchorByKey.clear();
       findings = [];
+      autoClassificationsStarted = 0;
+      revalidationsStarted = 0;
       // Collapse the card and archive this page's processed rows — the
       // bubble follows the user across SPA navigations, so a stale open
       // panel over a new page reads as broken; the session's records stay
@@ -1068,6 +1523,21 @@ export default defineContentScript({
     // user stops scrolling (no new DOM mutations). ctx-bound: stops when
     // the content script is invalidated.
     ctx.setInterval(scan, 4000);
+    // X theme switch (Display settings → Default / Dim / Lights out) repaints
+    // the body background in place; restamp every host we own so badges,
+    // popovers and the bubble follow without a reload.
+    let lastTheme = detectXTheme();
+    const themeObserver = new MutationObserver(() => {
+      const t = detectXTheme();
+      if (t !== lastTheme) {
+        lastTheme = t;
+        applyXTheme(t);
+      }
+    });
+    if (document.body) {
+      themeObserver.observe(document.body, { attributes: true, attributeFilter: ["style", "class"] });
+    }
+    ctx.onInvalidated(() => themeObserver.disconnect());
     // List / whitelist hot-swap (background sync or 立即更新): the lookup
     // maps already rebuilt via local-index's own onChanged hook, but rows
     // rendered with the OLD data keep their badge (scan skips mounted
@@ -1075,13 +1545,36 @@ export default defineContentScript({
     // page against the fresh list. Pending/hidden rows are untouched.
     try {
       chrome.storage.onChanged.addListener((changes, area) => {
-        if (area !== "local" || (!changes[LIST_KEY] && !changes[WL_KEY])) return;
-        for (const host of document.querySelectorAll<HTMLElement>(".xss-mount")) {
-          // Badges live in the host's shadow root; keep pending-undo flows.
-          if (host.shadowRoot?.querySelector(".xss-badge.pending")) continue;
-          host.remove();
+        if (area !== "local") return;
+        let shouldScan = false;
+        if (changes["xss:ghToken"]) {
+          void refreshOnlineAuth().then((changed) => {
+            if (!changed || !onlineAuthenticated) return;
+            for (const host of document.querySelectorAll<HTMLElement>(".xss-mount")) {
+              if (host.shadowRoot?.querySelector(".xss-badge.ghost")) host.remove();
+            }
+            scan();
+          });
         }
-        scan();
+        if (changes[BLOCKED_KEY]) {
+          const next = new Set<string>(
+            (changes[BLOCKED_KEY]?.newValue as string[] | undefined) ?? [],
+          );
+          shouldScan = restoreAccountSurfaces(next) > 0;
+        }
+        if (changes[LIST_KEY] || changes[WL_KEY] || changes[LOCAL_WL_KEY]) {
+          restoreProtectedSurfaces();
+          for (const [key, pending] of pendingActions) if (protectedAccount(pending.sig)) cancelPending(key);
+          findings = findings.filter((finding) => !protectedAccount(finding));
+          bubbleApi?.update(findings);
+          for (const host of document.querySelectorAll<HTMLElement>(".xss-mount")) {
+            // Badges live in the host's shadow root; keep pending-undo flows.
+            if (host.shadowRoot?.querySelector(".xss-badge.pending")) continue;
+            host.remove();
+          }
+          shouldScan = true;
+        }
+        if (shouldScan) scan();
       });
     } catch {
       /* non-fatal */

@@ -85,12 +85,22 @@ Both endpoints take `Authorization: Bearer <AGENT_TOKEN>` and
 `X-Agent-Id: <runner-id>`. `AGENT_TOKEN` is a wrangler secret separate
 from `ADMIN_TOKEN`; the runner host stores it in a `chmod 600` file.
 
+For local maintainer-only promotion commands, store `ADMIN_TOKEN` in the
+repository-root `.env`. The file is gitignored and must remain `chmod 600`;
+never copy this token into scripts, logs, commits, or the runner host config.
+
 ### `GET /v1/agent/queue?limit=<N>`
 
 Returns up to `N` (default 30, max 100) `auto_pending_review` rows the
-agent hasn't yet scored — or has scored against a stale `signals_hash`.
-Sorted `last_scored DESC`. `agent_attempts < 3` caps retries on chronic
-agent failures; successful agent decisions reset this counter to 0.
+current agent hasn't yet scored, was last scored by a different agent, or
+has scored against a stale `signals_hash`. A different reviewer may re-check
+legacy rows even when the previous agent exhausted its retry counter; the
+counter still caps retries of the current agent's own stale rows.
+
+The queue is split into disjoint priority buckets: `following_count >
+100000` first, then first-pass `porn_bot`, `spam`, and `likely_spam`, followed
+by the remaining labels. Each bucket retains deterministic confidence/freshness
+ordering, and the combined response never exceeds the requested limit.
 
 ```jsonc
 {
@@ -215,6 +225,82 @@ Located in [`services/agent-runner/`](../services/agent-runner):
 - `run.py` — one-cycle runner (lock, fetch queue, parallel
   `hermes -z PROMPT --yolo` per handle, POST verdict).
 - `policy.yaml` — confidence thresholds (above).
+
+## Budgeted batch runner: OpenAI-compatible
+
+`services/agent-runner/run_batch_openai.py` is the fail-closed path for
+large queue cleanups:
+
+- one logical cycle fetches at most 100 accounts;
+- it shares one compact policy across configurable provider-safe sub-batches;
+  the production wrapper uses 20 accounts per call, so a 100-account cycle
+  makes at most five model calls;
+- dry-run is the default; only `APPLY_DECISIONS=1` enables writes;
+- writes land only in private agent staging statuses. `reject` becomes
+  `agent_whitelist`, `blacklist` becomes `agent_blacklist`, and `pending`
+  becomes `agent_pending`; the runner never publishes directly;
+- a blacklist recommendation is downgraded unless it has a spam/porn label,
+  confidence >= 0.95, and a hard evidence code;
+- the model returns only compact decisions; the runner derives short audit
+  reasons from the final decision and hard evidence codes;
+- non-porn accounts with `following_count > 100000` are routed out of the
+  pending queue;
+- response IDs must match the input IDs exactly once, usage must be present
+  before apply, parse failures are capped at two, and per-cycle input/output
+  token ceilings stop later sub-batches;
+- concurrent `409 stale_agent_decision` responses are skipped and counted,
+  rather than aborting the remaining safe writes;
+- a non-blocking file lock prevents overlapping cron cycles, while a UTC
+  JSONL usage ledger records every provider response before parsing/writes;
+- a new cycle starts only when the daily budget has headroom for the full
+  configured cycle; the cycle output budget is divided across the planned
+  provider calls as a reasoning-inclusive completion cap. The full-cycle
+  admission check remains the authoritative guard when a compatible proxy
+  reports small usage differences around its requested per-call cap;
+- `AGENT_REASONING_EFFORT` is optional and validated before calls. The
+  production wrapper uses the provider-tested `none` setting to avoid hidden
+  reasoning-token overhead while the deterministic blacklist safety gate and
+  separate maintainer promotion remain unchanged.
+
+Config additions in the runner `.env`:
+
+```sh
+AGENT_ID=batch-openai-v2
+AGENT_LLM_BASE_URL=https://api.openai.com/v1
+AGENT_LLM_API_KEY=<secret>
+AGENT_LLM_MODEL=<model-id>
+AGENT_REASONING_EFFORT=none
+PROMPT_FILE_BATCH_OPENAI=/path/to/prompt_batch_openai.tmpl
+MAX_ITEMS_PER_CYCLE=100
+LLM_SUB_BATCH_SIZE=20
+MAX_INPUT_TOKENS_PER_CYCLE=30000
+MAX_OUTPUT_TOKENS_PER_CYCLE=10000
+DAILY_INPUT_TOKEN_BUDGET=150000
+DAILY_OUTPUT_TOKEN_BUDGET=90000
+MAX_PARSE_FAILURES=2
+LOG_DIR=/path/to/x-spam-agent/logs
+BATCH_LOCK_FILE=/path/to/x-spam-agent/logs/.batch-openai.lock
+APPLY_DECISIONS=0
+```
+
+Run tests and one dry-run cycle:
+
+```sh
+cd services/agent-runner
+python3 -m unittest -v test_batch_review.py test_run_batch_openai.py
+python3 run_batch_openai.py
+```
+
+Inspect the single JSON result, then set `APPLY_DECISIONS=1` only for an
+approved cycle. Promotion from agent staging remains a separate maintainer
+action.
+
+For the production Hermes cron, install
+`services/agent-runner/x-spam-batch-openai.sh` under `~/.hermes/scripts/`
+and point the existing `x-spam-agent` job at it. The wrapper pins the reviewed
+model, 100-account cycle, 20-account provider sub-batches, 15k/9k per-cycle
+limits, and 150k/90k UTC daily limits without storing credentials in the
+script. Model reasoning is disabled after a live compatibility probe.
 
 ### Install on a Mac mini
 

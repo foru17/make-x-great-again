@@ -1,0 +1,4 @@
+eval set: 42 cases (clean=21, spam=21, reconstructed=8); prompt 7625 chars
+
+scored 42/42 · accuracy 100.0% · false positives 0 · misses 0 · errors 0
+exit=0

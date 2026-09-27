@@ -1,5 +1,5 @@
 name = "x-spam-sentinel-edge"
-main = "src/index.ts"
+main = "src/worker.ts"
 compatibility_date = "2026-05-01"
 compatibility_flags = ["nodejs_compat"]
 
@@ -17,6 +17,13 @@ routes = [
 # an old `edgeBase` setting continue to work during the migration window.
 # Can be flipped to `false` once the extension has rolled out widely.
 workers_dev = true
+
+# Public moderation policy: AI verdicts may populate the review queue but may
+# not publish directly to the blacklist. Only an explicit value of "1" enables
+# the dormant auto-publish lane; production stays fail-closed after the
+# 2026-09-01 false-positive cleanup.
+[vars]
+AI_AUTO_PUBLISH_ENABLED = "0"
 
 # Static assets — favicon set, mascot artwork, og:image. Cloudflare Workers
 # Assets serves files from this directory first; unmatched paths fall through
@@ -40,8 +47,8 @@ binding = "DB"
 database_name = "xss-db"
 database_id = "c3a73f50-9af1-4b85-9b5b-db19dd33f175"
 
-# No public [vars]. ALL LLM provider config lives in Worker secrets so the
-# repo can stay public without doxxing the inference dependency:
+# ALL LLM provider config lives in Worker secrets so the repo can stay public
+# without doxxing the inference dependency:
 #   npx wrangler secret put LLM_API_BASE    # OpenAI-compatible base URL
 #   npx wrangler secret put LLM_API_MODEL   # model id
 #   npx wrangler secret put LLM_API_KEY     # bearer token
@@ -51,6 +58,7 @@ database_id = "c3a73f50-9af1-4b85-9b5b-db19dd33f175"
 #   npx wrangler secret put REPORT_SALT          # HMAC salt for reporter fingerprints
 #   npx wrangler secret put WHITELIST_SYNC_TOKEN # fine-grained PAT, Contents:Write on the repo
 #   npx wrangler secret put WHITELIST_SYNC_REPO  # "owner/repo", default foru17/make-x-great-again
+#   npx wrangler secret put WHITELIST_SYNC_BRANCH # required dedicated data branch; never main/default
 
 # Scheduled jobs:
 # - mirror curated whitelist/blacklist to the repo every 6h

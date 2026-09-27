@@ -1,0 +1,26 @@
+{
+  "goal": "核查并修复关键字规则对全部待审的漏扫",
+  "tasks": [
+    {
+      "id": "K1",
+      "task": "生产只读对照搜索、规则预览和扫描条件",
+      "verify": "相同规则的四阶段命中数、预览数和规则配置",
+      "passes": true,
+      "evidence": "docs/rule-coverage-2026-09-24.md"
+    },
+    {
+      "id": "K2",
+      "task": "修复覆盖范围与扫描结果的准确性",
+      "verify": "真实 SQLite 回归：四阶段、隐藏字符、终审保护、截断及实际写入计数",
+      "passes": true,
+      "evidence": "docs/rule-coverage-2026-09-24.md"
+    },
+    {
+      "id": "K3",
+      "task": "界面/运行时验收与发布验证",
+      "verify": "构建、测试、真实 D1 运行时、只读生产对照、发布记录",
+      "passes": true,
+      "evidence": "docs/rule-coverage-2026-09-24.md"
+    }
+  ]
+}

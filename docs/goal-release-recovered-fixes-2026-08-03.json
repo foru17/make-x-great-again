@@ -1,0 +1,49 @@
+{
+  "goal": "安全发布 2026-08-03 恢复分支到 GitHub 与 Cloudflare Worker",
+  "updatedAt": "2026-08-03T18:58:28+08:00",
+  "constraints": {
+    "productionDataMutation": "禁止修改 D1 名单数据；只允许 Worker 代码/静态资源、镜像分支和必要 secret",
+    "rollback": "部署前记录当前版本；线上验证失败立即回滚",
+    "mirrorBranch": "data-mirror",
+    "apiLoopLimit": 20,
+    "extensionStores": "不包含 Chrome/Firefox 商店发布"
+  },
+  "tasks": [
+    {
+      "id": "release-preflight",
+      "scope": "确认 GitHub/Cloudflare 身份、干净工作树、回滚版本与发布构建",
+      "verification": "2026-08-03 实测：GitHub foru17 具备 admin/push；Wrangler 4.110.0 登录正确 Cloudflare 账号；origin/main=a975f616；回滚版本=4dbf2b54（100%）；Edge 112 项、双 typecheck、CSS/App 构建及 deploy --dry-run 全部通过；生成 CSS 已以 0a6651a 单独提交",
+      "passes": true
+    },
+    {
+      "id": "data-mirror-branch",
+      "scope": "从远端 main 创建独立 data-mirror 分支，禁止运行时镜像触碰 main",
+      "verification": "2026-08-03 实测：新建远端 refs/heads/data-mirror=a975f616ce517191c333c179c121bb13d152b27c，与发布前 origin/main 完全一致；仓库默认分支仍为 main",
+      "passes": true
+    },
+    {
+      "id": "mirror-secret",
+      "scope": "配置生产 WHITELIST_SYNC_BRANCH=data-mirror",
+      "verification": "2026-08-03 实测：Wrangler 交互式写入成功；secret list 可见 WHITELIST_SYNC_BRANCH（未输出值）；Cloudflare 已以版本 f10b2c68 100% 保存该 secret",
+      "passes": true
+    },
+    {
+      "id": "github-publish",
+      "scope": "推送恢复分支并创建包含验证证据的 Draft PR",
+      "verification": "2026-08-03 实测：恢复分支已推送；Draft PR #177 指向 main 且 GitHub 判定 MERGEABLE；Core、Edge、Extension 三组 CI 在提交 00d6630 全部通过；PR 包含 112/26/34 项测试、构建、真实 Firefox 与敏感信息检查证据",
+      "passes": true
+    },
+    {
+      "id": "worker-deploy",
+      "scope": "发布 Worker 代码和管理台静态资源，不执行 D1 写入/迁移",
+      "verification": "2026-08-03 实测：从源码提交 00d66305d5873edea4acf5f861563cf44ec09d75 发布 Cloudflare Worker 版本 8c5ab1ff-e6a2-44c4-8fa1-763ad6c0033b；部署 c84cfb7c-6f70-4e6c-9f06-3cf18ab06550 以 100% 流量生效；发布过程仅上传 Worker 与 9 个新/变更静态资源，未执行 D1 写入或迁移",
+      "passes": true
+    },
+    {
+      "id": "production-smoke",
+      "scope": "线上鉴权、管理台静态资源、白名单幂等、镜像安全和关键只读接口验收",
+      "verification": "2026-08-03 实测：自定义域与 workers.dev 的 /v1/health 均为 200、published=206152（与发布前一致）；/admin 为 200 并加载新资源 index-DjKVADPe.js 与 index-DLteGqS9.css；未认证 /v1/admin/stats 为 403；data-mirror 与 main 均保持 a975f616；WHITELIST_SYNC_BRANCH secret 名称存在；白名单大小写归一与幂等由 Edge 112/112 测试覆盖且生产未做名单写入；桌面浅色、移动深色截图位于 Codex visualizations 目录，经截图检查无溢出/错位",
+      "passes": true
+    }
+  ]
+}
