@@ -1,8 +1,48 @@
 {
   "schema": 1,
-  "generatedAt": 1790532015730,
-  "count": 2479,
+  "generatedAt": 1790596814498,
+  "count": 2487,
   "list": [
+    {
+      "handle": "fanleilex",
+      "x_user_id": "1101692568537100289",
+      "last_scored": 1790578442789
+    },
+    {
+      "handle": "0xlogiclog",
+      "x_user_id": "1761726141155741697",
+      "last_scored": 1790576504336
+    },
+    {
+      "handle": "0x7c2f",
+      "x_user_id": null,
+      "last_scored": 1790576503553
+    },
+    {
+      "handle": "air_feng",
+      "x_user_id": null,
+      "last_scored": 1790576502780
+    },
+    {
+      "handle": "richkingx10",
+      "x_user_id": "2091331244122591232",
+      "last_scored": 1790576502021
+    },
+    {
+      "handle": "elysianpeng",
+      "x_user_id": null,
+      "last_scored": 1790576501270
+    },
+    {
+      "handle": "lookiedao",
+      "x_user_id": null,
+      "last_scored": 1790576500564
+    },
+    {
+      "handle": "axi0m4o4",
+      "x_user_id": null,
+      "last_scored": 1790576499868
+    },
     {
       "handle": "fsfleetinglife",
       "x_user_id": "1517427878555619329",
