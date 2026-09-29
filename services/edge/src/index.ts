@@ -3181,11 +3181,74 @@ app.get("/v1/admin/queue", async (c) => {
 // True per-table counts. Cheap GROUP BY across the accounts table + the dedup
 // view that backs /v1/admin/queue. Lets the admin panel tab chips show the
 // real total instead of "however many we've loaded into memory".
-app.get("/v1/admin/stats", async (c) => {
-  if (!(await admin(c))) return c.json({ error: "forbidden" }, 403);
+// Admin chip counts. D1 bills rows scanned, and accounts is 1.2M+ rows: the
+// old handler ran two full-table scans (GROUP BY status + the lane query,
+// whose leading `last_scored` range can't use the status-first index) plus a
+// full reports count on EVERY call — and the console polls this every minute
+// and after every decision. That was ~97% of D1 rows-read in 2026-09 (~2.6M
+// rows/call, ~1000 calls/day → the $10 overage). Now:
+//  - big-bucket totals (full GROUP BY + reports count) are cached for
+//    ADMIN_STATS_HEAVY_TTL_MS; staleness there is harmless (six-figure counts)
+//  - the small, decision-sensitive buckets (review queue, agent stages,
+//    whitelist, pending applications, lane health) are recomputed per call
+//    through status-leading indexes (~10^4 rows, not 10^6).
+const ADMIN_STATS_HEAVY_TTL_MS = 30 * 60_000;
+type AdminStatsHeavy = { at: number; byStatus: Record<string, number>; reports: number };
+let adminStatsHeavyMemo: AdminStatsHeavy | null = null;
+
+async function adminStatsHeavy(c: Ctx): Promise<AdminStatsHeavy> {
+  const now = Date.now();
+  if (adminStatsHeavyMemo && now - adminStatsHeavyMemo.at < ADMIN_STATS_HEAVY_TTL_MS)
+    return adminStatsHeavyMemo;
+  // Isolate memory dies with the isolate; the colo cache survives across them.
+  const cache = typeof caches === "undefined" ? null : caches.default;
+  const cacheKey = new URL("/__internal/admin-stats-heavy-v1", c.req.url).toString();
+  const cached = await cache?.match(cacheKey);
+  if (cached) {
+    const hit = (await cached.json()) as AdminStatsHeavy;
+    if (now - hit.at < ADMIN_STATS_HEAVY_TTL_MS) {
+      adminStatsHeavyMemo = hit;
+      return hit;
+    }
+  }
   const statusRows = await c.env.DB.prepare(
     "SELECT status, count(*) AS n FROM accounts GROUP BY status",
   ).all<{ status: string; n: number }>();
+  const reportsRow = await c.env.DB.prepare("SELECT count(*) AS n FROM reports").first<{
+    n: number;
+  }>();
+  const byStatus: Record<string, number> = {};
+  for (const r of statusRows.results ?? []) byStatus[r.status] = r.n;
+  const fresh: AdminStatsHeavy = { at: now, byStatus, reports: reportsRow?.n ?? 0 };
+  adminStatsHeavyMemo = fresh;
+  if (cache)
+    c.executionCtx.waitUntil(
+      cache.put(
+        cacheKey,
+        Response.json(fresh, {
+          headers: { "Cache-Control": `s-maxage=${ADMIN_STATS_HEAVY_TTL_MS / 1000}` },
+        }),
+      ),
+    );
+  return fresh;
+}
+
+// Buckets small enough to count live on every call (status-index range each).
+const ADMIN_STATS_LIVE_STATUSES = [...REVIEW_STATUSES, "whitelisted"];
+
+app.get("/v1/admin/stats", async (c) => {
+  if (!(await admin(c))) return c.json({ error: "forbidden" }, 403);
+  const heavy = await adminStatsHeavy(c);
+  const liveRows = await c.env.DB.prepare(
+    `SELECT status, count(*) AS n FROM accounts
+      WHERE status IN (${ADMIN_STATS_LIVE_STATUSES.map(() => "?").join(",")})
+      GROUP BY status`,
+  )
+    .bind(...ADMIN_STATS_LIVE_STATUSES)
+    .all<{ status: string; n: number }>();
+  const byStatus: Record<string, number> = { ...heavy.byStatus };
+  for (const s of ADMIN_STATS_LIVE_STATUSES) byStatus[s] = 0;
+  for (const r of liveRows.results ?? []) byStatus[r.status] = r.n;
   // Queue total mirrors the dedup-by-handle rule used in /v1/admin/queue so
   // "待审 N 条" matches what the maintainer can actually see + act on.
   const queueRow = await c.env.DB.prepare(
@@ -3195,9 +3258,6 @@ app.get("/v1/admin/stats", async (c) => {
         GROUP BY lower(handle)
      )`,
   ).first<{ n: number }>();
-  const reportsRow = await c.env.DB.prepare("SELECT count(*) AS n FROM reports").first<{
-    n: number;
-  }>();
   // Pending self-service whitelist applications — the 白名单申请 tab had no
   // count chip, so a fresh application was invisible until someone opened it.
   const wlReqRow = await c.env.DB.prepare(
@@ -3208,21 +3268,24 @@ app.get("/v1/admin/stats", async (c) => {
   // model actually emits, and nothing surfaced the gap: the queue just grew.
   // These two numbers make the failure mode legible — `auto_lane_published_24h`
   // collapsing toward zero while `auto_lane_blocked_24h` climbs means the gate
-  // has drifted away from reality again. Rides idx_accounts_status_last_scored.
+  // has drifted away from reality again. One subquery per status, pinned to
+  // idx_accounts_status_last_scored: left alone the planner picks
+  // idx_accounts_status_confidence and walks every human_confirmed row
+  // (measured 182K rows → 846 with the pin). The old single
+  // `WHERE last_scored > ?` form full-scanned all 1.2M accounts.
   const since = Date.now() - 24 * 60 * 60_000;
   const laneRow = await c.env.DB.prepare(
     `SELECT
-       sum(CASE WHEN status='auto_pending_review' THEN 1 ELSE 0 END) AS blocked,
-       sum(CASE WHEN status='human_confirmed' AND published_tier='ai' THEN 1 ELSE 0 END) AS published
-     FROM accounts
-      WHERE last_scored > ?
-        AND verdict_label='porn_bot'
-        AND confidence >= ?`,
+       (SELECT count(*) FROM accounts INDEXED BY idx_accounts_status_last_scored
+         WHERE status='auto_pending_review' AND last_scored > ?1
+           AND verdict_label='porn_bot' AND confidence >= ?2) AS blocked,
+       (SELECT count(*) FROM accounts INDEXED BY idx_accounts_status_last_scored
+         WHERE status='human_confirmed' AND last_scored > ?1
+           AND published_tier='ai'
+           AND verdict_label='porn_bot' AND confidence >= ?2) AS published`,
   )
     .bind(since, AUTO_AI_PUBLISH_CONF)
     .first<{ blocked: number | null; published: number | null }>();
-  const byStatus: Record<string, number> = {};
-  for (const r of statusRows.results ?? []) byStatus[r.status] = r.n;
   return c.json({
     queue: queueRow?.n ?? 0,
     // Publish-grade porn_bot verdicts in the last 24h that auto-published
@@ -3238,7 +3301,7 @@ app.get("/v1/admin/stats", async (c) => {
     auto_legit: byStatus.auto_legit ?? 0,
     auto_unsure: byStatus.auto_unsure ?? 0,
     pending_raw: byStatus.auto_pending_review ?? 0,
-    reports: reportsRow?.n ?? 0,
+    reports: heavy.reports,
     whitelist_requests: wlReqRow?.n ?? 0,
     // Agent staging buckets — populated by the side-channel agent pipeline
     // (see docs/AGENT.md). These rows are NOT on the public list yet; they
@@ -3246,6 +3309,8 @@ app.get("/v1/admin/stats", async (c) => {
     agent_blacklist: byStatus.agent_blacklist ?? 0,
     agent_whitelist: byStatus.agent_whitelist ?? 0,
     agent_pending: byStatus.agent_pending ?? 0,
+    // When the big-bucket totals were last recounted (they lag ≤30 min).
+    totals_as_of: heavy.at,
   });
 });
 type DecideAction = "approve" | "reject" | "remove" | "whitelist";
@@ -5051,6 +5116,11 @@ app.get("/v1/list", async (c) => {
   // of D1 rows-read/week. The correlated form rides idx_reports_unique's
   // leading `handle` column and reads ~the page size (matches the indexed
   // pattern already used by /v1/admin/blacklist and /v1/admin/queue).
+  // Cursor bounds are plain ranges (coalesce'd sentinels, which also drop
+  // NULL published_at) rather than `(? IS NULL OR ...)`: the OR form hides
+  // the bound from the planner, so a `since=` poll with nothing new walked
+  // all ~183K human_confirmed rows before returning empty (measured
+  // 183,770 rows → 1). ListPage/LandingPage poll this every 30–60s.
   const rows = await c.env.DB.prepare(
     `SELECT a.x_user_id, a.handle, a.display_name, a.avatar_url,
             a.verdict_label, a.confidence, a.category, a.reasons, a.evidence_text, a.published_at,
@@ -5061,9 +5131,8 @@ app.get("/v1/list", async (c) => {
                 AND r.reporter_fp IS NOT NULL) AS reporters
        FROM accounts a
       WHERE a.status='human_confirmed'
-        AND a.published_at IS NOT NULL
-        AND (?1 IS NULL OR a.published_at < ?1)
-        AND (?2 IS NULL OR a.published_at > ?2)
+        AND a.published_at > coalesce(?2, -1)
+        AND a.published_at < coalesce(?1, 9007199254740991)
       ORDER BY a.published_at DESC
       LIMIT ?3`,
   )

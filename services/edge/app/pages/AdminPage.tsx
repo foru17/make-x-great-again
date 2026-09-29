@@ -1,5 +1,5 @@
 import { Lock, ShieldCheck } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { BlacklistTab } from "@/components/admin/BlacklistTab";
 import { ConfirmProvider } from "@/components/admin/confirm";
@@ -90,7 +90,9 @@ function Console({ onAuth }: { onAuth: () => void }) {
     return () => window.removeEventListener("hashchange", navigate);
   }, []);
 
+  const lastStatsAt = useRef(0);
   const refreshStats = useCallback(() => {
+    lastStatsAt.current = Date.now();
     api
       .stats()
       .then(setStats)
@@ -99,13 +101,36 @@ function Console({ onAuth }: { onAuth: () => void }) {
       });
   }, [onAuth]);
 
+  // Every stats call costs D1 rows-read, so only poll while the tab is
+  // visible, back off to 5 min, and coalesce bursts of decisions into one
+  // refresh. A forgotten background tab polling every 60s was ~97% of the
+  // 2026-09 D1 bill.
   useEffect(() => {
     refreshStats();
-    const id = setInterval(refreshStats, 60000);
-    return () => clearInterval(id);
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") refreshStats();
+    }, 5 * 60_000);
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && Date.now() - lastStatsAt.current > 60_000)
+        refreshStats();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
   }, [refreshStats]);
 
-  const tabProps = { onAuth, onMutated: refreshStats };
+  const mutatedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const onMutated = useCallback(() => {
+    if (mutatedTimer.current) clearTimeout(mutatedTimer.current);
+    mutatedTimer.current = setTimeout(refreshStats, 3000);
+  }, [refreshStats]);
+  useEffect(() => () => {
+    if (mutatedTimer.current) clearTimeout(mutatedTimer.current);
+  }, []);
+
+  const tabProps = { onAuth, onMutated };
 
   return (
     <div className="mx-auto max-w-[1200px] px-5 py-6 pb-20 sm:px-7">
