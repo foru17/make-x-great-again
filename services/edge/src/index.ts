@@ -5116,6 +5116,11 @@ app.get("/v1/list", async (c) => {
   // of D1 rows-read/week. The correlated form rides idx_reports_unique's
   // leading `handle` column and reads ~the page size (matches the indexed
   // pattern already used by /v1/admin/blacklist and /v1/admin/queue).
+  // Cursor bounds are plain ranges (coalesce'd sentinels, which also drop
+  // NULL published_at) rather than `(? IS NULL OR ...)`: the OR form hides
+  // the bound from the planner, so a `since=` poll with nothing new walked
+  // all ~183K human_confirmed rows before returning empty (measured
+  // 183,770 rows → 1). ListPage/LandingPage poll this every 30–60s.
   const rows = await c.env.DB.prepare(
     `SELECT a.x_user_id, a.handle, a.display_name, a.avatar_url,
             a.verdict_label, a.confidence, a.category, a.reasons, a.evidence_text, a.published_at,
@@ -5126,9 +5131,8 @@ app.get("/v1/list", async (c) => {
                 AND r.reporter_fp IS NOT NULL) AS reporters
        FROM accounts a
       WHERE a.status='human_confirmed'
-        AND a.published_at IS NOT NULL
-        AND (?1 IS NULL OR a.published_at < ?1)
-        AND (?2 IS NULL OR a.published_at > ?2)
+        AND a.published_at > coalesce(?2, -1)
+        AND a.published_at < coalesce(?1, 9007199254740991)
       ORDER BY a.published_at DESC
       LIMIT ?3`,
   )
