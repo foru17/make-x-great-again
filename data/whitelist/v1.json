@@ -1,8 +1,13 @@
 {
   "schema": 1,
-  "generatedAt": 1790596814498,
-  "count": 2487,
+  "generatedAt": 1790665255866,
+  "count": 2488,
   "list": [
+    {
+      "handle": "macarontiramisu",
+      "x_user_id": "347802436",
+      "last_scored": 1790665114412
+    },
     {
       "handle": "fanleilex",
       "x_user_id": "1101692568537100289",
