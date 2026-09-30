@@ -1,8 +1,23 @@
 {
   "schema": 1,
-  "generatedAt": 1790665255866,
-  "count": 2488,
+  "generatedAt": 1790769664715,
+  "count": 2491,
   "list": [
+    {
+      "handle": "daniel1011666",
+      "x_user_id": null,
+      "last_scored": 1790756605038
+    },
+    {
+      "handle": "thethinningdark",
+      "x_user_id": "1052813674581176322",
+      "last_scored": 1790756604258
+    },
+    {
+      "handle": "jkfujr",
+      "x_user_id": "1003430256282238976",
+      "last_scored": 1790756601246
+    },
     {
       "handle": "macarontiramisu",
       "x_user_id": "347802436",
