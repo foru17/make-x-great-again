@@ -1,8 +1,13 @@
 {
   "schema": 1,
-  "generatedAt": 1790769664715,
-  "count": 2491,
+  "generatedAt": 1790964100809,
+  "count": 2492,
   "list": [
+    {
+      "handle": "kitune1132",
+      "x_user_id": "978272047141830656",
+      "last_scored": 1790947819689
+    },
     {
       "handle": "daniel1011666",
       "x_user_id": null,
