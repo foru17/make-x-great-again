@@ -1,7 +1,7 @@
 {
   "schema": 1,
-  "generatedAt": 1791504110964,
-  "count": 2503,
+  "generatedAt": 1791655284123,
+  "count": 2504,
   "list": [
     {
       "handle": "gfrsmqg7",
@@ -82,6 +82,11 @@
       "handle": "macarontiramisu",
       "x_user_id": "347802436",
       "last_scored": 1790665114412
+    },
+    {
+      "handle": "kohakupaws",
+      "x_user_id": null,
+      "last_scored": 1790657060492
     },
     {
       "handle": "fanleilex",
