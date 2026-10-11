@@ -1,8 +1,177 @@
 {
   "schema": 1,
-  "generatedAt": 1791698500325,
+  "generatedAt": 1791720091975,
   "count": 50000,
   "list": [
+    {
+      "handle": "cleanvibesd",
+      "x_user_id": "2097585829090938880",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "‍比‍‌‍⁠⁠我⁠‍⁠‌‌‌⁠⁠好⁠‍‌‌⁠⁠‍看‌⁠‌⁠的‌‌⁠‌‌‌‌没‌‍‍‌‍⁠‌我⁠⁠骚‌‍‍‌‌比‍‍‌‌‍⁠我‍‍⁠‍骚⁠‌‍‍⁠⁠的‍‌⁠⁠‌‍⁠‌没‍‌‌⁠我‍‍⁠‌好⁠‍‍看‍⁠‌",
+      "reporters": 0,
+      "published_at": 1791719910036,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "gheemusts0gc",
+      "x_user_id": "2096468364956950529",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "⁠应⁠‍⁠‍⁠⁠该‌‌‌‍没⁠⁠‍‌‌‍人‌⁠⁠‍‌‍比‌⁠‌⁠‍我‌‍‍‌‍玩‌‍⁠‌‌的‌⁠‌⁠开‍⁠⁠‌了⁠‌‌‍吧‌‍‌‌⁠‌我‍⁠⁠⁠福‌⁠‌‌⁠不⁠‍‌黑‌‍‍不⁠‍‌‌信⁠⁠‍⁠你‌‍‌⁠‌‍‌看‌",
+      "reporters": 0,
+      "published_at": 1791719910031,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "rapidmoonsa",
+      "x_user_id": "2097679429254451200",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "⁠⁠比‍‌‌⁠⁠‍‌我‍‌⁠⁠‌⁠‍好‌⁠‌‌⁠⁠⁠看⁠‍‌‍⁠的⁠‍⁠没‌‌⁠‍我‍‌⁠骚‌⁠‌⁠‌⁠比⁠‌‌‌‍我‍⁠⁠‌‌‍‍骚‌‍⁠的‌‌‌‌⁠‍⁠没⁠‌‍我⁠‍⁠‍好‍‍‌⁠⁠⁠看⁠‌‌‍",
+      "reporters": 0,
+      "published_at": 1791719909375,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "optimatwin25",
+      "x_user_id": "2096875567488606208",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "‍⁠应‌⁠该‍‍‌‌⁠‍没‍‍‍⁠⁠人⁠⁠‌‍比‍‌我‌‌‍‌⁠‍玩‌‍⁠⁠的⁠‍‌开‌‍‍‌‌⁠了‍‌‌‌⁠⁠‍⁠吧‍‌‌⁠⁠‌‍我‍‍‌‍‌‍‍‌福⁠⁠‌‌⁠⁠‍不‌⁠‌⁠⁠黑‍‍‌‌⁠不‌‍‍⁠‌‌⁠‍信⁠‍⁠‌‌‌‌你‌‌‍‌‍‍‍看‍‍‌‍",
+      "reporters": 0,
+      "published_at": 1791716094999,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "antolinogo20466",
+      "x_user_id": "1837877470164402176",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"只入身体\" on any",
+        "reported"
+      ],
+      "evidence_text": "只入身体 不入生活",
+      "reporters": 1,
+      "published_at": 1791711099979,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "65zebraharpoo",
+      "x_user_id": "2098704525880360960",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "reported"
+      ],
+      "evidence_text": "只入身体 不入生活",
+      "reporters": 1,
+      "published_at": 1791711088686,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "404latitude",
+      "x_user_id": "2068986008352493568",
+      "verdict_label": "spam",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"资源\" on display_name"
+      ],
+      "evidence_text": "降智的骂声和跳槽的队伍，这对比确实真实。22 天后要是没惊喜，他们回得来吗？",
+      "reporters": 0,
+      "published_at": 1791710632363,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "anglertourer94",
+      "x_user_id": "2095494254156013574",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "‍比‍⁠‍‍‌我⁠‌⁠‍好‍‌‍‌‍⁠‌看‌‍⁠‍‌的‍‍‌‌‌没‍‌‌‍‍我‍⁠‌骚⁠⁠‌⁠比‍‌我‌⁠‍骚‍‍‌‍⁠‌的‍‌⁠‌‍没‍⁠‍‍⁠‌我⁠‌⁠‌好⁠⁠⁠‌‍‍看‍‍",
+      "reporters": 0,
+      "published_at": 1791709484714,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "trovegerund41",
+      "x_user_id": "2097615951223267328",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "‌‍‍‍应‌‍该⁠⁠‍‍没‍‍‍‌‌⁠人⁠‍‌‌‍‌‌比‌⁠‌⁠‌我‍⁠‌‌玩‍⁠‍的‌⁠‍‍⁠‌开⁠‍了‌‌‌‌‌‌吧⁠⁠‍我⁠‌‌⁠福‍‍⁠不⁠⁠‌⁠⁠‌‌黑‌‍不‌⁠‌信‌⁠⁠‌‌‌⁠⁠你‍‌⁠看⁠",
+      "reporters": 0,
+      "published_at": 1791709484512,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "radix84brush",
+      "x_user_id": "2094755431323439104",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "‍比‍⁠⁠‍我‌‍⁠‍⁠‍‌好⁠‍⁠‍看‌‍‌的⁠⁠‌⁠‌没‍‌‍⁠⁠⁠我⁠‌‌‍⁠骚‌🙊🌵‌‌‌比‌‌‌‌⁠‍‍‍我⁠‍⁠骚⁠⁠⁠的‍‍⁠没‌⁠⁠‍‍⁠‍我‌‍‌⁠‍好‍⁠⁠‍⁠看‌⁠‍",
+      "reporters": 0,
+      "published_at": 1791708807934,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "moonkitc",
+      "x_user_id": "2095917376273518592",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "‍‌比⁠‍‍‍‍⁠‌我‍‌‌⁠‌‌好⁠‌‌‌看⁠‌‍的‍‌‍⁠没⁠‌‍⁠我⁠‍‌‍⁠骚‌‍🧣🤖‍‍比‍‌⁠‌‌‍‌我‌‍‍‌骚‍‍‍的‌‍⁠⁠没‍‌‍‌‌‌我‍‍‌‌好⁠‌⁠看⁠‌",
+      "reporters": 0,
+      "published_at": 1791708806859,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "neonnestsd",
+      "x_user_id": "2097553801532301312",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "‍比‌‍‍‍我‌‍⁠⁠‍⁠‌‌好‌‍‌看‍⁠‍‍的‌‌⁠⁠没‍‍‌‍‍我⁠‌‌‍⁠‍骚⁠🐅🥧‍比‌‍‍‌⁠‌我‍‍‍‍骚‍‌‌‍的‌‌没⁠‌‌‌‌‍‍⁠我‌‌‌‍‌好‍‌‍⁠‌‌看‍",
+      "reporters": 0,
+      "published_at": 1791708806816,
+      "published_tier": "auto"
+    },
     {
       "handle": "llooing",
       "x_user_id": "2108803429984530432",
@@ -729125,174 +729294,6 @@
       "evidence_text": "Nadia\n\nRemarkable, \n\n2026-07-22 16:54:30",
       "reporters": 1,
       "published_at": 1784711190660,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "vitasimpelo",
-      "x_user_id": "2070575001401450496",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城上门\" on display_name"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🌞城❤️‍🔥上🏤椚~下方👇👇可联系✈",
-      "reporters": 0,
-      "published_at": 1784711139318,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "reinaldocaapy",
-      "x_user_id": "2070581468758487040",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🍟城🎴上🍅椚~下方👇👇可联系✈",
-      "reporters": 1,
-      "published_at": 1784711138921,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "zeniahoosewc",
-      "x_user_id": "2070579443173634048",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐😘城🌞上💛椚~下方👇👇可联系✈",
-      "reporters": 1,
-      "published_at": 1784711138666,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "audiewulflpy5",
-      "x_user_id": "2070579252412739584",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐☎️城🎟️上😚椚~下方👇👇可联系✈",
-      "reporters": 1,
-      "published_at": 1784711138642,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "grazynahol12f",
-      "x_user_id": "2070577849841414144",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🎈城💘上🎏椚~下方👇👇可联系✈",
-      "reporters": 1,
-      "published_at": 1784711138630,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "ashantipopvd",
-      "x_user_id": "2070584996281159680",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐🌴城🍇上🍨椚~点击下方 👇可联系✈️",
-      "reporters": 1,
-      "published_at": 1784711138626,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "missrowen5nf5",
-      "x_user_id": "2070587435730264066",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐🎾城🙌上🐚椚~点击下方 👇可联系✈️",
-      "reporters": 1,
-      "published_at": 1784711138504,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "artieekishkj",
-      "x_user_id": "2070580022604185602",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐😊城😊上🎂椚~下方👇👇可联系✈",
-      "reporters": 1,
-      "published_at": 1784711138493,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "dorathywayn4es",
-      "x_user_id": "2070578830184513536",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🎟️城👠上🔴椚~下方👇👇可联系✈",
-      "reporters": 1,
-      "published_at": 1784711138491,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "sonjasupplkpk",
-      "x_user_id": "2070584417018343424",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐🏆城😋上🌼椚~点击下方 👇可联系✈️",
-      "reporters": 3,
-      "published_at": 1784711124453,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "cecillewil6sf",
-      "x_user_id": "2068575098517241856",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "crypto",
-      "reasons": [
-        "matched keyword rule \"Visa领取\" on display_name"
-      ],
-      "evidence_text": "拿住太难了 谁懂啊",
-      "reporters": 0,
-      "published_at": 1784711119675,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "rufinafilinwl",
-      "x_user_id": "2068577625296261120",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "crypto",
-      "reasons": [
-        "matched keyword rule \"visa\" on display_name"
-      ],
-      "evidence_text": "这价格真离谱",
-      "reporters": 0,
-      "published_at": 1784711115731,
       "published_tier": "auto"
     }
   ]
