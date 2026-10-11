@@ -1,8 +1,50 @@
 {
   "schema": 1,
-  "generatedAt": 1791720091975,
+  "generatedAt": 1791741683126,
   "count": 50000,
   "list": [
+    {
+      "handle": "ykdbp65682278",
+      "x_user_id": "1792562329114083328",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"同城\" on display_name"
+      ],
+      "evidence_text": "应该没人比我玩的开了吧我福不黑不信你看",
+      "reporters": 0,
+      "published_at": 1791729322851,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "z3byjobtniu_",
+      "x_user_id": "2100808577296240640",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "reported"
+      ],
+      "evidence_text": "只入身体不入生活",
+      "reporters": 1,
+      "published_at": 1791728992071,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "mqaiwxivtiz",
+      "x_user_id": "2100808779184971777",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "reported"
+      ],
+      "evidence_text": "只入身体不入生活",
+      "reporters": 1,
+      "published_at": 1791728992027,
+      "published_tier": "auto"
+    },
     {
       "handle": "cleanvibesd",
       "x_user_id": "2097585829090938880",
@@ -729252,48 +729294,6 @@
       "evidence_text": "Maggie\n\nUnique, \n\n2026-07-22 16:57:14",
       "reporters": 1,
       "published_at": 1784711193084,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "fnoel51917",
-      "x_user_id": "2041117069245054976",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "🏅全网首创线下约会匹配💌本地免费约P，一至五线全覆盖🌍🌊海外核心城市同步开放🫶真实可靠，仅做资源对接，无需下载 App\n电报✈️选人群👉https://t.co/6bhsU7pJRC\n✈电报使用教程 @Alisha27k",
-      "reporters": 0,
-      "published_at": 1784711191968,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "gracielasiwgtd",
-      "x_user_id": "2070575018522587136",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城上门\" on display_name"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐💗城👄上🍬椚~下方👇👇可联系✈",
-      "reporters": 0,
-      "published_at": 1784711191414,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "roykasuboshptf",
-      "x_user_id": "2068296639781965824",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "Nadia\n\nRemarkable, \n\n2026-07-22 16:54:30",
-      "reporters": 1,
-      "published_at": 1784711190660,
       "published_tier": "auto"
     }
   ]
