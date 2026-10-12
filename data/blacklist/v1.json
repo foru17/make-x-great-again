@@ -1,8 +1,50 @@
 {
   "schema": 1,
-  "generatedAt": 1791784909619,
+  "generatedAt": 1791806502872,
   "count": 50000,
   "list": [
+    {
+      "handle": "warmfoxsv",
+      "x_user_id": "1998996566905073666",
+      "verdict_label": "spam",
+      "confidence": 1,
+      "category": "marketing",
+      "reasons": [
+        "matched keyword rule \"银狐\" on display_name"
+      ],
+      "evidence_text": "第三层内部也在分化：会用 agent 的人很多，能一眼看出 agent 哪里错了的人很少。",
+      "reporters": 0,
+      "published_at": 1791793776338,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "litvakmedoau",
+      "x_user_id": "2095034765930012672",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "‍⁠⁠应‌‍‍‌该‍⁠‌⁠‍‍‌没‌‌⁠‍‌‌‍人⁠‍‌⁠‍比‍‌‌‍‌‌‌我‍‌玩‍‍⁠‌⁠⁠⁠的⁠⁠‍⁠‍‌⁠开‌⁠‌‌了⁠‌⁠‌⁠⁠吧⁠‌‌‌🗼⛵‌‍我‌‍‍⁠‌⁠福‌‍‍‌不‍‌‍黑‌⁠⁠⁠‍不⁠‌‍‍‍⁠信‌‌⁠‌你⁠‌‌‌⁠‌看‍‌‍",
+      "reporters": 0,
+      "published_at": 1791790287218,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "kenzierdo",
+      "x_user_id": "2094746741065093120",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "‌⁠比‍⁠‍‍‌‌‍‍我‌‌‌⁠好‍‍‍‌⁠看‌⁠⁠⁠⁠的‌‍‍‍‍没‌‌‍‌‍‌‍我‍‌‌‍⁠‌‌‌骚‍⁠🥉🥋‌⁠‍比⁠‌‌‍我‍⁠骚⁠‌‍‌‌‍的‌‍⁠‌‍⁠⁠没‌⁠我⁠‌‌‍‌好‍‍⁠‍⁠⁠看‍‌",
+      "reporters": 0,
+      "published_at": 1791790287195,
+      "published_tier": "auto"
+    },
     {
       "handle": "hcelh951ot61eqm",
       "x_user_id": "2100826180400132096",
@@ -729252,48 +729294,6 @@
       "evidence_text": "已入住约p平台：入口 👉https://t.co/gdRngJiau9每晚准时涩播，寻欢必备！福利大放送！安全 私密 （tip：线上远程指挥直播控制玩具 同城可线下）",
       "reporters": 1,
       "published_at": 1784711302117,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "harriet60514",
-      "x_user_id": "2043360272081993728",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "已入住约p平台：入口 👉https://t.co/YXTivrPsrH每晚准时涩播，寻欢必备！福利大放送！安全 私密 （tip：线上远程指挥直播控制玩具 同城可线下）",
-      "reporters": 1,
-      "published_at": 1784711302110,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "camillefer79645",
-      "x_user_id": "2043029087501873152",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "已入住约p平台：入口 👉https://t.co/5vI6DiOzAE每晚准时涩播，寻欢必备！福利大放送！安全 私密 （tip：线上远程指挥直播控制玩具 同城可线下）",
-      "reporters": 1,
-      "published_at": 1784711302105,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "sarahann678931",
-      "x_user_id": "2044702333687271424",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "已入住约p平台：入口 👉https://t.co/n2lGgdjy7V每晚准时涩播，寻欢必备！福利大放送！安全 私密 （tip：线上远程指挥直播控制玩具 同城可线下）",
-      "reporters": 1,
-      "published_at": 1784711302048,
       "published_tier": "auto"
     }
   ]
