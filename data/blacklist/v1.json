@@ -1,8 +1,78 @@
 {
   "schema": 1,
-  "generatedAt": 1791806502872,
+  "generatedAt": 1791828081096,
   "count": 50000,
   "list": [
+    {
+      "handle": "scenerythumbs",
+      "x_user_id": "2097681027888009216",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "‌比‌‍⁠‍我⁠⁠‍好‍‌‍看‌⁠‍‍‍‍‍的‍‌⁠没‍⁠⁠‌‌我‌⁠‌⁠‌骚‌‍‍⁠比‌⁠‍‌‍‍‌⁠我‌‌‍‍骚‌‌⁠的⁠‌⁠‌‌‍‍没‍‍‌‍⁠我‌‍好‍⁠⁠⁠⁠‍看‌‌⁠‍",
+      "reporters": 0,
+      "published_at": 1791809123901,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "brandlylot1b",
+      "x_user_id": "2095749858867007489",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "‍‌‍‍比‍⁠⁠⁠我⁠‍‌‌‌⁠好‍‌⁠⁠‌‌‌看‍‍⁠⁠‍‌的‍‍‍⁠‍⁠⁠‌没‌‌‌⁠我‌‍⁠‍骚⁠‌⁠‌‌比⁠‌‍‍‍⁠我‍‌⁠‍‌⁠骚⁠⁠⁠⁠‍‌的‌‍‌没‌⁠‌我‌‍‍‌‍⁠⁠‌好⁠‍‍‌看⁠",
+      "reporters": 0,
+      "published_at": 1791809089163,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "adamw1j",
+      "x_user_id": "2095425429951877121",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "‌⁠⁠比⁠‍‌‍‍我‌‌‌⁠⁠好⁠⁠‌‍看⁠‌‌‍‍⁠⁠的‌‍‌‍⁠‍‍没⁠‌我⁠⁠⁠‌‌骚‍‌比‌‍‍‍‍‌‍我‍‌‌‍‌‌骚⁠‍‍‌的‍⁠‌‍‌‍没‍‌⁠‍‍我‍‌‍⁠⁠好‍⁠‍⁠看‌‌‌",
+      "reporters": 0,
+      "published_at": 1791809087870,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "mediumhairp8",
+      "x_user_id": "2096519734066118656",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "‌⁠⁠应‌⁠‌‌⁠该‌⁠‍‌‍没‍‌人‍‌‌‍⁠‍‍‍比⁠⁠我⁠⁠⁠‍‍玩‌⁠⁠‍的‌‍⁠‍‍‍‌⁠开‌⁠了⁠‍⁠⁠吧‌⁠⁠‌‍⁠我⁠⁠⁠‌‍‌‌福‍⁠‌‌不‍‍⁠‌‌⁠‍‍黑‌⁠⁠‍⁠‌⁠⁠不‍⁠⁠‌⁠‍‍信⁠‍‌⁠你⁠‌⁠⁠‌‌⁠看⁠‌⁠‌",
+      "reporters": 0,
+      "published_at": 1791809087769,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "cryptofanyong",
+      "x_user_id": "2104235208858038272",
+      "verdict_label": "spam",
+      "confidence": 1,
+      "category": "crypto",
+      "reasons": [
+        "matched keyword rule \"返佣\" on display_name"
+      ],
+      "evidence_text": "忽悠进来容易，问题是币圈收的学费比任何老师都狠。",
+      "reporters": 0,
+      "published_at": 1791808079188,
+      "published_tier": "auto"
+    },
     {
       "handle": "warmfoxsv",
       "x_user_id": "1998996566905073666",
@@ -729224,76 +729294,6 @@
       "evidence_text": "小号（私信受限制），要福利🈷私信聊天号@JuanSancez\n我的电报✈️号https://t.co/guX0A2NcXc",
       "reporters": 2,
       "published_at": 1784711364885,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "annette55zc8",
-      "x_user_id": "2069696194536730624",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"主页\" on display_name"
-      ],
-      "evidence_text": "positive",
-      "reporters": 0,
-      "published_at": 1784711364884,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "neilvita18902",
-      "x_user_id": "2044563450253176832",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "已入住约p平台：入口 👉https://t.co/bbXpaX9b9g每晚准时涩播，寻欢必备！福利大放送！安全 私密 （tip：线上远程指挥直播控制玩具 同城可线下）",
-      "reporters": 2,
-      "published_at": 1784711318482,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "marthasaro15882",
-      "x_user_id": "2043422292454064128",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"固炮\" on display_name"
-      ],
-      "evidence_text": "已入住约p平台：入口 👉https://t.co/egJ78tkzus每晚准时涩播，寻欢必备！福利大放送！安全 私密 （tip：线上远程指挥直播控制玩具 同城可线下）",
-      "reporters": 0,
-      "published_at": 1784711305683,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "galsworthy48035",
-      "x_user_id": "2043157638880333824",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "已入住约p平台：入口 👉https://t.co/K1bkUxqpZk每晚准时涩播，寻欢必备！福利大放送！安全 私密 （tip：线上远程指挥直播控制玩具 同城可线下）",
-      "reporters": 1,
-      "published_at": 1784711302122,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "donnesandr19641",
-      "x_user_id": "2044323935915814912",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "已入住约p平台：入口 👉https://t.co/gdRngJiau9每晚准时涩播，寻欢必备！福利大放送！安全 私密 （tip：线上远程指挥直播控制玩具 同城可线下）",
-      "reporters": 1,
-      "published_at": 1784711302117,
       "published_tier": "auto"
     }
   ]
