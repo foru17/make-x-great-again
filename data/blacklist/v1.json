@@ -1,8 +1,22 @@
 {
   "schema": 1,
-  "generatedAt": 1791741683126,
+  "generatedAt": 1791763290180,
   "count": 50000,
   "list": [
+    {
+      "handle": "404latitude",
+      "x_user_id": "2053800927858167808",
+      "verdict_label": "spam",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"资源\" on display_name"
+      ],
+      "evidence_text": "Claude Design 的出图质量确实高，UI 设计稿直接可用",
+      "reporters": 0,
+      "published_at": 1791762931141,
+      "published_tier": "auto"
+    },
     {
       "handle": "ykdbp65682278",
       "x_user_id": "1792562329114083328",
@@ -729280,20 +729294,6 @@
       "evidence_text": "小号（私信受限制），要福利🈷私信聊天号@JuanSancez\n我的电报✈️号https://t.co/eAsAyFYy63",
       "reporters": 1,
       "published_at": 1784711243944,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "winfordmcluen",
-      "x_user_id": "2068296638989578240",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "Maggie\n\nUnique, \n\n2026-07-22 16:57:14",
-      "reporters": 1,
-      "published_at": 1784711193084,
       "published_tier": "auto"
     }
   ]
