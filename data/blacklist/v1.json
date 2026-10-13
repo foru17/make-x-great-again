@@ -1,8 +1,148 @@
 {
   "schema": 1,
-  "generatedAt": 1791871318798,
+  "generatedAt": 1791892902263,
   "count": 50000,
   "list": [
+    {
+      "handle": "wiwzutcpb21",
+      "x_user_id": "2100902180324524032",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"只入身体\" on any"
+      ],
+      "evidence_text": "只入身体🎊😯不入生活",
+      "reporters": 0,
+      "published_at": 1791884050815,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "xpzebjke_u2g9td",
+      "x_user_id": "2100902218765316096",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"只入身体\" on any"
+      ],
+      "evidence_text": "只入身体🤘🙌不入生活",
+      "reporters": 0,
+      "published_at": 1791884050812,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "fo4ntn5jah83__",
+      "x_user_id": "2100901164497965056",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"只入身体\" on any"
+      ],
+      "evidence_text": "只入身体😃🤠不入生活",
+      "reporters": 0,
+      "published_at": 1791883515284,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "q3t9a6nqkbrm59q",
+      "x_user_id": "2100901822110281728",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"只入身体\" on any"
+      ],
+      "evidence_text": "只入身体😻🩷不入生活",
+      "reporters": 0,
+      "published_at": 1791883515261,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "hmi2nwqkbvm7c",
+      "x_user_id": "2100901430139768832",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"只入身体\" on any"
+      ],
+      "evidence_text": "只入身体👍😁不入生活",
+      "reporters": 0,
+      "published_at": 1791883515259,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "ljrmjebbe911",
+      "x_user_id": "2100901985243324416",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"只入身体\" on any"
+      ],
+      "evidence_text": "只入身体💛💜不入生活",
+      "reporters": 0,
+      "published_at": 1791883515234,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "jcpastorclifci",
+      "x_user_id": "222191453",
+      "verdict_label": "spam",
+      "confidence": 1,
+      "category": "crypto",
+      "reasons": [
+        "matched keyword rule \"返佣\" on display_name"
+      ],
+      "evidence_text": "谁还没交过这种刚上网时的智商税呢",
+      "reporters": 0,
+      "published_at": 1791882462819,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "glenramseydyy8",
+      "x_user_id": "2099963270601830400",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"只入身体\" on any"
+      ],
+      "evidence_text": "只入身体😃 🐵不入生活",
+      "reporters": 0,
+      "published_at": 1791879199089,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "charlesmcdmwbe",
+      "x_user_id": "2099932923231084544",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"只入身体\" on any"
+      ],
+      "evidence_text": "只入身体❤️ 🤫不入生活",
+      "reporters": 0,
+      "published_at": 1791877001783,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "rapidclouda",
+      "x_user_id": "2099806261466505216",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "⁠‌应⁠‍‍该‌‍⁠⁠⁠‍‌没‌⁠‌⁠‍‌‍人‌‌⁠⁠⁠‍比‌⁠‌⁠‌我‍⁠‌玩‍‌‍⁠⁠‍⁠‌的⁠⁠‌开⁠‌‍⁠了‍‍‌⁠‌吧⁠⁠‍‍‍‌我‍‌‍‌⁠福‍⁠‍⁠‍不‍⁠⁠‌⁠⁠‌黑‍‌‍‍⁠不⁠‌⁠‌‌‌信‌‌‌‍‍⁠你‌‌⁠看‌⁠‍‌",
+      "reporters": 0,
+      "published_at": 1791874560718,
+      "published_tier": "auto"
+    },
     {
       "handle": "f7atuo0p858",
       "x_user_id": "2100884150047649792",
@@ -729154,146 +729294,6 @@
       "evidence_text": "小号（私信受限制），要福利🈷私信聊天号@JuanSancez\n我的电报✈️号https://t.co/GKdMyMPLIr",
       "reporters": 1,
       "published_at": 1784711663700,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "tobiashanc73",
-      "x_user_id": "2070575108482043904",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": null,
-      "reporters": 1,
-      "published_at": 1784711649456,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "linhhannenl58",
-      "x_user_id": "2070584576414486529",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城上门\" on display_name"
-      ],
-      "evidence_text": "桐😏城💡上🌴椚~点击下方 👇可联系✈️",
-      "reporters": 0,
-      "published_at": 1784711578379,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "lovellaleiotn",
-      "x_user_id": "2068296559595286529",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"破处\" on display_name"
-      ],
-      "evidence_text": "Worthy.\n\nElizabeth\n\n2026-07-22 16:53:10",
-      "reporters": 0,
-      "published_at": 1784711565276,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "reginaldpodp7",
-      "x_user_id": "2070575663061299200",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐😚城🔴上🚗椚~下方👇👇可联系✈",
-      "reporters": 1,
-      "published_at": 1784711500522,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "kimberleyvmblz",
-      "x_user_id": "2070575253714046976",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城上门\" on display_name"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐❤️‍💟城📕上🅾️椚~下方👇👇可联系✈",
-      "reporters": 0,
-      "published_at": 1784711500463,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "georgecutsforth",
-      "x_user_id": "2070574989787480064",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐💛城👩‍❤️‍💋‍👩上🎏椚~下方👇👇可联系✈",
-      "reporters": 1,
-      "published_at": 1784711500459,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "qwyocswzpw0hwz",
-      "x_user_id": "2071158055836811264",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"处男\" on display_name"
-      ],
-      "evidence_text": "小号（私信受限制），要福利🈷私信聊天号@JuanSancez\n我的电报✈️号https://t.co/EsdY62wMog",
-      "reporters": 0,
-      "published_at": 1784711469368,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "elanorhalbrooks",
-      "x_user_id": "2068586424845090816",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "crypto",
-      "reasons": [
-        "matched keyword rule \"weex\" on display_name"
-      ],
-      "evidence_text": "这有什么好奇的 船大难掉头啊",
-      "reporters": 0,
-      "published_at": 1784711464164,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "fgonsugzipkows",
-      "x_user_id": "2071152760238538752",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"处男\" on display_name"
-      ],
-      "evidence_text": "小号（私信受限制），要福利🈷私信聊天号@JuanSancez\n我的电报✈️号https://t.co/DWD2jeABWs",
-      "reporters": 0,
-      "published_at": 1784711429144,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "bvrstqrlndiopy",
-      "x_user_id": "2071151671380480000",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"处男\" on display_name"
-      ],
-      "evidence_text": "小号（私信受限制），要福利🈷私信聊天号@JuanSancez\n我的电报✈️号https://t.co/TgdqAk77U7",
-      "reporters": 0,
-      "published_at": 1784711429136,
       "published_tier": "auto"
     }
   ]
