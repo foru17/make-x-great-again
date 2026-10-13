@@ -1,8 +1,120 @@
 {
   "schema": 1,
-  "generatedAt": 1791849725437,
+  "generatedAt": 1791871318798,
   "count": 50000,
   "list": [
+    {
+      "handle": "f7atuo0p858",
+      "x_user_id": "2100884150047649792",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "reported"
+      ],
+      "evidence_text": "只入身体🤪😳不入生活",
+      "reporters": 1,
+      "published_at": 1791860917927,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "lm4a58aipsqhx_o",
+      "x_user_id": "2100884148114042880",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"只入身体\" on any"
+      ],
+      "evidence_text": "只入身体🙀💝不入生活",
+      "reporters": 0,
+      "published_at": 1791859340524,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "db82hw3ycw3",
+      "x_user_id": "2100883554116775936",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"只入身体\" on any"
+      ],
+      "evidence_text": "只入身体😹🤙不入生活",
+      "reporters": 0,
+      "published_at": 1791859340517,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "ellalewq8e2",
+      "x_user_id": "2069885706391130112",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"主页\" on display_name"
+      ],
+      "evidence_text": "比我好看的没我骚😗🙌比我骚的没我好看",
+      "reporters": 0,
+      "published_at": 1791855308860,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "mhxhs39749142",
+      "x_user_id": "1754651424682577920",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"同城\" on display_name"
+      ],
+      "evidence_text": "应该没人比我玩的开了吧🥀🐞我福不黑不信你看",
+      "reporters": 0,
+      "published_at": 1791854380288,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "ahmadkesler",
+      "x_user_id": "2095370150375514115",
+      "verdict_label": "spam",
+      "confidence": 1,
+      "category": "marketing",
+      "reasons": [
+        "matched keyword rule \"高返\" on display_name"
+      ],
+      "evidence_text": "这种时候就该学会断舍离",
+      "reporters": 0,
+      "published_at": 1791853043161,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "nicolebrowvenn",
+      "x_user_id": "2069805495142260736",
+      "verdict_label": "spam",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"资源\" on display_name"
+      ],
+      "evidence_text": "只入身体😮 🦗不入生活",
+      "reporters": 0,
+      "published_at": 1791853033552,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "hp2_4zqm1ss7eyd",
+      "x_user_id": "2100877150794747905",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"只入身体\" on any"
+      ],
+      "evidence_text": "只入身体😂🤠不入生活",
+      "reporters": 0,
+      "published_at": 1791851325422,
+      "published_tier": "auto"
+    },
     {
       "handle": "ls_c_ruc7lf_xq",
       "x_user_id": "2100874567321309184",
@@ -729182,118 +729294,6 @@
       "evidence_text": "小号（私信受限制），要福利🈷私信聊天号@JuanSancez\n我的电报✈️号https://t.co/TgdqAk77U7",
       "reporters": 0,
       "published_at": 1784711429136,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "marinajess23845",
-      "x_user_id": "2041722927863705601",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "已入住约p平台,入口:👉 https://t.co/Z26jjTx5wG 每晚准时涩播，寻欢必备！福利大放送！安全+私密+线上👉远程指挥直播控制玩具，同城可线下",
-      "reporters": 0,
-      "published_at": 1784711418668,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "celestecof35625",
-      "x_user_id": "2041708319555936256",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"炮友\" on display_name"
-      ],
-      "evidence_text": "已入住约p平台,入口:👉 https://t.co/Mj3KqoozxU 每晚准时涩播，寻欢必备！福利大放送！安全+私密+线上👉远程指挥直播控制玩具，同城可线下",
-      "reporters": 0,
-      "published_at": 1784711417180,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "ybwrpbocxxansm",
-      "x_user_id": "2071148966729711616",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "小号（私信受限制），要福利🈷私信聊天号@JuanSancez\n我的电报✈️号https://t.co/ZtU5tcSi2b",
-      "reporters": 0,
-      "published_at": 1784711416964,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "hornbyeve85028",
-      "x_user_id": "2040674893310668801",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "已入住约p平台,入口:👉 https://t.co/iJxFQEFNDP 每晚准时涩播，寻欢必备！福利大放送！安全+私密+线上👉远程指挥直播控制玩具，同城可线下",
-      "reporters": 0,
-      "published_at": 1784711416886,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "almapritt40653",
-      "x_user_id": "2042875255417450496",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"附近好友\" on display_name"
-      ],
-      "evidence_text": "已入住约p平台,入口:👉 https://t.co/qaAsW2nCnV 每晚准时涩播，寻欢必备！福利大放送！安全+私密+线上👉远程指挥直播控制玩具，同城可线下",
-      "reporters": 0,
-      "published_at": 1784711416885,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "hamletmary10457",
-      "x_user_id": "2040674974034173952",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"资源\" on display_name"
-      ],
-      "evidence_text": "已入住约p平台,入口:👉 https://t.co/iSXGR0UP9Z 每晚准时涩播，寻欢必备！福利大放送！安全+私密+线上👉远程指挥直播控制玩具，同城可线下",
-      "reporters": 0,
-      "published_at": 1784711416854,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "harrod_yve8313",
-      "x_user_id": "2041592042694836225",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"资源\" on display_name"
-      ],
-      "evidence_text": "已入住约p平台,入口:👉 https://t.co/V1BhsZklaa 每晚准时涩播，寻欢必备！福利大放送！安全+私密+线上👉远程指挥直播控制玩具，同城可线下",
-      "reporters": 0,
-      "published_at": 1784711416850,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "mildredmou127",
-      "x_user_id": "2040867447192817664",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "🏅全网首创线下社交对接🙌本地免费约P覆盖1–5线🌍，海外城市同上线😑真实可靠，零下载，专注牵线🈴附近速配\n电报✈️选人群👉https://t.co/DvD6IpHitu\n✈电报使用教程 @Alisha27k",
-      "reporters": 1,
-      "published_at": 1784711416849,
       "published_tier": "auto"
     }
   ]
