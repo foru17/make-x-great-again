@@ -1,8 +1,50 @@
 {
   "schema": 1,
-  "generatedAt": 1791828081096,
+  "generatedAt": 1791849725437,
   "count": 50000,
   "list": [
+    {
+      "handle": "ls_c_ruc7lf_xq",
+      "x_user_id": "2100874567321309184",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"只入身体\" on any"
+      ],
+      "evidence_text": "只入身体🤓🩶不入生活",
+      "reporters": 0,
+      "published_at": 1791847658564,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "lgvoyfig4mh",
+      "x_user_id": "2100874000423440384",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"只入身体\" on any"
+      ],
+      "evidence_text": "只入身体🤯🥳不入生活",
+      "reporters": 0,
+      "published_at": 1791847351002,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "dzejrnjues3wpd_",
+      "x_user_id": "2100873560071753728",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"只入身体\" on any"
+      ],
+      "evidence_text": "只入身体🐬🐰不入生活",
+      "reporters": 0,
+      "published_at": 1791847350992,
+      "published_tier": "auto"
+    },
     {
       "handle": "scenerythumbs",
       "x_user_id": "2097681027888009216",
@@ -729252,48 +729294,6 @@
       "evidence_text": "🏅全网首创线下社交对接🙌本地免费约P覆盖1–5线🌍，海外城市同上线😑真实可靠，零下载，专注牵线🈴附近速配\n电报✈️选人群👉https://t.co/DvD6IpHitu\n✈电报使用教程 @Alisha27k",
       "reporters": 1,
       "published_at": 1784711416849,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "gerardskeryp",
-      "x_user_id": "2068296587080847360",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "Sibyl\n\nAmanda\n\n2026-07-22 16:54:16",
-      "reporters": 1,
-      "published_at": 1784711416843,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "pdnhvhgvdnzo7h",
-      "x_user_id": "2071156525112971264",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"处男\" on display_name"
-      ],
-      "evidence_text": "小号（私信受限制），要福利🈷私信聊天号@JuanSancez\n我的电报✈️号https://t.co/SFwFnvYDma",
-      "reporters": 0,
-      "published_at": 1784711383746,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "hvqatmsaoaq2rm",
-      "x_user_id": "2071158881657802752",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "小号（私信受限制），要福利🈷私信聊天号@JuanSancez\n我的电报✈️号https://t.co/guX0A2NcXc",
-      "reporters": 2,
-      "published_at": 1784711364885,
       "published_tier": "auto"
     }
   ]
