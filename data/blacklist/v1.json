@@ -1,8 +1,120 @@
 {
   "schema": 1,
-  "generatedAt": 1791936075174,
+  "generatedAt": 1791957673039,
   "count": 50000,
   "list": [
+    {
+      "handle": "miler_bights_7l",
+      "x_user_id": "2101980788036194304",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "‌比‌‍‌⁠⁠我‍⁠好‌⁠‍⁠‍看‍‌⁠‍⁠‌的‌⁠‍⁠⁠没⁠‌‍‌⁠‍我‍‌‍‍‌骚‍‌比‌‌我‌‌‍⁠骚⁠‍⁠‍的‍‌‍没‍‍⁠‌我‍‍‌⁠好‍‌‌⁠‍⁠看‍",
+      "reporters": 0,
+      "published_at": 1791954370832,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "amoscalveromxb",
+      "x_user_id": "2102073396045504513",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"同城\" on display_name"
+      ],
+      "evidence_text": "应该没人比我玩的开了吧🤨🌋我福不黑不信你看",
+      "reporters": 0,
+      "published_at": 1791948505018,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "achen2136325373",
+      "x_user_id": "2049803642711023616",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "‌⁠⁠比⁠‍⁠‍‌‌‍我‍‌‌好⁠‍‌⁠‍看‍‍‌⁠‌‍的‌⁠‌⁠‍⁠没‌‍‍⁠⁠‌‍‌我⁠‌骚‍‍‍⁠⁠⁠⁠比⁠‌⁠‌⁠‌我‌‌‍‍‍‌骚⁠‍⁠⁠的‌‍‌‌⁠⁠没⁠‍‍我⁠‌‌⁠‍‌好‌⁠‌看‌（doge",
+      "reporters": 0,
+      "published_at": 1791948479648,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "isaacainsw4g9",
+      "x_user_id": "2102072939856216064",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"同城\" on display_name"
+      ],
+      "evidence_text": "应该没人比我玩的开了吧🌕🤗我福不黑不信你看",
+      "reporters": 0,
+      "published_at": 1791948463636,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "romankendrurll",
+      "x_user_id": "2102069374639124480",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"同城\" on display_name"
+      ],
+      "evidence_text": "应该没人比我玩的开了吧我福不黑不信你看",
+      "reporters": 0,
+      "published_at": 1791946743472,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "mabelchamb4z",
+      "x_user_id": "2102066548030484481",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"同城\" on display_name"
+      ],
+      "evidence_text": "应该没人比我玩的开了吧我福不黑不信你看",
+      "reporters": 0,
+      "published_at": 1791945275579,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "graysonbexqpa",
+      "x_user_id": "2102063120977969152",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"同城\" on display_name"
+      ],
+      "evidence_text": "应该没人比我玩的开了吧我福不黑不信你看",
+      "reporters": 0,
+      "published_at": 1791945275566,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "hollisgreeaqi",
+      "x_user_id": "2102060754782375936",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"同城\" on display_name"
+      ],
+      "evidence_text": "应该没人比我玩的开了吧💯😚我福不黑不信你看",
+      "reporters": 0,
+      "published_at": 1791944717630,
+      "published_tier": "auto"
+    },
     {
       "handle": "forever_aero_xd",
       "x_user_id": "700524625936035840",
@@ -729179,118 +729291,6 @@
       "evidence_text": "小号（私信受限制），要福利🈷私信聊天号@JuanSancez\n我的电报✈️号https://t.co/NtOMSXz1yV",
       "reporters": 1,
       "published_at": 1784712071399,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "fbcrpabeaogx3f",
-      "x_user_id": "2071147859257241600",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"处男\" on display_name"
-      ],
-      "evidence_text": "小号（私信受限制），要福利🈷私信聊天号@JuanSancez\n我的电报✈️号https://t.co/iKCBOo0J5k",
-      "reporters": 0,
-      "published_at": 1784712071367,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "ehquapktfjtrmh",
-      "x_user_id": "2071152253629550592",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "小号（私信受限制），要福利🈷私信聊天号@JuanSancez\n我的电报✈️号https://t.co/yjvcEpRNVZ",
-      "reporters": 2,
-      "published_at": 1784712015344,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "nwcazaqpswpsaw",
-      "x_user_id": "2071151987132170240",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "小号（私信受限制），要福利🈷私信聊天号@JuanSancez\n我的电报✈️号https://t.co/J4CybhWXKc",
-      "reporters": 1,
-      "published_at": 1784712014857,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "giabliske2c",
-      "x_user_id": "2068588000645095424",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "crypto",
-      "reasons": [
-        "matched keyword rule \"Visa领取\" on display_name"
-      ],
-      "evidence_text": "这波是卷疯了啊",
-      "reporters": 0,
-      "published_at": 1784711986143,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "alexandercbkb3",
-      "x_user_id": "2070584558597079040",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城上门\" on display_name"
-      ],
-      "evidence_text": "桐🚀城🤲上🐋椚~点击下方 👇可联系✈️",
-      "reporters": 0,
-      "published_at": 1784711924722,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "azaygvlgcglv8p",
-      "x_user_id": "2071157574590693376",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "小号（私信受限制），要福利🈷私信聊天号@JuanSancez\n我的电报✈️号https://t.co/h22YziGvTe",
-      "reporters": 0,
-      "published_at": 1784711827538,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "ardellescarpaci",
-      "x_user_id": "2070575588708851712",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🇨🇳城🏮上😍椚~下方👇👇可联系✈",
-      "reporters": 1,
-      "published_at": 1784711804956,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "amyalicandcyye",
-      "x_user_id": "2070577268443795456",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城上门\" on display_name"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🅾️城🏮上🔴椚~下方👇👇可联系✈",
-      "reporters": 0,
-      "published_at": 1784711799662,
       "published_tier": "auto"
     }
   ]
