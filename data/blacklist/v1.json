@@ -1,8 +1,50 @@
 {
   "schema": 1,
-  "generatedAt": 1792022473042,
+  "generatedAt": 1792044066512,
   "count": 50000,
   "list": [
+    {
+      "handle": "buildwithaino1",
+      "x_user_id": "2085197395714011136",
+      "verdict_label": "spam",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"资源\" on display_name"
+      ],
+      "evidence_text": "真假的，本地运行就能绕？",
+      "reporters": 0,
+      "published_at": 1792041692599,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "dwrur47171682",
+      "x_user_id": "1779583818103730176",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"同城\" on display_name"
+      ],
+      "evidence_text": "应该没人比我玩的开了吧🦴🥶我福不黑不信你看",
+      "reporters": 0,
+      "published_at": 1792033818997,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "plmec37563431",
+      "x_user_id": null,
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"同城\" on display_name"
+      ],
+      "evidence_text": "应该没人比我玩的开了吧我福不黑不信你看",
+      "reporters": 0,
+      "published_at": 1792027425299,
+      "published_tier": "auto"
+    },
     {
       "handle": "apronswam5",
       "x_user_id": "2101941443229323265",
@@ -50191,23 +50233,6 @@
         "new/throwaway-style account"
       ],
       "evidence_text": "邀请码：7XGAUB，还有30 个名额喔",
-      "reporters": 0,
-      "published_at": 1791485447784,
-      "published_tier": "human"
-    },
-    {
-      "handle": "liampayne404",
-      "x_user_id": null,
-      "verdict_label": "spam",
-      "confidence": 0.9,
-      "category": "crypto",
-      "reasons": [
-        "repetitive identical promo comment across posts",
-        "classic crypto/token airdrop bait pattern",
-        "off-topic reply to unrelated thread",
-        "new/empty profile with default avatar"
-      ],
-      "evidence_text": "Muse邀请码：T6EMY2，10亿token免费领",
       "reporters": 0,
       "published_at": 1791485447784,
       "published_tier": "human"
@@ -733339,34 +733364,6 @@
       "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🍓城💙上💃椚~下方👇👇可联系✈",
       "reporters": 1,
       "published_at": 1784732896081,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "adelaide55318",
-      "x_user_id": "2042849185121132545",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"资源\" on display_name"
-      ],
-      "evidence_text": "🏅创新上线👉线下社交匹配🈴本地免费约P（1–5线）覆盖🌍，海外城市齐发💨靠谱约泡中介，免安装 APP，仅做资源对接\n马上加群👉https://t.co/D6VkXThsdI\n✈电报使用教程 @Alisha27k",
-      "reporters": 0,
-      "published_at": 1784732892276,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "eleanorlil28439",
-      "x_user_id": "2042554429929373696",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "🏅颠覆传统！线下社交匹配💧全国一至五线本地免费约P🌍，海外主要城市同步开放❣️实力中介，无需下载 App，专注线下对接\n电报✈️选人群👉https://t.co/LvMgretglS\n✈电报使用教程 @Alisha27k",
-      "reporters": 1,
-      "published_at": 1784732892273,
       "published_tier": "auto"
     }
   ]
