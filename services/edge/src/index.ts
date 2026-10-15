@@ -6,6 +6,12 @@ import { cors } from "hono/cors";
 import { z } from "zod";
 import { ANALYTICS_CSP, googleAnalyticsHead } from "./analytics";
 import { artifactVersion, isArtifactIdentityValid } from "./artifact-identity";
+import {
+  AGENT_AUTO_BLACKLIST_BATCH_LIMIT,
+  AGENT_AUTO_BLACKLIST_CONFIDENCE_FLOOR,
+  agentAutoBlacklistEnabled,
+  autoPublishAgentBlacklist,
+} from "./agent-auto-publish";
 import { BRAND } from "./brand";
 import { adminHtml } from "./pages/admin";
 import { landingHtml } from "./pages/landing";
@@ -3294,6 +3300,8 @@ app.get("/v1/admin/stats", async (c) => {
     auto_lane_published_24h: laneRow?.published ?? 0,
     auto_lane_blocked_24h: laneRow?.blocked ?? 0,
     ai_auto_publish_enabled: aiAutoPublishEnabled(c.env),
+    agent_auto_blacklist_enabled: agentAutoBlacklistEnabled(c.env),
+    agent_auto_blacklist_confidence_floor: AGENT_AUTO_BLACKLIST_CONFIDENCE_FLOOR,
     blacklist: byStatus.human_confirmed ?? 0,
     whitelist: byStatus.whitelisted ?? 0,
     rejected: byStatus.rejected ?? 0,
@@ -5572,11 +5580,9 @@ async function mirrorToGitHub(
 // reference impl) polls /v1/agent/queue, runs deeper analysis with X data
 // access, and POSTs decisions back via /v1/agent/decide.
 //
-// Governance hard line: agents can write the three staging statuses
-// (agent_blacklist / agent_whitelist / agent_pending) but CANNOT write
-// human_confirmed / whitelisted directly. The existing AI≥0.9 + ≥3 GH
-// reporters rule and human admin actions remain the only paths to the
-// public list and the official whitelist.
+// Agents write staging statuses. The separate Agent auto-blacklist policy may
+// promote an eligible recommendation to the public list at the AI tier;
+// whitelist decisions still require explicit human promotion.
 //
 // Auth: Bearer <AGENT_TOKEN> (independent secret from ADMIN_TOKEN — easier
 // to rotate, smaller blast radius).
@@ -5704,7 +5710,7 @@ app.get("/v1/agent/queue", async (c) => {
 //
 // Body shape (Zod-validated below). The `decision` field is what the agent
 // recommends:
-//   "blacklist" → status becomes 'agent_blacklist' (NOT public)
+//   "blacklist" → 'agent_blacklist', then optional guarded AI-tier promotion
 //   "whitelist" → status becomes 'agent_whitelist' (NOT official WL)
 //   "pending"   → status becomes 'agent_pending'   (待定, surface to human)
 //   "annotate"  → status untouched, agent_* columns updated only
@@ -5838,11 +5844,50 @@ app.post("/v1/agent/decide", async (c) => {
   )
     .bind(uid, handle, logAction, decidedBy, noteShort, now)
     .run();
+  let autoPublished = false;
+  let finalStatus = nextStatus ?? "(annotate-only)";
+  if (nextStatus === "agent_blacklist" && agentAutoBlacklistEnabled(c.env)) {
+    try {
+      const promoted = await autoPublishAgentBlacklist(c.env, {
+        identity: { handle, xUserId: uid },
+        now,
+      });
+      autoPublished = promoted.published > 0;
+      const current = await c.env.DB.prepare(
+        "SELECT status FROM accounts WHERE lower(handle)=? AND x_user_id IS ?",
+      ).bind(handle, uid).first<{ status: string }>();
+      finalStatus = current?.status ?? nextStatus;
+    } catch (err) {
+      logError("agent_auto_blacklist.decide_failed", err as Error);
+      return c.json({ ok: false, error: "agent_auto_publish_failed" }, 503);
+    }
+  }
   return c.json({
     ok: true,
     agent_id: a.agentId,
-    status: nextStatus ?? "(annotate-only)",
+    status: finalStatus,
+    auto_published: autoPublished,
   });
+});
+
+const AgentAutoPublishBody = z.object({
+  dry_run: z.boolean().default(true),
+  limit: z.number().int().min(1).max(AGENT_AUTO_BLACKLIST_BATCH_LIMIT).default(AGENT_AUTO_BLACKLIST_BATCH_LIMIT),
+});
+
+app.post("/v1/admin/agent-auto-publish", async (c) => {
+  if (!(await admin(c))) return c.json({ error: "forbidden" }, 403);
+  const parsed = AgentAutoPublishBody.safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) return c.json({ error: "bad_request" }, 400);
+  try {
+    return c.json(await autoPublishAgentBlacklist(c.env, {
+      dryRun: parsed.data.dry_run,
+      limit: parsed.data.limit,
+    }));
+  } catch (err) {
+    logError("agent_auto_blacklist.admin_failed", err as Error);
+    return c.json({ error: "agent_auto_publish_failed" }, 503);
+  }
 });
 
 // GET /v1/agent/stats — quick "what has the agent been doing" health check.
@@ -6533,7 +6578,9 @@ export default {
       // Publish, then prune old R2 artifacts regardless of publish outcome so
       // the retention sweep always runs (and drains the historical backlog).
       ctx.waitUntil(
-        publishArtifacts(env)
+        autoPublishAgentBlacklist(env)
+          .catch((e) => logError("agent_auto_blacklist.cron_failed", e))
+          .then(() => publishArtifacts(env))
           .catch((e) => logError("artifact_publish.failed", e))
           .then(() => prunePublications(env))
           .catch((e) => logError("artifact_prune.failed", e)),

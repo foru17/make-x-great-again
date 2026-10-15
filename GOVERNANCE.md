@@ -11,19 +11,37 @@ published data.
 - Out of scope, never judged: viewpoints, politics, religion, opinions,
   language, nationality, or who a person is.
 
-## No auto-publication
+## Controlled publication
 
-- An AI verdict is **never** automatically public. (The auto-publish gate —
-  high-confidence AI + ≥3 aged independent reporters — still exists in code
-  but is **disabled**; every entry queues for a maintainer.)
+On 2026-10-15 the maintainer authorized automatic publication of qualifying
+second-opinion Agent blacklist recommendations. This replaces the previous
+blanket prohibition on AI publication. The settings below describe the
+authorized implementation; deployment must be verified separately.
+
+- `AI_AUTO_PUBLISH_ENABLED=0`: the first-pass AI/report promotion path stays
+  disabled. A first-pass classification alone does not publish an account.
+- `AGENT_AUTO_BLACKLIST_ENABLED=1`: a second-opinion decision authenticated
+  with `AGENT_TOKEN` may publish only when its decision is `blacklist`, its
+  action is `approve_block`, its label is `spam` or `porn_bot`, confidence is
+  at least `0.90`, and its signals contain `P1`, `P2`, `P3`, `P4`, or `P6`.
+  Stored original evidence must be nonempty and the Agent evidence hash must
+  match the current signals hash. Known follower counts must be below
+  100,000; a missing count is permitted.
+- Identity conflicts, a matching whitelist entry, or an existing human
+  terminal decision prevent automatic promotion. A canonical handle-only
+  identity may qualify when no numeric user id is available.
+- Automatic Agent publications retain `published_tier='ai'` and Agent
+  decision provenance, including in the legacy `human_confirmed` status;
+  they must not be presented as human approvals.
 - A crowdsourced report is a **prioritization signal, not a verdict**.
-- How entries actually flow: keyword rules + LLM classification produce
-  verdicts that land in a review queue as `auto_pending_review`. Maintainers
-  decide via the admin console — **individually or in rule-based batches**
-  (e.g. applying a vetted keyword rule across matching queue rows). This is
-  a human decision gate over every publication, not a per-entry forensic
-  investigation; the safety valve is that every decision is audit-logged in
-  `review_log` and appeals are honored.
+- Maintainers may still approve entries individually or in vetted rule-based
+  batches. Agent decisions outside the automatic gate remain private for
+  review. Every publication is audit-logged in `review_log`, and appeals
+  remain subject to human review.
+- The same gate applies to new Agent decisions and existing `agent_blacklist`
+  rows. Scheduled backfill is bounded to 100 candidates per 10-minute tick;
+  the admin backfill defaults to `dry_run=true`, with `limit` capped at 100.
+  Promotion reuses stored verdicts and adds no model calls or runner budget.
 
 ## Appeal & removal
 
@@ -35,7 +53,8 @@ published data.
 
 ## Data minimization & privacy
 
-- The public list stores only the **public X numeric user id** plus minimal
+- The public list stores the **public X numeric user id**, or a canonical
+  public handle when the id is unavailable, plus minimal
   evidence needed to justify the verdict (verdict, confidence, model version,
   reasons, timestamp).
 - **No PII** beyond the public identifier. Reporter identities are never
@@ -49,8 +68,10 @@ published data.
 
 ## Abuse resistance
 
-- Mass-reporting to defame is an explicit threat. Reports never auto-publish;
-  rate-limited and deduped; the LLM + human gate is the sole authority.
+- Mass-reporting to defame is an explicit threat. Reports are rate-limited
+  and deduped, and cannot by themselves authorize publication. Publication
+  requires an authorized rule, a maintainer decision, or the guarded
+  second-opinion Agent path above.
 
 ## Transparency
 
@@ -80,5 +101,6 @@ published data.
 
 ## Accountability
 
-- Maintainers must keep the human-review gate functioning. If review capacity
-  cannot keep up, slow publication — never bypass the gate.
+- Maintainers must keep the publication guards, audit trail, and human appeal
+  review functioning. Review backlogs do not justify bypassing these guards;
+  disable the Agent publication switch if its quality becomes unacceptable.

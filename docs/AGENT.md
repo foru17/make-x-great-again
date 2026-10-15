@@ -14,16 +14,20 @@ agent polls the admin queue, performs deeper investigation than the
 in-Worker LLM can (live X data access, multi-step reasoning, etc.), and
 files structured verdicts back.
 
+Publication policy updated 2026-10-15: the maintainer authorized guarded
+automatic Agent blacklist publication. This section describes the local
+implementation contract; production deployment has not been verified here.
+
 Crucially:
 
-- **Extension users notice nothing.** The agent writes to private staging
-  statuses; the public list (`status='human_confirmed'`) and the
-  official whitelist (`status='whitelisted'`) are unchanged.
-- **The governance red line holds.** `GOVERNANCE.md` says AI alone never
-  auto-publishes. The agent decision endpoint can only write private
-  staging statuses while the row is still in `auto_pending_review`; stale
-  agent decisions return `409 stale_agent_decision` instead of overwriting
-  a human/admin decision.
+- **Separate publication switches.** `AGENT_AUTO_BLACKLIST_ENABLED=1` enables
+  qualifying second-opinion Agent blacklist decisions to enter the public
+  list. `AI_AUTO_PUBLISH_ENABLED=0` keeps first-pass AI/report promotion
+  disabled. Other Agent decisions remain private staging records.
+- **Preserved human decisions.** The decision endpoint accepts a row only
+  while it is still `auto_pending_review`; stale decisions return
+  `409 stale_agent_decision`. Automatic publication also protects whitelist
+  matches, identity conflicts, and existing human terminal decisions.
 - **Plug-in friendly.** Anyone can write a runner that talks to the two
   endpoints described below. Hermes is one possible runner; Claude/Codex
   on a server, GPT-4o on a Cloudflare durable object, your own Python
@@ -59,15 +63,32 @@ Crucially:
 | `agent_blacklist`     | Side-channel agent confidently says spam — staged    | Agent (via `/v1/agent/decide`)      | **no**          |
 | `agent_whitelist`     | Side-channel agent says legit — staged               | Agent                               | **no**          |
 | `agent_pending`       | Agent saw it but abstained ("待定")                  | Agent                               | no              |
-| `human_confirmed`     | Maintainer-approved spam — on the public list        | Human admin                         | **yes**         |
+| `human_confirmed`     | Published blacklist entry; provenance identifies its source | Admin, authorized rule, or guarded Agent promotion | **yes** |
 | `whitelisted`         | Maintainer-approved legit                            | Human admin                         | (positive list) |
 | `rejected`            | Maintainer rejected                                  | Human admin                         | no              |
 | `removed`             | Was public, unpublished by admin                     | Human admin                         | no              |
 | `auto_legit`          | In-Worker LLM said legit                             | Worker                              | no              |
 
-Promoting `agent_blacklist` → `human_confirmed` is **always** a human
-action in the current alpha. The agent does the boring screening; the
-maintainer does the publishing.
+### Automatic blacklist publication gate
+
+With `AGENT_AUTO_BLACKLIST_ENABLED=1`, a decision authenticated by
+`AGENT_TOKEN` may promote directly to `human_confirmed` only when all of
+these checks pass:
+
+- decision `blacklist`, action `approve_block`, label `spam` or `porn_bot`;
+- Agent confidence >= `0.90`, with at least one of `P1`, `P2`, `P3`, `P4`,
+  or `P6` in its signals;
+- nonempty stored original `evidence_text`, and matching Agent/current
+  signals hashes;
+- known follower count < 100,000; missing counts are allowed;
+- no conflicting identity, whitelist match, or existing human terminal
+  decision. A canonical handle-only row may qualify without a numeric id.
+
+Automatic publications use `published_tier='ai'` and retain Agent provenance;
+the historical `human_confirmed` status name does not make them human
+approvals. A failed gate leaves the recommendation in private staging.
+The gate reuses stored verdicts; it does not call a model or raise runner
+budgets.
 
 ## D1 schema additions
 
@@ -127,8 +148,9 @@ ordering, and the combined response never exceeds the requested limit.
 
 ### `POST /v1/agent/decide`
 
-Writes the agent's verdict and (optionally) transitions the row to an
-agent-tier staging status. Idempotent: re-posting with the same
+Writes the agent's verdict and transitions the row to an Agent staging
+status or, for a qualifying blacklist decision, directly to the public
+blacklist through the gate above. Idempotent: re-posting with the same
 `signals_hash` is safe; the Worker's queue filter will skip the item next
 time.
 
@@ -138,7 +160,7 @@ time.
   "x_user_id": "20591…",       // optional but strongly recommended
 
   // What the agent recommends doing with this row:
-  //   "blacklist" → status becomes agent_blacklist
+  //   "blacklist" → agent_blacklist, or human_confirmed when the automatic gate passes
   //   "whitelist" → status becomes agent_whitelist
   //   "pending"   → status becomes agent_pending
   //   "annotate"  → status untouched; only agent_* columns updated
@@ -168,14 +190,28 @@ The Worker:
    Otherwise it returns `409 stale_agent_decision` and writes nothing.
 2. Writes all `agent_*` columns and `last_decided_by='agent:<agent_id>'`.
    On failure annotations, also stores `agent_error`.
-3. Flips `status` if `decision != "annotate"` (and not into a
-   public-tier status — those writes are rejected at the type level).
-4. Inserts one `review_log` row with
-   `actor='agent:<agent_id>'`, `action='agent_<decision>'`.
+3. Flips `status` if `decision != "annotate"`. A qualifying blacklist
+   decision passes the automatic publication gate; other decisions remain
+   in their Agent staging status.
+4. Records the Agent decision and any automatic publication in `review_log`,
+   retaining the Agent source rather than attributing it to a human.
 5. Bumps `agent_attempts` only for failed annotate attempts; successful
    decisions reset it to 0.
 
-Returns `{ok:true, agent_id, status: "agent_blacklist" | … | "(annotate-only)"}`.
+Returns `{ok:true, agent_id, status: "human_confirmed" | "agent_blacklist" | … | "(annotate-only)"}`.
+
+### Existing blacklist recommendations
+
+The Worker applies the same gate to existing `agent_blacklist` records,
+examining at most 100 candidates on each 10-minute scheduled tick. It does
+not reclassify them or spend additional model tokens.
+
+`POST /v1/admin/agent-auto-publish`, authenticated with `ADMIN_TOKEN`, is
+the bounded maintainer backfill entry point. It defaults to `dry_run=true`;
+`limit` defaults to 100 and is
+capped at 100. Inspect the dry-run result before applying a batch. Both
+the scheduled and admin paths preserve the same identity, whitelist,
+hash, confidence, and human-decision protections.
 
 ### `GET /v1/agent/stats`
 
@@ -233,14 +269,16 @@ large queue cleanups:
 
 - one logical cycle fetches at most 100 accounts;
 - it shares one compact policy across configurable provider-safe sub-batches;
-  the production wrapper uses 20 accounts per call, so a 100-account cycle
+  the reference wrapper uses 20 accounts per call, so a 100-account cycle
   makes at most five model calls;
 - dry-run is the default; only `APPLY_DECISIONS=1` enables writes;
-- writes land only in private agent staging statuses. `reject` becomes
-  `agent_whitelist`, `blacklist` becomes `agent_blacklist`, and `pending`
-  becomes `agent_pending`; the runner never publishes directly;
+- the runner submits decisions to the Worker. `reject` becomes
+  `agent_whitelist`, `pending` becomes `agent_pending`, and `blacklist`
+  becomes `agent_blacklist` or a guarded AI-tier public entry according to
+  the Worker's separate publication switch;
 - a blacklist recommendation is downgraded unless it has a spam/porn label,
-  confidence >= 0.95, and a hard evidence code;
+  meets the runner's confidence floor (0.95 under reference defaults), and
+  has a hard evidence code; the inspected AGY wrapper uses 0.90;
 - the model returns only compact decisions; the runner derives short audit
   reasons from the final decision and hard evidence codes;
 - non-porn accounts with `following_count > 100000` are routed out of the
@@ -258,9 +296,9 @@ large queue cleanups:
   admission check remains the authoritative guard when a compatible proxy
   reports small usage differences around its requested per-call cap;
 - `AGENT_REASONING_EFFORT` is optional and validated before calls. The
-  production wrapper uses the provider-tested `none` setting to avoid hidden
-  reasoning-token overhead while the deterministic blacklist safety gate and
-  separate maintainer promotion remain unchanged.
+  reference OpenAI wrapper uses the provider-tested `none` setting to avoid hidden
+  reasoning-token overhead while the deterministic blacklist safety gate
+  remains in force. Publication is controlled separately by the Worker.
 
 Config additions in the runner `.env`:
 
@@ -291,16 +329,24 @@ python3 -m unittest -v test_batch_review.py test_run_batch_openai.py
 python3 run_batch_openai.py
 ```
 
-Inspect the single JSON result, then set `APPLY_DECISIONS=1` only for an
-approved cycle. Promotion from agent staging remains a separate maintainer
-action.
+Inspect the single JSON result before setting `APPLY_DECISIONS=1` to submit
+decisions. The Worker independently evaluates automatic-publication
+eligibility; changing the publication switch does not raise these budgets.
 
-For the production Hermes cron, install
+For the legacy OpenAI-compatible Hermes configuration, install
 `services/agent-runner/x-spam-batch-openai.sh` under `~/.hermes/scripts/`
 and point the existing `x-spam-agent` job at it. The wrapper pins the reviewed
 model, 100-account cycle, 20-account provider sub-batches, 15k/9k per-cycle
 limits, and 150k/90k UTC daily limits without storing credentials in the
 script. Model reasoning is disabled after a live compatibility probe.
+
+The production host inspected on 2026-10-15 instead runs
+`x-spam-batch-agy.sh` as `batch-agy-v3`, using `gemini-3.8-flash-low` every
+6 minutes: at most 40 accounts per cycle, 20 per provider call, 150 calls
+per UTC day, and 5M/2M daily input/output token limits. Its blacklist
+confidence floor is `0.90`. Queues below 10 items wait until their oldest
+`last_scored` is at least 2400 seconds old. Automatic publication does not
+change this runner configuration or its budget.
 
 ### Install on a Mac mini
 
@@ -369,8 +415,9 @@ pnpm deploy
   is independent of `ADMIN_TOKEN`; rotating it doesn't lock you out of
   /admin.
 - **Multiple agents can coexist.** Use distinct `X-Agent-Id` values
-  (e.g., `hermes`, `claude-laptop`, `gpt-vps`). The last one to POST
-  on a given handle wins; review_log preserves the full sequence.
+  (e.g., `hermes`, `claude-laptop`, `gpt-vps`). Each accepted write must
+  still match a pending row; stale writes do not overwrite a prior decision.
+  `review_log` preserves accepted decisions and publication provenance.
 - **Suspended-account drift cleanup.** Reference runs show ~75% of the
   current `agent_pending` bucket is X-already-banned accounts the
   blacklist hasn't archived. A simple periodic sweep that archives
@@ -379,9 +426,11 @@ pnpm deploy
 
 ## What's intentionally not in scope
 
-- **Auto-promote to public list.** Out of scope by governance.
-- **Cross-agent consensus.** Currently last-write-wins. If you run
-  multiple agents and want quorum, that lives in your runner, not the
-  Worker.
+- **First-pass AI publication and automatic Agent whitelisting.** The
+  authorized automatic path is limited to qualifying second-opinion
+  blacklist recommendations.
+- **Cross-agent consensus.** The Worker does not require a quorum; accepted
+  decisions still obey the pending-row and stale-write guards. Multi-agent
+  quorum belongs in the runner.
 - **Per-agent rate limiting.** Not enforced server-side yet. Trust the
   `AGENT_TOKEN` holder; back-channel agreement on `DAILY_BUDGET`.
