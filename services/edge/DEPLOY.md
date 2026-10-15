@@ -1,7 +1,12 @@
 # Deploy the Cloudflare edge service
 
-One-time setup needs your Cloudflare auth (interactive). Steady-state
-re-deploys just run `npm run deploy`.
+One-time setup needs your Cloudflare auth (interactive). Before a production
+redeploy, identify the current deployed version and use its production source
+as the baseline; development and production branches have existing differences.
+The 2026-10-15 release is version
+`b8d315ca-0a7c-413c-a239-1fc19fa06112`, built from `70971ed` on
+`codex/agent-auto-blacklist-production-2026-10-15`. Preserve earlier production
+hotfixes, confirm the budget alert, and preserve remote variables when deploying.
 
 ## 1. Authenticate
 
@@ -74,12 +79,16 @@ local / staging.
 
 ## Governance
 
-D1 is the source of truth. `POST /v1/classify` only ever writes
-`auto_pending_review` — an AI verdict is never public. `/v1/check` and
-`/v1/list` return **only** `human_confirmed` rows. A row becomes
-`human_confirmed` solely via human action (`/v1/admin/decide` approve or
-`/v1/confirm`/`/v1/report` once 3 distinct GitHub reporters agree). No PII
-beyond the public numeric id.
+D1 is the source of truth. `AI_AUTO_PUBLISH_ENABLED=0` keeps first-pass AI
+promotion disabled. Independently, `AGENT_AUTO_BLACKLIST_ENABLED=1` permits
+authenticated second-opinion Agent blacklist recommendations to publish at
+confidence >=0.90 with a recognized hard signal, stored original evidence,
+matching hashes, and the identity/whitelist/human-decision guards documented
+in `docs/AGENT.md`. These rows use `published_tier='ai'` with Agent provenance.
+`/v1/list` includes published rows; `/v1/check` remains human-tier-only for
+legacy clients. Public artifacts distinguish automatic and human entries.
+No personal information beyond the public numeric id or canonical handle is
+added by this path.
 
 `/v1/appeal` queues a human removal review and does not unpublish by itself.
 Reporter identities are stored as HMAC fingerprints derived from `REPORT_SALT`;
