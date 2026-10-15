@@ -15,8 +15,9 @@ in-Worker LLM can (live X data access, multi-step reasoning, etc.), and
 files structured verdicts back.
 
 Publication policy updated 2026-10-15: the maintainer authorized guarded
-automatic Agent blacklist publication. This section describes the local
-implementation contract; production deployment has not been verified here.
+automatic Agent blacklist publication. Production verification on 2026-10-15
+confirmed version `b8d315ca-0a7c-413c-a239-1fc19fa06112`, the enabled Agent
+gate, and an authenticated decide canary returning `auto_published=true`.
 
 Crucially:
 

@@ -16,7 +16,8 @@ published data.
 On 2026-10-15 the maintainer authorized automatic publication of qualifying
 second-opinion Agent blacklist recommendations. This replaces the previous
 blanket prohibition on AI publication. The settings below describe the
-authorized implementation; deployment must be verified separately.
+authorized implementation, verified in production on 2026-10-15
+(version `b8d315ca-0a7c-413c-a239-1fc19fa06112`).
 
 - `AI_AUTO_PUBLISH_ENABLED=0`: the first-pass AI/report promotion path stays
   disabled. A first-pass classification alone does not publish an account.
