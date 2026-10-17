@@ -1,8 +1,58 @@
 {
   "schema": 1,
-  "generatedAt": 1792040868963,
-  "count": 2506,
+  "generatedAt": 1792195251876,
+  "count": 2516,
   "list": [
+    {
+      "handle": "saysay361",
+      "x_user_id": "1789916920084582403",
+      "last_scored": 1792175614550
+    },
+    {
+      "handle": "laincatx",
+      "x_user_id": "138609338",
+      "last_scored": 1792175613796
+    },
+    {
+      "handle": "happyda35068198",
+      "x_user_id": "1152974164535287808",
+      "last_scored": 1792175613057
+    },
+    {
+      "handle": "iuxuan00",
+      "x_user_id": "1764596906238595072",
+      "last_scored": 1792175612259
+    },
+    {
+      "handle": "hua_qian86935",
+      "x_user_id": null,
+      "last_scored": 1792175611429
+    },
+    {
+      "handle": "jiangza9",
+      "x_user_id": "1700437401733410816",
+      "last_scored": 1792175610602
+    },
+    {
+      "handle": "qingxuyouhuiyin",
+      "x_user_id": null,
+      "last_scored": 1792175609808
+    },
+    {
+      "handle": "qing_moshu",
+      "x_user_id": null,
+      "last_scored": 1792175608948
+    },
+    {
+      "handle": "godsonde",
+      "x_user_id": "266504496",
+      "last_scored": 1792175608152
+    },
+    {
+      "handle": "goujulab",
+      "x_user_id": "1665918335140212736",
+      "last_scored": 1792175607311
+    },
     {
       "handle": "liampayne404",
       "x_user_id": "1500696066315853825",
