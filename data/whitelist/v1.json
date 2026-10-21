@@ -1,8 +1,13 @@
 {
   "schema": 1,
-  "generatedAt": 1792195251876,
-  "count": 2516,
+  "generatedAt": 1792552036563,
+  "count": 2517,
   "list": [
+    {
+      "handle": "404latitude",
+      "x_user_id": "2053800927858167808",
+      "last_scored": 1792551952240
+    },
     {
       "handle": "saysay361",
       "x_user_id": "1789916920084582403",
