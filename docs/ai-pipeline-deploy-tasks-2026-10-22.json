@@ -1,0 +1,28 @@
+[
+  {
+    "id": "baseline",
+    "task": "生产基线与预算告警核验",
+    "verification": "部署元数据、远端配置、告警现状",
+    "passes": true,
+    "evidence": "Current deployed version b8d315ca at 100%; settings matched production branch; human confirmed budget alert configured on 2026-10-22"
+  },
+  {
+    "id": "prepare",
+    "task": "在生产基线移植并验证",
+    "verification": "局部diff、类型/回归/运行时测试、发布干跑",
+    "passes": true,
+    "evidence": "Production-source transplant: 221 tests PASS, typecheck/runtime PASS, build and dry-run PASS; production feature flags and additive DO migration prepared"
+  },
+  {
+    "id": "deploy",
+    "task": "推送、迁移、上线与即时验收",
+    "verification": "远端commit、发布版本、HTTP与真实usage",
+    "passes": false
+  },
+  {
+    "id": "followup",
+    "task": "安排上线30分钟效果复查",
+    "verification": "自动化保存与指定指标/停止条件",
+    "passes": false
+  }
+]

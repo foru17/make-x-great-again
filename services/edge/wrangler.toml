@@ -24,6 +24,18 @@ workers_dev = true
 [vars]
 AI_AUTO_PUBLISH_ENABLED = "0"
 AGENT_AUTO_BLACKLIST_ENABLED = "1"
+AI_COORDINATOR_ENABLED = "1"
+AI_USAGE_ENABLED = "1"
+AI_BATCH_ENABLED = "1"
+
+# Account-sharded coordination; reuse the existing Worker and D1/R2 resources.
+[[durable_objects.bindings]]
+name = "CLASSIFIER"
+class_name = "ClassificationCoordinator"
+
+[[migrations]]
+tag = "ai-classifier-v1"
+new_sqlite_classes = ["ClassificationCoordinator"]
 
 # Static assets — favicon set, mascot artwork, og:image. Cloudflare Workers
 # Assets serves files from this directory first; unmatched paths fall through

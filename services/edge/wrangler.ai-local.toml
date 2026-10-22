@@ -1,0 +1,25 @@
+# LOCAL ONLY. Do not deploy this experimental configuration.
+name = "x-spam-sentinel-ai-local"
+main = "src/worker.ts"
+compatibility_date = "2026-05-01"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+AI_AUTO_PUBLISH_ENABLED = "0"
+AGENT_AUTO_BLACKLIST_ENABLED = "0"
+AI_COORDINATOR_ENABLED = "1"
+AI_USAGE_ENABLED = "1"
+AI_BATCH_ENABLED = "1"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "xss-ai-local"
+database_id = "00000000-0000-0000-0000-000000000001"
+
+[[durable_objects.bindings]]
+name = "CLASSIFIER"
+class_name = "ClassificationCoordinator"
+
+[[migrations]]
+tag = "ai-local-v1"
+new_sqlite_classes = ["ClassificationCoordinator"]

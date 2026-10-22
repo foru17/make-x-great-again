@@ -18,7 +18,8 @@
     "types:check": "wrangler types worker-configuration.d.ts --check",
     "typecheck:app": "tsc -p tsconfig.app.json --noEmit",
     "test": "tsx --test test/**/*.test.ts",
-    "test:runtime": "node scripts/smoke-worker.mjs"
+    "test:runtime": "node scripts/smoke-worker.mjs",
+    "test:ai-pipeline": "node scripts/test-ai-pipeline.mjs"
   },
   "dependencies": {
     "hono": "^4.12.29",

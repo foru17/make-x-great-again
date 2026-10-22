@@ -11,5 +11,5 @@
     "baseUrl": ".",
     "paths": { "@/*": ["./app/*"] }
   },
-  "include": ["src", "worker-configuration.d.ts"]
+  "include": ["src", "worker-configuration.d.ts", "local-classifier-env.d.ts"]
 }
