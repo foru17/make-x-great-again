@@ -18,7 +18,8 @@ const provider = createServer(async (req, res) => {
     let body = "";
     for await (const chunk of req) { body += chunk; assert.ok(body.length < 200_000); }
     const input = JSON.parse(body);
-    const { items } = JSON.parse(input.messages[1].content);
+    const singleton = !input.messages[1].content.startsWith('{"items":');
+    const items = singleton ? [{ id: "single", evidence: input.messages[1].content }] : JSON.parse(input.messages[1].content).items;
     requests.push({ accounts: items.length, at: Date.now() });
     if (items.some(item => item.evidence.includes("@fx_failure"))) { req.socket.destroy(); return; }
     // Deliberately reverse output ordering: IDs must determine association.
@@ -26,7 +27,7 @@ const provider = createServer(async (req, res) => {
       label: "legit", confidence: 0.95, reasons: ["synthetic local fixture"],
     } }));
     res.setHeader("Content-Type", "application/json");
-    res.end(JSON.stringify({ id: `mock-${requests.length}`, choices: [{ message: { content: JSON.stringify({ results }) } }],
+    res.end(JSON.stringify({ id: `mock-${requests.length}`, choices: [{ message: { content: JSON.stringify(singleton ? results[0].verdict : { results }) } }],
       usage: { prompt_tokens: 100, completion_tokens: 20, total_tokens: 120,
         completion_tokens_details: { reasoning_tokens: 5 }, prompt_tokens_details: { cached_tokens: 30 } } }));
   } catch (error) { res.statusCode = 500; res.end(String(error)); }

@@ -84,8 +84,10 @@ test("bounded batch concurrency rejects overflow instead of extending queue dead
 test("one-account tail accepts legacy verdict format, multi-account batches never guess association", async () => {
   const original = globalThis.fetch;
   let calls = 0;
-  globalThis.fetch = async () => {
+  globalThis.fetch = async (_input, init) => {
     assert.ok(++calls <= 3, "hard provider cap");
+    const body = JSON.parse(String(init?.body));
+    if (calls === 1) assert.ok(!body.messages[1].content.startsWith('{"items":'), "one-account tail uses the original prompt");
     return Response.json({ choices: [{ message: { content: JSON.stringify({ label: "legit", confidence: 1, reasons: ["fixture"] }) } }] });
   };
   const env = { LLM_API_BASE: "https://fixture.invalid", LLM_API_KEY: "fixture", LLM_API_MODEL: "fixture" };

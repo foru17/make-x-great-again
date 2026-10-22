@@ -122,6 +122,12 @@ test("batch repair meters physical requests once, with only unresolved account c
   globalThis.fetch = async (_input, init) => {
     assert.ok(++calls <= 2);
     const body = JSON.parse(String(init?.body));
+    if (calls === 2) {
+      assert.ok(!body.messages[1].content.startsWith('{"items":'), "single repair uses the original provider contract");
+      return Response.json({ usage: { prompt_tokens: 100, completion_tokens: 10, total_tokens: 110 }, choices: [{ message: {
+        content: JSON.stringify({ label: "legit", confidence: 1, reasons: ["fixture"] }),
+      } }] });
+    }
     const items = JSON.parse(body.messages[1].content).items as Array<{ id: string }>;
     const results = (calls === 1 ? items.slice(0, 1) : items).map(item => ({ id: item.id,
       verdict: { label: "legit", confidence: 1, reasons: ["fixture"] } }));
