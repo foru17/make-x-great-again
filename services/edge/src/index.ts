@@ -64,7 +64,7 @@ interface Secrets {
   AUTO_PUBLISH_MIN_WITNESSES?: string;
 }
 
-type Bindings = Env & Secrets & Partial<Pick<LocalClassifierEnv, "CLASSIFIER">>;
+type Bindings = Omit<Env, "AI_COORDINATOR_ENABLED" | "AI_USAGE_ENABLED" | "AI_BATCH_ENABLED"> & Secrets & Partial<Pick<LocalClassifierEnv, "CLASSIFIER">>;
 type Ctx = Context<{ Bindings: Bindings }>;
 
 function errorMessage(error: unknown): string {
