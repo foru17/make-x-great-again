@@ -1,8 +1,373 @@
 {
   "schema": 1,
-  "generatedAt": 1792552036563,
-  "count": 2517,
+  "generatedAt": 1792648857926,
+  "count": 2566,
   "list": [
+    {
+      "handle": "yutou_1996",
+      "x_user_id": "4708173950",
+      "last_scored": 1792640307957
+    },
+    {
+      "handle": "elliotchen",
+      "x_user_id": "1735423477799342080",
+      "last_scored": 1792640307205
+    },
+    {
+      "handle": "yylx_io",
+      "x_user_id": "1625672001598947329",
+      "last_scored": 1792640306460
+    },
+    {
+      "handle": "surfcapitalfour",
+      "x_user_id": "1500486837839998976",
+      "last_scored": 1792640305651
+    },
+    {
+      "handle": "xiaojiang596",
+      "x_user_id": "1482993528808816641",
+      "last_scored": 1792640304923
+    },
+    {
+      "handle": "ianyhuang",
+      "x_user_id": "1444452722879594502",
+      "last_scored": 1792640304265
+    },
+    {
+      "handle": "vakee_lai",
+      "x_user_id": "1338129587419500544",
+      "last_scored": 1792640303579
+    },
+    {
+      "handle": "112_gelato",
+      "x_user_id": "1241896484691312640",
+      "last_scored": 1792640302890
+    },
+    {
+      "handle": "baibandev",
+      "x_user_id": "1217469112567226369",
+      "last_scored": 1792640302060
+    },
+    {
+      "handle": "thaddeusjiang",
+      "x_user_id": "1150937016361553920",
+      "last_scored": 1792640301268
+    },
+    {
+      "handle": "year_progress",
+      "x_user_id": "3233484298",
+      "last_scored": 1792640300565
+    },
+    {
+      "handle": "guoda2066",
+      "x_user_id": "614450038",
+      "last_scored": 1792640299533
+    },
+    {
+      "handle": "makerneolab",
+      "x_user_id": "255921812",
+      "last_scored": 1792640298809
+    },
+    {
+      "handle": "marsfixer",
+      "x_user_id": "242323250",
+      "last_scored": 1792640298102
+    },
+    {
+      "handle": "rexnowtv",
+      "x_user_id": "187805235",
+      "last_scored": 1792640297152
+    },
+    {
+      "handle": "ronzhu",
+      "x_user_id": "165146829",
+      "last_scored": 1792640296387
+    },
+    {
+      "handle": "jennywen",
+      "x_user_id": "26312789",
+      "last_scored": 1792640295480
+    },
+    {
+      "handle": "gaoyangio",
+      "x_user_id": "16390703",
+      "last_scored": 1792640294490
+    },
+    {
+      "handle": "fooarch",
+      "x_user_id": "15315460",
+      "last_scored": 1792640293721
+    },
+    {
+      "handle": "signalmosaic",
+      "x_user_id": "14558445",
+      "last_scored": 1792640292974
+    },
+    {
+      "handle": "chijianqiang",
+      "x_user_id": "11782392",
+      "last_scored": 1792640292233
+    },
+    {
+      "handle": "yyyole",
+      "x_user_id": "939870716391854082",
+      "last_scored": 1792640268733
+    },
+    {
+      "handle": "omarchy",
+      "x_user_id": "2108454467309883392",
+      "last_scored": 1792640268075
+    },
+    {
+      "handle": "yiren_ai",
+      "x_user_id": "2107480126485323776",
+      "last_scored": 1792640267416
+    },
+    {
+      "handle": "bot",
+      "x_user_id": "2085838061347217408",
+      "last_scored": 1792640266736
+    },
+    {
+      "handle": "yifanxu_ephai",
+      "x_user_id": "2073035346707968000",
+      "last_scored": 1792640266009
+    },
+    {
+      "handle": "johnternus",
+      "x_user_id": "2067675948074582016",
+      "last_scored": 1792640265322
+    },
+    {
+      "handle": "donniy520",
+      "x_user_id": "2037918020807647232",
+      "last_scored": 1792640264603
+    },
+    {
+      "handle": "mediastorm_en",
+      "x_user_id": "2034172652093583360",
+      "last_scored": 1792640263915
+    },
+    {
+      "handle": "memoh_ai",
+      "x_user_id": "2021509446640562176",
+      "last_scored": 1792640263153
+    },
+    {
+      "handle": "zengying1107",
+      "x_user_id": "2021393118390779904",
+      "last_scored": 1792640262341
+    },
+    {
+      "handle": "captainlufei999",
+      "x_user_id": "2019324335157366785",
+      "last_scored": 1792640261379
+    },
+    {
+      "handle": "gracewangdesign",
+      "x_user_id": "2019217251480846336",
+      "last_scored": 1792640260668
+    },
+    {
+      "handle": "servasyy_ai",
+      "x_user_id": "1998968758422179840",
+      "last_scored": 1792640259997
+    },
+    {
+      "handle": "miracleeliu",
+      "x_user_id": "1993155491980361730",
+      "last_scored": 1792640259084
+    },
+    {
+      "handle": "alanshao111",
+      "x_user_id": "1959025762725765120",
+      "last_scored": 1792640258398
+    },
+    {
+      "handle": "dashiaixz",
+      "x_user_id": "1958453593893482496",
+      "last_scored": 1792640257695
+    },
+    {
+      "handle": "jackyzhong0124",
+      "x_user_id": "1948179234629013504",
+      "last_scored": 1792640256995
+    },
+    {
+      "handle": "ronny_minimax",
+      "x_user_id": "1902919415928328192",
+      "last_scored": 1792640256223
+    },
+    {
+      "handle": "tao100086",
+      "x_user_id": "1893687938631729152",
+      "last_scored": 1792640255555
+    },
+    {
+      "handle": "sunlau_",
+      "x_user_id": "1891870612693655552",
+      "last_scored": 1792640254874
+    },
+    {
+      "handle": "teddy_mexc",
+      "x_user_id": "1856025069706981377",
+      "last_scored": 1792640254153
+    },
+    {
+      "handle": "inficheesy",
+      "x_user_id": "1837057158674010112",
+      "last_scored": 1792640253452
+    },
+    {
+      "handle": "htx_studio",
+      "x_user_id": "1825804961164451840",
+      "last_scored": 1792640252782
+    },
+    {
+      "handle": "0xinfini",
+      "x_user_id": "1802594504157106176",
+      "last_scored": 1792640252057
+    },
+    {
+      "handle": "henry19840301",
+      "x_user_id": "1781096636246343680",
+      "last_scored": 1792640251347
+    },
+    {
+      "handle": "realchendahuang",
+      "x_user_id": "1779691567546269696",
+      "last_scored": 1792640250660
+    },
+    {
+      "handle": "zynqorw",
+      "x_user_id": "1771095415456460800",
+      "last_scored": 1792640249917
+    },
+    {
+      "handle": "0xlangeai",
+      "x_user_id": "1759530111534243840",
+      "last_scored": 1792640248965
+    },
+    {
+      "handle": "leon7hao",
+      "x_user_id": "1614449907787784194",
+      "last_scored": 1792640248236
+    },
+    {
+      "handle": "oroshinohito",
+      "x_user_id": "1569170721380913153",
+      "last_scored": 1792640247458
+    },
+    {
+      "handle": "hereicome2023",
+      "x_user_id": "1544596823918067712",
+      "last_scored": 1792640246758
+    },
+    {
+      "handle": "spikezhangx",
+      "x_user_id": "1525781045542817793",
+      "last_scored": 1792640246038
+    },
+    {
+      "handle": "ameliax111",
+      "x_user_id": "1506844866713559043",
+      "last_scored": 1792640245335
+    },
+    {
+      "handle": "zerah_eth",
+      "x_user_id": "1465763077530734592",
+      "last_scored": 1792640244387
+    },
+    {
+      "handle": "christianeth",
+      "x_user_id": "1462957339300925443",
+      "last_scored": 1792640243683
+    },
+    {
+      "handle": "flyanlu",
+      "x_user_id": "1388744179157590020",
+      "last_scored": 1792640242990
+    },
+    {
+      "handle": "hq4ai",
+      "x_user_id": "1296847058586890241",
+      "last_scored": 1792640242172
+    },
+    {
+      "handle": "maiyangai",
+      "x_user_id": "1242996498675032065",
+      "last_scored": 1792640241386
+    },
+    {
+      "handle": "sunyuchentron",
+      "x_user_id": "1222182756400037889",
+      "last_scored": 1792640240625
+    },
+    {
+      "handle": "_tuyukun",
+      "x_user_id": "1217864131883216899",
+      "last_scored": 1792640239887
+    },
+    {
+      "handle": "app_sail",
+      "x_user_id": "3151608288",
+      "last_scored": 1792640239049
+    },
+    {
+      "handle": "marclou",
+      "x_user_id": "2311987360",
+      "last_scored": 1792640238356
+    },
+    {
+      "handle": "phodal",
+      "x_user_id": "1667368496",
+      "last_scored": 1792640237601
+    },
+    {
+      "handle": "xiaohuiyuan",
+      "x_user_id": "1323768907",
+      "last_scored": 1792640236761
+    },
+    {
+      "handle": "sarkxing",
+      "x_user_id": "406975280",
+      "last_scored": 1792640236042
+    },
+    {
+      "handle": "insideoutinvest",
+      "x_user_id": "387068488",
+      "last_scored": 1792640235332
+    },
+    {
+      "handle": "mybigbearboy",
+      "x_user_id": "195344547",
+      "last_scored": 1792640234535
+    },
+    {
+      "handle": "drfeifei",
+      "x_user_id": "130745589",
+      "last_scored": 1792640233767
+    },
+    {
+      "handle": "drpengshen",
+      "x_user_id": "129361266",
+      "last_scored": 1792640233074
+    },
+    {
+      "handle": "lvchaoshuai",
+      "x_user_id": "65868013",
+      "last_scored": 1792640232360
+    },
+    {
+      "handle": "thons",
+      "x_user_id": "34597104",
+      "last_scored": 1792640231670
+    },
+    {
+      "handle": "finkd",
+      "x_user_id": "20749410",
+      "last_scored": 1792640230839
+    },
     {
       "handle": "404latitude",
       "x_user_id": "2053800927858167808",
@@ -1037,11 +1402,6 @@
       "handle": "antonlavay",
       "x_user_id": "3314942552",
       "last_scored": 1788082713276
-    },
-    {
-      "handle": "zerah_eth",
-      "x_user_id": null,
-      "last_scored": 1787998321014
     },
     {
       "handle": "timedilatioon",
@@ -3449,11 +3809,6 @@
       "last_scored": 1785139204094
     },
     {
-      "handle": "YearsProgress",
-      "x_user_id": "3233484298",
-      "last_scored": 1785139204094
-    },
-    {
       "handle": "Linmiv",
       "x_user_id": "720680424234557440",
       "last_scored": 1785139204094
@@ -5029,11 +5384,6 @@
       "last_scored": 1785139204094
     },
     {
-      "handle": "Google_Wang",
-      "x_user_id": "242323250",
-      "last_scored": 1785139204094
-    },
-    {
       "handle": "xianren33",
       "x_user_id": "1363748934749888516",
       "last_scored": 1785139204094
@@ -5346,11 +5696,6 @@
     {
       "handle": "ahshengchen",
       "x_user_id": "28969712",
-      "last_scored": 1785139204094
-    },
-    {
-      "handle": "1884_meijichoco",
-      "x_user_id": "1241896484691312640",
       "last_scored": 1785139204094
     },
     {
@@ -6419,11 +6764,6 @@
       "last_scored": 1785139204094
     },
     {
-      "handle": "AIWhispers4U",
-      "x_user_id": "1625672001598947329",
-      "last_scored": 1785139204094
-    },
-    {
       "handle": "takeda_iori",
       "x_user_id": "342693981",
       "last_scored": 1785139204094
@@ -6656,11 +6996,6 @@
     {
       "handle": "pdbking",
       "x_user_id": "48701468",
-      "last_scored": 1785139204094
-    },
-    {
-      "handle": "ronronron911",
-      "x_user_id": "165146829",
       "last_scored": 1785139204094
     },
     {
@@ -7114,11 +7449,6 @@
       "last_scored": 1785139204094
     },
     {
-      "handle": "gowithflowai",
-      "x_user_id": "1338129587419500544",
-      "last_scored": 1785139204094
-    },
-    {
       "handle": "CathieDWood",
       "x_user_id": "2361631088",
       "last_scored": 1785139204094
@@ -7141,11 +7471,6 @@
     {
       "handle": "Daddy_John6",
       "x_user_id": "721299696",
-      "last_scored": 1785139204094
-    },
-    {
-      "handle": "ericcc_liu",
-      "x_user_id": "614450038",
       "last_scored": 1785139204094
     },
     {
@@ -7659,11 +7984,6 @@
       "last_scored": 1785139204094
     },
     {
-      "handle": "ZaneReed596",
-      "x_user_id": "1482993528808816641",
-      "last_scored": 1785139204094
-    },
-    {
       "handle": "hiyuekun",
       "x_user_id": "1444015074",
       "last_scored": 1785139204094
@@ -7919,11 +8239,6 @@
       "last_scored": 1785139204094
     },
     {
-      "handle": "IanHuang3D",
-      "x_user_id": "1444452722879594502",
-      "last_scored": 1785139204094
-    },
-    {
       "handle": "milichab",
       "x_user_id": "2867234365",
       "last_scored": 1785139204094
@@ -8126,11 +8441,6 @@
     {
       "handle": "satyanadella",
       "x_user_id": "20571756",
-      "last_scored": 1785139204094
-    },
-    {
-      "handle": "jenny_wen",
-      "x_user_id": "26312789",
       "last_scored": 1785139204094
     },
     {
@@ -8381,11 +8691,6 @@
     {
       "handle": "hyoban_cc",
       "x_user_id": "1352477420243144704",
-      "last_scored": 1785139204094
-    },
-    {
-      "handle": "CoderYt",
-      "x_user_id": "4708173950",
       "last_scored": 1785139204094
     },
     {
@@ -9134,16 +9439,6 @@
       "last_scored": 1785139204094
     },
     {
-      "handle": "inchmade",
-      "x_user_id": "187805235",
-      "last_scored": 1785139204094
-    },
-    {
-      "handle": "MakerNeoCom",
-      "x_user_id": "255921812",
-      "last_scored": 1785139204094
-    },
-    {
       "handle": "sds51141892",
       "x_user_id": "1499706949872541699",
       "last_scored": 1785139204094
@@ -9444,11 +9739,6 @@
       "last_scored": 1785139204094
     },
     {
-      "handle": "cyrilxuq",
-      "x_user_id": "1500486837839998976",
-      "last_scored": 1785139204094
-    },
-    {
       "handle": "i5ting",
       "x_user_id": "1712095004",
       "last_scored": 1785139204094
@@ -9476,11 +9766,6 @@
     {
       "handle": "balconychy",
       "x_user_id": "18571275",
-      "last_scored": 1785139204094
-    },
-    {
-      "handle": "sagacity",
-      "x_user_id": "11782392",
       "last_scored": 1785139204094
     },
     {
@@ -9644,11 +9929,6 @@
       "last_scored": 1785139204094
     },
     {
-      "handle": "iamkuni",
-      "x_user_id": "14558445",
-      "last_scored": 1785139204094
-    },
-    {
       "handle": "cloudwu",
       "x_user_id": "21308096",
       "last_scored": 1785139204094
@@ -9701,11 +9981,6 @@
     {
       "handle": "yetone",
       "x_user_id": "147786784",
-      "last_scored": 1785139204094
-    },
-    {
-      "handle": "sunshineg",
-      "x_user_id": "16390703",
       "last_scored": 1785139204094
     },
     {
@@ -9836,11 +10111,6 @@
     {
       "handle": "liuyi0922",
       "x_user_id": "132791298",
-      "last_scored": 1785139204094
-    },
-    {
-      "handle": "afoo_me",
-      "x_user_id": "15315460",
       "last_scored": 1785139204094
     },
     {
@@ -10314,11 +10584,6 @@
       "last_scored": 1785139204094
     },
     {
-      "handle": "thaddeusjiangzh",
-      "x_user_id": "1150937016361553920",
-      "last_scored": 1785139204094
-    },
-    {
       "handle": "xinzhi",
       "x_user_id": "4110021",
       "last_scored": 1785139204094
@@ -10381,16 +10646,6 @@
     {
       "handle": "_toobug",
       "x_user_id": "717303429568172033",
-      "last_scored": 1785139204094
-    },
-    {
-      "handle": "elliotchen100",
-      "x_user_id": "1735423477799342080",
-      "last_scored": 1785139204094
-    },
-    {
-      "handle": "baibanbaonet",
-      "x_user_id": "1217469112567226369",
       "last_scored": 1785139204094
     },
     {
@@ -12044,11 +12299,6 @@
       "last_scored": 1780461267371
     },
     {
-      "handle": "mybigbearboy",
-      "x_user_id": null,
-      "last_scored": 1780148109583
-    },
-    {
       "handle": "__fanqie__",
       "x_user_id": "1756909109788753920",
       "last_scored": 1780147761140
@@ -12297,11 +12547,6 @@
       "handle": "xingjia520",
       "x_user_id": "2055617614169477120",
       "last_scored": 1779776652029
-    },
-    {
-      "handle": "yyyole",
-      "x_user_id": null,
-      "last_scored": 1779776643965
     },
     {
       "handle": "_forab",
