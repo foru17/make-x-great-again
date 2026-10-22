@@ -11,18 +11,27 @@
     "task": "在生产基线移植并验证",
     "verification": "局部diff、类型/回归/运行时测试、发布干跑",
     "passes": true,
-    "evidence": "Production-source transplant: 221 tests PASS, typecheck/runtime PASS, build and dry-run PASS; production feature flags and additive DO migration prepared"
+    "evidence": "222/222 production tests PASS; typecheck and generated types PASS; isolated workerd PASS; protected production declarations and original CSS PASS"
   },
   {
     "id": "deploy",
     "task": "推送、迁移、上线与即时验收",
     "verification": "远端commit、发布版本、HTTP与真实usage",
-    "passes": false
+    "passes": true,
+    "evidence": "Source1434ba0 pushed; D1 additive migration success; deployed be14d2ae-1ecc-414e-a0ce-3aa3c36d7270; dedup/usage enabled, batch deliberately held after observed provider errors"
   },
   {
     "id": "followup",
     "task": "安排上线30分钟效果复查",
     "verification": "自动化保存与指定指标/停止条件",
-    "passes": false
+    "passes": true,
+    "evidence": "Automation ai ACTIVE, explicit UTC DTSTART 2026-10-22T11:23:00+00:00, COUNT=1 in this chat; read-only and self-pausing"
+  },
+  {
+    "id": "batch-live-acceptance",
+    "task": "解决真实供应商批量传输/上游错误并验收后再启用批量",
+    "verification": "需稳定真实流量中的解析率、上游错误率和成本对照；未通过不启用",
+    "passes": false,
+    "status": "held after live evidence; not part of the enabled rollout"
   }
 ]

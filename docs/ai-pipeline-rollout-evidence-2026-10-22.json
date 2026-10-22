@@ -1,0 +1,154 @@
+{
+  "status": "deployed with constraints; batching held, not fully accepted",
+  "release": {
+    "version": "be14d2ae-1ecc-414e-a0ce-3aa3c36d7270",
+    "deployed_at_utc": "2026-10-22T10:52:02.85926Z",
+    "observation_start_ms": 1792666332859,
+    "source_commit": "1434ba0",
+    "production_branch": "codex/ai-batch-production-2026-10-22",
+    "flags": {
+      "AGENT_AUTO_BLACKLIST_ENABLED": "1",
+      "AI_AUTO_PUBLISH_ENABLED": "0",
+      "AI_BATCH_ENABLED": "0",
+      "AI_COORDINATOR_ENABLED": "1",
+      "AI_USAGE_ENABLED": "1"
+    },
+    "status": "deduplication_and_usage_live_batch_held",
+    "budget_alert_confirmation": "direct user confirmation on 2026-10-22",
+    "followup_automation_id": "ai",
+    "followup_utc": "2026-10-22T11:23:00+00:00",
+    "followup_singapore": "19:23"
+  },
+  "verification": {
+    "production_tests_pass": 222,
+    "production_tests_fail": 0,
+    "typecheck_exit_code": 0,
+    "types_check_exit_code": 0,
+    "local_workerd_pipeline_pass": true,
+    "health_and_auth_http": {
+      "health-safe": 200,
+      "usage-safe": 200,
+      "usage-denied-safe": 403
+    },
+    "migration_success": true,
+    "migration_queries": 2,
+    "migration_rows_written": 4,
+    "production_baseline_protection": {
+      "result": "PASS",
+      "protectedDeclarations": {
+        "findAccount": true,
+        "writeAccount": true,
+        "sigHash": true,
+        "matchKeywordRules": true,
+        "publishArtifacts": true,
+        "reserveModelQuota": true,
+        "aiAutoPublishEnabled": true,
+        "loadAgentQueue": true,
+        "SYSTEM": true,
+        "userPrompt": true
+      },
+      "changedDeclarations": [
+        "classify",
+        "submitReport",
+        "backfillCategories"
+      ]
+    },
+    "production_css_matches_baseline": true,
+    "real_synthetic_model_probe_calls": 0
+  },
+  "live_observed_rows_that_triggered_batch_hold": [
+    {
+      "entrypoint": "classify",
+      "attempt": 1,
+      "state": "response",
+      "http_status": 200,
+      "parse_status": "valid",
+      "requests": 6,
+      "account_attempts": 6,
+      "total_tokens": 13990
+    },
+    {
+      "entrypoint": "classify_batch",
+      "attempt": 1,
+      "state": "http_error",
+      "http_status": 522,
+      "parse_status": null,
+      "requests": 7,
+      "account_attempts": 8,
+      "total_tokens": null
+    },
+    {
+      "entrypoint": "classify_batch",
+      "attempt": 1,
+      "state": "http_error",
+      "http_status": 524,
+      "parse_status": null,
+      "requests": 2,
+      "account_attempts": 3,
+      "total_tokens": null
+    },
+    {
+      "entrypoint": "classify_batch",
+      "attempt": 1,
+      "state": "http_error",
+      "http_status": 525,
+      "parse_status": null,
+      "requests": 6,
+      "account_attempts": 9,
+      "total_tokens": null
+    },
+    {
+      "entrypoint": "classify_batch",
+      "attempt": 1,
+      "state": "response",
+      "http_status": 200,
+      "parse_status": "invalid",
+      "requests": 1,
+      "account_attempts": 1,
+      "total_tokens": 2415
+    },
+    {
+      "entrypoint": "classify_batch",
+      "attempt": 1,
+      "state": "response",
+      "http_status": 200,
+      "parse_status": "valid",
+      "requests": 28,
+      "account_attempts": 36,
+      "total_tokens": 69751
+    },
+    {
+      "entrypoint": "classify_batch",
+      "attempt": 1,
+      "state": "started",
+      "http_status": null,
+      "parse_status": null,
+      "requests": 3,
+      "account_attempts": 3,
+      "total_tokens": null
+    },
+    {
+      "entrypoint": "classify_batch",
+      "attempt": 2,
+      "state": "response",
+      "http_status": 200,
+      "parse_status": "invalid",
+      "requests": 1,
+      "account_attempts": 1,
+      "total_tokens": 2415
+    }
+  ],
+  "one_time_followup": {
+    "id": "ai",
+    "status": "ACTIVE",
+    "rrule": "DTSTART:20261022T112300Z\nRRULE:FREQ=DAILY;COUNT=1",
+    "bound_to_current_chat": true
+  },
+  "raw_evidence_directory": ".verification/ai-pipeline-deploy-2026-10-22/",
+  "unresolved": [
+    "Batch live acceptance and upstream 522/524/525 investigation",
+    "No exact historical token baseline for measured savings percentage",
+    "Budget alert configuration confirmed by human; API delivery/threshold not independently verified",
+    "Feishu progress document link not available"
+  ]
+}
