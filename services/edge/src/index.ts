@@ -735,6 +735,17 @@ export async function classifyBatch(
     try {
       const content = payload.choices?.[0]?.message;
       const answer = extractVerdictJson(content?.content || content?.reasoning_content || "") as { results?: unknown };
+      // Compatible providers sometimes keep the original single-verdict
+      // transport for a one-account tail or repair. There is exactly one
+      // possible association here; never apply this fallback to a multi-item batch.
+      const single = pending.length === 1 ? Verdict.safeParse(answer) : null;
+      if (single?.success) {
+        values.set(pending[0].id, single.data);
+        await recordModelParse(env, requestId, "valid");
+        logInfo("classify.batch_single_compat", { requestId });
+        pending = [];
+        continue;
+      }
       const rawResults = z.array(z.unknown()).max(20).parse(answer.results);
       const results: Array<{ id: string; verdict?: unknown }> = [];
       for (const result of rawResults) {

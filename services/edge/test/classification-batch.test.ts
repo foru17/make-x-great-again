@@ -80,3 +80,20 @@ test("bounded batch concurrency rejects overflow instead of extending queue dead
   gate.resolve();
   assert.equal((await Promise.all(pending)).filter(r => "value" in r).length, 40);
 });
+
+test("one-account tail accepts legacy verdict format, multi-account batches never guess association", async () => {
+  const original = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => {
+    assert.ok(++calls <= 3, "hard provider cap");
+    return Response.json({ choices: [{ message: { content: JSON.stringify({ label: "legit", confidence: 1, reasons: ["fixture"] }) } }] });
+  };
+  const env = { LLM_API_BASE: "https://fixture.invalid", LLM_API_KEY: "fixture", LLM_API_MODEL: "fixture" };
+  const item = (id: string) => ({ id, signals: { handle: id, recentTweets: [] } });
+  try {
+    assert.deepEqual(await classifyBatch(env as never, [item("a")]), [{ value: { label: "legit", confidence: 1, reasons: ["fixture"] } }]);
+    assert.equal(calls, 1, "legacy single response must not cause a repair call");
+    assert.deepEqual(await classifyBatch(env as never, [item("b"), item("c")]), [{ error: "model_response_invalid" }, { error: "model_response_invalid" }]);
+    assert.equal(calls, 3);
+  } finally { globalThis.fetch = original; }
+});
