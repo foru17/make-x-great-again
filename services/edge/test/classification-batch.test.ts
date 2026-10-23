@@ -123,3 +123,19 @@ test("malformed duplicate IDs require repair; label echoes cannot hide batch res
     assert.equal(calls, 2);
   } finally { globalThis.fetch = original; }
 });
+
+
+test("a failed ten-account batch never fans out into individual requests", async () => {
+  const original = globalThis.fetch;
+  let calls = 0;
+  globalThis.fetch = async () => {
+    assert.ok(++calls <= 1, "hard provider cap: no retry or single-account fallback on HTTP failure");
+    return Response.json({ error: "upstream failure" }, { status: 524 });
+  };
+  try {
+    const items = Array.from({ length: 10 }, (_, i) => ({ id: String(i), signals: { handle: `fx_${i}`, recentTweets: [] } }));
+    const result = await classifyBatch({ LLM_API_BASE: "https://fixture.invalid", LLM_API_KEY: "fixture", LLM_API_MODEL: "fixture" } as never, items);
+    assert.equal(calls, 1);
+    assert.deepEqual(result, items.map(() => ({ error: "model_http_error" })));
+  } finally { globalThis.fetch = original; }
+});

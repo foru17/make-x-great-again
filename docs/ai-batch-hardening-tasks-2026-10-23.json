@@ -24,7 +24,8 @@
     "id": 4,
     "task": "Share bounded batching queue across account shards",
     "verification": "workerd: 10 distinct accounts across four shards use exactly one provider request, 2s tail and no fallback fanout",
-    "passes": false
+    "passes": true,
+    "evidence": "229 tests, typecheck PASS; workerd spans 4 account shards, 10 accounts -> 1 provider call in 22ms, tail 2037ms: /tmp/sentinel-hardening-runtime4.log"
   },
   {
     "id": 5,

@@ -77,14 +77,9 @@ try {
   const tailWaitMs = requests[0].at - t0;
   assert.ok(tailWaitMs >= 1800 && tailWaitMs < 5000, `2s tail dispatch (runtime tolerance): ${tailWaitMs}`);
 
-  const handles = [];
-  // At most 1000 synthetic candidate names to find 10 sharing a stable shard.
-  for (let i = 0; i < 1000 && handles.length < 10; i++) {
-    const handle = `fx_batch_${i}`;
-    const key = createHash("sha256").update(JSON.stringify([handle])).digest("hex");
-    if (parseInt(key.slice(0, 2), 16) % 4 === 0) handles.push(handle);
-  }
-  assert.equal(handles.length, 10);
+  const handles = Array.from({ length: 10 }, (_, i) => `fx_batch_${i}`);
+  const shards = new Set(handles.map(handle => parseInt(createHash("sha256").update(JSON.stringify([handle])).digest("hex").slice(0, 2), 16) % 4));
+  assert.equal(shards.size, 4, "batch fixture must span every account shard");
   const t1 = Date.now();
   const batch = await Promise.all(handles.map(classify));
   assert.ok(batch.every(r => r.status === 200));
@@ -157,7 +152,7 @@ try {
   assert.equal((await restartStopped.json()).error, "model_circuit_open", "circuit persists through workerd restart");
   assert.equal(requests.length, beforeOpen);
   console.log(JSON.stringify({ result: "PASS", runtime: "workerd", concurrentViewers: 20,
-    uniqueAccounts: 11, successfulProviderCalls: 2, mockTotalTokens: 240, tailWaitMs, fullBatchWaitMs,
+    uniqueAccounts: 11, accountShardsInFullBatch: shards.size, successfulProviderCalls: 2, mockTotalTokens: 240, tailWaitMs, fullBatchWaitMs,
     circuitSurvivesRestart: true, circuitStopsSubmissions: true, accountCooldownSurvivesRestart: true, changedEvidenceCannotBypassCooldown: true, unknownOutcomeSurvivesRestart: true, missingLedgerStopsSubmission: true, quotaReturns429: true,
     realProviderCalls: 0, cloudMutations: 0 }));
 } finally {
