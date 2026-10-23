@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "task": "Strict per-account batch parsing",
+    "verification": "bounded mock provider tests: duplicates, malformed IDs, order, partial repair",
+    "passes": false
+  },
+  {
+    "id": 2,
+    "task": "Persistent account failure cooldown",
+    "verification": "unit and workerd restart tests: changed input cannot bypass cooldown",
+    "passes": false
+  },
+  {
+    "id": 3,
+    "task": "Provider circuit breaker for all Worker model entrypoints",
+    "verification": "persistent workerd circuit: bounded failures, single recovery probe, no fallback fanout",
+    "passes": false
+  },
+  {
+    "id": 4,
+    "task": "Full local regression and evidence",
+    "verification": "Worker tests, typecheck, workerd HTTP/SQLite pipeline; no production calls",
+    "passes": false
+  }
+]
