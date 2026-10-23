@@ -7,8 +7,9 @@
   },
   {
     "task": "release",
-    "passes": false,
-    "verification": "build and dry run; commit/push feature branch; enable batch and deploy existing Worker"
+    "passes": true,
+    "verification": "build and dry run; commit/push feature branch; enable batch and deploy existing Worker",
+    "evidence": "builds/dry-run/typecheck/230 Worker tests PASS; source7213058 pushed; Worker4d114235-8752-447a-946d-046159866a1d deployed; batch/coordinator/usage=1, advisory autopublish=0 retained"
   },
   {
     "task": "provider_acceptance",
