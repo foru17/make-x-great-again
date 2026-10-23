@@ -602,7 +602,7 @@ ${s.recentTweets.map((t, i) => `  ${i + 1}. ${t}`).join("\n") || "  (none)"}`;
  * {...} span and return the first that parses AND carries a "label" key, so
  * stray braces in prose/strings can't derail it.
  */
-function extractVerdictJson(txt: string): unknown {
+function extractVerdictJson(txt: string, batch = false): unknown {
   const objs: string[] = [];
   let depth = 0;
   let start = -1;
@@ -632,7 +632,7 @@ function extractVerdictJson(txt: string): unknown {
   for (const c of objs) {
     try {
       const o = JSON.parse(c);
-      if (o && typeof o === "object" && "label" in o) return o;
+      if (o && typeof o === "object" && (batch ? "results" in o : "label" in o)) return o;
     } catch {
       // not valid JSON (prose with braces) — keep scanning
     }
@@ -739,7 +739,7 @@ export async function classifyBatch(
     }
     try {
       const content = payload.choices?.[0]?.message;
-      const answer = extractVerdictJson(content?.content || content?.reasoning_content || "") as { results?: unknown };
+      const answer = extractVerdictJson(content?.content || content?.reasoning_content || "", pending.length > 1) as { results?: unknown };
       // Compatible providers sometimes keep the original single-verdict
       // transport for a one-account tail or repair. There is exactly one
       // possible association here; never apply this fallback to a multi-item batch.
@@ -754,7 +754,8 @@ export async function classifyBatch(
       const rawResults = z.array(z.unknown()).max(20).parse(answer.results);
       const results: Array<{ id: string; verdict?: unknown }> = [];
       for (const result of rawResults) {
-        const row = z.object({ id: z.string(), verdict: z.unknown() }).safeParse(result);
+        // Count malformed duplicates too: never accept an ambiguous ID.
+        const row = z.object({ id: z.string(), verdict: z.unknown().optional() }).safeParse(result);
         if (row.success) results.push(row.data);
       }
       const allowed = new Set(pending.map(x => x.id));

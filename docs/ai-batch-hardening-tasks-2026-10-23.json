@@ -3,7 +3,8 @@
     "id": 1,
     "task": "Strict per-account batch parsing",
     "verification": "bounded mock provider tests: duplicates, malformed IDs, order, partial repair",
-    "passes": false
+    "passes": true,
+    "evidence": "223 tests passed, 0 failed: /tmp/sentinel-hardening-step1.log"
   },
   {
     "id": 2,

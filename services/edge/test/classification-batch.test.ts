@@ -99,3 +99,27 @@ test("one-account tail accepts legacy verdict format, multi-account batches neve
     assert.equal(calls, 3);
   } finally { globalThis.fetch = original; }
 });
+
+
+test("malformed duplicate IDs require repair; label echoes cannot hide batch results", async () => {
+  const original = globalThis.fetch;
+  let calls = 0;
+  const verdict = { label: "legit", confidence: 1, reasons: ["fixture"] };
+  globalThis.fetch = async (_input, init) => {
+    assert.ok(++calls <= 2, "one repair maximum, never fan out");
+    const body = JSON.parse(String(init?.body));
+    if (calls === 2) {
+      assert.ok(!body.messages[1].content.startsWith('{"items":'), "only unresolved a is repaired");
+      return Response.json({ choices: [{ message: { content: JSON.stringify(verdict) } }] });
+    }
+    return Response.json({ choices: [{ message: { content: JSON.stringify(verdict) + "\n" + JSON.stringify({ results: [
+      { id: "a", verdict }, { id: "a" }, { id: "b", verdict },
+    ] }) } }] });
+  };
+  try {
+    const result = await classifyBatch({ LLM_API_BASE: "https://fixture.invalid", LLM_API_KEY: "fixture", LLM_API_MODEL: "fixture" } as never,
+      ["a", "b"].map(id => ({ id, signals: { handle: id, recentTweets: [] } })));
+    assert.deepEqual(result, [{ value: verdict }, { value: verdict }]);
+    assert.equal(calls, 2);
+  } finally { globalThis.fetch = original; }
+});
