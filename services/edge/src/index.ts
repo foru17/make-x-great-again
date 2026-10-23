@@ -659,7 +659,6 @@ async function classify(env: Bindings, s: Signals, entrypoint = "classify"): Pro
     { role: "user", content: userPrompt(s) },
   ];
 
-  let lastErr: unknown;
   // Two attempts: a single self-correcting retry recovers from a malformed or
   // truncated first answer (re-asking concisely also dodges runaway reasoning).
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -685,7 +684,6 @@ async function classify(env: Bindings, s: Signals, entrypoint = "classify"): Pro
     } catch (err) {
       if (err instanceof ModelCallError) throw err;
       await recordModelParse(env, requestId, "invalid");
-      lastErr = err;
       const truncated = choice?.finish_reason === "length";
       messages.push(
         { role: "assistant", content: txt.slice(0, 2000) },
@@ -698,7 +696,7 @@ async function classify(env: Bindings, s: Signals, entrypoint = "classify"): Pro
       );
     }
   }
-  throw new Error(`LLM did not return a valid verdict: ${String(lastErr)}`);
+  throw new ModelCallError("model_response_invalid");
 }
 
 /** One shared policy, independent evidence envelopes and exact per-item IDs.

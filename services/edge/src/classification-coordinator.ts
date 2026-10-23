@@ -75,7 +75,7 @@ export class ClassificationCoordinator extends DurableObject<ClassifierBindings>
         }
         return { value: await classifyForEval(this.env, job.signals) };
       }
-      catch (error) { return { error: error instanceof ModelCallError ? error.code : "model_response_invalid" }; }
+      catch (error) { return { error: error instanceof ModelCallError ? error.code : "model_outcome_unknown" }; }
     }));
   }
 }

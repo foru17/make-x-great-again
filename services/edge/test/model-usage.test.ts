@@ -169,3 +169,18 @@ test("every provider entrypoint obeys shared admission; denial never creates usa
     assert.equal(submissions,1);
   } finally {sqlite.close();}
 });
+
+test("guard completion failure after response remains unknown without another model submission", async () => {
+  const { sqlite, env } = fixture();
+  let calls = 0;
+  const bindings = { ...env, AI_COORDINATOR_ENABLED: "1", CLASSIFIER: { getByName() {
+    return { async beginProvider() { return {id:"fixture"}; }, async finishProvider() { throw new Error("RPC interrupted"); } };
+  } } };
+  try {
+    await assert.rejects(providerChat(bindings as never, {}, meta, async()=>{
+      assert.ok(++calls<=1);return Response.json({usage:{prompt_tokens:10,completion_tokens:2,total_tokens:12}});
+    }), /model_outcome_unknown/);
+    assert.equal(calls,1);
+    assert.equal(sqlite.prepare("SELECT total_tokens FROM model_usage").get()?.total_tokens,12,"recorded tokens survive an uncertain coordination result");
+  } finally {sqlite.close();}
+});
