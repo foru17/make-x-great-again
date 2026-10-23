@@ -7,8 +7,9 @@
   },
   {
     "task": "deploy",
-    "passes": false,
-    "verification": "production version/settings snapshot; build/dry-run; feature branch push; deploy existing Worker"
+    "passes": true,
+    "verification": "production version/settings snapshot; build/dry-run; feature branch push; deploy existing Worker",
+    "evidence": "source3899e4e pushed; build/dry-run exit0; deployment e8f21b49-37ae-4a9f-b29d-832c318ca5c8 100%; before snapshot saved; no new resources or DB migration"
   },
   {
     "task": "verify",
