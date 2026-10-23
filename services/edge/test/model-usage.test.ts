@@ -142,3 +142,30 @@ test("batch repair meters physical requests once, with only unresolved account c
     assert.deepEqual(rows.map(r => [r.accounts,r.attempt,r.total_tokens,r.parse_status]), [[2,1,110,"invalid"],[1,2,110,"valid"]]);
   } finally { globalThis.fetch = original; sqlite.close(); }
 });
+
+test("every provider entrypoint obeys shared admission; denial never creates usage or fetches", async () => {
+  const { sqlite, env } = fixture();
+  let admissions = 0, submissions = 0;
+  const finishes: string[] = [];
+  let denied = true;
+  const bindings = { ...env, AI_COORDINATOR_ENABLED: "1", CLASSIFIER: { getByName(name: string) {
+    assert.equal(name, "provider-guard-v1");
+    return { async beginProvider() { admissions++; return denied ? { error: "model_circuit_open" } : { id: "fixture-lease" }; },
+      async finishProvider(_id: string, outcome: string) { finishes.push(outcome); } };
+  } } };
+  const fetcher = async () => { assert.ok(++submissions <= 1); return Response.json({choices:[]}); };
+  try {
+    for (const entrypoint of ["classify", "classify_batch", "report", "confirm", "category_backfill"]) {
+      await assert.rejects(providerChat(bindings as never, {}, {...meta, entrypoint}, fetcher), /model_circuit_open/);
+    }
+    assert.equal(admissions,5); assert.equal(submissions,0);
+    assert.equal(sqlite.prepare("SELECT COUNT(*) n FROM model_usage").get()?.n,0);
+    denied=false;
+    await providerChat(bindings as never, {}, meta, fetcher);
+    assert.deepEqual(finishes,["success"]);
+    sqlite.exec("DROP TABLE model_usage");
+    await assert.rejects(providerChat(bindings as never, {}, meta, fetcher), /usage_unavailable/);
+    assert.deepEqual(finishes,["success","cancel"]);
+    assert.equal(submissions,1);
+  } finally {sqlite.close();}
+});

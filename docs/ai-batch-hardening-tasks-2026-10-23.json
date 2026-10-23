@@ -17,10 +17,17 @@
     "id": 3,
     "task": "Provider circuit breaker for all Worker model entrypoints",
     "verification": "persistent workerd circuit: bounded failures, single recovery probe, no fallback fanout",
-    "passes": false
+    "passes": true,
+    "evidence": "228 tests, typecheck PASS; circuit opens and blocks after restart through workerd HTTP: /tmp/sentinel-hardening-runtime3.log"
   },
   {
     "id": 4,
+    "task": "Share bounded batching queue across account shards",
+    "verification": "workerd: 10 distinct accounts across four shards use exactly one provider request, 2s tail and no fallback fanout",
+    "passes": false
+  },
+  {
+    "id": 5,
     "task": "Full local regression and evidence",
     "verification": "Worker tests, typecheck, workerd HTTP/SQLite pipeline; no production calls",
     "passes": false

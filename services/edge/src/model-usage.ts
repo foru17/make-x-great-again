@@ -1,6 +1,9 @@
+import type { ClassificationCoordinator } from "./classification-coordinator";
 export interface ProviderEnv {
   DB: D1Database;
   AI_USAGE_ENABLED?: string;
+  AI_COORDINATOR_ENABLED?: string;
+  CLASSIFIER?: DurableObjectNamespace<ClassificationCoordinator>;
   LLM_API_BASE: string;
   LLM_API_MODEL: string;
   LLM_API_KEY: string;
@@ -38,6 +41,36 @@ export async function providerChat(
   body: Record<string, unknown>,
   meta: { operationId: string; entrypoint: string; attempt: number; accounts: number },
   fetcher: typeof fetch = fetch,
+): Promise<{ payload: ProviderPayload; requestId: string | null }> {
+  if (env.AI_COORDINATOR_ENABLED !== "1") return executeProviderChat(env, body, meta, fetcher);
+  if (!env.CLASSIFIER) throw new ModelCallError("classifier_unavailable");
+  // All Worker provider paths (classify, report, confirm, backfill) share one
+  // guard; batching cannot multiply the provider concurrency budget.
+  const guard = env.CLASSIFIER.getByName("provider-guard-v1");
+  let permit: Awaited<ReturnType<typeof guard.beginProvider>>;
+  try { permit = await guard.beginProvider(); }
+  catch { throw new ModelCallError("model_guard_unavailable"); }
+  if ("error" in permit) {
+    console.log(JSON.stringify({ event: "model.admission", outcome: permit.error, entrypoint: meta.entrypoint }));
+    throw new ModelCallError(permit.error);
+  }
+  let result: { payload: ProviderPayload; requestId: string | null };
+  try { result = await executeProviderChat(env, body, meta, fetcher); }
+  catch (error) {
+    const outcome = error instanceof ModelCallError && error.code === "usage_unavailable" ? "cancel" : "failure";
+    try { await guard.finishProvider(permit.id, outcome); }
+    catch { throw new ModelCallError("model_outcome_unknown"); }
+    throw error;
+  }
+  try { await guard.finishProvider(permit.id, "success"); }
+  catch { throw new ModelCallError("model_outcome_unknown"); }
+  return result;
+}
+
+async function executeProviderChat(
+  env: ProviderEnv, body: Record<string, unknown>,
+  meta: { operationId: string; entrypoint: string; attempt: number; accounts: number },
+  fetcher: typeof fetch,
 ): Promise<{ payload: ProviderPayload; requestId: string | null }> {
   const metered = env.AI_USAGE_ENABLED === "1";
   const id = crypto.randomUUID();

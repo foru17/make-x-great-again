@@ -21,7 +21,7 @@ const provider = createServer(async (req, res) => {
     const singleton = !input.messages[1].content.startsWith('{"items":');
     const items = singleton ? [{ id: "single", evidence: input.messages[1].content }] : JSON.parse(input.messages[1].content).items;
     requests.push({ accounts: items.length, at: Date.now() });
-    if (items.some(item => item.evidence.includes("@fx_http_failure"))) {
+    if (items.some(item => item.evidence.includes("@fx_http_"))) {
       res.writeHead(524, { "Content-Type": "application/json" }); res.end('{"error":"fixture upstream failure"}'); return;
     }
     if (items.some(item => item.evidence.includes("@fx_failure"))) { req.socket.destroy(); return; }
@@ -133,9 +133,32 @@ try {
   const denied = await classify("fx_denied");
   assert.equal(denied.status, 429);
   assert.equal(requests.length, beforeRestart, "quota remains authoritative after batching");
+  await mf.dispose();
+  mf = await start();
+  const circuitDb = (await mf.getBindings()).DB;
+  const usageSchema = (await readFile("migrations/2026-10-22-model-usage.sql", "utf8")).replace(/--[^\n]*/g, "");
+  for (const sql of usageSchema.split(";").map(x => x.trim()).filter(Boolean)) await circuitDb.prepare(sql).run();
+  for (let i = 0; i < 5; i++) {
+    const failure = await classify(`fx_http_${i}`);
+    assert.equal(failure.status, 503);
+    const error = (await failure.json()).error;
+    assert.ok(["model_http_error", "model_circuit_open"].includes(error));
+    if (error === "model_circuit_open") break;
+  }
+  const beforeOpen = requests.length;
+  const stopped = await classify("fx_circuit_stop");
+  assert.equal(stopped.status, 503);
+  assert.equal((await stopped.json()).error, "model_circuit_open");
+  assert.equal(requests.length, beforeOpen, "open circuit blocks all new accounts without provider calls");
+  await mf.dispose();
+  mf = await start();
+  const restartStopped = await classify("fx_restart_stop");
+  assert.equal(restartStopped.status, 503);
+  assert.equal((await restartStopped.json()).error, "model_circuit_open", "circuit persists through workerd restart");
+  assert.equal(requests.length, beforeOpen);
   console.log(JSON.stringify({ result: "PASS", runtime: "workerd", concurrentViewers: 20,
     uniqueAccounts: 11, successfulProviderCalls: 2, mockTotalTokens: 240, tailWaitMs, fullBatchWaitMs,
-    accountCooldownSurvivesRestart: true, changedEvidenceCannotBypassCooldown: true, unknownOutcomeSurvivesRestart: true, missingLedgerStopsSubmission: true, quotaReturns429: true,
+    circuitSurvivesRestart: true, circuitStopsSubmissions: true, accountCooldownSurvivesRestart: true, changedEvidenceCannotBypassCooldown: true, unknownOutcomeSurvivesRestart: true, missingLedgerStopsSubmission: true, quotaReturns429: true,
     realProviderCalls: 0, cloudMutations: 0 }));
 } finally {
   if (mf) await mf.dispose();

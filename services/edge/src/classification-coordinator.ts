@@ -1,5 +1,6 @@
 import { DurableObject } from "cloudflare:workers";
 import { ClassificationFlight, type FlightStore, type FlightResult } from "./classification-flight";
+import { ProviderCircuit, type CircuitState } from "./provider-circuit";
 import { AccountAdmission } from "./account-admission";
 import { classificationKey } from "./classification-flight";
 import { ModelCallError } from "./model-usage";
@@ -14,12 +15,21 @@ export interface ClassificationJob {
 }
 
 export class ClassificationCoordinator extends DurableObject<ClassifierBindings> {
+  private readonly circuit: ProviderCircuit;
   private readonly accounts: AccountAdmission;
   private readonly flight: ClassificationFlight<ClassifyVerdict>;
   private readonly batch: ClassificationBatch<{ id: string; signals: ClassifySignals }, ClassifyVerdict>;
   constructor(ctx: DurableObjectState, env: ClassifierBindings) {
     super(ctx, env);
     const sql = ctx.storage.sql;
+    sql.exec("CREATE TABLE IF NOT EXISTS provider_circuit (id INTEGER PRIMARY KEY, state TEXT NOT NULL)");
+    this.circuit = new ProviderCircuit({
+      get: () => {
+        const row = sql.exec<{ state: string }>("SELECT state FROM provider_circuit WHERE id=1").toArray()[0];
+        return row ? JSON.parse(row.state) as CircuitState : undefined;
+      },
+      put: state => { sql.exec("INSERT INTO provider_circuit VALUES (1,?) ON CONFLICT(id) DO UPDATE SET state=excluded.state", JSON.stringify(state)); },
+    });
     sql.exec(`CREATE TABLE IF NOT EXISTS flights (
       key TEXT PRIMARY KEY, state TEXT NOT NULL, result TEXT, expires INTEGER NOT NULL
     )`);
@@ -43,6 +53,9 @@ export class ClassificationCoordinator extends DurableObject<ClassifierBindings>
     });
     this.batch = new ClassificationBatch(items => classifyBatch(this.env, items));
   }
+
+  beginProvider() { return this.circuit.begin(); }
+  finishProvider(id: string, outcome: "success" | "failure" | "cancel") { this.circuit.finish(id, outcome); }
 
   async classify(job: ClassificationJob): Promise<FlightResult<ClassifyVerdict>> {
     const accountKey = await classificationKey([job.signals.userId ?? job.signals.handle]);
