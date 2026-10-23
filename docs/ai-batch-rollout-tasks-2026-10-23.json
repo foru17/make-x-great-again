@@ -19,7 +19,8 @@
   },
   {
     "task": "verify",
-    "passes": false,
-    "verification": "HTTP health/admin, actual deployment/settings, bounded real-traffic model_usage SELECT; rollback on systemic parse or runtime failure"
+    "passes": true,
+    "verification": "HTTP health/admin, actual deployment/settings, bounded real-traffic model_usage SELECT; rollback on systemic parse or runtime failure",
+    "evidence": "health/usage/stats HTTP200; flags and version verified; observation-3 D1 rows_written0; 35s tail103ok/0exceptions; once-only read-only followup ai ACTIVE for12:36SGT"
   }
 ]

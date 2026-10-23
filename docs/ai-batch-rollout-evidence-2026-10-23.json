@@ -1,0 +1,248 @@
+{
+  "release": {
+    "version": "4d114235-8752-447a-946d-046159866a1d",
+    "deployed_at_utc": "2026-10-23T04:05:18.789000+00:00",
+    "source_commit": "7213058",
+    "rollback_version": "be14d2ae-1ecc-414e-a0ce-3aa3c36d7270",
+    "flags": {
+      "AI_BATCH_ENABLED": "1",
+      "AI_COORDINATOR_ENABLED": "1",
+      "AI_USAGE_ENABLED": "1",
+      "AI_AUTO_PUBLISH_ENABLED": "0",
+      "AGENT_AUTO_BLACKLIST_ENABLED": "1"
+    },
+    "production_branch": "codex/ai-batch-hardening-2026-10-23",
+    "budget_alert": "existing user confirmation retained",
+    "status": "batch_enabled_initial_live_acceptance_passed",
+    "followup_utc": "2026-10-23T04:36:00Z",
+    "followup_singapore": "2026-10-23 12:36",
+    "followup_automation_id": "ai"
+  },
+  "http": {
+    "health": "200",
+    "usage": "200",
+    "stats": "200"
+  },
+  "observed_window_seconds": 182,
+  "groups": [
+    {
+      "w": "after",
+      "entrypoint": "classify",
+      "attempt": 1,
+      "state": "response",
+      "http_status": 200,
+      "parse_status": "valid",
+      "usage_status": "reported",
+      "requests": 10,
+      "accounts": 10,
+      "multi_account_requests": 0,
+      "max_accounts": 1,
+      "input_tokens": 22579,
+      "output_tokens": 1115,
+      "total_tokens": 23694,
+      "reasoning_tokens": 0,
+      "cached_input_tokens": 20480,
+      "missing_total": 0,
+      "avg_ms": 3173.2,
+      "max_ms": 5233
+    },
+    {
+      "w": "after",
+      "entrypoint": "classify_batch",
+      "attempt": 1,
+      "state": "response",
+      "http_status": 200,
+      "parse_status": "valid",
+      "usage_status": "reported",
+      "requests": 29,
+      "accounts": 56,
+      "multi_account_requests": 13,
+      "max_accounts": 5,
+      "input_tokens": 73832,
+      "output_tokens": 5793,
+      "total_tokens": 79625,
+      "reasoning_tokens": 0,
+      "cached_input_tokens": 59392,
+      "missing_total": 0,
+      "avg_ms": 3298.3793103448274,
+      "max_ms": 5933
+    },
+    {
+      "w": "after",
+      "entrypoint": "classify_batch",
+      "attempt": 1,
+      "state": "started",
+      "http_status": null,
+      "parse_status": null,
+      "usage_status": "missing",
+      "requests": 2,
+      "accounts": 3,
+      "multi_account_requests": 1,
+      "max_accounts": 2,
+      "input_tokens": null,
+      "output_tokens": null,
+      "total_tokens": null,
+      "reasoning_tokens": null,
+      "cached_input_tokens": null,
+      "missing_total": 2,
+      "avg_ms": null,
+      "max_ms": null
+    },
+    {
+      "w": "before_10m",
+      "entrypoint": "classify",
+      "attempt": 1,
+      "state": "http_error",
+      "http_status": 522,
+      "parse_status": null,
+      "usage_status": "missing",
+      "requests": 45,
+      "accounts": 45,
+      "multi_account_requests": 0,
+      "max_accounts": 1,
+      "input_tokens": null,
+      "output_tokens": null,
+      "total_tokens": null,
+      "reasoning_tokens": null,
+      "cached_input_tokens": null,
+      "missing_total": 45,
+      "avg_ms": 1178.6,
+      "max_ms": 1387
+    },
+    {
+      "w": "before_10m",
+      "entrypoint": "classify",
+      "attempt": 1,
+      "state": "http_error",
+      "http_status": 524,
+      "parse_status": null,
+      "usage_status": "missing",
+      "requests": 25,
+      "accounts": 25,
+      "multi_account_requests": 0,
+      "max_accounts": 1,
+      "input_tokens": null,
+      "output_tokens": null,
+      "total_tokens": null,
+      "reasoning_tokens": null,
+      "cached_input_tokens": null,
+      "missing_total": 25,
+      "avg_ms": 31162.4,
+      "max_ms": 32146
+    },
+    {
+      "w": "before_10m",
+      "entrypoint": "classify",
+      "attempt": 1,
+      "state": "http_error",
+      "http_status": 525,
+      "parse_status": null,
+      "usage_status": "missing",
+      "requests": 18,
+      "accounts": 18,
+      "multi_account_requests": 0,
+      "max_accounts": 1,
+      "input_tokens": null,
+      "output_tokens": null,
+      "total_tokens": null,
+      "reasoning_tokens": null,
+      "cached_input_tokens": null,
+      "missing_total": 18,
+      "avg_ms": 2583.8888888888887,
+      "max_ms": 3353
+    },
+    {
+      "w": "before_10m",
+      "entrypoint": "classify",
+      "attempt": 1,
+      "state": "response",
+      "http_status": 200,
+      "parse_status": "valid",
+      "usage_status": "reported",
+      "requests": 155,
+      "accounts": 155,
+      "multi_account_requests": 0,
+      "max_accounts": 1,
+      "input_tokens": 350136,
+      "output_tokens": 16100,
+      "total_tokens": 366236,
+      "reasoning_tokens": 0,
+      "cached_input_tokens": 313600,
+      "missing_total": 0,
+      "avg_ms": 6378.341935483871,
+      "max_ms": 20961
+    }
+  ],
+  "read_only_d1_rows_written": 0,
+  "bounded_tail": {
+    "outcomes": {
+      "ok": 103
+    },
+    "http_status": {
+      "204": 23,
+      "200": 75,
+      "None": 5
+    },
+    "exceptions": 0,
+    "event_names": {
+      "agent_auto_blacklist.completed": 2
+    },
+    "bounded_seconds": 35,
+    "note": "tail sample only, not complete request count"
+  },
+  "local_real_probe": {
+    "at": "2026-10-23T04:01:40.227Z",
+    "synthetic_accounts": true,
+    "production_writes": 0,
+    "provider_call_cap": 6,
+    "provider_calls": 1,
+    "attempts": [
+      {
+        "call": 1,
+        "status": 404,
+        "latency_ms": 1782,
+        "usage": {
+          "input": null,
+          "output": null,
+          "total": null,
+          "reasoning": null,
+          "cached": null,
+          "status": "missing"
+        }
+      }
+    ],
+    "batches": [
+      {
+        "size": 2,
+        "valid": 0,
+        "errors": [
+          "model_http_error",
+          "model_http_error"
+        ]
+      }
+    ],
+    "passed": false
+  },
+  "local_model_matches_production": false,
+  "actual_acceptance_source": "production real traffic; local config probe excluded",
+  "worker_tests": {
+    "passed": 230,
+    "failed": 0
+  },
+  "root_tests_previous_unchanged_code": {
+    "passed": 23,
+    "failed": 0
+  },
+  "generation": "wrangler types exited0; Worker typecheck exited0",
+  "artifact_build_and_dryrun": "exited0; existing generated CSS restored; deployment reported no updated assets",
+  "production_flags": {
+    "AGENT_AUTO_BLACKLIST_ENABLED": "1",
+    "AI_AUTO_PUBLISH_ENABLED": "0",
+    "AI_BATCH_ENABLED": "1",
+    "AI_COORDINATOR_ENABLED": "1",
+    "AI_USAGE_ENABLED": "1"
+  },
+  "production_10_account_full_batch": "not yet observed; max5 in live sample, full10 locally verified",
+  "fee_savings_percentage": "not established",
+  "followup_status": "ACTIVE"
+}
