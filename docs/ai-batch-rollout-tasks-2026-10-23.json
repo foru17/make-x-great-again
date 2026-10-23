@@ -13,8 +13,9 @@
   },
   {
     "task": "provider_acceptance",
-    "passes": false,
-    "verification": "Local probe returned404 and model differs from production, not acceptance. Use production real-traffic multi-account parse/usage after bounded rollout; roll batch back on invalid parsing or runtime failure."
+    "passes": true,
+    "verification": "Local probe returned404 and model differs from production, not acceptance. Use production real-traffic multi-account parse/usage after bounded rollout; roll batch back on invalid parsing or runtime failure.",
+    "evidence": "Production real traffic, first182s: 29 completed batch requests /56 account attempts; 13 multi-account requests, max5 accounts, all valid; 10-account maximum verified locally, not yet live. observation-3.json"
   },
   {
     "task": "verify",
