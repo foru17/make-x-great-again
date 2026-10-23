@@ -26,9 +26,9 @@ AI_AUTO_PUBLISH_ENABLED = "0"
 AGENT_AUTO_BLACKLIST_ENABLED = "1"
 AI_COORDINATOR_ENABLED = "1"
 AI_USAGE_ENABLED = "1"
-# Live provider errors remain under investigation; retain deduplication and
-# metering while the batch transport is held behind its independent gate.
-AI_BATCH_ENABLED = "0"
+# Shared 10-account / 2-second batching with persistent account cooldown
+# and provider-wide circuit protection. Independent rollback gate.
+AI_BATCH_ENABLED = "1"
 
 # Account-sharded coordination; reuse the existing Worker and D1/R2 resources.
 [[durable_objects.bindings]]

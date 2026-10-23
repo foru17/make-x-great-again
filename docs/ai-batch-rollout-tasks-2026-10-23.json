@@ -6,14 +6,14 @@
     "evidence": "Cloudflare deployments/settings HTTP success; version be14d2ae-1ecc-414e-a0ce-3aa3c36d7270 at 100%; rollback snapshot .verification/ai-batch-rollout-2026-10-23/before-*.json; existing user-confirmed budget alert"
   },
   {
-    "task": "provider_acceptance",
-    "passes": false,
-    "verification": "real provider: 2/5/10 synthetic accounts, <=6 physical calls, each <=4096 output tokens; no database writes"
-  },
-  {
     "task": "release",
     "passes": false,
     "verification": "build and dry run; commit/push feature branch; enable batch and deploy existing Worker"
+  },
+  {
+    "task": "provider_acceptance",
+    "passes": false,
+    "verification": "Local probe returned404 and model differs from production, not acceptance. Use production real-traffic multi-account parse/usage after bounded rollout; roll batch back on invalid parsing or runtime failure."
   },
   {
     "task": "verify",
