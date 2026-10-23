@@ -10,7 +10,8 @@
     "id": 2,
     "task": "Persistent account failure cooldown",
     "verification": "unit and workerd restart tests: changed input cannot bypass cooldown",
-    "passes": false
+    "passes": true,
+    "evidence": "225 tests, typecheck PASS; workerd changed-evidence/restart cooldown PASS: /tmp/sentinel-hardening-runtime2.log"
   },
   {
     "id": 3,

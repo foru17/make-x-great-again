@@ -21,6 +21,9 @@ const provider = createServer(async (req, res) => {
     const singleton = !input.messages[1].content.startsWith('{"items":');
     const items = singleton ? [{ id: "single", evidence: input.messages[1].content }] : JSON.parse(input.messages[1].content).items;
     requests.push({ accounts: items.length, at: Date.now() });
+    if (items.some(item => item.evidence.includes("@fx_http_failure"))) {
+      res.writeHead(524, { "Content-Type": "application/json" }); res.end('{"error":"fixture upstream failure"}'); return;
+    }
     if (items.some(item => item.evidence.includes("@fx_failure"))) { req.socket.destroy(); return; }
     // Deliberately reverse output ordering: IDs must determine association.
     const results = [...items].reverse().map(item => ({ id: item.id, verdict: {
@@ -50,10 +53,10 @@ async function start(overrides = {}) {
     },
   }), resourcePersistencePath: join(temp, "storage"), isolatedResourcePersistencePath: join(temp, "isolated-storage") });
 }
-async function classify(handle) {
+async function classify(handle, extra = {}) {
   return mf.dispatchFetch("http://local.invalid/v1/classify", { method: "POST",
     headers: { "content-type": "application/json", "cf-connecting-ip": "127.0.0.1" },
-    body: JSON.stringify({ handle, recentTweets: [] }), signal: AbortSignal.timeout(15_000) });
+    body: JSON.stringify({ handle, recentTweets: [], ...extra }), signal: AbortSignal.timeout(15_000) });
 }
 try {
   await build({ entryPoints: ["src/worker.ts"], outfile: join(temp, "worker.mjs"), bundle: true,
@@ -98,13 +101,23 @@ try {
   const stats = await admin.json();
   assert.equal(stats.list.reduce((n, r) => n + r.attempts, 0), 2);
   assert.equal(stats.list.reduce((n, r) => n + r.total_tokens, 0), 240);
+  const httpFailure = await classify("fx_http_failure");
+  assert.equal(httpFailure.status, 503);
+  assert.equal((await httpFailure.json()).error, "model_http_error");
+  const afterHttpFailure = requests.length;
+  const changedEvidence = await classify("fx_http_failure", { triggeringComment: "changed context" });
+  assert.equal(changedEvidence.status, 503);
+  assert.equal(requests.length, afterHttpFailure, "changed evidence cannot bypass account cooldown");
   const failed = await classify("fx_failure");
   assert.equal(failed.status, 503);
   assert.equal((await failed.json()).error, "model_outcome_unknown");
   const beforeRestart = requests.length;
   await mf.dispose();
   mf = await start();
-  const repeated = await classify("fx_failure");
+  const repeatedHttp = await classify("fx_http_failure", { triggeringComment: "yet another context" });
+  assert.equal(repeatedHttp.status, 503);
+  assert.equal(requests.length, beforeRestart, "HTTP failure cooldown persists in SQLite after restart");
+  const repeated = await classify("fx_failure", { triggeringComment: "new context after ambiguous submission" });
   assert.equal(repeated.status, 503);
   assert.equal(requests.length, beforeRestart, "durable unknown outcome survives runtime restart without re-send");
   const db2 = (await mf.getBindings()).DB;
@@ -122,7 +135,7 @@ try {
   assert.equal(requests.length, beforeRestart, "quota remains authoritative after batching");
   console.log(JSON.stringify({ result: "PASS", runtime: "workerd", concurrentViewers: 20,
     uniqueAccounts: 11, successfulProviderCalls: 2, mockTotalTokens: 240, tailWaitMs, fullBatchWaitMs,
-    unknownOutcomeSurvivesRestart: true, missingLedgerStopsSubmission: true, quotaReturns429: true,
+    accountCooldownSurvivesRestart: true, changedEvidenceCannotBypassCooldown: true, unknownOutcomeSurvivesRestart: true, missingLedgerStopsSubmission: true, quotaReturns429: true,
     realProviderCalls: 0, cloudMutations: 0 }));
 } finally {
   if (mf) await mf.dispose();
