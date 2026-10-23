@@ -1,0 +1,82 @@
+{
+  "verdict": "ready with explicit constraints for local implementation; production batch acceptance pending",
+  "branch": "codex/ai-batch-hardening-2026-10-23",
+  "source_commit": "b7f8ac07d7d0b14ad15c97558c19d1174e379e3c",
+  "worker_tests": {
+    "passed": 230,
+    "failed": 0
+  },
+  "root_tests": {
+    "passed": 23,
+    "failed": 0
+  },
+  "typecheck": "Worker and root exit 0",
+  "binding_types_check": "reported up to date; CLI did not exit after 60s with metrics disabled, terminated; not a clean exit pass",
+  "runtime": {
+    "result": "PASS",
+    "runtime": "workerd",
+    "concurrentViewers": 20,
+    "uniqueAccounts": 11,
+    "accountShardsInFullBatch": 4,
+    "successfulProviderCalls": 2,
+    "mockTotalTokens": 240,
+    "tailWaitMs": 2037,
+    "fullBatchWaitMs": 24,
+    "circuitSurvivesRestart": true,
+    "circuitStopsSubmissions": true,
+    "accountCooldownSurvivesRestart": true,
+    "changedEvidenceCannotBypassCooldown": true,
+    "unknownOutcomeSurvivesRestart": true,
+    "missingLedgerStopsSubmission": true,
+    "quotaReturns429": true,
+    "realProviderCalls": 0,
+    "cloudMutations": 0
+  },
+  "smoke": {
+    "passed": true,
+    "runtime": "workerd",
+    "checks": [
+      [
+        "GET",
+        "/v1/health",
+        200
+      ],
+      [
+        "GET",
+        "/",
+        200
+      ],
+      [
+        "GET",
+        "/admin",
+        200
+      ],
+      [
+        "GET",
+        "/v1/admin/stats",
+        403
+      ],
+      [
+        "GET",
+        "/v1/agent/queue",
+        403
+      ],
+      [
+        "POST",
+        "/v1/classify",
+        401
+      ]
+    ]
+  },
+  "production_mutations": 0,
+  "production_batch_flag_changed": false,
+  "limitations": [
+    "No live provider batch compatibility acceptance or savings measured",
+    "Client HTTP request reuse unchanged",
+    "Account cooldown currently gates classify; other Worker model entrypoints share provider circuit, not the per-account gate",
+    "Existing external agent runner is outside Worker provider circuit",
+    "Unknown account outcomes require manual reconciliation, no automatic release",
+    "Central batch/provider lane capacity not production load-tested"
+  ],
+  "evidence_directory": "/Users/luolei/DEV/x-spam-sentinel/.verification/ai-batch-hardening-2026-10-23"
+}

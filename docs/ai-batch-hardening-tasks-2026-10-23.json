@@ -31,6 +31,7 @@
     "id": 5,
     "task": "Full local regression and evidence",
     "verification": "Worker tests, typecheck, workerd HTTP/SQLite pipeline; no production calls",
-    "passes": false
+    "passes": true,
+    "evidence": "253 tests passed, 0 failed; Worker/root typechecks exit 0; workerd pipeline + 6-route smoke exit 0. See ai-batch-hardening-evidence-2026-10-23.json. Optional binding CLI prints up-to-date but hangs, recorded separately."
   }
 ]
