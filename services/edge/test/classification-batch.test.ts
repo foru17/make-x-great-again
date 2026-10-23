@@ -3,7 +3,7 @@ import test from "node:test";
 import { ClassificationBatch } from "../src/classification-batch";
 import { classifyBatch } from "../src/index";
 
-test("10th unique item flushes immediately; tail deadline is 2s from first item", async () => {
+test("10th unique item flushes immediately; tail deadline is 25s from first item", async () => {
   let now = 0;
   const timers = new Map<number, { due: number; callback: () => void }>();
   let next = 0;
@@ -17,10 +17,10 @@ test("10th unique item flushes immediately; tail deadline is 2s from first item"
   assert.equal(timers.size, 0);
   await Promise.all(first);
   const tail = [batch.add(10)];
-  now = 1999;
+  now = 24_999;
   tail.push(batch.add(11));
-  assert.equal([...timers.values()][0].due, 2000, "later arrivals cannot slide the deadline");
-  now = 2000;
+  assert.equal([...timers.values()][0].due, 25_000, "later arrivals cannot slide the deadline");
+  now = 25_000;
   [...timers.values()][0].callback();
   assert.deepEqual(await Promise.all(tail), [{ value: 10 }, { value: 11 }]);
   assert.deepEqual(batches.map(x => x.length), [10, 2]);

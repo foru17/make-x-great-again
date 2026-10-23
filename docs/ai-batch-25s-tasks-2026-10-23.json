@@ -1,0 +1,18 @@
+[
+  {
+    "task": "timing_change",
+    "passes": true,
+    "verification": "virtual clock and real workerd: 25s fixed deadline, immediate10, one provider request per batch",
+    "evidence": "230 tests /0fail; typecheck exit0; workerd tail25043ms, full10 batch22ms and1provider call; cooldown/circuit/restart tests PASS. .verification/ai-batch-25s-2026-10-23/runtime-full.log"
+  },
+  {
+    "task": "deploy",
+    "passes": false,
+    "verification": "production version/settings snapshot; build/dry-run; feature branch push; deploy existing Worker"
+  },
+  {
+    "task": "verify",
+    "passes": false,
+    "verification": "health/admin and version/flags; bounded read-only real batch distribution"
+  }
+]

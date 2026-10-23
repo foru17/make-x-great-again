@@ -1,7 +1,7 @@
 import type { FlightResult } from "./classification-flight";
 
 export const CLASSIFY_BATCH_SIZE = 10;
-export const CLASSIFY_BATCH_WAIT_MS = 2000;
+export const CLASSIFY_BATCH_WAIT_MS = 25_000;
 interface BatchClock {
   set(callback: () => void, ms: number): unknown;
   clear(timer: unknown): void;

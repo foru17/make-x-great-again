@@ -12,6 +12,7 @@ import { Miniflare, Log, LogLevel, convertV4MiniflareOptions } from "miniflare";
 const temp = await mkdtemp(join(tmpdir(), "mxga-ai-local-"));
 const requests = [];
 let mf;
+let batchEnabled = "1";
 const provider = createServer(async (req, res) => {
   try {
     assert.ok(requests.length < 12, "hard mock-provider request cap");
@@ -47,7 +48,7 @@ async function start(overrides = {}) {
     bindings: {
       REQUIRE_AUTH: "0", REPORT_SALT: "fixture", ADMIN_TOKEN: "fixture",
       AI_AUTO_PUBLISH_ENABLED: "0", AGENT_AUTO_BLACKLIST_ENABLED: "0",
-      AI_COORDINATOR_ENABLED: "1", AI_USAGE_ENABLED: "1", AI_BATCH_ENABLED: "1",
+      AI_COORDINATOR_ENABLED: "1", AI_USAGE_ENABLED: "1", AI_BATCH_ENABLED: batchEnabled,
       LLM_API_BASE: `http://127.0.0.1:${provider.address().port}`, LLM_API_KEY: "fixture", LLM_API_MODEL: "fixture",
       ...overrides,
     },
@@ -56,7 +57,7 @@ async function start(overrides = {}) {
 async function classify(handle, extra = {}) {
   return mf.dispatchFetch("http://local.invalid/v1/classify", { method: "POST",
     headers: { "content-type": "application/json", "cf-connecting-ip": "127.0.0.1" },
-    body: JSON.stringify({ handle, recentTweets: [], ...extra }), signal: AbortSignal.timeout(15_000) });
+    body: JSON.stringify({ handle, recentTweets: [], ...extra }), signal: AbortSignal.timeout(90_000) });
 }
 try {
   await build({ entryPoints: ["src/worker.ts"], outfile: join(temp, "worker.mjs"), bundle: true,
@@ -75,7 +76,7 @@ try {
   assert.equal(requests.length, 1, "cross-request single flight in actual DO runtime");
   assert.equal(requests[0].accounts, 1);
   const tailWaitMs = requests[0].at - t0;
-  assert.ok(tailWaitMs >= 1800 && tailWaitMs < 5000, `2s tail dispatch (runtime tolerance): ${tailWaitMs}`);
+  assert.ok(tailWaitMs >= 24_500 && tailWaitMs < 30_000, `25s tail dispatch (runtime tolerance): ${tailWaitMs}`);
 
   const handles = Array.from({ length: 10 }, (_, i) => `fx_batch_${i}`);
   const shards = new Set(handles.map(handle => parseInt(createHash("sha256").update(JSON.stringify([handle])).digest("hex").slice(0, 2), 16) % 4));
@@ -96,6 +97,11 @@ try {
   const stats = await admin.json();
   assert.equal(stats.list.reduce((n, r) => n + r.attempts, 0), 2);
   assert.equal(stats.list.reduce((n, r) => n + r.total_tokens, 0), 240);
+  // Timing and cross-shard batching were exercised above. Run the separate
+  // admission/circuit failure scenarios without another 25s tail per call.
+  batchEnabled = "0";
+  await mf.dispose();
+  mf = await start();
   const httpFailure = await classify("fx_http_failure");
   assert.equal(httpFailure.status, 503);
   assert.equal((await httpFailure.json()).error, "model_http_error");
