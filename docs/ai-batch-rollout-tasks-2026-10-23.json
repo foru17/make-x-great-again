@@ -1,0 +1,23 @@
+[
+  {
+    "task": "preflight",
+    "passes": true,
+    "verification": "current production version/settings and rollback snapshot; confirmed existing budget alert",
+    "evidence": "Cloudflare deployments/settings HTTP success; version be14d2ae-1ecc-414e-a0ce-3aa3c36d7270 at 100%; rollback snapshot .verification/ai-batch-rollout-2026-10-23/before-*.json; existing user-confirmed budget alert"
+  },
+  {
+    "task": "provider_acceptance",
+    "passes": false,
+    "verification": "real provider: 2/5/10 synthetic accounts, <=6 physical calls, each <=4096 output tokens; no database writes"
+  },
+  {
+    "task": "release",
+    "passes": false,
+    "verification": "build and dry run; commit/push feature branch; enable batch and deploy existing Worker"
+  },
+  {
+    "task": "verify",
+    "passes": false,
+    "verification": "HTTP health/admin, actual deployment/settings, bounded real-traffic model_usage SELECT; rollback on systemic parse or runtime failure"
+  }
+]
