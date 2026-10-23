@@ -13,7 +13,8 @@
   },
   {
     "task": "verify",
-    "passes": false,
-    "verification": "health/admin and version/flags; bounded read-only real batch distribution"
+    "passes": true,
+    "verification": "health/admin and version/flags; bounded read-only real batch distribution",
+    "evidence": "health/usage/stats200; deployed constant25e3 viaHTTP200; version100%; observation4 real response max10/valid; four readonly SELECT0writes; followup ai ACTIVE14:32"
   }
 ]
