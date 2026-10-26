@@ -2801,6 +2801,55 @@
           }
         ]
       }
+    },
+    {
+      "source": "PR #472 (zuo-106-review-appeal-471)",
+      "document": {
+        "run_at": "2026-10-26T22:38:00+08:00",
+        "scope": "open appeal issue #471 at run start (1 single-account issue; all other open issues have needs-maintainer or are non-appeals)",
+        "source": {
+          "github_repo": "https://github.com/foru17/make-x-great-again",
+          "production_api": "https://x.zuoluo.tv",
+          "governance": "GOVERNANCE.md"
+        },
+        "verification": {
+          "x_profile": "The current public X profile resolves @EmiliaQAQ1231 to UID 1932604167845261314, matching the submitted UID. Display name is 'Jun jie Tang', registered June 2025, ~27.2k followers, 59 following. Active domestic esports (CS) professional player. Visible posts are regarding matches/tournaments and clarifying impersonations. No repeatable commercial solicitation or porn-advertising-bot evidence was found.",
+          "pre_decision": "Before the write, the account was in status 'auto_pending_review' with reason ['exact duplicate of thread topic as a post', 'very low post count for claimed follower count', 'suspicious mismatch between followers and activity'] and evidence '这样的队伍终结了我们最后一场比赛 让我们失去了继续竞争major的权利'. /v1/check returned hits={}; admin blacklist was empty; public whitelist did not contain it.",
+          "post_decision": "The authenticated POST /v1/admin/whitelist succeeded with ok=true and status=whitelisted. Public /v1/whitelist confirms UID 1932604167845261314; /v1/check returns hits={}; admin blacklist and pending queue are empty. The audit log contains id 824804 with action whitelist_add.",
+          "artifact_version": "vb014f23ec3cc5768-197285",
+          "artifact_generated_at": 1793022014993,
+          "artifact_count": 197285,
+          "artifact_pending": 629,
+          "artifact_check": "Verified absent in lite-vb014f23ec3cc5768-197285.json and meta-vb014f23ec3cc5768-197285.json; GitHub mirror sync via POST /v1/admin/sync-mirror succeeded (whitelist, blacklist, lite all committed).",
+          "rowid_note": "rowid 1690154 was recovered from authenticated /v1/admin/whitelist?limit=1&q=EmiliaQAQ1231 nextBefore cursor [1793025268788,1793025268788,1690154].",
+          "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/471#issuecomment-6418761340"
+        },
+        "records": [
+          {
+            "issue": 471,
+            "handle": "EmiliaQAQ1231",
+            "decision": "whitelisted",
+            "uid": "1932604167845261314",
+            "rowid": 1690154,
+            "audit_id": 824804,
+            "audit_action": "whitelist_add",
+            "github_comment_id": 6418761340,
+            "github_comment_url": "https://github.com/foru17/make-x-great-again/issues/471#issuecomment-6418761340",
+            "github_state": "closed",
+            "result": "completed",
+            "evidence": "Public X profile matches submitted UID 1932604167845261314: domestic esports (CS) professional player Jun jie Tang, personal daily content and tournament status. No commercial spam or porn bot patterns.",
+            "sources": [
+              "https://x.com/EmiliaQAQ1231"
+            ],
+            "check_hit": false,
+            "whitelist_present": true,
+            "blacklist_present": false,
+            "queue_present": false,
+            "agent_present": false,
+            "artifact_present": false
+          }
+        ]
+      }
     }
   ]
 }
