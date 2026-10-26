@@ -1,8 +1,64 @@
 {
   "schema": 1,
-  "generatedAt": 1793025454934,
+  "generatedAt": 1793037657617,
   "count": 50000,
   "list": [
+    {
+      "handle": "nacreth",
+      "x_user_id": "133992279",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "比​我⁠⁠好​‌看‍的‍‍没​⁠‍我​‌‍⁠‍骚‍‌‍‍‍‍‍‌‍‌⁠比​​我⁠骚⁠​​的​‍‍没‍⁠⁠我‌‍好⁠⁠​看",
+      "reporters": 0,
+      "published_at": 1793028823999,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "andytayloriho0",
+      "x_user_id": "2070882599224918016",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "⁠⁠‍比‍⁠⁠⁠‌​我‍‌​好‍​‌​‌​看⁠​的‍‌⁠没‍⁠我⁠​​骚⁠⁠⁠⁠‍‍⁠‍‌‍‍‌‍​‍⁠比‍‌‌我⁠​‌‌⁠骚‍​的‌‌没​‌⁠‌我​‌好‍​‌看‍‍",
+      "reporters": 0,
+      "published_at": 1793028819065,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "spritecan797",
+      "x_user_id": null,
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "‌应​​⁠​‍该​没⁠‍​‍人‍⁠‍‍比​‍⁠‌​我‌‍‌‍​玩​⁠‌‍的‍‍开‍​​了⁠‌‌‍‍吧⁠‍⁠‌‌⁠我‍‍⁠‌⁠福​​‍不‍‍黑​​不⁠‌‌‌信你‍‍看⁠",
+      "reporters": 0,
+      "published_at": 1793028818199,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "aaronpydcgo",
+      "x_user_id": "2114733863956074496",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"同城\" on display_name"
+      ],
+      "evidence_text": "应该没人比我玩的开了吧👹🫠我福不黑不信你看",
+      "reporters": 0,
+      "published_at": 1793028104878,
+      "published_tier": "auto"
+    },
     {
       "handle": "twiaslz",
       "x_user_id": "1910137141570740225",
@@ -733017,62 +733073,6 @@
       "evidence_text": "已入驻约p平台:👉https://t.co/jnjs9EYnL5只在平台上约推特绝大部分女主播都入驻的平台，安全可靠.下载直接打开不用注册.日常更新具体位置平台都有显示",
       "reporters": 1,
       "published_at": 1784879352029,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "ivonnetorrpk",
-      "x_user_id": "2070900498148794368",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"线下\" on display_name"
-      ],
-      "evidence_text": "已入驻约p平台:👉https://t.co/4p9zdn5GQT只在平台上约推特绝大部分女主播都入驻的平台，安全可靠.下载直接打开不用注册.日常更新具体位置平台都有显示",
-      "reporters": 0,
-      "published_at": 1784879352013,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "jennywerkmvq2",
-      "x_user_id": "2072414409767432192",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🏤城💜上🎀椚~下方👇👇可联系✈",
-      "reporters": 0,
-      "published_at": 1784879335068,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "maryleewizr5sb",
-      "x_user_id": "2072414613342142466",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐👩‍🙅城🌹上🏗️椚~下方👇👇可联系✈",
-      "reporters": 1,
-      "published_at": 1784879284160,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "neilcallen",
-      "x_user_id": "143524999",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "marketing",
-      "reasons": [
-        "matched keyword rule \"vpn\" on display_name"
-      ],
-      "evidence_text": "这是参与了哪一轮呀，好奇后续会有什么新动作",
-      "reporters": 0,
-      "published_at": 1784879182688,
       "published_tier": "auto"
     }
   ]
