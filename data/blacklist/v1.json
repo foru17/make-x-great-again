@@ -1,8 +1,50 @@
 {
   "schema": 1,
-  "generatedAt": 1793016022845,
+  "generatedAt": 1793025454934,
   "count": 50000,
   "list": [
+    {
+      "handle": "twiaslz",
+      "x_user_id": "1910137141570740225",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "小苹果",
+      "reporters": 0,
+      "published_at": 1793021535348,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "elenakluya",
+      "x_user_id": "2106026410993131520",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "‍比​‍⁠​我⁠​好⁠​看‍⁠‍‌的‌没‌⁠‌⁠我‍⁠⁠骚‌‍比我‍⁠骚​‌‌​的⁠⁠‌‍没​​‌⁠我⁠‌好‍​‌​‍‌看⁠",
+      "reporters": 0,
+      "published_at": 1793021380390,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "yuric_ori",
+      "x_user_id": "1521542833072660484",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "这下应该没人信A\\和gpt亏钱的鬼话了",
+      "reporters": 0,
+      "published_at": 1793017544578,
+      "published_tier": "auto"
+    },
     {
       "handle": "fay86034014",
       "x_user_id": "1423814916889223175",
@@ -733031,48 +733073,6 @@
       "evidence_text": "这是参与了哪一轮呀，好奇后续会有什么新动作",
       "reporters": 0,
       "published_at": 1784879182688,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "ethelgaardfwh",
-      "x_user_id": "2072414353643683840",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐👩‍❤️‍💋‍👩城❤️‍💟上😘椚~下方👇👇可联系✈",
-      "reporters": 3,
-      "published_at": 1784879109695,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "castroarchsnsr",
-      "x_user_id": "2067809867990208512",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐🏈城🤽上🦑椚~点击下方 👇可联系✈️",
-      "reporters": 2,
-      "published_at": 1784879094089,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "lavonnaedgehill",
-      "x_user_id": "2072414602936377344",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🍎城💜上😻椚~下方👇👇可联系✈",
-      "reporters": 3,
-      "published_at": 1784879088854,
       "published_tier": "auto"
     }
   ]
