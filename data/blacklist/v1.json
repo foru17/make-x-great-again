@@ -1,8 +1,288 @@
 {
   "schema": 1,
-  "generatedAt": 1793102426395,
+  "generatedAt": 1793124025797,
   "count": 50000,
   "list": [
+    {
+      "handle": "alisajjad177165",
+      "x_user_id": "1863510912122155008",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "比‍我‌​​好⁠‌看⁠⁠‌​的⁠⁠​‌没​‍​我骚⁠‌‌‍‌🦆‌‍‌😛‌⁠比​‌‌⁠我⁠​‍骚‍​​的‍没​我‌‍好​​‍看⁠",
+      "reporters": 0,
+      "published_at": 1793121797430,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "bilnazm0saricam",
+      "x_user_id": "197813056",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "应​⁠‍该没‌​​‍‌人‍‍​比​‌⁠我​​‌‌玩​⁠的​⁠开⁠​了‌‌⁠‌吧‍​‌⁠‍🌳‍‌⁠🌧️‌‍‍​我‍‍福‌‍⁠⁠⁠不​黑⁠​⁠不‌‍信​⁠​⁠你‌‌看⁠",
+      "reporters": 0,
+      "published_at": 1793121796803,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "danialshoukat8",
+      "x_user_id": "1323624816134508545",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "应⁠‍​‌该没⁠‌人⁠比‍‌​​‍我⁠​玩⁠​‍的​‌开‌了⁠​吧⁠‍🏖️⁠‌⁠‍‌‌🐻‍‍我​‍福‌⁠​不‍黑‍‌不​​⁠信‌⁠你‌​‌看‍",
+      "reporters": 0,
+      "published_at": 1793121796358,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "chrisavmjs",
+      "x_user_id": "2106087204757852160",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "‌‍‌应‍​‌‌该‌‌没⁠‍‌人‍⁠​‌比‍‍⁠我​​⁠​‌玩‌⁠的​‍⁠⁠开‌‌了⁠‍吧‌‌‍😘‍‌⁠⁠⁠⁠💅‌‌‌我⁠‍‍福‌⁠‍⁠不⁠‍黑‍⁠‌​不‌​‍​‌信⁠‌​​你⁠​‍⁠看‍",
+      "reporters": 0,
+      "published_at": 1793121795658,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "thedickpuncher",
+      "x_user_id": "1525794417805774849",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "比‍我‍​好​‌看​‌⁠的​‍‌‍⁠没​⁠⁠‌我​‍骚‍‍‍‍🖖⁠⁠⁠‌‌🤤‌‌比‍‍‍‌⁠⁠我⁠​‌‍骚‌​⁠⁠⁠‌的‌‍‌⁠没‌‌‍‍我‍‍​‍好‌​⁠‌看‍​‌",
+      "reporters": 0,
+      "published_at": 1793121766377,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "lilywhite88c",
+      "x_user_id": "2903354599",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "比​‍‌⁠我⁠‍‌‌好‌‍​看‍‌‌的‍​‍没‍⁠‌‍​我‍​‌‍骚‌‍‍🙊‍‍⁠‍😈⁠​‍比​‌⁠我‌​骚⁠‌的​‌‍⁠​没⁠​我​⁠‍‍好​‍⁠‍‍看‌",
+      "reporters": 0,
+      "published_at": 1793121762558,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "arek_lewicki",
+      "x_user_id": "825776216825352192",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "应⁠​该⁠‍​没‌‍人‌​​比⁠​‍我‍玩‍​的​‌开‍⁠⁠了‍‍吧⁠‍⁠‍⁠‍⁠‌‍‌⁠⁠​⁠我‍⁠福‌‌不​‍​黑⁠‍‌​不‍‍​信​⁠‍你⁠‍‌看",
+      "reporters": 0,
+      "published_at": 1793112135076,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "pakingvera16",
+      "x_user_id": "783152054",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "‌​应​‌‌⁠该‍⁠‌​没⁠​‌人‍‌比‌⁠​我​‍‌玩‍⁠‌的⁠‍⁠‍​开​⁠了​‍吧​⁠⁠⁠⁠⁠‌⁠‍‌‍我‌⁠‍福⁠‌‍⁠‍⁠不⁠​⁠黑‌​⁠⁠不⁠‌⁠信‌‍​‌你​‌看‌‍",
+      "reporters": 0,
+      "published_at": 1793112135053,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "collinp80715286",
+      "x_user_id": "1299200982534979585",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "应​‌该⁠⁠‌没人​⁠‌比‌⁠我‌‌‍⁠玩⁠⁠的​​开⁠‍了‍​吧​⁠‍‌⁠‌‌‌‍‍⁠我‌⁠​福‌不​​⁠黑‌不‌‌信​‌你​‌看⁠",
+      "reporters": 0,
+      "published_at": 1793112093672,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "thekidfrom_thel",
+      "x_user_id": "1898694184623902720",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "应‌‍‌该‌​​没⁠⁠‍人⁠⁠‌比‌​‍我‌⁠​玩​的‍​开‌‍了​⁠‍吧‍‌‌⁠‌⁠‌⁠⁠‍‌⁠‌我​‌‍福‌⁠不‍‍黑​不‍⁠⁠信‍‍⁠你​‍看⁠",
+      "reporters": 0,
+      "published_at": 1793112093447,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "rismonology",
+      "x_user_id": "2955805304",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "⁠⁠应‍‌‍⁠该⁠‍‍​没‌‌‍⁠⁠人‌‌比⁠​​​我⁠‌玩的​​‌⁠‍开⁠​了⁠‌​‍吧⁠‍​⁠‌‍‍‌‍‌‌​我‍‍福⁠⁠不‍‍⁠黑⁠‍‍‍⁠⁠不​信​⁠你​‌看‍",
+      "reporters": 0,
+      "published_at": 1793108320286,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "x8zfy",
+      "x_user_id": "1001075058",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "应‌‍该‍‍没​​人比‍我​‍‍玩​‌的​‍开‌了‌​‍‍吧⁠‌‍‍‍‌⁠‌‍⁠‌‌我‌​‍​福⁠‌‍‌不‍⁠黑‌⁠⁠⁠不​‌‌⁠​信‌‌⁠⁠你​​​看",
+      "reporters": 0,
+      "published_at": 1793107479321,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "dominijsc",
+      "x_user_id": "1617252800072654848",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "‌​比‍​‍我‍‌‌好⁠⁠​​‍看‌‌的​没‌⁠我⁠‍骚‌‌⁠‍‌‍⁠‍‍‍‌比‍‍⁠我‌⁠骚⁠的​​​没​⁠‌⁠我​⁠​好⁠‍看‍",
+      "reporters": 0,
+      "published_at": 1793107477759,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "luishimdt",
+      "x_user_id": "1046148647329693698",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "应⁠‌该没​​人‍​比‌​​​我​‍⁠‌玩​‍的‌‌开​‌​​了⁠‍‌吧‍‍‍⁠⁠⁠‍⁠⁠⁠⁠我​福⁠⁠‍⁠不‍​⁠‍黑​⁠不‍​信‌你看‌",
+      "reporters": 0,
+      "published_at": 1793107476636,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "noname111162229",
+      "x_user_id": "1770459788020944896",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "‌比⁠‍我⁠‌⁠​好‌看‌的‌没‌‍我⁠⁠‌⁠骚​​⁠‌‍⁠‌⁠‍比⁠‍我⁠骚‍‌‍的⁠​没‌⁠我⁠好‌‌看",
+      "reporters": 0,
+      "published_at": 1793107475180,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "mathias93531668",
+      "x_user_id": "1422363118890586119",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "⁠​‍比⁠‍我​⁠‍​‍好‍‍⁠​看‍⁠‍‌的‌​‍​没⁠​我‍​‌⁠​骚⁠‌⁠‌‍⁠⁠⁠‍⁠‍‌‌⁠​比‌‍⁠我‌​骚​‍​‌的‌​⁠‍‍没​我‍‍‌好​⁠看​‌",
+      "reporters": 0,
+      "published_at": 1793107473498,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "ayumuliawati2",
+      "x_user_id": "1178247573447925761",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "‍‌‌比⁠‍我⁠‌‌‍​好⁠看‍⁠​⁠的​⁠‌‌​没​我‍​​​骚​⁠‌⁠‌‍‍⁠‍‍‍‍‍‍​⁠比‌我‌‌‌‍骚‍‍‍‍‌的‍​‌没‍‌我‌​好⁠⁠‍⁠看‌",
+      "reporters": 0,
+      "published_at": 1793107472244,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "galaxybluewheel",
+      "x_user_id": "1244473704601378816",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "‌‌⁠比‌‌‍我​‍⁠⁠好⁠‍‍看‌⁠‌的​​‌‍​没​​​我‍⁠​​骚​‍‌⁠⁠‍‌‍‌⁠‍‌⁠比​我‌​骚的‍‌‌‍没‍‍⁠我⁠‍‌​好​⁠看‌​‍",
+      "reporters": 0,
+      "published_at": 1793107229834,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "tonibeto",
+      "x_user_id": "137085325",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "‌应​⁠该‍没​人‍‌比‍​我‍⁠玩⁠‍‍⁠的‌⁠开‍‍‌了‍吧‍‍⁠⁠‍‍⁠‌‌‌‌我⁠‍福‌不‌黑⁠⁠不信⁠‌​‌你‌‌看‍",
+      "reporters": 0,
+      "published_at": 1793107229398,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "taylorsbjrp",
+      "x_user_id": "2106888410711343105",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"同城\" on display_name"
+      ],
+      "evidence_text": "应该没人比我玩的开了吧我福不黑不信你看",
+      "reporters": 0,
+      "published_at": 1793106003338,
+      "published_tier": "auto"
+    },
     {
       "handle": "rabeehtp",
       "x_user_id": "2781927367",
@@ -732793,286 +733073,6 @@
       "evidence_text": "n\nx",
       "reporters": 0,
       "published_at": 1784892160168,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "daphinekovnv",
-      "x_user_id": "2070798370193747968",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"主页\" on display_name"
-      ],
-      "evidence_text": "已入驻约p平台:👉 https://t.co/Q6GcztnqD5只在平台上约推特绝大部分女主播都入驻的平台，安全可靠.下载直接打开不用注册.日常更新具体位置平台都有显示",
-      "reporters": 0,
-      "published_at": 1784892160152,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "isabelllykrpq9",
-      "x_user_id": "2070798460807151616",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"资源\" on display_name"
-      ],
-      "evidence_text": "已入驻约p平台:👉 https://t.co/eicbFCGG2J只在平台上约推特绝大部分女主播都入驻的平台，安全可靠.下载直接打开不用注册.日常更新具体位置平台都有显示",
-      "reporters": 0,
-      "published_at": 1784892152416,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "floyhurlburt",
-      "x_user_id": "2070866035440308224",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"免费约\" on display_name"
-      ],
-      "evidence_text": "s\nm",
-      "reporters": 0,
-      "published_at": 1784892152407,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "eduardodzinski",
-      "x_user_id": "2070865880062603264",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "k\nd",
-      "reporters": 0,
-      "published_at": 1784892152391,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "jolynshont4mm",
-      "x_user_id": "2070798582790356992",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"资源\" on display_name"
-      ],
-      "evidence_text": "已入驻约p平台:👉 https://t.co/vVwqsH5LFD只在平台上约推特绝大部分女主播都入驻的平台，安全可靠.下载直接打开不用注册.日常更新具体位置平台都有显示",
-      "reporters": 0,
-      "published_at": 1784892152265,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "armandogoujd",
-      "x_user_id": "2070865903869161472",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"处男\" on display_name"
-      ],
-      "evidence_text": "h\ng",
-      "reporters": 0,
-      "published_at": 1784892152198,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "arlenemundam",
-      "x_user_id": "2070865950069444608",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"主页\" on display_name"
-      ],
-      "evidence_text": "t\nr",
-      "reporters": 0,
-      "published_at": 1784892152196,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "wanhilyarda9",
-      "x_user_id": "2070798519406039040",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "已入驻约p平台:👉 https://t.co/cLbWq5dBcN只在平台上约推特绝大部分女主播都入驻的平台，安全可靠.下载直接打开不用注册.日常更新具体位置平台都有显示",
-      "reporters": 0,
-      "published_at": 1784892152195,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "celestinesxv8x",
-      "x_user_id": "2070798524472766464",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"线下约\" on any"
-      ],
-      "evidence_text": "已入驻约p平台:👉 https://t.co/9g4Kg9POpm只在平台上约推特绝大部分女主播都入驻的平台，安全可靠.下载直接打开不用注册.日常更新具体位置平台都有显示",
-      "reporters": 0,
-      "published_at": 1784892152192,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "elliotlazor",
-      "x_user_id": "2070865925322989569",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"破处\" on display_name"
-      ],
-      "evidence_text": "c\nj",
-      "reporters": 0,
-      "published_at": 1784892152115,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "rimchaplin",
-      "x_user_id": "2068469572500635648",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐🎐城🥌上🌮椚~点击下方 👇可联系✈️",
-      "reporters": 5,
-      "published_at": 1784892093496,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "ftoynbee74811",
-      "x_user_id": "2043995048803467264",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"资源\" on display_name"
-      ],
-      "evidence_text": "🏅首发全网线下匹配平台🥹一至五线本地免费约P🌍，海外城市同步开放✨真实中介，无 App 下载，仅做资源牵线🌈附近速配\n电报✈️选人群👉https://t.co/tBDr2XlCYh\n✈电报使用教程 @Alisha27k",
-      "reporters": 0,
-      "published_at": 1784892091940,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "woodshawhl3n",
-      "x_user_id": "2070033141293809664",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐🍐城😗上🍊椚~点击下方 👇可联系✈️",
-      "reporters": 1,
-      "published_at": 1784892091738,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "camachowright",
-      "x_user_id": "2068595244086808576",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "桐🕺城🤝上🤟椚~点击下方 👇可联系✈️",
-      "reporters": 0,
-      "published_at": 1784892089801,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "zinaosheyjn0z",
-      "x_user_id": "2070794199729885184",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"破处\" on display_name"
-      ],
-      "evidence_text": "已入驻约p平台:👉https://t.co/7sRKY2epDP只在平台上约推特绝大部分女主播都入驻的平台，安全可靠.下载直接打开不用注册.日常更新具体位置平台都有显示",
-      "reporters": 0,
-      "published_at": 1784892089286,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "hernandezhhu4p",
-      "x_user_id": "2065701875316604928",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐💋城🍉上💌椚~点击下方 👇可联系✈️",
-      "reporters": 2,
-      "published_at": 1784892089134,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "charlesfan67097",
-      "x_user_id": "2044456081842225152",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"进群\" on display_name"
-      ],
-      "evidence_text": "🏅国内首创线下约P匹配平台🍀一至五线城市本地免费资源🫶海外热门城市同步覆盖🙅‍♂️纯资源牵线，无需 APP\n电报✈️选人群👉https://t.co/xGMKu6NfvS\n✈电报使用教程 @Alisha27k",
-      "reporters": 0,
-      "published_at": 1784892082736,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "sebastiane41454",
-      "x_user_id": "2042770762092748800",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "🏅首创全网线下社交匹配平台💞本地免费约P，覆盖一至五线城市🌍🌴海外主要都市同步上线💟真实靠谱的约泡中介，无需安装 APP，只做资源牵线👌附近真人速配\n电报✈️选人群👉https://t.co/vRL6810adb\n✈电报使用教程 @Alisha27k",
-      "reporters": 0,
-      "published_at": 1784892082733,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "briannastavaqc",
-      "x_user_id": "2070192693184278528",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐🐴城👀上🤓椚~点击下方 👇可联系✈️",
-      "reporters": 2,
-      "published_at": 1784892082732,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "gilesbucktjwz",
-      "x_user_id": "2068627429657337856",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐👆城💛上🎮椚~点击下方 👇可联系✈️",
-      "reporters": 1,
-      "published_at": 1784892075228,
       "published_tier": "auto"
     }
   ]
