@@ -1,8 +1,106 @@
 {
   "schema": 1,
-  "generatedAt": 1793188823377,
+  "generatedAt": 1793232025749,
   "count": 50000,
   "list": [
+    {
+      "handle": "sebastiannwxvah",
+      "x_user_id": "2106478900058415104",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "⁠比‍‌​⁠⁠我⁠‍​好⁠‌看​​⁠的‍​‌‌没⁠⁠⁠⁠我‌骚⁠​‍‍‍‍‍😓‍⁠‍🤚‌⁠比‌我⁠​⁠​骚‍⁠‌​的‌⁠⁠‌没‌​⁠‌​我‌​好⁠‍‍‍看‌​⠀⠀⠀⠀⠀",
+      "reporters": 0,
+      "published_at": 1793201995601,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "sawyerthvpme",
+      "x_user_id": "2106306312107659264",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "‍比⁠​我‍‍好​‌‌看‌​‌的‍​​‍没⁠⁠⁠我‌​骚​‌‌‌🌿‍‍‌⁠⁠💔‌比​‌我‌​‌⁠骚‌‌​‌⁠⁠的‌​没⁠‍我‌‍‍‌好⁠‌⁠‌​看‌‍⠀⠀⠀⠀⠀",
+      "reporters": 0,
+      "published_at": 1793195442439,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "mackenziemsdjf",
+      "x_user_id": "2106190106361012224",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "‍⁠应⁠⁠‍该‍⁠没⁠人⁠​比‍‌我⁠​玩‍⁠的​‍⁠​开⁠‌了⁠​吧⁠‍⁠‍‌‍‌⁠‍‌‍我‌⁠​​福‌⁠不​‍‍‌黑‍‍不​‌信​⁠你‌看‍‍⁠",
+      "reporters": 0,
+      "published_at": 1793193476025,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "remingtonxjuaw",
+      "x_user_id": "2106190514634514433",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "‌‌应‍‌该‍⁠没​​​‌人​‌比⁠⁠⁠‌​我‍‌⁠玩‍的​‌开‌‍了‍‍​⁠‍吧​‍​‌⁠‌‌‍‍⁠‌‍‌‍我‌‌福‌‍不⁠‌黑⁠⁠不‌‍​​信​⁠你‌‍看‌‍⠀⠀⠀⠀⠀",
+      "reporters": 0,
+      "published_at": 1793193475167,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "henryqidsyk",
+      "x_user_id": "2106485921075892224",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "‌比‌我‍⁠‍好‍​‌看‌‍的⁠⁠没‌⁠​我​​骚⁠‌‌⁠⁠‌⁠⁠‍‌‍‌‍比⁠我⁠‌‌骚‍​​的‌没‌⁠我‍⁠好‍​看‌",
+      "reporters": 0,
+      "published_at": 1793193473421,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "piperskbqb",
+      "x_user_id": "2106433542204903425",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "‍比⁠​​我‍‍‌‍好⁠⁠​看‌⁠⁠的‌‌​没‍​⁠‌我​骚‌‌‌‌‍‍⁠‌‍比​​‍我⁠⁠⁠骚​​‌‌的‍‌‍没‌‌我‍​​⁠好​⁠‌看‍⁠",
+      "reporters": 0,
+      "published_at": 1793193239894,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "holdenhbihyt",
+      "x_user_id": "2106185898261876736",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "‌比‍‌我⁠‌​‍好‌‍⁠⁠看‍​‌‍的⁠‌‍没​‌‌‌我⁠⁠骚⁠‍⁠‍‌‍‌‍‌‍‍‍‌⁠⁠比⁠⁠‍我‌‍骚​​的‍⁠没​​我​​好‍​​看‍​⠀⠀⠀⠀⠀",
+      "reporters": 0,
+      "published_at": 1793193209578,
+      "published_tier": "auto"
+    },
     {
       "handle": "landonvoobn",
       "x_user_id": "2106253637764755457",
@@ -732939,104 +733037,6 @@
       "evidence_text": "这剧本 还是有点东西的",
       "reporters": 1,
       "published_at": 1784903519254,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "malonegrahddpt",
-      "x_user_id": "2066016145568890880",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐✋城🦁上🎧椚~点击下方 👇可联系✈️",
-      "reporters": 3,
-      "published_at": 1784903519228,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "mercadobelhw5d",
-      "x_user_id": "2069839870907068416",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐🎼城🍭上🤟椚~点击下方 👇可联系✈️",
-      "reporters": 4,
-      "published_at": 1784903479615,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "hyunchameryz",
-      "x_user_id": "2072422007602307072",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐☎️城🎴上🎸椚~下方👇👇可联系✈",
-      "reporters": 1,
-      "published_at": 1784903451703,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "mochizukicampos",
-      "x_user_id": "2067347730968801280",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐🍏城🥦上😌椚~点击下方 👇可联系✈️",
-      "reporters": 6,
-      "published_at": 1784903435003,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "brandendaber",
-      "x_user_id": "2070746715297378304",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "Sabrina\n\nSilver\n\n2026-07-24 21:46:48",
-      "reporters": 1,
-      "published_at": 1784903419722,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "bernicetomue",
-      "x_user_id": "2072421963046490112",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐♦️城🎈上💚椚~下方👇👇可联系✈",
-      "reporters": 3,
-      "published_at": 1784903366759,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "milliepacilio",
-      "x_user_id": "2071010065046294528",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "crypto",
-      "reasons": [
-        "matched keyword rule \"Visa领取\" on display_name"
-      ],
-      "evidence_text": "这破房隔音真烂 烦死",
-      "reporters": 0,
-      "published_at": 1784903281156,
       "published_tier": "auto"
     }
   ]
