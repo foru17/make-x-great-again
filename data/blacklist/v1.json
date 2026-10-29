@@ -1,8 +1,36 @@
 {
   "schema": 1,
-  "generatedAt": 1793275224765,
+  "generatedAt": 1793296823313,
   "count": 50000,
   "list": [
+    {
+      "handle": "ricardoapnq",
+      "x_user_id": "2094418284875542528",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "⁣⁠⁣比‍⁠⁤我⁠⁡⁢好‌⁠‌⁣看⁤⁡⁣的‍⁤‌⁤⁡没⁤我⁠⁢骚💃‍🗨️比‍⁢我⁤⁠‌骚⁢‌‍的⁤⁢⁠没⁢‍⁡‌我‍⁢‍好看⁠⁤⠀⠀⠀",
+      "reporters": 0,
+      "published_at": 1793293591504,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "buggyxzz",
+      "x_user_id": "2092267886450458625",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "‌⁡应⁢⁣⁢⁠该‍‍⁣‍没‌⁢⁡⁠人‌⁢比⁡⁠⁤‌我‌⁠玩‌⁡‍⁡的‌⁣开⁣了‍‌⁣吧🍋‍😵我⁠⁢‍福⁠⁢不‍⁣‍⁣黑‌⁣⁣⁤不⁢⁣信⁣‍你⁠‍⁡⁡⁠看‌⠀⠀⠀⠀",
+      "reporters": 0,
+      "published_at": 1793293152454,
+      "published_tier": "auto"
+    },
     {
       "handle": "colervvvi",
       "x_user_id": "2107532533436960768",
@@ -733009,34 +733037,6 @@
       "evidence_text": "桐😋城😄上🐳椚~点击下方 👇可联系✈️",
       "reporters": 0,
       "published_at": 1784914259204,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "mayaencallb3hc",
-      "x_user_id": "2070898013522833408",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"线下\" on display_name"
-      ],
-      "evidence_text": "已入住约p平台,入口:👉https://t.co/2AQXxe6dWp每晚准时涩播，寻欢必备！福利大放送！安全.私密 .线上👉远程指挥直播控制玩具，同城可线下！",
-      "reporters": 0,
-      "published_at": 1784914258871,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "armandinabwu",
-      "x_user_id": "2070897981629538304",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "resource",
-      "reasons": [
-        "matched keyword rule \"资源\" on display_name"
-      ],
-      "evidence_text": "已入住约p平台,入口:👉https://t.co/EukXFADJnp每晚准时涩播，寻欢必备！福利大放送！安全.私密 .线上👉远程指挥直播控制玩具，同城可线下！",
-      "reporters": 0,
-      "published_at": 1784914258727,
       "published_tier": "auto"
     }
   ]
