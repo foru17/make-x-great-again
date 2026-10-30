@@ -1,8 +1,64 @@
 {
   "schema": 1,
-  "generatedAt": 1793361623644,
+  "generatedAt": 1793383227671,
   "count": 50000,
   "list": [
+    {
+      "handle": "saob7c77393",
+      "x_user_id": "1876536922610499584",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "比‍​‍我‌​好‌​看‌的​‌‍没​‌我​‌‍​骚😭💐比‍我​骚‍​‍的‍​没‍‍我​‍​好‌‌‌看‍‌⠀",
+      "reporters": 0,
+      "published_at": 1793375500244,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "saob855965",
+      "x_user_id": "1876528882209247232",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "比‍​‍我‌​好‌​看‌的​‌‍没​‌我​‌‍​骚🌑😠比‍我​骚‍​‍的‍​没‍‍我​‍​好‌‌‌看‍‌⠀",
+      "reporters": 0,
+      "published_at": 1793375486030,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "vinidog127k",
+      "x_user_id": "1553372596632276992",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "‌⁤比‍⁢我‌⁢好‌⁡⁤看‍‌的⁠没⁠‍‍我‍⁢⁡‍骚‌‌‍‍⁠‍‌‌比⁢⁠⁠⁡我⁤⁣⁡骚⁡⁤的⁢‌⁡⁠没⁠⁠我⁠‍⁣⁠好‌⁤⁡看⁣⁡⠀⠀⠀⠀⠀",
+      "reporters": 0,
+      "published_at": 1793373718227,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "dustincaballer8",
+      "x_user_id": "1500025533026996224",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "⁣比⁤⁤‌我⁣‍⁣好‍⁣⁢⁣看‍的⁡‌⁤没⁤‍我骚⁠‌⁠‌⁠⁠‍‍‌⁠‍比‌⁢我⁠‌⁣⁤骚⁣⁡‌⁣的⁤⁠⁣没⁣‌⁣我⁡⁠‌⁡⁡好⁤⁠⁠⁡看⁤⁤⠀⠀⠀⠀⠀",
+      "reporters": 0,
+      "published_at": 1793373714491,
+      "published_tier": "auto"
+    },
     {
       "handle": "elfager83425799",
       "x_user_id": "1275880317694377985",
@@ -732984,62 +733040,6 @@
       "evidence_text": "这个标签化确实挺离谱的。",
       "reporters": 0,
       "published_at": 1784946697118,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "mechelleclph",
-      "x_user_id": "2070760717863555072",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"破处\" on display_name"
-      ],
-      "evidence_text": "Rosalind\n‍\nLola\n\n2026-07-25 10:26:51",
-      "reporters": 0,
-      "published_at": 1784946685966,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "vannazuchetxz5",
-      "x_user_id": "2070760769877106688",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "Friendly, \n\nRachel\n\n2026-07-25 10:23:40",
-      "reporters": 1,
-      "published_at": 1784946685954,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "earleantom9z",
-      "x_user_id": "2071021395371270144",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "crypto",
-      "reasons": [
-        "matched keyword rule \"热币\" on display_name"
-      ],
-      "evidence_text": "笑死 真就赛博乞丐啊",
-      "reporters": 0,
-      "published_at": 1784946679108,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "celianauroy",
-      "x_user_id": "1036377655287930880",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "marketing",
-      "reasons": [
-        "matched keyword rule \"vpn\" on display_name"
-      ],
-      "evidence_text": "是想私有化部署吗？先问清并发和预算吧",
-      "reporters": 0,
-      "published_at": 1784946670690,
       "published_tier": "auto"
     }
   ]
