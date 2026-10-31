@@ -1,8 +1,36 @@
 {
   "schema": 1,
-  "generatedAt": 1793448022101,
+  "generatedAt": 1793469623240,
   "count": 50000,
   "list": [
+    {
+      "handle": "musaumar013111",
+      "x_user_id": "1830972004540858368",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "⁤应⁠‍⁢该⁤⁤⁡没⁢‌⁢人⁣⁠⁤比‍⁡我⁠⁣玩的⁠⁤开⁤‌⁢了⁠‍⁤‌⁣吧⁠‌⁠‌⁠⁠‍‌‌‌⁠‍‌我⁤⁢⁣福⁤⁡⁤不⁣‌黑‌⁠⁠⁡⁤不‌⁡信⁢⁠⁢你⁤⁤⁡看⠀⠀⠀⠀⠀",
+      "reporters": 0,
+      "published_at": 1793457540983,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "saob7c18380",
+      "x_user_id": "1880818242803093504",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "比‍​‍我‌​好‌​看‌的​‌‍没​‌我​‌‍​骚‍比‍我​骚‍​‍的‍​没‍‍我​‍​好‌‌‌看‍‌⠀",
+      "reporters": 0,
+      "published_at": 1793456418767,
+      "published_tier": "auto"
+    },
     {
       "handle": "saob7c14735",
       "x_user_id": "1880675454417326080",
@@ -733012,34 +733040,6 @@
       "evidence_text": null,
       "reporters": 1,
       "published_at": 1784965796051,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "ervinscottflpq",
-      "x_user_id": "2068626354367868928",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "小号（私信受限制），要福利🈷私信聊天号@DoqanC\n我的电报✈️号https://t.co/C3Copee20p",
-      "reporters": 3,
-      "published_at": 1784965791889,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "hermamanec7o",
-      "x_user_id": "2068678470385930240",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "小号（私信受限制），要福利🈷私信聊天号@DoqanC\n我的电报✈️号https://t.co/9ef558Djy6",
-      "reporters": 0,
-      "published_at": 1784965790668,
       "published_tier": "auto"
     }
   ]
