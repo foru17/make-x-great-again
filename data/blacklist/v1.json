@@ -1,8 +1,64 @@
 {
   "schema": 1,
-  "generatedAt": 1793512822460,
+  "generatedAt": 1793534426377,
   "count": 50000,
   "list": [
+    {
+      "handle": "akwasiwarlord",
+      "x_user_id": "2070149827728490496",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "比‍‌⁣‌我‌⁣⁣好⁤⁠‍看⁢⁤的‌‌没⁤⁠我‍⁣⁠骚⁠‌⁠‍⁠⁠‍‌‌⁠比⁣⁠⁢我⁤⁠骚⁤⁤的⁢⁡没⁣⁠⁢‌我⁡‍好‌‌看⁣‍⠀⠀⠀",
+      "reporters": 0,
+      "published_at": 1793527031347,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "ravisince1998",
+      "x_user_id": "1534947275264258048",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "⁠应⁡⁢⁤该⁠⁢⁤没‍⁡⁣人⁡⁡⁢⁤比⁡⁤⁡⁡‌⁡我‌⁣⁣玩⁤‌⁢的⁣‌⁡⁡开‍⁢⁣了⁡⁡吧⁠⁠⁠⁠‍⁠‍‌‌我⁢‍‌福⁤不⁣黑⁤‍‍不‌信你⁢‍看‌‍⠀⠀⠀⠀",
+      "reporters": 0,
+      "published_at": 1793527028941,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "beatles19ksu",
+      "x_user_id": "258793310",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "⁡‌应⁣⁤⁡该⁡⁢没⁡⁣⁤人⁣‍‍‌比⁤‍⁢⁤⁣‌我⁠‍‍⁡玩⁢‌的⁠‍⁣⁤开‍⁠⁣⁢⁢了⁣‌⁢⁤吧⁠‍⁠⁠⁠⁠蝎‍‍‌‍我⁡福‍‌⁡‌⁣不⁣⁢⁡黑⁢⁢不‍⁢信⁡你⁢⁢看⁤⁢⠀⠀⠀",
+      "reporters": 0,
+      "published_at": 1793515242120,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "nas592976277649",
+      "x_user_id": "1698220736140156929",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "应‍⁠⁠⁣该‌⁤没‌⁣人⁠⁤⁡比⁡‌⁠我⁢‌玩⁢的‌‍⁢‌开⁠‌了⁢⁡⁢吧‍⁠‍‌‌‌‌‍‍我⁣⁢福⁤‌⁣‌‍不⁡⁢⁤黑⁤不⁣⁣⁡信⁡⁡‍⁠你看⠀⠀⠀",
+      "reporters": 0,
+      "published_at": 1793515215405,
+      "published_tier": "auto"
+    },
     {
       "handle": "doug120790",
       "x_user_id": null,
@@ -81031,10 +81087,10 @@
       "confidence": 0.9,
       "category": "marketing",
       "reasons": [
-        "hard evidence P6"
+        "reported"
       ],
       "evidence_text": "周六早安，各位蓝v大佬\n\n帖子发了，也别忘了出门交朋友😂\n\n主动点赞、认真回复，刷个脸熟，也聊点真心话。\n\n今天你准备去谁家串门？\n\n#蓝色朋友 #浇朋友 #互动 #蓝V互动  #蓝V浇友  #蓝V交朋友",
-      "reporters": 0,
+      "reporters": 1,
       "published_at": 1792826305057,
       "published_tier": "auto"
     },
@@ -732984,62 +733040,6 @@
       "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🏓城🍟上🖤椚~下方👇👇可联系✈",
       "reporters": 1,
       "published_at": 1784967112555,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "dakotamckexoon",
-      "x_user_id": "2069817358500446208",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐🎗️城🐰上🎗️椚~点击下方 👇可联系✈️",
-      "reporters": 1,
-      "published_at": 1784967112554,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "murongoconnor",
-      "x_user_id": "2068709122799984640",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐💕城🌊上🩻椚~点击下方 👇可联系✈️",
-      "reporters": 1,
-      "published_at": 1784967081195,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "rebeccaribbgs",
-      "x_user_id": "2072434661431685120",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐⭕️城🍒上🏮椚~下方👇👇可联系✈",
-      "reporters": 1,
-      "published_at": 1784967081192,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "hoytstahelbl4",
-      "x_user_id": "2072435168854278144",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🍒城💋上🅾️椚~下方👇👇可联系✈",
-      "reporters": 0,
-      "published_at": 1784967081191,
       "published_tier": "auto"
     }
   ]
