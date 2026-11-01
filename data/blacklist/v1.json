@@ -1,8 +1,78 @@
 {
   "schema": 1,
-  "generatedAt": 1793534426377,
+  "generatedAt": 1793556025297,
   "count": 50000,
   "list": [
+    {
+      "handle": "mtetwa101",
+      "x_user_id": null,
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "‍比⁤‌我⁤‌⁡好‌⁤⁠⁠看⁢的⁢‌⁤没⁡⁤⁠⁣⁠我⁡⁠⁤骚‌⁠‌‌‍‌‌⁠‌⁠‍‌‌‌比⁡⁡我‌⁡⁢‍骚⁢⁢的‌⁠⁡没⁢‌⁤我⁡⁠⁤⁢好⁢‌⁣‌看⁠⁤⠀⠀⠀",
+      "reporters": 0,
+      "published_at": 1793545334105,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "efeoghene_15",
+      "x_user_id": null,
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "⁤应⁣⁣⁣‍该⁠没‌人⁢‌⁤⁣‌比⁢⁡⁣我⁢⁠⁤玩⁡‍的⁤⁡开⁠‍⁣了‍‌吧‍‌‌‍‌⁠⁠⁠‍⁠我⁤⁢⁠⁡⁠福⁤⁡‍不⁡‍黑⁣⁢⁢不⁠‍‍信⁢你⁢⁢看‍‍‌⠀⠀⠀⠀⠀",
+      "reporters": 0,
+      "published_at": 1793545333955,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "juan1487396",
+      "x_user_id": "1780798795141324800",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "⁣⁢应⁠⁠⁣⁢⁡该‍⁢‌没⁢⁠人⁣‍⁣比‍‍⁡⁡我‍玩⁠⁣⁢⁡‌⁡的‌⁡开⁠‍了⁡⁡吧‍‍‍⁠‍‌‌‍‌我⁠⁡⁣福‌⁣⁠不⁠黑‍不⁢⁢⁠⁠信⁠⁡你⁠看⁠‍⠀⠀⠀⠀",
+      "reporters": 0,
+      "published_at": 1793543595695,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "anavnn10",
+      "x_user_id": "1714971949732966400",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "应‌⁤该‌⁢没⁣⁣人⁢⁢比⁤‍⁡⁤我‍⁢玩⁣⁤⁡的⁤⁤开⁢⁡‍⁢了⁠⁠吧‍‌‌⁠⁠‌‌‍‍‍‌我‍‍福⁠‌⁠不‍⁣⁣‌黑⁣‌⁣不⁠‍‍‍⁠信⁤⁣‌你‌看⁠⠀⠀⠀⠀⠀",
+      "reporters": 0,
+      "published_at": 1793543595489,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "dophinmr",
+      "x_user_id": "1282952197660045312",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "‌比⁠⁠我⁣‌好⁣‌⁡⁤看‍⁣‌的‍没‍⁤⁤⁤我‌⁣‌骚‌⁠‌‍‍‌‍‍‍‌‍比⁢⁡我‌‍⁣⁢骚⁢⁣的‌⁢没‍⁣⁡我‍⁤⁢⁣⁤‌好‍⁡⁤看⁠‍⠀⠀⠀",
+      "reporters": 0,
+      "published_at": 1793534765204,
+      "published_tier": "auto"
+    },
     {
       "handle": "akwasiwarlord",
       "x_user_id": "2070149827728490496",
@@ -732970,76 +733040,6 @@
       "evidence_text": "已入驻曰p平台:👉https://t.co/5r6bEIlgZ1  ，只在平台上约，本人全部涩涩的视频照片浮力全部在里面，距离近的加绿泡泡 ❤️大号在这里👉 @GBento008",
       "reporters": 0,
       "published_at": 1784967119461,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "setllajoshjmks",
-      "x_user_id": "2066156511324250112",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"资源\" on display_name"
-      ],
-      "evidence_text": "已入驻曰p平台:👉https://t.co/BwmNoMqm7d  ，只在平台上约，本人全部涩涩的视频照片浮力全部在里面，距离近的加绿泡泡 ❤️大号在这里👉 @GBento008",
-      "reporters": 0,
-      "published_at": 1784967119313,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "setllahuttmmn1",
-      "x_user_id": "2065493044170752000",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"主页\" on display_name"
-      ],
-      "evidence_text": "已入驻曰p平台:👉https://t.co/iZPViW5Qlz  ，只在平台上约，本人全部涩涩的视频照片浮力全部在里面，距离近的加绿泡泡 ❤️大号在这里👉 @GBento008",
-      "reporters": 0,
-      "published_at": 1784967119140,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "roxannen44420",
-      "x_user_id": "2041551002726244356",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"主页\" on display_name"
-      ],
-      "evidence_text": "已入驻约p平台:👉https://t.co/uio14oUcH6 ,只在平台上约，推特绝大部分女主播都入驻的平台，安全可靠，线上约有保障，下载直接搜我名字，日常更新具体位置平台都有显示哦❤️大号在这里👉@Tiziana44550176",
-      "reporters": 0,
-      "published_at": 1784967119138,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "joyce_bess66117",
-      "x_user_id": "2040260309621878784",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"资源\" on display_name"
-      ],
-      "evidence_text": "已入驻约p平台:👉https://t.co/4lslSoCQsZ ,只在平台上约，推特绝大部分女主播都入驻的平台，安全可靠，线上约有保障，下载直接搜我名字，日常更新具体位置平台都有显示哦❤️大号在这里👉@Tiziana44550176",
-      "reporters": 0,
-      "published_at": 1784967119123,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "willowmoshgey",
-      "x_user_id": "2072435267429122049",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🏓城🍟上🖤椚~下方👇👇可联系✈",
-      "reporters": 1,
-      "published_at": 1784967112555,
       "published_tier": "auto"
     }
   ]
