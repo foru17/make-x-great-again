@@ -1,8 +1,64 @@
 {
   "schema": 1,
-  "generatedAt": 1793642423542,
+  "generatedAt": 1793664023063,
   "count": 50000,
   "list": [
+    {
+      "handle": "3ffzf",
+      "x_user_id": "2010466563313614848",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"只进入身体\" on tweet"
+      ],
+      "evidence_text": "只进入身体，不打扰生活",
+      "reporters": 0,
+      "published_at": 1793663199126,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "jadechambeqwr6",
+      "x_user_id": "2108988507339345920",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "比我好看的没我乖👩🫤比我乖的没我好看",
+      "reporters": 0,
+      "published_at": 1793663120412,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "arianacastljn8",
+      "x_user_id": "2108988477484257280",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "比我好看的没我乖😂🤷比我乖的没我好看",
+      "reporters": 0,
+      "published_at": 1793663120376,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "nolangarnedhn6",
+      "x_user_id": "2108988475550638080",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "比我好看的没我乖🥵😋比我乖的没我好看",
+      "reporters": 0,
+      "published_at": 1793663120347,
+      "published_tier": "auto"
+    },
     {
       "handle": "btc_player111",
       "x_user_id": "3199349836",
@@ -732984,62 +733040,6 @@
       "evidence_text": "又在画饼啊  真离谱",
       "reporters": 0,
       "published_at": 1784981687504,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "arnettecor3qxf",
-      "x_user_id": "2071018536214949888",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "crypto",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "这也太离谱了 搬不动啊",
-      "reporters": 1,
-      "published_at": 1784981560262,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "tasiadrozedvh",
-      "x_user_id": "2072438290456694784",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐💃城💘上💥椚~下方👇👇可联系✈",
-      "reporters": 1,
-      "published_at": 1784981554485,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "melissavfid",
-      "x_user_id": "2069921429173186560",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐🍿城🫶上🍁椚~点击下方 👇可联系✈️",
-      "reporters": 1,
-      "published_at": 1784981376207,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "merrilekfr",
-      "x_user_id": "2069837506300772352",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐📍城🤹上🎤椚~点击下方 👇可联系✈️",
-      "reporters": 2,
-      "published_at": 1784981339457,
       "published_tier": "auto"
     }
   ]
