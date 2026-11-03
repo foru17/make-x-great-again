@@ -1,8 +1,386 @@
 {
   "schema": 1,
-  "generatedAt": 1793685624220,
+  "generatedAt": 1793707224908,
   "count": 50000,
   "list": [
+    {
+      "handle": "b99j8",
+      "x_user_id": "38013005",
+      "verdict_label": "spam",
+      "confidence": 0.9,
+      "category": "porn",
+      "reasons": [
+        "hard evidence P1"
+      ],
+      "evidence_text": "探索成人世界的小秘密, 它蕴含自然精华\n, 悄悄唤醒你的每一份渴望",
+      "reporters": 0,
+      "published_at": 1793690752771,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "camal_pm",
+      "x_user_id": "2029480372346724354",
+      "verdict_label": "spam",
+      "confidence": 0.95,
+      "category": "marketing",
+      "reasons": [
+        "hard evidence P3/P6"
+      ],
+      "evidence_text": "Canada hikes Wednesday morning and the Fed stays at a hold that afternoon. Its shaping up to be a good week ahead on \n@Polymarket\n \n\n\nhttps://\npolymarket.com/event/fed-deci\nsion-in-october-20260617190323537?via=camal-pm\n…\n\nhttps://\npolymark",
+      "reporters": 0,
+      "published_at": 1793690738762,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "millerhazelc",
+      "x_user_id": "1252312707753279490",
+      "verdict_label": "spam",
+      "confidence": 0.9,
+      "category": "other",
+      "reasons": [
+        "hard evidence P1"
+      ],
+      "evidence_text": "是这个视频吧 \nhttps://\nt.cn/AXj9etrV 确实玩的够狠",
+      "reporters": 0,
+      "published_at": 1793689688658,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "danielortizcp",
+      "x_user_id": "1375114955914153988",
+      "verdict_label": "spam",
+      "confidence": 0.95,
+      "category": "marketing",
+      "reasons": [
+        "hard evidence P3"
+      ],
+      "evidence_text": "Si necesitas un contador para presentar tus impuestos, tienes declaraciones pendientes o simplemente requieres asesoría. Acércate a nosotros podemos ayudarte.",
+      "reporters": 0,
+      "published_at": 1793689675668,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "endgsrhi5uvlj6h",
+      "x_user_id": "1389268963465601024",
+      "verdict_label": "porn_bot",
+      "confidence": 0.9,
+      "category": "porn",
+      "reasons": [
+        "hard evidence P2"
+      ],
+      "evidence_text": "23岁  36F算大吗",
+      "reporters": 0,
+      "published_at": 1793689658424,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "rockoutceleb",
+      "x_user_id": null,
+      "verdict_label": "spam",
+      "confidence": 0.95,
+      "category": "gambling",
+      "reasons": [
+        "hard evidence P6"
+      ],
+      "evidence_text": "自由现金流为负主要是AI资本开支前置，能直接推出牛市结束吗？利润和营收端还没走弱吧？",
+      "reporters": 0,
+      "published_at": 1793689309083,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "aaronrnuzo",
+      "x_user_id": "2107293717363113984",
+      "verdict_label": "porn_bot",
+      "confidence": 0.9,
+      "category": "porn",
+      "reasons": [
+        "hard evidence P1/P2"
+      ],
+      "evidence_text": "把鸡鸡露出来！越大越好 哈哈\n\n#자지 #대물",
+      "reporters": 0,
+      "published_at": 1793688933355,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "yhdetong",
+      "x_user_id": "1877081160154755072",
+      "verdict_label": "porn_bot",
+      "confidence": 0.9,
+      "category": "porn",
+      "reasons": [
+        "hard evidence P2"
+      ],
+      "evidence_text": "怎么没有小帅哥关注我呢…？我他妈想睡粉了…",
+      "reporters": 0,
+      "published_at": 1793688923095,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "ci8363900933382",
+      "x_user_id": "1806180924398387200",
+      "verdict_label": "porn_bot",
+      "confidence": 0.9,
+      "category": "porn",
+      "reasons": [
+        "hard evidence P1"
+      ],
+      "evidence_text": "喜高弹 白袜  坐标辽宁 22-182-96（🐻）喜肉壮 🐒 0s 高弹同好交流私信发高弹照片会回\n线下交友考虑ing",
+      "reporters": 0,
+      "published_at": 1793688912790,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "g7xca",
+      "x_user_id": null,
+      "verdict_label": "spam",
+      "confidence": 0.9,
+      "category": "marketing",
+      "reasons": [
+        "hard evidence P3"
+      ],
+      "evidence_text": "정말 아름다우시네요! 맞팔 부탁드려요. 우리 좋은 친구 해요! ㅎㅎ ❤️❤️🥰🥰",
+      "reporters": 0,
+      "published_at": 1793688906535,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "hiroshimacarp26",
+      "x_user_id": "1263651143806148608",
+      "verdict_label": "spam",
+      "confidence": 0.95,
+      "category": "marketing",
+      "reasons": [
+        "hard evidence P3/P4"
+      ],
+      "evidence_text": "Watching $SPX battle this crucial medium-to-long-term resistance to see if it finally breaks down. You and \n@DangerDaveINK\n consistently remain my ultimate trusted references for financial intel.",
+      "reporters": 0,
+      "published_at": 1793688902171,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "ajilesamuel",
+      "x_user_id": "1112964252636151808",
+      "verdict_label": "spam",
+      "confidence": 0.95,
+      "category": "marketing",
+      "reasons": [
+        "hard evidence P3/P4"
+      ],
+      "evidence_text": "Watching $SPX to see how long they can hold this into mid-term. You and \n@LewisFavors\n remain my reliable first-stop references for market insight.",
+      "reporters": 0,
+      "published_at": 1793688900955,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "sunsetstarriver",
+      "x_user_id": "1518754235688656896",
+      "verdict_label": "spam",
+      "confidence": 0.9,
+      "category": "marketing",
+      "reasons": [
+        "hard evidence P3"
+      ],
+      "evidence_text": "Muse code: S8ACY8",
+      "reporters": 0,
+      "published_at": 1793688620579,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "guagua0128",
+      "x_user_id": "1796882400422871040",
+      "verdict_label": "porn_bot",
+      "confidence": 0.95,
+      "category": "porn",
+      "reasons": [
+        "hard evidence P1/P2"
+      ],
+      "evidence_text": "老公可以全部设在母狗身上。还有嘴巴里\n   新人求关注",
+      "reporters": 0,
+      "published_at": 1793688593876,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "koookrhs",
+      "x_user_id": "2106561940440879104",
+      "verdict_label": "spam",
+      "confidence": 0.9,
+      "category": "marketing",
+      "reasons": [
+        "hard evidence P6"
+      ],
+      "evidence_text": "First 199 (be fast)\n\nDrop addy",
+      "reporters": 0,
+      "published_at": 1793688290511,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "breathfavs",
+      "x_user_id": "273021904",
+      "verdict_label": "spam",
+      "confidence": 0.95,
+      "category": "marketing",
+      "reasons": [
+        "hard evidence P6"
+      ],
+      "evidence_text": "兄弟，我在国外有美元投资，纯粹出于好奇开了个账户，从昨天到今天就给我赚了500多雷亚尔。",
+      "reporters": 0,
+      "published_at": 1793687875425,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "cxleonardo1",
+      "x_user_id": "4846097954",
+      "verdict_label": "porn_bot",
+      "confidence": 0.95,
+      "category": "porn",
+      "reasons": [
+        "hard evidence P1"
+      ],
+      "evidence_text": "气死了，被洛阳一个十五岁的小屁孩耍的团团转。x上到底有没有真实的呀  #洛阳 \n36\n2+6\n3\n3\n00",
+      "reporters": 0,
+      "published_at": 1793687864739,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "2niite",
+      "x_user_id": null,
+      "verdict_label": "spam",
+      "confidence": 0.9,
+      "category": "marketing",
+      "reasons": [
+        "hard evidence P3"
+      ],
+      "evidence_text": "oi gnt me sigam eu sou legal e sigo de volta",
+      "reporters": 0,
+      "published_at": 1793687858322,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "jagathkrishnain",
+      "x_user_id": null,
+      "verdict_label": "spam",
+      "confidence": 0.9,
+      "category": "marketing",
+      "reasons": [
+        "hard evidence P3"
+      ],
+      "evidence_text": "#FollowForFollowBack",
+      "reporters": 0,
+      "published_at": 1793687855018,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "n_falcon417",
+      "x_user_id": "2009599903488696320",
+      "verdict_label": "spam",
+      "confidence": 0.9,
+      "category": "marketing",
+      "reasons": [
+        "hard evidence P3"
+      ],
+      "evidence_text": "Inktober Day 31 (Flex) #finallyinktoberseasonendstoday #womenflexsarms #inktoberlastday #day31flex #gymfitness #creativeidea/#pleaselike/#follow4like/#share/#respectpage/#follow4follow/",
+      "reporters": 0,
+      "published_at": 1793687853831,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "boomsporty_",
+      "x_user_id": "1310378513267142656",
+      "verdict_label": "spam",
+      "confidence": 0.9,
+      "category": "marketing",
+      "reasons": [
+        "hard evidence P6"
+      ],
+      "evidence_text": "#EQUIFI to the moon 🌙#  I really hope it becomes the best I'm excited to be a part of the community",
+      "reporters": 0,
+      "published_at": 1793687104379,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "huffvaness73217",
+      "x_user_id": "2039426182634954752",
+      "verdict_label": "spam",
+      "confidence": 0.9,
+      "category": "marketing",
+      "reasons": [
+        "hard evidence P3"
+      ],
+      "evidence_text": "这个我知道沈腾和ly已经被快-手狗 仔《小花女王》扒出来了，前天我就看过了，刚刚我又去看了一下，现在还在，沈腾确实恶心，真的恶心 牛啊",
+      "reporters": 0,
+      "published_at": 1793687093784,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "augutaesx7",
+      "x_user_id": "2072329173407051776",
+      "verdict_label": "porn_bot",
+      "confidence": 0.95,
+      "category": "porn",
+      "reasons": [
+        "hard evidence P1/P2"
+      ],
+      "evidence_text": "我虽然是女校出身，有点社交障碍，但即便这样也能做爸爸活吗？H什么的必须吗？真的已经穷得揭不开锅了，好想哭谁来救救我",
+      "reporters": 0,
+      "published_at": 1793686800821,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "ofriviq",
+      "x_user_id": null,
+      "verdict_label": "spam",
+      "confidence": 0.95,
+      "category": "marketing",
+      "reasons": [
+        "hard evidence P3"
+      ],
+      "evidence_text": "follow4follow?",
+      "reporters": 0,
+      "published_at": 1793686786471,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "jorgean56912125",
+      "x_user_id": "1463506277842264066",
+      "verdict_label": "porn_bot",
+      "confidence": 0.95,
+      "category": "porn",
+      "reasons": [
+        "hard evidence P1/P2"
+      ],
+      "evidence_text": "Yo te la ordeño bien rico  mandá md",
+      "reporters": 0,
+      "published_at": 1793686785266,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "turgay59251356",
+      "x_user_id": "985227157642403840",
+      "verdict_label": "porn_bot",
+      "confidence": 0.95,
+      "category": "porn",
+      "reasons": [
+        "hard evidence P1/P2"
+      ],
+      "evidence_text": "有没有什么好人愿意接受人妻？老公认可的哦。",
+      "reporters": 0,
+      "published_at": 1793685703202,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "mcascardooo",
+      "x_user_id": "2082972473176346625",
+      "verdict_label": "porn_bot",
+      "confidence": 0.95,
+      "category": "porn",
+      "reasons": [
+        "hard evidence P1/P2"
+      ],
+      "evidence_text": "跃跃欲试。\n\n我就喜欢这种户外大胆的。\n\n可惜没有学可以上了。",
+      "reporters": 0,
+      "published_at": 1793685680920,
+      "published_tier": "auto"
+    },
     {
       "handle": "rogcrf",
       "x_user_id": null,
@@ -732662,384 +733040,6 @@
       "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🥊城🎀上👄椚~下方👇👇可联系✈",
       "reporters": 0,
       "published_at": 1784986629865,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "pamelamtg",
-      "x_user_id": "2070137708953870336",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐🌙城😁上🐌椚~点击下方 👇可联系✈️",
-      "reporters": 3,
-      "published_at": 1784986624663,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "orsolael",
-      "x_user_id": "2071213275405037568",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐🎱城🥦上🚕椚~点击下方 👇可联系✈️",
-      "reporters": 5,
-      "published_at": 1784986621769,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "pamfrwgd",
-      "x_user_id": "2070508676150882304",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐🌼城🧐上🫡椚~点击下方 👇可联系✈️",
-      "reporters": 3,
-      "published_at": 1784986616109,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "orsa0yrl",
-      "x_user_id": "2070532671239839744",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐🌲城🧐上👍椚~点击下方 👇可联系✈️",
-      "reporters": 2,
-      "published_at": 1784986590164,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "niaapeviweaa",
-      "x_user_id": "2071734650163048448",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐⭐城💻上🍕椚~点击下方 👇可联系✈️",
-      "reporters": 4,
-      "published_at": 1784986583869,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "fawnbrimle82l",
-      "x_user_id": "2072439810426368000",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐💜城🏤上👄椚~下方👇👇可联系✈",
-      "reporters": 0,
-      "published_at": 1784986577169,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "patnedeaurcg",
-      "x_user_id": "2068064603330977792",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "crypto",
-      "reasons": [
-        "matched keyword rule \"visa\" on display_name"
-      ],
-      "evidence_text": "同步还是慢得要命",
-      "reporters": 0,
-      "published_at": 1784986559696,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "nathanwesthmen",
-      "x_user_id": "2068534426208731137",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "crypto",
-      "reasons": [
-        "matched keyword rule \"高返\" on display_name"
-      ],
-      "evidence_text": "还没修好啊 真烦人",
-      "reporters": 0,
-      "published_at": 1784986559675,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "nefebaanqisy",
-      "x_user_id": "2071703263125139456",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐📖城😙上💧椚~点击下方 👇可联系✈️",
-      "reporters": 1,
-      "published_at": 1784986539791,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "toshaborozdl",
-      "x_user_id": "2072439048266719232",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🌸城❣️上🅾️椚~下方👇👇可联系✈",
-      "reporters": 1,
-      "published_at": 1784986514430,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "morinokyrean",
-      "x_user_id": "2071724846912868352",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "桐💅城🐬上❣️椚~点击下方 👇可联系✈️",
-      "reporters": 0,
-      "published_at": 1784986483643,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "michellecflpy",
-      "x_user_id": "2071164679443931136",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "桐🍊城😻上🤫椚~点击下方 👇可联系✈️",
-      "reporters": 0,
-      "published_at": 1784986472123,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "edwardeckhj0zg",
-      "x_user_id": "2072439577701175296",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🚗城🍓上😍椚~下方👇👇可联系✈",
-      "reporters": 2,
-      "published_at": 1784986471731,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "norene1odu",
-      "x_user_id": "2070783463054012417",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "桐🤽城😆上🤹椚~点击下方 👇可联系✈️",
-      "reporters": 0,
-      "published_at": 1784986430728,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "tamarcaldapw",
-      "x_user_id": "2068572704652009472",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "crypto",
-      "reasons": [
-        "matched keyword rule \"高返\" on display_name"
-      ],
-      "evidence_text": "这锅甩得可真顺手",
-      "reporters": 0,
-      "published_at": 1784986295440,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "selenajohnhbgu",
-      "x_user_id": "2066265756778831872",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "已入驻曰p平台:👉https://t.co/6akOjQC6ff  ，只在平台上约，本人全部涩涩的视频照片浮力全部在里面，距离近的加绿泡泡 ❤️大号在这里👉 @GBento008",
-      "reporters": 1,
-      "published_at": 1784986288079,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "selenakepp00kg",
-      "x_user_id": "2066858970195869699",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "已入驻曰p平台:👉https://t.co/g14MccLqvz  ，只在平台上约，本人全部涩涩的视频照片浮力全部在里面，距离近的加绿泡泡 ❤️大号在这里👉 @GBento008",
-      "reporters": 1,
-      "published_at": 1784986288017,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "selenakathgfsi",
-      "x_user_id": "2067225907589509120",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "已入驻曰p平台:👉https://t.co/7NfRKwF5Yx  ，只在平台上约，本人全部涩涩的视频照片浮力全部在里面，距离近的加绿泡泡 ❤️大号在这里👉 @GBento008",
-      "reporters": 1,
-      "published_at": 1784986288016,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "lewisjessivw5c",
-      "x_user_id": "2070765896033779712",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"破处\" on display_name"
-      ],
-      "evidence_text": "Linda\n\nJessica\n\n2026-07-25 17:10:50",
-      "reporters": 0,
-      "published_at": 1784986288013,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "selenakepp05ma",
-      "x_user_id": "2066935564494893056",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"主页\" on display_name"
-      ],
-      "evidence_text": "已入驻曰p平台:👉https://t.co/Y3MushUN9x  ，只在平台上约，本人全部涩涩的视频照片浮力全部在里面，距离近的加绿泡泡 ❤️大号在这里👉 @GBento008",
-      "reporters": 0,
-      "published_at": 1784986288012,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "dionnamuchmore",
-      "x_user_id": "2072439823571226624",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🏮城🖤上💋椚~下方👇👇可联系✈",
-      "reporters": 0,
-      "published_at": 1784986268227,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "guadalupep9qml",
-      "x_user_id": "2068068931395579904",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "crypto",
-      "reasons": [
-        "matched keyword rule \"visa\" on display_name"
-      ],
-      "evidence_text": "这班上的 真没劲了",
-      "reporters": 0,
-      "published_at": 1784986268218,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "ngyikinulylu",
-      "x_user_id": "2069970127282438144",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐🤏城🌲上🎣椚~点击下方 👇可联系✈️",
-      "reporters": 1,
-      "published_at": 1784986243767,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "sirenastocki",
-      "x_user_id": "2070757818672525312",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "Keith\n\nFrida\n\n2026-07-25 16:59:58",
-      "reporters": 0,
-      "published_at": 1784986233629,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "jacquesrinebz",
-      "x_user_id": "2072439819590868992",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🎁城🎏上🌸椚~下方👇👇可联系✈",
-      "reporters": 1,
-      "published_at": 1784986214264,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "mmbllxhpxjzjbi",
-      "x_user_id": "2071005454507900928",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "gambling",
-      "reasons": [
-        "matched keyword rule \"开云体育\" on any"
-      ],
-      "evidence_text": "感谢分享这个观点",
-      "reporters": 0,
-      "published_at": 1784986197581,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "dinesh_jai38562",
-      "x_user_id": "1772619687362269184",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "crypto",
-      "reasons": [
-        "matched keyword rule \"Visa领取\" on display_name"
-      ],
-      "evidence_text": "又要熬夜赶稿了 烦死",
-      "reporters": 0,
-      "published_at": 1784986192497,
       "published_tier": "auto"
     }
   ]
