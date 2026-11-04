@@ -1,8 +1,36 @@
 {
   "schema": 1,
-  "generatedAt": 1793750424380,
+  "generatedAt": 1793793624462,
   "count": 50000,
   "list": [
+    {
+      "handle": "paulmcshane2",
+      "x_user_id": "472117519",
+      "verdict_label": "spam",
+      "confidence": 0.92,
+      "category": "other",
+      "reasons": [
+        "hard evidence P3"
+      ],
+      "evidence_text": "是这个视频吧\nhttps://\nt.cn/AXj9etrV刚看完",
+      "reporters": 1,
+      "published_at": 1793750488137,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "ulisesg81697213",
+      "x_user_id": "1746268955507838976",
+      "verdict_label": "spam",
+      "confidence": 0.92,
+      "category": "other",
+      "reasons": [
+        "hard evidence P3"
+      ],
+      "evidence_text": "是这个视频吧\n\nhttps://\nt.cn/AXlYFPa7",
+      "reporters": 1,
+      "published_at": 1793750486912,
+      "published_tier": "auto"
+    },
     {
       "handle": "b99j8",
       "x_user_id": "38013005",
@@ -733012,34 +733040,6 @@
       "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐👩‍❤️‍👩城💞上🍒椚~下方👇👇可联系✈",
       "reporters": 0,
       "published_at": 1784986629904,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "ellenaherrqkiy",
-      "x_user_id": "2072437076797083648",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐💃城👄上😚椚~下方👇👇可联系✈",
-      "reporters": 0,
-      "published_at": 1784986629877,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "annemariet6ru",
-      "x_user_id": "2072439202843709440",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🥊城🎀上👄椚~下方👇👇可联系✈",
-      "reporters": 0,
-      "published_at": 1784986629865,
       "published_tier": "auto"
     }
   ]
