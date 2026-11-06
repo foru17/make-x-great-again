@@ -1,8 +1,134 @@
 {
   "schema": 1,
-  "generatedAt": 1793880022703,
+  "generatedAt": 1793944825525,
   "count": 50000,
   "list": [
+    {
+      "handle": "tsq20h75j9ei1sr",
+      "x_user_id": "1950599082088726528",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"只入身体\" on any"
+      ],
+      "evidence_text": "只入身体不入生活",
+      "reporters": 0,
+      "published_at": 1793936376252,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "tierra18557",
+      "x_user_id": "1904049473434910720",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"只进入身体\" on tweet"
+      ],
+      "evidence_text": "只进入身体不进入生活",
+      "reporters": 0,
+      "published_at": 1793935861855,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "towneadrie32220",
+      "x_user_id": "1888985507742584832",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"只进入身体\" on tweet"
+      ],
+      "evidence_text": "只进入身体不进入生活",
+      "reporters": 0,
+      "published_at": 1793935860794,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "tressie33851",
+      "x_user_id": "1903987269502910464",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"只进入身体\" on tweet"
+      ],
+      "evidence_text": "只进入身体‍不进入生活",
+      "reporters": 0,
+      "published_at": 1793935857696,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "bai_cai58851",
+      "x_user_id": "2048053470234918912",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "⁢⁢⁠比‌‌‌我⁤好⁠⁠看⁡‍的⁣⁡‌没⁣⁠我⁣⁠⁤骚⁡⁠‍‍🐰‍‍‍‌🌝‌‌⁠⁤比⁠⁣⁠我⁡⁡‌⁡骚⁠的‍没⁠⁢‌我⁠‌好⁤看⠀⠀⠀",
+      "reporters": 0,
+      "published_at": 1793905371812,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "zszut59659645",
+      "x_user_id": null,
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "应⁣⁢该没‌‌⁢⁡‌人⁤‌⁡⁠⁡比⁠⁤⁡我‍‌玩⁣⁡的⁠⁡⁠开⁡‌了⁣⁡吧‌⁠我‍⁡‌⁡福⁣⁤⁠不⁠‌黑⁤⁤⁣不⁣⁠信⁤‍你‍⁠看‌⁤⠀",
+      "reporters": 0,
+      "published_at": 1793899578349,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "rcklerman",
+      "x_user_id": null,
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "auto-blacklisted: @-mentioned by spam account @wusgnisjzhx8de which matched keyword rule \"比她好看\""
+      ],
+      "evidence_text": "比‍她好看的没她乖比她乖的没她好看@rcklerman",
+      "reporters": 0,
+      "published_at": 1793894682289,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "wusgnisjzhx8de",
+      "x_user_id": "2058417561310769152",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "比‍她好看的没她乖比她乖的没她好看@rcklerman",
+      "reporters": 0,
+      "published_at": 1793894682289,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "znjcg55256368",
+      "x_user_id": "1797189611334107137",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "应‍‌该没人‌‍⁡‌比‍⁢⁡我‌‌玩⁢⁠⁢⁠的⁢⁢开⁢‍‌⁡了⁢⁤⁠吧‌‍‌‍‍‍‌⁠⁠‍‌‍⁢我‌‍‌⁢⁤福‍⁢不⁤⁢‌黑‌⁠不‍‍‌‍信⁤‍⁠⁡你⁣‍看⁣‌⁡⠀⠀⠀",
+      "reporters": 0,
+      "published_at": 1793890517339,
+      "published_tier": "auto"
+    },
     {
       "handle": "zsibu24557627",
       "x_user_id": "1793307991594110976",
@@ -732914,132 +733040,6 @@
       "evidence_text": "刷了半天的ere0就她的主页能打了",
       "reporters": 0,
       "published_at": 1784987887057,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "janismerhail",
-      "x_user_id": "2072440485302661120",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🎟️城🌼上💃椚~下方👇👇可联系✈",
-      "reporters": 3,
-      "published_at": 1784987881532,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "neilekuzj",
-      "x_user_id": "2071179427174612992",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "桐🥭城🤘上🤟椚~点击下方 👇可联系✈️",
-      "reporters": 0,
-      "published_at": 1784987867325,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "lomalaundr9hoa",
-      "x_user_id": "2072439782001594368",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐😘城🍉上💗椚~下方👇👇可联系✈",
-      "reporters": 0,
-      "published_at": 1784987867261,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "ewlmehduvwhogw",
-      "x_user_id": "2071137180207226880",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"好涩\" on tweet"
-      ],
-      "evidence_text": "她好涩0r我不行了 -",
-      "reporters": 0,
-      "published_at": 1784987867201,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "ghislainemahon",
-      "x_user_id": "2072440556769132544",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐👠城🏤上🎂椚~下方👇👇可联系✈",
-      "reporters": 0,
-      "published_at": 1784987846265,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "rudytundg91",
-      "x_user_id": "2072440157354258432",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐💛城☎️上🥊椚~下方👇👇可联系✈",
-      "reporters": 0,
-      "published_at": 1784987846131,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "waynecuadro",
-      "x_user_id": "2070765979576004608",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"破处\" on display_name"
-      ],
-      "evidence_text": "Bella\n\nGlamorous, \n‍\n2026-07-25 17:08:29",
-      "reporters": 0,
-      "published_at": 1784987845090,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "judetomehah8y",
-      "x_user_id": "2070766246665056256",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"破处\" on display_name"
-      ],
-      "evidence_text": "Robin\n\nConfident, \n\n2026-07-25 17:03:16",
-      "reporters": 0,
-      "published_at": 1784987842035,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "jacobplinepdjf",
-      "x_user_id": "2070749555860160512",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "Sparkling\n\nKeith\n\n2026-07-25 01:17:52",
-      "reporters": 0,
-      "published_at": 1784987842007,
       "published_tier": "auto"
     }
   ]
