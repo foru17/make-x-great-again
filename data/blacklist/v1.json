@@ -1,8 +1,120 @@
 {
   "schema": 1,
-  "generatedAt": 1794031225199,
+  "generatedAt": 1794052823711,
   "count": 50000,
   "list": [
+    {
+      "handle": "cqxqo26535935",
+      "x_user_id": "1767139658079629312",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "比⁡我‍‍⁡好⁢‌看⁡‍⁤⁣⁢的⁠⁡⁣‌没⁢⁤⁠⁢我‍⁤⁤骚‍‌🐟 🐯比⁣⁣我⁤⁢‌骚⁡‍的⁢⁢⁤没⁢‌⁤我‌⁣⁢好⁡⁡看⁡‌",
+      "reporters": 0,
+      "published_at": 1794043923433,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "jim78192040",
+      "x_user_id": "1058921034118823937",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "应⁣⁢该没‌‌⁢⁡‌人⁤‌⁡⁠⁡比⁠⁤⁡我‍‌玩⁣⁡的⁠⁡⁠开⁡‌了⁣⁡吧‌⁠❄️😕我‍⁡‌⁡福⁣⁤⁠不⁠‌黑⁤⁤⁣不⁣⁠信⁤‍你‍⁠看‌⁤⠀",
+      "reporters": 0,
+      "published_at": 1794042624388,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "shane13328143",
+      "x_user_id": "1326941497963532290",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "应⁣⁢该没‌‌⁢⁡‌人⁤‌⁡⁠⁡比⁠⁤⁡我‍‌玩⁣⁡的⁠⁡⁠开⁡‌了⁣⁡吧‌⁠🦍😥我‍⁡‌⁡福⁣⁤⁠不⁠‌黑⁤⁤⁣不⁣⁠信⁤‍你‍⁠看‌⁤⠀",
+      "reporters": 0,
+      "published_at": 1794042624328,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "cqrmr58849996",
+      "x_user_id": "1716454679373139969",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "应⁣⁢该没‌‌⁢⁡‌人⁤‌⁡⁠⁡比⁠⁤⁡我‍‌玩⁣⁡的⁠⁡⁠开⁡‌了⁣⁡吧‌⁠🤑🌉我‍⁡‌⁡福⁣⁤⁠不⁠‌黑⁤⁤⁣不⁣⁠信⁤‍你‍⁠看‌⁤⠀",
+      "reporters": 0,
+      "published_at": 1794042624324,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "cqaxh17723735",
+      "x_user_id": "1749835439479930880",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "比⁡我‍‍⁡好⁢‌看⁡‍⁤⁣⁢的⁠⁡⁣‌没⁢⁤⁠⁢我‍⁤⁤骚‍‌🤖 🦖比⁣⁣我⁤⁢‌骚⁡‍的⁢⁢⁤没⁢‌⁤我‌⁣⁢好⁡⁡看⁡‌",
+      "reporters": 0,
+      "published_at": 1794042621137,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "ninsoof",
+      "x_user_id": "2100224798983094272",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "应⁣⁢该没‌‌⁢⁡‌人⁤‌⁡⁠⁡比⁠⁤⁡我‍‌玩⁣⁡的⁠⁡⁠开⁡‌了⁣⁡吧‌⁠🌼🐛我‍⁡‌⁡福⁣⁤⁠不⁠‌黑⁤⁤⁣不⁣⁠信⁤‍你‍⁠看‌⁤⠀",
+      "reporters": 0,
+      "published_at": 1794042621057,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "cqghd85664126",
+      "x_user_id": "1639721807493181442",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "比⁡我‍‍⁡好⁢‌看⁡‍⁤⁣⁢的⁠⁡⁣‌没⁢⁤⁠⁢我‍⁤⁤骚‍‌👺 👂比⁣⁣我⁤⁢‌骚⁡‍的⁢⁢⁤没⁢‌⁤我‌⁣⁢好⁡⁡看⁡‌",
+      "reporters": 0,
+      "published_at": 1794042620990,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "francooagustin_",
+      "x_user_id": "3289916332",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "比⁡⁤我⁣好⁤‍⁡看⁣‌‍的⁢‌⁣没⁣我‌⁤骚⁡⁤⁤‌⁠‌比‍我⁢⁡骚‍⁤⁡的‌⁣⁡‍没⁡⁣我⁤‌⁢⁤好⁢⁠⁣看⁣‍‍⠀",
+      "reporters": 0,
+      "published_at": 1794038044112,
+      "published_tier": "auto"
+    },
     {
       "handle": "qj1395jdig6xp",
       "x_user_id": "1951809999732166656",
@@ -732928,118 +733040,6 @@
       "evidence_text": "桐🌥️城🧃上🍂椚~点击下方 👇可联系✈️",
       "reporters": 1,
       "published_at": 1784988198617,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "vonmaranvi4qk",
-      "x_user_id": "2071011136267530240",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "crypto",
-      "reasons": [
-        "matched keyword rule \"visa\" on display_name"
-      ],
-      "evidence_text": "做梦呢吧 笑死我了",
-      "reporters": 0,
-      "published_at": 1784988112965,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "juttabeachgsy",
-      "x_user_id": "2068552413028474880",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "crypto",
-      "reasons": [
-        "matched keyword rule \"bitget\" on display_name"
-      ],
-      "evidence_text": "这格局 属实给我看呆了",
-      "reporters": 0,
-      "published_at": 1784988101875,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "wenonazan",
-      "x_user_id": "2071879678751592448",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "2026-07-25 21:49:30\n\nBrassi,\n\nShavei",
-      "reporters": 1,
-      "published_at": 1784988096921,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "lashawnadebado",
-      "x_user_id": "2071879978204192768",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "2026-07-25 21:55:46\n\nBobk\n\nChoicesi,",
-      "reporters": 1,
-      "published_at": 1784988096909,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "kelvinscandura",
-      "x_user_id": "2071879757772316672",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "2026-07-25 21:55:47\n\nDrawerk\n\nProclaimedc",
-      "reporters": 1,
-      "published_at": 1784988096895,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "dawncunnick3y",
-      "x_user_id": "2071879615115644928",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "2026-07-25 21:55:45\n\nAlsoj,\n\nCrackedn",
-      "reporters": 2,
-      "published_at": 1784988096727,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "ardeliahadgwka",
-      "x_user_id": "2071859404379697152",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"资源\" on display_name"
-      ],
-      "evidence_text": "已入住约p平台,入口:👉 https://t.co/U5TJPJSEIm 每晚准时涩播，寻欢必备！福利大放送！安全+私密+线上👉远程指挥直播控制玩具，同城可线下",
-      "reporters": 0,
-      "published_at": 1784988038396,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "kyungtoon5sit",
-      "x_user_id": "2071859437820653568",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "已入住约p平台,入口:👉 https://t.co/wftpm7QpEH 每晚准时涩播，寻欢必备！福利大放送！安全+私密+线上👉远程指挥直播控制玩具，同城可线下",
-      "reporters": 0,
-      "published_at": 1784988035144,
       "published_tier": "auto"
     }
   ]
