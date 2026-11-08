@@ -1,8 +1,64 @@
 {
   "schema": 1,
-  "generatedAt": 1794074426314,
+  "generatedAt": 1794096025867,
   "count": 50000,
   "list": [
+    {
+      "handle": "qlsjquw32fica",
+      "x_user_id": "1941701234341314563",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"只入身体\" on any"
+      ],
+      "evidence_text": "只入身体🤚💅不入生活",
+      "reporters": 0,
+      "published_at": 1794095769219,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "sv7f4bq5vjbhpd",
+      "x_user_id": "1946529001171738624",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"只入身体\" on any"
+      ],
+      "evidence_text": "只入身体😳🐷不入生活",
+      "reporters": 0,
+      "published_at": 1794095411024,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "teruechiho78471",
+      "x_user_id": "1697348930948780032",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "比她好看的没她听话比她听话的没她好看\n@Asmin96082632\n😀😛",
+      "reporters": 0,
+      "published_at": 1794095410882,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "scx10mqkmlna239",
+      "x_user_id": "1938406132462329856",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"只入身体\" on any"
+      ],
+      "evidence_text": "只入身体🤯🫣不入生活",
+      "reporters": 0,
+      "published_at": 1794095410859,
+      "published_tier": "auto"
+    },
     {
       "handle": "faster9wi",
       "x_user_id": "2072042470179811328",
@@ -732984,62 +733040,6 @@
       "evidence_text": "她太涩了dlh6 我真顶不住 = 6 e",
       "reporters": 1,
       "published_at": 1784988258528,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "spvtflpyccl7ur",
-      "x_user_id": "2071136963889909760",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "线下sao货没人rere比她sao S",
-      "reporters": 1,
-      "published_at": 1784988258522,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "bcmpflmytd1fln",
-      "x_user_id": "2071136312740962304",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "刷了半天的ere0就她的主页能打了  h",
-      "reporters": 1,
-      "published_at": 1784988258502,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "madalyndempeib",
-      "x_user_id": "2071879989134278656",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "2026-07-25 21:51:57\n\nLifestyleo\n\nCampbellj,",
-      "reporters": 2,
-      "published_at": 1784988258445,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "katydunster",
-      "x_user_id": "2070766932631134208",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"破处\" on display_name"
-      ],
-      "evidence_text": "Superb,\n\nTalented,\n\n2026-07-25 20:07:48",
-      "reporters": 0,
-      "published_at": 1784988246181,
       "published_tier": "auto"
     }
   ]
