@@ -1,8 +1,106 @@
 {
   "schema": 1,
-  "generatedAt": 1794139224707,
+  "generatedAt": 1794182427179,
   "count": 50000,
   "list": [
+    {
+      "handle": "yurimi323",
+      "x_user_id": "1901282021282115584",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "比⁡我‍‍⁡好⁢‌看⁡‍⁤⁣⁢的⁠⁡⁣‌没⁢⁤⁠⁢我‍⁤⁤骚‍‌☝️ 👉比⁣⁣我⁤⁢‌骚⁡‍的⁢⁢⁤没⁢‌⁤我‌⁣⁢好⁡⁡看⁡‌",
+      "reporters": 0,
+      "published_at": 1794178281709,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "shun2929z",
+      "x_user_id": "2071234229065986048",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "比⁡我‍‍⁡好⁢‌看⁡‍⁤⁣⁢的⁠⁡⁣‌没⁢⁤⁠⁢我‍⁤⁤骚‍‌ 比⁣⁣我⁤⁢‌骚⁡‍的⁢⁢⁤没⁢‌⁤我‌⁣⁢好⁡⁡看⁡‌",
+      "reporters": 0,
+      "published_at": 1794166304799,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "tjcoolguy_tetsu",
+      "x_user_id": "997435160",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "应⁣⁢该没‌‌⁢⁡‌人⁤‌⁡⁠⁡比⁠⁤⁡我‍‌玩⁣⁡的⁠⁡⁠开⁡‌了⁣⁡吧‌⁠🦀🦈我‍⁡‌⁡福⁣⁤⁠不⁠‌黑⁤⁤⁣不⁣⁠信⁤‍你‍⁠看‌⁤⠀",
+      "reporters": 0,
+      "published_at": 1794159268712,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "mocoyukigaya",
+      "x_user_id": "1201743833525936128",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "应⁣⁢该没‌‌⁢⁡‌人⁤‌⁡⁠⁡比⁠⁤⁡我‍‌玩⁣⁡的⁠⁡⁠开⁡‌了⁣⁡吧‌⁠我‍⁡‌⁡福⁣⁤⁠不⁠‌黑⁤⁤⁣不⁣⁠信⁤‍你‍⁠看‌⁤⠀",
+      "reporters": 0,
+      "published_at": 1794156440774,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "dlhagkin11",
+      "x_user_id": "1853578647795544064",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "比⁡我‍‍⁡好⁢‌看⁡‍⁤⁣⁢的⁠⁡⁣‌没⁢⁤⁠⁢我‍⁤⁤骚‍‌🐼 🤖比⁣⁣我⁤⁢‌骚⁡‍的⁢⁢⁤没⁢‌⁤我‌⁣⁢好⁡⁡看⁡‌",
+      "reporters": 0,
+      "published_at": 1794150581349,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "kot_jj",
+      "x_user_id": "2569771400",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"应该没人\" on tweet"
+      ],
+      "evidence_text": "应⁣⁢该没‌‌⁢⁡‌人⁤‌⁡⁠⁡比⁠⁤⁡我‍‌玩⁣⁡的⁠⁡⁠开⁡‌了⁣⁡吧‌⁠我‍⁡‌⁡福⁣⁤⁠不⁠‌黑⁤⁤⁣不⁣⁠信⁤‍你‍⁠看‌⁤⠀",
+      "reporters": 0,
+      "published_at": 1794144265235,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "z7zcxu",
+      "x_user_id": "2087800855659724800",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "比⁡我‍‍⁡好⁢‌看⁡‍⁤⁣⁢的⁠⁡⁣‌没⁢⁤⁠⁢我‍⁤⁤骚‍‌🌏 🤝比⁣⁣我⁤⁢‌骚⁡‍的⁢⁢⁤没⁢‌⁤我‌⁣⁢好⁡⁡看⁡‌",
+      "reporters": 0,
+      "published_at": 1794140473737,
+      "published_tier": "auto"
+    },
     {
       "handle": "nazuna_denemomo",
       "x_user_id": "1561404737693827072",
@@ -732942,104 +733040,6 @@
       "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🅾️城📕上😘椚~下方👇👇可联系✈",
       "reporters": 1,
       "published_at": 1784988393602,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "rafdwqw",
-      "x_user_id": "2069945048137973760",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐🐱城😻上🙉椚~点击下方 👇可联系✈️",
-      "reporters": 4,
-      "published_at": 1784988364129,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "qtmamaphfybyms",
-      "x_user_id": "2071136163042078720",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"她的主页\" on any"
-      ],
-      "evidence_text": "刷了半天的eh60就她的主页能打了  o",
-      "reporters": 0,
-      "published_at": 1784988360552,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "kfxwisyebhpwva",
-      "x_user_id": "2071136210831949824",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"太涩了\" on tweet"
-      ],
-      "evidence_text": "她太涩了dl-q 我真顶不住",
-      "reporters": 0,
-      "published_at": 1784988351139,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "upgvgfakazuoev",
-      "x_user_id": "2071136182621122560",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"sao货\" on tweet"
-      ],
-      "evidence_text": "线下sao货没人rere比她sao H",
-      "reporters": 0,
-      "published_at": 1784988350879,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "sspsmdiypr44zy",
-      "x_user_id": "2071136571378561024",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "她太涩了n0rr 我真顶不住   t",
-      "reporters": 1,
-      "published_at": 1784988350878,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "swvuopadnvy1hu",
-      "x_user_id": "2071136177504088064",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "线下sao货没人h6h6比她sao   5",
-      "reporters": 1,
-      "published_at": 1784988350860,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "phylliszekt",
-      "x_user_id": "2070736723122831360",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐🚴城☘️上🪇椚~点击下方 👇可联系✈️",
-      "reporters": 3,
-      "published_at": 1784988345588,
       "published_tier": "auto"
     }
   ]
