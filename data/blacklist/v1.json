@@ -1,8 +1,50 @@
 {
   "schema": 1,
-  "generatedAt": 1794290429617,
+  "generatedAt": 1794312026937,
   "count": 50000,
   "list": [
+    {
+      "handle": "739v14nxr12ag",
+      "x_user_id": "1952028745126084608",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"只入身体\" on any"
+      ],
+      "evidence_text": "只入身体不入生活",
+      "reporters": 0,
+      "published_at": 1794302809536,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "lunevexhban",
+      "x_user_id": "1033207202960498689",
+      "verdict_label": "spam",
+      "confidence": 1,
+      "category": "crypto",
+      "reasons": [
+        "matched keyword rule \"返佣\" on display_name"
+      ],
+      "evidence_text": "触碰底线这事可没那么容易翻篇",
+      "reporters": 0,
+      "published_at": 1794301653461,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "rmmpxk9g13qxgd",
+      "x_user_id": "1940638678310658048",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "比她好看的没她听话比她听话的没她好看\n@Asmin96082632\n‍",
+      "reporters": 0,
+      "published_at": 1794297644511,
+      "published_tier": "auto"
+    },
     {
       "handle": "zd9d8",
       "x_user_id": null,
@@ -732998,48 +733040,6 @@
       "evidence_text": "桐🌴城🍿上😍椚~点击下方 👇可联系✈️",
       "reporters": 0,
       "published_at": 1784988485609,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "szuuhmqatdrzat",
-      "x_user_id": "2071139349844865024",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"她的主页\" on any"
-      ],
-      "evidence_text": "刷了半天的e20就她的主页能打了",
-      "reporters": 0,
-      "published_at": 1784988485470,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "jeromezierwaj",
-      "x_user_id": "2072440949368856577",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🌹城💄上🍁椚~下方👇👇可联系✈",
-      "reporters": 2,
-      "published_at": 1784988474987,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "jesusitagrige",
-      "x_user_id": "2071879544311603200",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "2026-07-25 21:52:40\n\nIrishg\n\nAttractionsh",
-      "reporters": 0,
-      "published_at": 1784988463000,
       "published_tier": "auto"
     }
   ]
