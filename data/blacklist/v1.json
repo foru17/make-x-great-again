@@ -1,8 +1,36 @@
 {
   "schema": 1,
-  "generatedAt": 1794268825906,
+  "generatedAt": 1794290429617,
   "count": 50000,
   "list": [
+    {
+      "handle": "zd9d8",
+      "x_user_id": null,
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "auto-blacklisted: @-mentioned by spam account @ce8rtg8bi2d1ax which matched keyword rule \"比她好看\""
+      ],
+      "evidence_text": "比‍她好看的没她乖比她乖的没她好看\n@ZD9D8",
+      "reporters": 0,
+      "published_at": 1794287452363,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "ce8rtg8bi2d1ax",
+      "x_user_id": "1940970239228866560",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "比‍她好看的没她乖比她乖的没她好看\n@ZD9D8",
+      "reporters": 0,
+      "published_at": 1794287452363,
+      "published_tier": "auto"
+    },
     {
       "handle": "eliam230",
       "x_user_id": null,
@@ -733012,34 +733040,6 @@
       "evidence_text": "2026-07-25 21:52:40\n\nIrishg\n\nAttractionsh",
       "reporters": 0,
       "published_at": 1784988463000,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "violetakhauek",
-      "x_user_id": "2071879779813318656",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "2026-07-25 21:53:36\n\nDomesticz\n\nPhoenixm,",
-      "reporters": 1,
-      "published_at": 1784988462597,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "scvfhckrrnivxa",
-      "x_user_id": "2071137111432937472",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "30+果然太涩了sh6f 我真顶不住 f g",
-      "reporters": 1,
-      "published_at": 1784988417955,
       "published_tier": "auto"
     }
   ]
