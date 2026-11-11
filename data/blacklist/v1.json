@@ -1,8 +1,50 @@
 {
   "schema": 1,
-  "generatedAt": 1794355227248,
+  "generatedAt": 1794376829657,
   "count": 50000,
   "list": [
+    {
+      "handle": "murray_han38845",
+      "x_user_id": null,
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "比‍她好看的没她乖比她乖的没她好看\n@CrackOriol7k",
+      "reporters": 0,
+      "published_at": 1794364590994,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "crackoriol7k",
+      "x_user_id": null,
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "auto-blacklisted: @-mentioned by spam account @millermort66349 which matched keyword rule \"比她好看\""
+      ],
+      "evidence_text": "😌比她好看的没她听话比她听话的没她好看\n@CrackOriol7k",
+      "reporters": 0,
+      "published_at": 1794356336095,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "millermort66349",
+      "x_user_id": "1865741424014307328",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "😌比她好看的没她听话比她听话的没她好看\n@CrackOriol7k",
+      "reporters": 0,
+      "published_at": 1794356336095,
+      "published_tier": "auto"
+    },
     {
       "handle": "llaquanda88313",
       "x_user_id": "1788895416727076864",
@@ -732998,48 +733040,6 @@
       "evidence_text": "Donna\n\nDark-Haired\n\n2026-07-25 22:03:07",
       "reporters": 1,
       "published_at": 1784988558977,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "bronwynswait5d",
-      "x_user_id": "2072440697903284225",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐💜城🖤上🇨🇳椚~下方👇👇可联系✈",
-      "reporters": 0,
-      "published_at": 1784988556859,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "dulciealfoiu",
-      "x_user_id": "2070806550784921600",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"破处\" on display_name"
-      ],
-      "evidence_text": "Kirstyn\n\nMelinda\n\n2026-07-25 22:05:02\n翻译帖子",
-      "reporters": 0,
-      "published_at": 1784988553797,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "nikiageraci",
-      "x_user_id": "2070806401174441984",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"破处\" on display_name"
-      ],
-      "evidence_text": "Fantastic, \n\nCheerful, \n\n2026-07-25 22:02:37\n翻译帖子",
-      "reporters": 0,
-      "published_at": 1784988553680,
       "published_tier": "auto"
     }
   ]
