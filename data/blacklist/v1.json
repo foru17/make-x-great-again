@@ -1,8 +1,22 @@
 {
   "schema": 1,
-  "generatedAt": 1794376829657,
+  "generatedAt": 1794398422423,
   "count": 50000,
   "list": [
+    {
+      "handle": "antoinette25383",
+      "x_user_id": "1789168186887143424",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "‍比⁡‌我⁢‍好⁣⁡看⁢的⁡⁡⁣⁠没⁣⁢⁣我⁣‌骚⁢⁠⁠⁠‍⁠‌⁠‍‌⁣比‌‌我⁡⁠⁢骚⁢⁠⁤的⁤‌⁡⁡没我⁡⁡⁤⁢好⁣‌⁢⁢看‍⠀⠀⠀⠀",
+      "reporters": 0,
+      "published_at": 1794398133947,
+      "published_tier": "auto"
+    },
     {
       "handle": "murray_han38845",
       "x_user_id": null,
@@ -733026,20 +733040,6 @@
       "evidence_text": "Ivory\n\nQualified, \n\n2026-07-25 22:00:17",
       "reporters": 1,
       "published_at": 1784988558980,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "takishalitcaq",
-      "x_user_id": "2070806406471516160",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "Donna\n\nDark-Haired\n\n2026-07-25 22:03:07",
-      "reporters": 1,
-      "published_at": 1784988558977,
       "published_tier": "auto"
     }
   ]
