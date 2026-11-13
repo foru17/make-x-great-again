@@ -1,8 +1,50 @@
 {
   "schema": 1,
-  "generatedAt": 1794528025627,
+  "generatedAt": 1794549624550,
   "count": 50000,
   "list": [
+    {
+      "handle": "ccf1v",
+      "x_user_id": null,
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "auto-blacklisted: @-mentioned by spam account @nbarrows75816 which matched keyword rule \"比她好看\""
+      ],
+      "evidence_text": "比‍她好看的没她乖比她乖的没她好看\n@CCF1V",
+      "reporters": 0,
+      "published_at": 1794540221656,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "nbarrows75816",
+      "x_user_id": "1888834721448099840",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "比‍她好看的没她乖比她乖的没她好看\n@CCF1V",
+      "reporters": 0,
+      "published_at": 1794540221656,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "wu_sun42769",
+      "x_user_id": "2028716839925415936",
+      "verdict_label": "spam",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"资源\" on display_name"
+      ],
+      "evidence_text": "番号\nSRTD-0366\n\nG奶女优的颜值和身材谁能顶着住\n\n\nhttps://\nt.me/zxyzpl",
+      "reporters": 0,
+      "published_at": 1794533883158,
+      "published_tier": "auto"
+    },
     {
       "handle": "jess505152",
       "x_user_id": "1577492819505303558",
@@ -732998,48 +733040,6 @@
       "evidence_text": "Kudos.\n\nMichelle\n\n2026-07-25 21:59:31\n翻译帖子",
       "reporters": 0,
       "published_at": 1784988753494,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "nameyukkbeou",
-      "x_user_id": "2071686524442214400",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "桐☃️城🍇上🐦椚~点击下方 👇可联系✈️",
-      "reporters": 0,
-      "published_at": 1784988744113,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "sherikajefp7",
-      "x_user_id": "2072441019514359808",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐💖城💙上👩‍❤️‍👩椚~下方👇👇可联系✈",
-      "reporters": 4,
-      "published_at": 1784988694625,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "nannirarn",
-      "x_user_id": "2069797491277467648",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "桐❣️城⛅上🐴椚~点击下方 👇可联系✈️",
-      "reporters": 0,
-      "published_at": 1784988693203,
       "published_tier": "auto"
     }
   ]
