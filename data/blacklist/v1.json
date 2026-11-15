@@ -1,8 +1,22 @@
 {
   "schema": 1,
-  "generatedAt": 1794722422046,
+  "generatedAt": 1794744022325,
   "count": 50000,
   "list": [
+    {
+      "handle": "megganmarr78852",
+      "x_user_id": "1807534025684451328",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比我好看\" on tweet"
+      ],
+      "evidence_text": "⁤比‌我⁠⁤好⁠⁢看⁢‍⁠的‌没⁤⁠‌我⁤骚⁢‍‌‌⁣比‌⁡⁤我⁤‌⁣⁤⁢骚⁡⁡的⁤‌⁤没⁣⁣⁤⁣⁠我⁣‌好‌⁤‌⁢‍看⁡⁢‍⠀⠀⠀⠀⠀",
+      "reporters": 0,
+      "published_at": 1794741766239,
+      "published_tier": "auto"
+    },
     {
       "handle": "zelmatina16236",
       "x_user_id": "1794543822321401856",
@@ -733027,20 +733041,6 @@
       "evidence_text": "桐🎶城😊上💐椚~点击下方 👇可联系✈️",
       "reporters": 3,
       "published_at": 1784989166414,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "milfordsayl0cr",
-      "x_user_id": "2072440451395936256",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🔴城🎏上🌸椚~下方👇👇可联系✈",
-      "reporters": 2,
-      "published_at": 1784989142053,
       "published_tier": "auto"
     }
   ]
