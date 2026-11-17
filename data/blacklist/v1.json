@@ -1,8 +1,50 @@
 {
   "schema": 1,
-  "generatedAt": 1794916823626,
+  "generatedAt": 1794938426243,
   "count": 50000,
   "list": [
+    {
+      "handle": "kiera94493",
+      "x_user_id": "1797580725039878145",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "😥比她好看的没她听话比她听话的没她好看\n@kiera94493",
+      "reporters": 0,
+      "published_at": 1794936293852,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "shaunazola26764",
+      "x_user_id": "1796021255797133312",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "🤓比她好看的没她乖比她乖的没她好看\n@ShaunaZola26764",
+      "reporters": 0,
+      "published_at": 1794936293835,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "henriettar26371",
+      "x_user_id": "1795380049660772352",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "比她好看的没她听话👧比她听话的没她好看\n@HenriettaR26371",
+      "reporters": 0,
+      "published_at": 1794936292843,
+      "published_tier": "auto"
+    },
     {
       "handle": "weexailabs",
       "x_user_id": "2030948878552641536",
@@ -732999,48 +733041,6 @@
       "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🎸城👩‍❤️‍👩上🚗椚~下方👇👇可联系✈",
       "reporters": 2,
       "published_at": 1784990012256,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "renaychallws",
-      "x_user_id": "2072441064729059328",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐💖城🎴上😻椚~下方👇👇可联系✈",
-      "reporters": 1,
-      "published_at": 1784990012238,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "jeramyendrdho",
-      "x_user_id": "2071879522073354240",
-      "verdict_label": "spam",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"资源\" on display_name"
-      ],
-      "evidence_text": "2026-07-25 21:48:58\n\nAccessc,\n\nFacultyj",
-      "reporters": 0,
-      "published_at": 1784989926773,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "rosalynd03i",
-      "x_user_id": "2069777711925473281",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐😙城⛹️上🥰椚~点击下方 👇可联系✈️",
-      "reporters": 2,
-      "published_at": 1784989888366,
       "published_tier": "auto"
     }
   ]
