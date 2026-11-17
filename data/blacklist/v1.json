@@ -1,8 +1,274 @@
 {
   "schema": 1,
-  "generatedAt": 1794830425511,
+  "generatedAt": 1794916823626,
   "count": 50000,
   "list": [
+    {
+      "handle": "weexailabs",
+      "x_user_id": "2030948878552641536",
+      "verdict_label": "spam",
+      "confidence": 1,
+      "category": "resource",
+      "reasons": [
+        "matched keyword rule \"weex\" on display_name"
+      ],
+      "evidence_text": "我去。。解锁完比正版还猛？",
+      "reporters": 0,
+      "published_at": 1794897406912,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "idadelores93732",
+      "x_user_id": "1795753512598671361",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "比‍她好看的没她乖比她乖的没她好看\n@IdaDelores93732",
+      "reporters": 0,
+      "published_at": 1794889534894,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "billyg90553",
+      "x_user_id": "1795723123863736320",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "比‍她好看的没她乖比她乖的没她好看\n@BillyG90553",
+      "reporters": 0,
+      "published_at": 1794886718219,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "jessicaern9140",
+      "x_user_id": "1797735103616962560",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "比她好看的没她乖🤫比她乖的没她好看\n@JessicaErn9140",
+      "reporters": 0,
+      "published_at": 1794879514460,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "carli83332",
+      "x_user_id": "1794596251595644928",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "🫠比她好看的没她听话比她听话的没她好看\n@carli83332",
+      "reporters": 0,
+      "published_at": 1794879388888,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "avaalexand46206",
+      "x_user_id": "1762450241507176448",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "比她好看的没她听话👨比她听话的没她好看\n@AvaAlexand46206",
+      "reporters": 0,
+      "published_at": 1794879383921,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "ronabarbie35720",
+      "x_user_id": "1795502503401766912",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "😍😷比她好看的没她乖比她乖的没她好看\n@RonaBarbie35720",
+      "reporters": 0,
+      "published_at": 1794879383913,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "haydeesusa91656",
+      "x_user_id": "1796360204189343744",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "比她好看的没她乖😐比她乖的没她好看\n@HaydeeSusa91656",
+      "reporters": 0,
+      "published_at": 1794879383829,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "sungsoo325674",
+      "x_user_id": "1804476453888589824",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "比她好看的没她听话比她听话的没她好看\n@SungSoo325674\n😩🙍‍",
+      "reporters": 0,
+      "published_at": 1794879383739,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "dariamyrti39736",
+      "x_user_id": "1795706797061226496",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "🧒💁比她好看的没她听话比她听话的没她好看\n@DariaMyrti39736",
+      "reporters": 0,
+      "published_at": 1794879383454,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "aureliakia82429",
+      "x_user_id": "1797616470182318081",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "比她好看的没她听话比她听话的没她好看\n@AureliaKia82429\n👸☹",
+      "reporters": 0,
+      "published_at": 1794879383403,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "sophiavada74869",
+      "x_user_id": "1804760183572455424",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "😥😨比她好看的没她听话比她听话的没她好看\n@SophiaVada74869",
+      "reporters": 0,
+      "published_at": 1794877892588,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "jenine_joy23945",
+      "x_user_id": "1795357897708408832",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "比她好看的没她听话🧎‍比她听话的没她好看\n@jenine_joy23945",
+      "reporters": 0,
+      "published_at": 1794872934885,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "azaleekerr77915",
+      "x_user_id": "1794541559951568896",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "比她好看的没她听话🤐比她听话的没她好看\n@AzaleeKerr77915",
+      "reporters": 0,
+      "published_at": 1794872920390,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "celinejess65436",
+      "x_user_id": "1796218432670601217",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "😶比她好看的没她乖比她乖的没她好看\n@CelineJess65436",
+      "reporters": 0,
+      "published_at": 1794872920321,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "ktenisha22139",
+      "x_user_id": "1808091535776665604",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "😎🙁比她好看的没她听话比她听话的没她好看\n@KTenisha22139",
+      "reporters": 0,
+      "published_at": 1794872920288,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "ljessia3213",
+      "x_user_id": "1796308431999025153",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "比她好看的没她听话👨‍比她听话的没她好看\n@LJessia3213",
+      "reporters": 0,
+      "published_at": 1794872745113,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "tommieleil49731",
+      "x_user_id": "1795609594087284736",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "比她好看的没她听话🧑比她听话的没她好看\n@TommieLeil49731",
+      "reporters": 0,
+      "published_at": 1794872745058,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "charlsiees56188",
+      "x_user_id": "1762474847836295168",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "比‍她好看的没她乖比她乖的没她好看\n@CharlsieEs56188\n‍",
+      "reporters": 0,
+      "published_at": 1794837601482,
+      "published_tier": "auto"
+    },
     {
       "handle": "marinda15163",
       "x_user_id": "1774007520870141952",
@@ -732775,272 +733041,6 @@
       "evidence_text": "桐😙城⛹️上🥰椚~点击下方 👇可联系✈️",
       "reporters": 2,
       "published_at": 1784989888366,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "zxfvhxterax7ca",
-      "x_user_id": "2071139517981937664",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"她骚\" on tweet"
-      ],
-      "evidence_text": "比她好看的没她-q骚7t比她骚的没她好看 x  j",
-      "reporters": 0,
-      "published_at": 1784989872507,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "fvucapulhgup95",
-      "x_user_id": "2071139702275506176",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"好涩\" on tweet"
-      ],
-      "evidence_text": "她好涩0r我不行了  f",
-      "reporters": 0,
-      "published_at": 1784989872485,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "uslwraijfkecqb",
-      "x_user_id": "2071139203430182913",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"简介\" on display_name"
-      ],
-      "evidence_text": "体制内re幼师 sao的很 h",
-      "reporters": 0,
-      "published_at": 1784989872483,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "ddrhfhjpho9npk",
-      "x_user_id": "2071139414365900801",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"简介\" on display_name"
-      ],
-      "evidence_text": "刷了半天的X g2p就她主页能打了 z -",
-      "reporters": 0,
-      "published_at": 1784989872479,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "cvpasiwplirirg",
-      "x_user_id": "2071139824572993536",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"她骚\" on tweet"
-      ],
-      "evidence_text": "比她好看的没她-q骚7t比她骚的没她好看 2 =",
-      "reporters": 0,
-      "published_at": 1784989872475,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "phhlnekejd5ub9",
-      "x_user_id": "2071139784894869504",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"简介\" on display_name"
-      ],
-      "evidence_text": "体制内h6幼师 sao的很   ‍",
-      "reporters": 0,
-      "published_at": 1784989872474,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "reeuexizar4obm",
-      "x_user_id": "2071139340961370112",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"太涩了\" on tweet"
-      ],
-      "evidence_text": "她太涩了nh6r 我真顶不住",
-      "reporters": 0,
-      "published_at": 1784989872467,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "zfdashcwswcb9d",
-      "x_user_id": "2071139154994352128",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"她骚\" on tweet"
-      ],
-      "evidence_text": "比她好看的没她骚-qr9比她骚的没她好看  4 C",
-      "reporters": 0,
-      "published_at": 1784989872406,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "rosaliecvw",
-      "x_user_id": "2069926982603653120",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐📚城😎上🪄椚~点击下方 👇可联系✈️",
-      "reporters": 2,
-      "published_at": 1784989872234,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "utqabgjadmojkq",
-      "x_user_id": "2071128699550785536",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"sao货\" on tweet"
-      ],
-      "evidence_text": "30+的sao货real没人比她sao  z =",
-      "reporters": 0,
-      "published_at": 1784989865007,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "rosaleen9ws",
-      "x_user_id": "2070176513513635840",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐🍔城🎣上🚀椚~点击下方 👇可联系✈️",
-      "reporters": 1,
-      "published_at": 1784989843872,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "maryellentzs",
-      "x_user_id": "2072441350461513728",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐♦️城👄上💔椚~下方👇👇可联系✈",
-      "reporters": 0,
-      "published_at": 1784989833722,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "lareewaldn9m3r",
-      "x_user_id": "2072441278655029248",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🗼城🌸上💙椚~下方👇👇可联系✈",
-      "reporters": 3,
-      "published_at": 1784989833445,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "raekauppi8c",
-      "x_user_id": "2072440910307020800",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐😊城🎏上🌹椚~下方👇👇可联系✈",
-      "reporters": 0,
-      "published_at": 1784989814211,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "rosaliaqlix",
-      "x_user_id": "2069791462166757376",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐🐹城♟️上🌵椚~点击下方 👇可联系✈️",
-      "reporters": 1,
-      "published_at": 1784989813031,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "rosaxddr",
-      "x_user_id": "2069757197907640321",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐🏊城🥟上🐷椚~点击下方 👇可联系✈️",
-      "reporters": 1,
-      "published_at": 1784989811465,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "priscillamdpqw",
-      "x_user_id": "2072441280315969536",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐⛱️城😚上🎈椚~下方👇👇可联系✈",
-      "reporters": 1,
-      "published_at": 1784989792130,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "templewelt9e8",
-      "x_user_id": "2072440448405110784",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐😊城😚上🍉椚~下方👇👇可联系✈",
-      "reporters": 0,
-      "published_at": 1784989792023,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "ricca7pjr",
-      "x_user_id": "2071210716745400320",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐🎺城🎮上🐸椚~点击下方 👇可联系✈️",
-      "reporters": 1,
-      "published_at": 1784989774098,
       "published_tier": "auto"
     }
   ]
