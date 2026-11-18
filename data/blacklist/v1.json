@@ -1,8 +1,22 @@
 {
   "schema": 1,
-  "generatedAt": 1794981626365,
+  "generatedAt": 1795003224010,
   "count": 50000,
   "list": [
+    {
+      "handle": "jeniferkal22681",
+      "x_user_id": "1794573397877260288",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "比‍她好看的没她乖比她乖的没她好看\n@JeniferKal22681\n‍",
+      "reporters": 0,
+      "published_at": 1794992174481,
+      "published_tier": "auto"
+    },
     {
       "handle": "delilahlat20038",
       "x_user_id": null,
@@ -733027,20 +733041,6 @@
       "evidence_text": "体制内幼0r师 sao的很   D",
       "reporters": 0,
       "published_at": 1784990135302,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "qvffetjilmzcgb",
-      "x_user_id": "2071140412652154880",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"太涩了\" on tweet"
-      ],
-      "evidence_text": "30+果然太涩了s2f 我真顶不住   h",
-      "reporters": 0,
-      "published_at": 1784990135098,
       "published_tier": "auto"
     }
   ]
