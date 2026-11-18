@@ -1,8 +1,64 @@
 {
   "schema": 1,
-  "generatedAt": 1794960028407,
+  "generatedAt": 1794981626365,
   "count": 50000,
   "list": [
+    {
+      "handle": "delilahlat20038",
+      "x_user_id": null,
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "auto-blacklisted: @-mentioned by spam account @mellisa_vi96352 which matched keyword rule \"比她好看\""
+      ],
+      "evidence_text": "🤠💇‍比她好看的没她听话比她听话的没她好看\n@DelilahLat20038",
+      "reporters": 0,
+      "published_at": 1794970285861,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "mellisa_vi96352",
+      "x_user_id": "1795784017498755072",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "🤠💇‍比她好看的没她听话比她听话的没她好看\n@DelilahLat20038",
+      "reporters": 0,
+      "published_at": 1794970285861,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "epatience34402",
+      "x_user_id": "1792480962623778816",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "比她好看的没她听话😚比她听话的没她好看\n@EPatience34402",
+      "reporters": 0,
+      "published_at": 1794964877147,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "jeannieshe22081",
+      "x_user_id": "1797944198269685760",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "比她好看的没她听话👵比她听话的没她好看\n@JeannieShe22081",
+      "reporters": 0,
+      "published_at": 1794964877077,
+      "published_tier": "auto"
+    },
     {
       "handle": "ynicolasa10726",
       "x_user_id": "1795738713798086656",
@@ -732985,62 +733041,6 @@
       "evidence_text": "30+果然太涩了s2f 我真顶不住   h",
       "reporters": 0,
       "published_at": 1784990135098,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "ogivkfjsjj4ml7",
-      "x_user_id": "2071139932832137216",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"体制内老师\" on any"
-      ],
-      "evidence_text": "30+的b2v体制内老师 玩的就是返差 q B",
-      "reporters": 0,
-      "published_at": 1784990134050,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "rosabellasu",
-      "x_user_id": "2070101495861706752",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "桐🌻城🤘上🚲椚~点击下方 👇可联系✈️",
-      "reporters": 1,
-      "published_at": 1784990120535,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "nicole68cm5",
-      "x_user_id": "2071049526580793344",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "スイート",
-      "reporters": 1,
-      "published_at": 1784990111697,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "ninfawittich",
-      "x_user_id": "2072441531122978816",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🇨🇳城🍒上🎸椚~下方👇👇可联系✈",
-      "reporters": 1,
-      "published_at": 1784990066897,
       "published_tier": "auto"
     }
   ]
