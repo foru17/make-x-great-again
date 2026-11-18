@@ -1,8 +1,36 @@
 {
   "schema": 1,
-  "generatedAt": 1794938426243,
+  "generatedAt": 1794960028407,
   "count": 50000,
   "list": [
+    {
+      "handle": "ynicolasa10726",
+      "x_user_id": "1795738713798086656",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "比她好看的没她乖😆比她乖的没她好看\n@YNicolasa10726",
+      "reporters": 0,
+      "published_at": 1794958881197,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "kemberlyma11859",
+      "x_user_id": "1795353341561638913",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "比‍她好看的没她乖比她乖的没她好看\n@KemberlyMa11859",
+      "reporters": 0,
+      "published_at": 1794954698778,
+      "published_tier": "auto"
+    },
     {
       "handle": "kiera94493",
       "x_user_id": "1797580725039878145",
@@ -733013,34 +733041,6 @@
       "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🇨🇳城🍒上🎸椚~下方👇👇可联系✈",
       "reporters": 1,
       "published_at": 1784990066897,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "katherinbly0ro",
-      "x_user_id": "2072441355155255296",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🎴城♦️上🥁椚~下方👇👇可联系✈",
-      "reporters": 1,
-      "published_at": 1784990059400,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "jolandastauble",
-      "x_user_id": "2072441469617471488",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "22岁女大 身高168cm 接线下 口嗨的勿扰 喝🍵可以深入哟\n\n~桐🎸城👩‍❤️‍👩上🚗椚~下方👇👇可联系✈",
-      "reporters": 2,
-      "published_at": 1784990012256,
       "published_tier": "auto"
     }
   ]
