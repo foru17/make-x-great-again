@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generatedAt": 1795003224010,
+  "generatedAt": 1795024830851,
   "count": 50000,
   "list": [
     {
@@ -261632,13 +261632,10 @@
       "confidence": 0.9,
       "category": "other",
       "reasons": [
-        "solicitation in unrelated thread",
-        "commercial offer unrelated to topic",
-        "low activity + following-heavy profile",
-        "clear third-party service ad"
+        "reported"
       ],
-      "evidence_text": "免 kyc cc max 20x，2400块，需要的老板联系",
-      "reporters": 0,
+      "evidence_text": "感谢运维的话，最好配点实际的\n故障时给准确信息，别让客户自己猜哪里坏了\n恢复后把原因和改进讲清楚，比台上多谢几遍管用",
+      "reporters": 1,
       "published_at": 1790784933973,
       "published_tier": "human"
     },
