@@ -1,8 +1,22 @@
 {
   "schema": 1,
-  "generatedAt": 1795240824060,
+  "generatedAt": 1795262422586,
   "count": 50000,
   "list": [
+    {
+      "handle": "fatherabbo44148",
+      "x_user_id": "1709527865883017216",
+      "verdict_label": "porn_bot",
+      "confidence": 1,
+      "category": "porn",
+      "reasons": [
+        "matched keyword rule \"比她好看\" on tweet"
+      ],
+      "evidence_text": "比她好看的没她乖比她乖的没她好看\n@FatherAbbo44148",
+      "reporters": 0,
+      "published_at": 1795242304714,
+      "published_tier": "auto"
+    },
     {
       "handle": "jeniferkal22681",
       "x_user_id": "1794573397877260288",
@@ -733024,20 +733038,6 @@
       "evidence_text": "刷了半天的e20就她的主页能打了 8",
       "reporters": 0,
       "published_at": 1784990135359,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "rkzctosokb2smq",
-      "x_user_id": "2071140530373963777",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"线下\" on display_name"
-      ],
-      "evidence_text": "体制内幼0r师 sao的很   D",
-      "reporters": 0,
-      "published_at": 1784990135302,
       "published_tier": "auto"
     }
   ]
