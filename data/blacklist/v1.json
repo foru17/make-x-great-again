@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "generatedAt": 1795327222918,
+  "generatedAt": 1795348822327,
   "count": 50000,
   "list": [
     {
@@ -262355,13 +262355,10 @@
       "confidence": 0.9,
       "category": "marketing",
       "reasons": [
-        "promotional bait for third-party AI API service with referral code",
-        "off-topic advertisement in search surface with no relation to threadTopic",
-        "includes direct signup link, invite code, API config, and WeChat contact funnel",
-        "account has very low activity and tiny follower count despite 4722-day age"
+        "reported"
       ],
-      "evidence_text": "APInex 免费池上新！\n日送 1M，免订阅用 Luna、MiMo 2.6、V4.1、GLM-5.3。\n\n 配置（去括号）：\n• 注册: \nhttps://\napinex.bond/overview\n• 码: 3CG7DDVL\n• Base: https[:]//api.apinex[.]bond/v1\n• Key: 注册创建\n• 模型: GPT 6 Luna / MiMo 2.6\n\n 微信「AI赛博鸡蛋哥」看教程\n#AI #免费API",
-      "reporters": 0,
+      "evidence_text": "卡比你居然也炒股啊",
+      "reporters": 1,
       "published_at": 1790784933973,
       "published_tier": "human"
     },
