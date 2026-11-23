@@ -1,8 +1,36 @@
 {
   "schema": 1,
-  "generatedAt": 1795370426551,
+  "generatedAt": 1795435222665,
   "count": 50000,
   "list": [
+    {
+      "handle": "vivis_corta",
+      "x_user_id": "259126856",
+      "verdict_label": "spam",
+      "confidence": 1,
+      "category": "crypto",
+      "reasons": [
+        "matched keyword rule \"返佣\" on display_name"
+      ],
+      "evidence_text": "奋不顾身的账单最后娃来付",
+      "reporters": 0,
+      "published_at": 1795398865124,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "alessia07_",
+      "x_user_id": "3366106973",
+      "verdict_label": "spam",
+      "confidence": 1,
+      "category": "crypto",
+      "reasons": [
+        "matched keyword rule \"返佣\" on display_name"
+      ],
+      "evidence_text": "东北搓澡真能给你搓明白",
+      "reporters": 0,
+      "published_at": 1795398213079,
+      "published_tier": "auto"
+    },
     {
       "handle": "fatherabbo44148",
       "x_user_id": "1709527865883017216",
@@ -733007,34 +733035,6 @@
       "evidence_text": "桐🐞城🍯上🍓椚~点击下方 👇可联系✈️",
       "reporters": 0,
       "published_at": 1784990149221,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "dinahgorne5kc0",
-      "x_user_id": "2070806469532962816",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"破处\" on display_name"
-      ],
-      "evidence_text": "Glamorous, \n\nAttendant\n\n2026-07-25 22:01:19",
-      "reporters": 0,
-      "published_at": 1784990148457,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "adangehquhpeit",
-      "x_user_id": "2071140508819197952",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"她的主页\" on any"
-      ],
-      "evidence_text": "刷了半天的e20就她的主页能打了 8",
-      "reporters": 0,
-      "published_at": 1784990135359,
       "published_tier": "auto"
     }
   ]
