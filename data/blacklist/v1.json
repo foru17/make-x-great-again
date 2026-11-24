@@ -1,8 +1,37 @@
 {
   "schema": 1,
-  "generatedAt": 1795478422978,
+  "generatedAt": 1795500023078,
   "count": 50000,
   "list": [
+    {
+      "handle": "unlimitlinksvpn",
+      "x_user_id": "2070551976996114432",
+      "verdict_label": "spam",
+      "confidence": 1,
+      "category": "marketing",
+      "reasons": [
+        "matched keyword rule \"vpn\" on display_name",
+        "reported"
+      ],
+      "evidence_text": "无限连，一键连。\n\n注册即送 200MB 国内免费高速流量，先体验，再决定，周尝鲜套餐仅 US$2.99，支持国内支付方式。\n\n点击进入官网下载",
+      "reporters": 1,
+      "published_at": 1795491728327,
+      "published_tier": "auto"
+    },
+    {
+      "handle": "dreamsid88",
+      "x_user_id": "2200571040",
+      "verdict_label": "spam",
+      "confidence": 1,
+      "category": "crypto",
+      "reasons": [
+        "matched keyword rule \"返佣\" on display_name"
+      ],
+      "evidence_text": "能复活的都不算输",
+      "reporters": 0,
+      "published_at": 1795482376728,
+      "published_tier": "auto"
+    },
     {
       "handle": "vivis_corta",
       "x_user_id": "259126856",
@@ -90398,10 +90427,10 @@
       "confidence": 0.9,
       "category": "marketing",
       "reasons": [
-        "hard evidence P3"
+        "reported"
       ],
       "evidence_text": "Claude、GPT、Gemini，指定模型低至1折。\n写代码、做 AI 应用，先把调用成本降下来。\n立即注册 Modelsell，开始使用。\n适用 Claude kiro / GPT特价 / Gemini Cli 指定分组；相对页面标准价，以实时价格为准。",
-      "reporters": 0,
+      "reporters": 1,
       "published_at": 1792890413505,
       "published_tier": "auto"
     },
@@ -107577,10 +107606,10 @@
       "confidence": 0.95,
       "category": "marketing",
       "reasons": [
-        "hard evidence P3"
+        "reported"
       ],
-      "evidence_text": "出海必备：香港公司。用于注册 Stripe 等支付通道、开通银行账户无外汇管制.... 跨境电商、外贸、SaaS 出海、AI 出海多场景适用。",
-      "reporters": 0,
+      "evidence_text": "注册香港公司，¥4,500 一口价。\n1、政府费、首年公司秘书、香港注册地址、印章绿盒、快递全包含\n2、无需赴港，远程办理，1 名董事即可\n3、香港 TCSP 持牌机构承办（TC010448，可查证）\n费用清单写清楚再签约",
+      "reporters": 1,
       "published_at": 1792746464041,
       "published_tier": "auto"
     },
@@ -733007,34 +733036,6 @@
       "evidence_text": "noble",
       "reporters": 0,
       "published_at": 1784990155296,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "rosananxwt",
-      "x_user_id": "2070754475023769600",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "桐💝城😢上🕯️椚~点击下方 👇可联系✈️",
-      "reporters": 0,
-      "published_at": 1784990149402,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "rosemariajqzz",
-      "x_user_id": "2071223593074085888",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"同城\" on display_name"
-      ],
-      "evidence_text": "桐🐞城🍯上🍓椚~点击下方 👇可联系✈️",
-      "reporters": 0,
-      "published_at": 1784990149221,
       "published_tier": "auto"
     }
   ]
