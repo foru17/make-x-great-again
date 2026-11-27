@@ -1,8 +1,22 @@
 {
   "schema": 1,
-  "generatedAt": 1795759221485,
+  "generatedAt": 1795780824771,
   "count": 50000,
   "list": [
+    {
+      "handle": "kookkiklucky",
+      "x_user_id": "4218087268",
+      "verdict_label": "spam",
+      "confidence": 1,
+      "category": "crypto",
+      "reasons": [
+        "matched keyword rule \"返佣\" on display_name"
+      ],
+      "evidence_text": "这俩聊上头了压根没你事",
+      "reporters": 0,
+      "published_at": 1795765990379,
+      "published_tier": "auto"
+    },
     {
       "handle": "lanmeijs",
       "x_user_id": null,
@@ -733022,20 +733036,6 @@
       "evidence_text": "她好涩2我3不行了   n",
       "reporters": 0,
       "published_at": 1784990212064,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "otxasinuwjd4g6",
-      "x_user_id": "2071141213340573696",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "reported"
-      ],
-      "evidence_text": "线下sao货没人rere比她sao  0 y",
-      "reporters": 2,
-      "published_at": 1784990212007,
       "published_tier": "auto"
     }
   ]
