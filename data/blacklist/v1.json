@@ -1,8 +1,22 @@
 {
   "schema": 1,
-  "generatedAt": 1795802425495,
+  "generatedAt": 1795824025389,
   "count": 50000,
   "list": [
+    {
+      "handle": "wumingm3l2",
+      "x_user_id": "2099400804109262848",
+      "verdict_label": "spam",
+      "confidence": 1,
+      "category": "crypto",
+      "reasons": [
+        "matched keyword rule \"vpn\" on display_name"
+      ],
+      "evidence_text": "这。。。最246w*100/18............1360w持仓",
+      "reporters": 0,
+      "published_at": 1795823836801,
+      "published_tier": "auto"
+    },
     {
       "handle": "kookkiklucky",
       "x_user_id": "4218087268",
@@ -733022,20 +733036,6 @@
       "evidence_text": "体制内幼-q师 sao的很 K ‍",
       "reporters": 0,
       "published_at": 1784990228425,
-      "published_tier": "auto"
-    },
-    {
-      "handle": "qaxbkrfdeahxsy",
-      "x_user_id": "2071140498782212096",
-      "verdict_label": "porn_bot",
-      "confidence": 1,
-      "category": "porn",
-      "reasons": [
-        "matched keyword rule \"好涩\" on tweet"
-      ],
-      "evidence_text": "她好涩2我3不行了   n",
-      "reporters": 0,
-      "published_at": 1784990212064,
       "published_tier": "auto"
     }
   ]
